@@ -52,6 +52,23 @@ Replaying `activity.posted` and then each `activity.updated` through `applyActiv
 
 Each is also an MCP tool of the same name and `fc api <operationId> --data '<json>'`. A permission question carries the exact action: `askInThread` and `askQuestion` take `action: { tool, command?, input?, path?, diff? }` (`fc ask ... --action '<json>'`), and the web app shows it as a confirmation card with the command, the input or the diff.
 
+## How the web app shows it
+
+The web app renders entries with Vercel's AI Elements, installed as source in `apps/web/src/components/ai-elements/` (ADR 0022), through adapters in `apps/web/src/components/agent/`. Consecutive entries of one run are one Chain of Thought block, collapsed, with its status by shape and the current step shimmering. Each part type has its element:
+
+| Part | Element |
+|---|---|
+| `tool` | Tool: name, status badge, input and output |
+| `terminal` | Tool with a Terminal inside; ANSI colour codes are stripped |
+| `reasoning` | Reasoning, open while it streams |
+| `plan` | Plan with its steps as a Queue |
+| `files` | Task with a File Tree; a file opens its diff |
+| `tests` | Task with Test Results |
+| `subagent` | Task |
+| `error` | Stack Trace, built back from the frames |
+
+A permission question is a Confirmation card; "claude is working" uses Shimmer; the thread panel scrolls with Conversation. Colours are mapped to the zinc tokens by `.ai-elements-mono` in `apps/web/src/index.css`. Adding a part type: a schema in contracts, then one case in `parts.tsx`, usually with one more installed element.
+
 ## `fc` commands
 
 `fc` is the command line (being renamed `flockr`; run it as `bun run fc` from the repo).

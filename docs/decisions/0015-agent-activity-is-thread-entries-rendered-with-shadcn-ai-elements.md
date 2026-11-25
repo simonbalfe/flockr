@@ -1,6 +1,6 @@
 # 0015: Agent activity is thread entries rendered with shadcn AI Elements
 
-Status: accepted, 24 Nov 2026. Builds on 0003 (every surface), 0009 (agnostic), 0010 (one contract) and 0012 (event log).
+Status: accepted, 24 Nov 2026; rendering with patterns copied in superseded in part by [0022](0022-activity-ui-is-built-on-installed-ai-elements.md). Builds on 0003 (every surface), 0009 (agnostic), 0010 (one contract) and 0012 (event log).
 
 ## Problem
 

@@ -73,17 +73,17 @@ Screens never touch the network directly. Everything goes through `src/api/`:
 | `src/api/agents.ts` | Machines and the agent mutations (create, update, start, stop, delete); agent status arrives live as an `agents` frame, which refreshes the cache |
 | `src/api/activity-live.ts` | Patches a cached thread, and the agent panel's recent runs (`listAgentActivity`), from `activity.updated` events with the shared reducer (`applyActivityUpdates`), so streaming output never refetches; it refetches when a revision was missed. The Zod schemas it decodes with load in their own chunk |
 
-Agent activity (ADR 0015, `docs/guides/GUIDE_AGENT_ACTIVITY.md`) lives in `src/components/agent/`, built from shadcn AI Elements patterns copied in and made monochrome:
+Agent activity (ADR 0015, ADR 0022, `docs/guides/GUIDE_AGENT_ACTIVITY.md`) is built on Vercel's AI Elements, installed as source in `src/components/ai-elements/` with `bunx shadcn add @ai-elements/<name>` (the registry is listed in `components.json`). Answer no when it offers to overwrite a file in `src/components/ui/`, and pin any dependency it adds (exact, at least 14 days old). Those files are vendor code like `src/components/ui/`: restyle them with className props and the `.ai-elements-mono` token map in `src/index.css`, and edit one only when it cannot compile, recording the edit in spec 4b. `bunx shadcn add @ai-elements/<name> --diff` compares a file with upstream. The adapters in `src/components/agent/` map Flockr's entries and parts to their props:
 
-| File | Pattern | Shows |
+| File | AI Elements | Shows |
 |---|---|---|
-| `work-block.tsx` | Chain of Thought, Task | A run as one collapsed block: status by shape, current step with shimmer, time, counts; the plan stays visible while it runs |
-| `parts.tsx` | Tool, Terminal, Reasoning, Plan, Queue, File Tree, Test Results, Subagent, Stack Trace | One Trace line per part, expand for input, output, diff, failures or frames |
-| `diff-view.tsx` | Code Block | A unified diff with + and − lines, no colour |
+| `work-block.tsx` | Chain of Thought | A run as one collapsed block: status by shape, current step with shimmer, time, counts; the plan stays visible while it runs; several entries of one run as steps |
+| `parts.tsx` | Tool, Terminal, Reasoning, Plan, Queue, Task, File Tree, Test Results, Stack Trace | One element per part type; tool and command lines open while running, failures open by default; files open their diff on click |
+| `diff-view.tsx` | (shadcn Code Block in `ui/`) | A unified diff with + and − lines, no colour; AI Elements' Code Block uses coloured Shiki themes |
 | `markdown.tsx` | (none in the library) | Message and reply text as markdown with code blocks and tables; @names and #tasks stay links |
-| `question-prompt.tsx` | Confirmation, Questionnaire | Permission cards with the exact action; three or more options as a list, still one tap |
-| `working-line.tsx` | Task, shimmer | "claude is working on ..." and Stop |
-| `chat-scroll.tsx` | Chat, Message Scroller | The thread and task panels keep your place while entries stream |
+| `question-prompt.tsx` | Confirmation | Permission cards with the exact action, one tap; three or more options use shadcn's Questionnaire, still one tap |
+| `working-line.tsx`, `running-text.tsx` | Shimmer | "claude is working on ..." and Stop; plain text under reduced motion |
+| `chat-scroll.tsx` | Conversation | The thread and task panels stick to the newest entry, and keep your place when you scroll up while entries stream |
 
 A message or reply renders through `src/components/message-item.tsx`: its edit and label modes, the "(edited)" versions list, its labels and, in a thread, its collapsed sub-thread (grouped by `splitSubThreads` from `@flockr/client`). There is no label control in the composer: labels are set from the message toolbar after posting (spec 1b message gaps).
 

@@ -16,10 +16,11 @@
 | [0012](0012-event-sequence-comes-from-a-board-counter-row.md) | Event sequence numbers come from a counter row per board | Accepted |
 | [0013](0013-the-runner-launches-agents-through-harness-adapters.md) | The runner launches agents through harness adapters | Accepted; its one-member config superseded by 0016 |
 | [0014](0014-a-mention-starts-a-conversation-not-a-task.md) | A mention starts a conversation, not a task | Accepted |
-| [0015](0015-agent-activity-is-thread-entries-rendered-with-shadcn-ai-elements.md) | Agent activity is thread entries rendered with shadcn AI Elements | Accepted |
+| [0015](0015-agent-activity-is-thread-entries-rendered-with-shadcn-ai-elements.md) | Agent activity is thread entries rendered with shadcn AI Elements | Accepted; its copied-in rendering superseded in part by 0022 |
 | [0016](0016-agents-are-created-in-the-app-and-served-by-machine-runners.md) | Agents are created in the app and served by machine runners | Accepted |
 | [0017](0017-flockr-runs-on-cloudflare-through-platform-adapters.md) | Flockr runs on Cloudflare through platform adapters; Postgres and R2 stay portable | Accepted |
 | [0018](0018-durable-objects-are-disposable.md) | Durable Objects are disposable: no data lives only in one, and no board rules run in one | Accepted |
 | [0019](0019-coding-agents-run-claude-code-in-a-disposable-sandbox-per-task.md) | Coding agents run Claude Code in a disposable sandbox per task; other cloud agents run Pi Durable | Proposed |
 | [0020](0020-jobs-are-postgres-rows-drained-by-the-platform-scheduler.md) | Jobs are Postgres rows drained by the platform's scheduler, not pg-boss | Accepted |
 | [0021](0021-people-sign-in-with-better-auth-magic-links-agents-use-keys.md) | People sign in with Better Auth magic links from an allowlist; agents use keys | Accepted |
+| [0022](0022-activity-ui-is-built-on-installed-ai-elements.md) | The activity UI is built on installed AI Elements | Accepted |

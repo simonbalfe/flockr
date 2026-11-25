@@ -2,6 +2,7 @@ import { currentStep } from "@flockr/client"
 import { Square } from "lucide-react"
 import { useStopRun, useThread } from "@/api/hooks"
 import type { Activity } from "@/api/types"
+import { RunningText } from "@/components/agent/running-text"
 import { useClock } from "@/components/agent/use-clock"
 import { Button } from "@/components/ui/button"
 import { useLiveActivity } from "@/lib/activity"
@@ -35,7 +36,7 @@ export function AgentWorkingLine({ activity, stop = false }: { activity: Activit
         {entry && step && step !== entry.title ? (
           <>
             {" "}
-            on {entry.title} <span className="shimmer motion-reduce:shimmer-none">· {step}</span>
+            on {entry.title} <RunningText text={`· ${step}`} running />
           </>
         ) : entry ? (
           ` on ${entry.title}`

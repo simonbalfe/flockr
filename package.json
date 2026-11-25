@@ -27,6 +27,7 @@
     "mdast-util-mdx-jsx": "3.2.1",
     "mdast-util-to-markdown": "2.2.3",
     "mdast-util-gfm-autolink-literal": "2.1.0",
-    "stringify-entities": "4.0.4"
+    "stringify-entities": "4.0.4",
+    "hast-util-to-html": "9.0.6"
   }
 }

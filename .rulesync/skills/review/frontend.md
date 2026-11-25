@@ -1,6 +1,6 @@
 # Frontend review checklist
 
-Scope: `apps/web/src` (routes, components, the data layer). Out of scope: the generated shadcn files in `apps/web/src/components/ui/`, unless the app uses one wrongly.
+Scope: `apps/web/src` (routes, components, the data layer). Out of scope: the generated shadcn files in `apps/web/src/components/ui/` and the installed AI Elements in `apps/web/src/components/ai-elements/` (ADR 0022), unless the app uses one wrongly.
 
 A frontend review looks at the running app, not only the code. Tests miss a label that reads as an internal id, a task state shown only by colour, or an empty state that is false while an agent is working.
 

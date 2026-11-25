@@ -145,3 +145,33 @@
   --breakpoint-nav: 761px;
   --breakpoint-panel: 1101px;
 }
+
+.ai-elements-mono {
+  --destructive: var(--foreground);
+  --color-red-50: var(--muted);
+  --color-red-100: var(--muted);
+  --color-red-400: var(--foreground);
+  --color-red-500: var(--foreground);
+  --color-red-600: var(--foreground);
+  --color-red-700: var(--foreground);
+  --color-red-900: var(--muted);
+  --color-orange-600: var(--foreground);
+  --color-green-100: var(--muted);
+  --color-green-400: var(--muted-foreground);
+  --color-green-500: var(--muted-foreground);
+  --color-green-600: var(--muted-foreground);
+  --color-green-700: var(--muted-foreground);
+  --color-green-900: var(--muted);
+  --color-yellow-100: var(--muted);
+  --color-yellow-400: var(--muted-foreground);
+  --color-yellow-600: var(--muted-foreground);
+  --color-yellow-700: var(--muted-foreground);
+  --color-yellow-900: var(--muted);
+  --color-blue-400: var(--muted-foreground);
+  --color-blue-500: var(--muted-foreground);
+  --color-blue-600: var(--muted-foreground);
+  --color-zinc-100: var(--foreground);
+  --color-zinc-400: var(--muted-foreground);
+  --color-zinc-800: var(--muted);
+  --color-zinc-950: var(--background);
+}

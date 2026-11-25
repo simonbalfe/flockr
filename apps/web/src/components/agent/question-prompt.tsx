@@ -4,7 +4,8 @@ import type { ApprovalAction, Question } from "@/api/types"
 import { DiffView } from "@/components/agent/diff-view"
 import { Button } from "@/components/ui/button"
 import { CodeBlock, CodeBlockContent, CodeBlockHeader, CodeBlockTitle } from "@/components/ui/code-block"
-import { Item, ItemActions, ItemContent, ItemDescription, ItemMedia, ItemTitle } from "@/components/ui/item"
+import { Confirmation, ConfirmationAction, ConfirmationActions, ConfirmationRequest, ConfirmationTitle } from "@/components/ai-elements/confirmation"
+import { AlertDescription } from "@/components/ui/alert"
 import { Questionnaire, QuestionnaireActions, QuestionnaireChoice, QuestionnaireChoices, QuestionnaireDescription, QuestionnaireItem, QuestionnaireTitle } from "@/components/ui/questionnaire"
 
 interface PromptProps {
@@ -57,24 +58,28 @@ function Buttons({ question, pending, onAnswer, extra }: PromptProps) {
   )
 }
 
-function Confirmation(props: PromptProps & { action: ApprovalAction }) {
-  const { question, action } = props
+function ApprovalCard({ question, pending, onAnswer, extra, action }: PromptProps & { action: ApprovalAction }) {
   return (
-    <Item variant="muted" className="mt-1.5 max-w-[640px] flex-col items-stretch gap-3 rounded-xl px-3.5 py-3">
+    <Confirmation approval={{ id: question.text }} state="approval-requested" className="ai-elements-mono mt-1.5 max-w-[640px] gap-3 rounded-xl border-0 bg-muted px-3.5 py-3">
       <div className="flex min-w-0 items-start gap-3">
-        <ItemMedia variant="icon" className="mt-px">
-          <ShieldQuestion />
-        </ItemMedia>
-        <ItemContent className="min-w-0">
-          <ItemTitle className="font-semibold">{question.text}</ItemTitle>
-          {question.detail && <ItemDescription>{question.detail}</ItemDescription>}
-        </ItemContent>
+        <ShieldQuestion className="mt-0.5 size-4 shrink-0" />
+        <div className="min-w-0">
+          <ConfirmationTitle className="block font-semibold text-foreground">{question.text}</ConfirmationTitle>
+          {question.detail && <AlertDescription className="mt-0.5 text-[13px]">{question.detail}</AlertDescription>}
+        </div>
       </div>
-      <ActionDetail action={action} />
-      <ItemActions>
-        <Buttons {...props} />
-      </ItemActions>
-    </Item>
+      <ConfirmationRequest>
+        <ActionDetail action={action} />
+      </ConfirmationRequest>
+      <ConfirmationActions className="flex-wrap justify-start self-start">
+        {question.options.map((option, i) => (
+          <ConfirmationAction key={option} variant={i === 0 ? "default" : "outline"} disabled={pending} onClick={() => onAnswer(option)}>
+            {option}
+          </ConfirmationAction>
+        ))}
+        {extra}
+      </ConfirmationActions>
+    </Confirmation>
   )
 }
 
@@ -108,7 +113,7 @@ function Choices({ question, pending, onAnswer, extra }: PromptProps) {
 
 export function QuestionPrompt(props: PromptProps) {
   const { question } = props
-  if (question.action) return <Confirmation {...props} action={question.action} />
+  if (question.action) return <ApprovalCard {...props} action={question.action} />
   if (question.options.length > 2) return <Choices {...props} />
   return (
     <div className="mt-1.5 max-w-[640px] rounded-xl bg-muted px-3.5 pt-[13px] pb-3">
