@@ -1,0 +1,7 @@
+#!/bin/sh
+[ -f package.json ] || exit 0
+if grep -q '"check"[[:space:]]*:' package.json; then
+  exec bun run check
+fi
+echo "pre-push: no check script in package.json yet, skipping (add bun run check: typecheck, lint, tests)"
+exit 0

@@ -1,0 +1,87 @@
+# Flockr web
+
+The Flockr web frontend: a Slack-style board where people and coding agents share channels, threads and tasks. It reads and drives the real board through the generated API client, and live events keep it current. It acts as the member `simon` (the `x-flockr-member` header; there is no sign-in yet).
+
+## Run
+
+From the `flockr` folder:
+
+```sh
+docker compose up -d db
+bun install
+bun run db:migrate
+bun run seed
+bun dev
+```
+
+Open http://localhost:5173. `bun dev` is one Bun process running Vite with HMR plus the Hono API, MCP and the live WebSocket on the same port (`apps/server/src/dev.ts`).
+
+Other commands: `bun run build` (type check and production build into `dist/`), `bunx tsc --noEmit` (type check only), `bun run start` from the root (serve `dist/` and the API).
+
+## What to try
+
+| Do this | See this |
+|---|---|
+| Write `@claude add rate limiting` in a channel | A message that mentions claude; no task is made, claude can answer in the thread |
+| Press "New task" in a Tasks view or a thread | A dialog (title, channel, assignee); an assigned task is bound to that member, an unassigned one is open for anyone |
+| An agent asks a question in a thread | A question card in the thread and in "Waiting for you"; once answered it becomes "Answered X by Y" |
+| An agent starts working in a thread | "claude is working..." under the thread and in the composer line, until it stops or expires |
+| In a terminal, `FC_AS=claude bun fc tasks claim --ready` | #806 shows claude holding it, live, with no reload |
+| `FC_AS=claude bun fc ask 806 "Use uuid keys?" --option Yes --option No` | A question card in "Waiting for you" and a toast |
+| Tap an answer | The answer lands in the task thread; `flockr wait --thread 806` returns it |
+| Open #806, press Claim, then Mark done | #808 becomes ready |
+| Open a thread and press "Make this a task" | A new task with the thread copied in |
+| Hover a message, press Delete, then Yes | The message becomes "Message deleted" for everyone, live; its thread stays; `flockr delete m12` does the same |
+| Press Cmd+K | Jump to a channel, task or agent, or pick New agent |
+| Press "+" beside Agents in the sidebar | The New agent dialog: name, harness and machine (from the runners that are online), folder, permissions, optional personality, then "Create and start". With no runner connected it says so and shows `bun run runner` with a copy button |
+| Look at the dots beside agents | Status by shape: hollow is offline, solid is online, pulsing is working, a slashed ring is an error (hover for the reason) |
+| Click an agent | Its panel: status, owner, machine, harness, folder, permissions and personality (editable), Start or Stop, and Delete in the "..." menu |
+| Mention a stopped agent | A quiet line under the message box: "scout is offline. Start it." |
+| `FC_AS=claude bun fc activity post m12 "Add rate limiting"`, then `bun fc activity exec m41 -- bun test` | One collapsed work block in the thread; the command's output streams in live; "claude is working on Add rate limiting · Running bun test" under the reply box and a Stop button in the thread header |
+| Press Stop in the thread header | A `run.stop_requested` event for claude; the block says "stop requested" until the run finishes (`flockr stop m12` does the same) |
+| Reply in a thread while claude works | The reply box says "Steer claude"; the reply is a normal reply the runner passes into the running session |
+| `fc ask m12 "Edit a.ts?" --option "Allow once" --option Deny --action '{"tool":"edit_file","path":"a.ts","diff":"..."}'` | A permission card showing the tool, command or input and the diff, answered in one tap |
+
+Nothing moves by itself: tasks move only when a person here or an agent (through `flockr`, MCP or the API) acts, or when a lease runs out (the server returns it to ready).
+
+## Stack
+
+Bun, Vite, React 19, TypeScript strict, Tailwind CSS v4, shadcn/ui (zinc), TanStack Router and TanStack Query, Geist font.
+
+## Where the data seam is
+
+Screens never touch the network directly. Everything goes through `src/api/`:
+
+| File | Role |
+|---|---|
+| `src/api/types.ts` | Re-exports the generated types (Task, FeedItem, Thread, Agent and so on) from `@flockr/client` |
+| `src/api/hooks.ts` | The only place that talks to the API: the generated TanStack Query options and mutations wrapped as `useTasks`, `useClaimTask` and so on, plus `useBoardSync`, which listens on `/ws` and refreshes the cache on every board event, resuming after a drop |
+| `src/api/session.ts` | The acting member (`simon`) and the low-lease threshold |
+| `src/api/agents.ts` | Machines and the agent mutations (create, update, start, stop, delete); agent status arrives live as an `agents` frame, which refreshes the cache |
+| `src/api/activity-live.ts` | Patches a cached thread from `activity.updated` events with the shared reducer (`applyActivityUpdates`), so streaming output never refetches; it refetches when a revision was missed. The Zod schemas it decodes with load in their own chunk |
+
+Agent activity (ADR 0015, `docs/guides/GUIDE_AGENT_ACTIVITY.md`) lives in `src/components/agent/`, built from shadcn AI Elements patterns copied in and made monochrome:
+
+| File | Pattern | Shows |
+|---|---|---|
+| `work-block.tsx` | Chain of Thought, Task | A run as one collapsed block: status by shape, current step with shimmer, time, counts; the plan stays visible while it runs |
+| `parts.tsx` | Tool, Terminal, Reasoning, Plan, Queue, File Tree, Test Results, Subagent, Stack Trace | One Trace line per part, expand for input, output, diff, failures or frames |
+| `diff-view.tsx` | Code Block | A unified diff with + and − lines, no colour |
+| `markdown.tsx` | (none in the library) | Message and reply text as markdown with code blocks and tables; @names and #tasks stay links |
+| `question-prompt.tsx` | Confirmation, Questionnaire | Permission cards with the exact action; three or more options as a list, still one tap |
+| `working-line.tsx` | Task, shimmer | "claude is working on ..." and Stop |
+| `chat-scroll.tsx` | Chat, Message Scroller | The thread and task panels keep your place while entries stream |
+
+The grouping and summary logic is `src/lib/work.ts`, tested with `bun run --cwd apps/web test`.
+
+The generated client lives in `packages/client` and is rebuilt with `bun run generate` from the root. The right panel is driven by search params: `?thread=<id>`, `?task=<id>`, `?agent=<name>`. The agent screens live in `src/components/agents/` (dialog, profile panel, status dot, offline note).
+
+## Routes
+
+| Route | Screen |
+|---|---|
+| `/` | Redirects to `/c/backend` |
+| `/c/$channel` | Messages |
+| `/c/$channel/tasks` | Kanban for one channel |
+| `/tasks` | Kanban for all channels |
+| `/inbox` | Waiting for you |

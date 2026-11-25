@@ -1,0 +1,19 @@
+services:
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: flockr
+      POSTGRES_PASSWORD: flockr
+      POSTGRES_DB: flockr
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - flockr-db:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U flockr -d flockr"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+volumes:
+  flockr-db:

@@ -1,0 +1,660 @@
+<title>Flockr</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono&display=swap">
+<style>
+/* Layout: a quiet three-pane Mac app. Sidebar, conversation, inspector. One accent, used only for what you can act on. */
+:root {
+  --bg: #ffffff; --side: #fafafa; --fill: #f4f4f5; --fill2: #e4e4e7; --sep: #e4e4e7; --sel: #f4f4f5;
+  --l1: #09090b; --l2: #71717a; --l3: #a1a1aa;
+  --accent: #18181b; --on-accent: #fafafa;
+  --green: #18181b; --red: #dc2626; --orange: #52525b; --blue: #71717a; --gray: #a1a1aa;
+  --seg: #ffffff; --shadow: 0 1px 2px rgba(0, 0, 0, .06);
+  --hud: #18181b; --hud-fg: #fafafa;
+  --sans: "Geist", "Inter", -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  --mono: "Geist Mono", "SF Mono", ui-monospace, Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #09090b; --side: #0c0c0e; --fill: #18181b; --fill2: #27272a; --sep: #27272a; --sel: #18181b;
+  --l1: #fafafa; --l2: #a1a1aa; --l3: #71717a; --accent: #fafafa; --on-accent: #18181b;
+  --green: #fafafa; --red: #f87171; --orange: #a1a1aa; --blue: #a1a1aa; --gray: #71717a;
+  --seg: #27272a; --shadow: none; --hud: #fafafa; --hud-fg: #18181b; color-scheme: dark;
+} }
+:root[data-theme="dark"] {
+  --bg: #09090b; --side: #0c0c0e; --fill: #18181b; --fill2: #27272a; --sep: #27272a; --sel: #18181b;
+  --l1: #fafafa; --l2: #a1a1aa; --l3: #71717a; --accent: #fafafa; --on-accent: #18181b;
+  --green: #fafafa; --red: #f87171; --orange: #a1a1aa; --blue: #a1a1aa; --gray: #71717a;
+  --seg: #27272a; --shadow: none; --hud: #fafafa; --hud-fg: #18181b; color-scheme: dark;
+}
+[hidden] { display: none !important; }
+html, body { height: 100%; }
+body { background: var(--bg); color: var(--l1); font: 14px/1.45 var(--sans); letter-spacing: -.003em; -webkit-font-smoothing: antialiased; overflow: hidden; }
+* { box-sizing: border-box; }
+button { font: inherit; color: inherit; cursor: pointer; background: none; border: 0; padding: 0; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 6px; }
+svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.4; stroke-linecap: round; stroke-linejoin: round; flex: none; }
+.app { display: grid; grid-template-columns: 232px minmax(0, 1fr) auto; height: 100%; }
+
+/* Sidebar */
+.side { background: var(--side); border-right: 1px solid var(--sep); display: flex; flex-direction: column; min-height: 0; padding-left: env(safe-area-inset-left, 0px); }
+.ws { display: flex; align-items: center; justify-content: space-between; height: 52px; padding: 0 10px 0 18px; }
+.ws .name { font-weight: 600; font-size: 15px; }
+.iconbtn { width: 28px; height: 28px; display: grid; place-items: center; border-radius: 7px; color: var(--l2); }
+.iconbtn:hover { background: var(--fill2); color: var(--l1); }
+.side nav { overflow-y: auto; padding: 2px 10px 16px; display: grid; gap: 16px; align-content: start; }
+.gh { font-size: 11px; font-weight: 600; color: var(--l3); padding: 0 8px 4px; }
+.row { display: flex; align-items: center; gap: 9px; width: 100%; height: 28px; padding: 0 8px; border-radius: 6px; text-align: left; font-size: 13.5px; }
+.row:hover { background: var(--fill2); }
+.row.on { background: var(--sel); }
+.row .ic { color: var(--accent); display: grid; place-items: center; width: 18px; }
+.row .hash { color: var(--l3); width: 18px; text-align: center; font-weight: 500; }
+.row .name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.row.unread .name { font-weight: 600; }
+.row .meta { font-size: 12px; color: var(--l3); font-variant-numeric: tabular-nums; }
+.badge { min-width: 18px; height: 18px; padding: 0 6px; border-radius: 9px; background: var(--accent); color: var(--on-accent); font-size: 11px; font-weight: 600; display: grid; place-items: center; font-variant-numeric: tabular-nums; }
+.avw { position: relative; display: inline-grid; }
+.pdot { position: absolute; right: -3px; bottom: -3px; width: 6px; height: 6px; border-radius: 50%; border: 2px solid var(--side); box-sizing: content-box; }
+.pdot.working { background: var(--l1); } .pdot.blocked { background: var(--red); } .pdot.idle { background: var(--l3); }
+
+/* Avatars */
+.av { width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; font-size: 12px; font-weight: 600; flex: none;
+  background: var(--fill2); color: var(--l1); }
+.av.sq { border-radius: 8px; }
+.av.xs { width: 18px; height: 18px; font-size: 10px; }
+.av.xs.sq { border-radius: 5px; }
+.av.lg { width: 44px; height: 44px; font-size: 17px; }
+.av.lg.sq { border-radius: 11px; }
+
+/* Main */
+.main { display: flex; flex-direction: column; min-width: 0; min-height: 0; }
+.top { display: flex; align-items: center; gap: 12px; height: 52px; padding: 0 max(16px, env(safe-area-inset-right, 0px)) 0 24px; border-bottom: 1px solid var(--sep); flex: none; }
+.top .menu { display: none; }
+.ttl { flex: 1; min-width: 0; display: flex; align-items: baseline; gap: 10px; }
+.ttl .h { font-size: 15px; font-weight: 600; white-space: nowrap; }
+.ttl .h .hash { color: var(--l3); margin-right: 2px; font-weight: 500; }
+.ttl .topic { color: var(--l2); font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.seg { display: inline-flex; background: var(--fill); border-radius: 8px; padding: 2px; flex: none; }
+.seg button { padding: 3px 12px; border-radius: 6px; font-size: 13px; font-weight: 500; color: var(--l2); }
+.seg button.on { background: var(--seg); color: var(--l1); box-shadow: var(--shadow); }
+.seg .n { color: var(--l3); margin-left: 4px; font-variant-numeric: tabular-nums; }
+.body { flex: 1; overflow-y: auto; min-height: 0; }
+
+/* Conversation */
+.feed { padding: 12px max(16px, env(safe-area-inset-right, 0px)) 8px 24px; max-width: 880px; }
+.day { text-align: center; color: var(--l3); font-size: 12px; font-weight: 600; margin: 8px 0 10px; }
+.msg { display: grid; grid-template-columns: 30px minmax(0, 1fr); gap: 12px; padding: 7px 0; }
+.mbody { min-width: 0; }
+.meta { display: flex; align-items: baseline; gap: 7px; flex-wrap: wrap; }
+.who { font-weight: 600; font-size: 13.5px; }
+.sub { color: var(--l2); font-size: 12.5px; }
+.time { color: var(--l3); font-size: 12px; font-variant-numeric: tabular-nums; }
+.text { margin: 2px 0 0; overflow-wrap: anywhere; }
+.text code, .kvr code { font: 12.5px var(--mono); background: var(--fill); border-radius: 4px; padding: 1px 4px; }
+.mention { color: var(--l1); font-weight: 500; background: var(--fill); border-radius: 4px; padding: 0 3px; }
+.tlink { color: var(--l1); text-decoration: underline; text-decoration-color: var(--fill2); text-underline-offset: 3px; font-variant-numeric: tabular-nums; }
+.tlink:hover { text-decoration: underline; }
+.event { text-align: center; color: var(--l2); font-size: 12.5px; padding: 8px 0; }
+.event b { color: var(--l1); font-weight: 500; }
+
+/* Lists: inset grouped rows */
+.list { margin-top: 6px; background: var(--fill); border-radius: 10px; overflow: hidden; max-width: 640px; }
+.trow, .kvr { position: relative; display: flex; align-items: center; gap: 10px; width: 100%; padding: 9px 12px; text-align: left; }
+.trow:hover { background: var(--fill2); }
+.trow + .trow::before, .kvr + .kvr::before { content: ""; position: absolute; top: 0; left: 34px; right: 0; height: 1px; background: var(--sep); }
+.kvr + .kvr::before { left: 12px; }
+.sd { width: 12px; height: 12px; border-radius: 50%; border: 1.5px solid var(--gray); flex: none; }
+.sd.waiting { border-color: var(--l3); border-style: dashed; }
+.sd.ready { border-color: var(--l1); }
+.sd.claimed { border-color: var(--l1); background: conic-gradient(var(--l1) 0 50%, transparent 0); }
+.sd.blocked { border-color: var(--red); background: var(--red); }
+.sd.review { border-color: var(--l1); background: var(--bg); box-shadow: inset 0 0 0 2px var(--bg), inset 0 0 0 6px var(--l1); }
+.sd.done { border-color: var(--gray); background: var(--gray); }
+.tid { font: 12px var(--mono); color: var(--l3); min-width: 26px; }
+.tt { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13.5px; }
+.chn { color: var(--l3); font-size: 12.5px; }
+.st { color: var(--l2); font-size: 12.5px; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.st.low { color: var(--red); }
+.st.you { color: var(--accent); font-weight: 500; }
+.rc { display: inline-flex; align-items: center; gap: 3px; color: var(--l3); font-size: 12px; }
+.rc svg { width: 13px; height: 13px; }
+
+/* Question and review cards */
+.ask { margin-top: 6px; background: var(--fill); border-radius: 12px; padding: 13px 14px 12px; max-width: 640px; }
+.ask .q { font-weight: 600; }
+.ask .d { color: var(--l2); font-size: 13px; margin: 3px 0 12px; }
+.btns { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.pbtn, .sbtn, .dbtn { border-radius: 7px; padding: 5px 14px; font-size: 13px; font-weight: 500; }
+.pbtn { background: var(--accent); color: var(--on-accent); }
+.pbtn:hover { filter: brightness(1.08); }
+.sbtn, .dbtn { background: var(--fill2); }
+.ask .sbtn, .ask .dbtn { background: var(--bg); }
+.sbtn:hover, .dbtn:hover { filter: brightness(.97); }
+.dbtn { color: var(--red); }
+.lbtn { color: var(--accent); font-size: 13px; padding: 5px 4px; }
+.hint { color: var(--l2); font-size: 13px; }
+
+/* Threads */
+.thr { display: inline-flex; align-items: center; gap: 8px; margin: 4px 0 0 -6px; padding: 3px 10px 3px 6px; border-radius: 8px; font-size: 12.5px; color: var(--l2); border: 1px solid transparent; }
+.thr:hover { background: var(--fill); border-color: var(--sep); }
+.thr b { color: var(--l1); font-weight: 600; }
+.thr .stack { display: inline-flex; }
+.thr .stack .av + .av { margin-left: -5px; box-shadow: 0 0 0 2px var(--bg); }
+.thr .stack .av { box-shadow: 0 0 0 2px var(--bg); }
+.thr.add { opacity: 0; color: var(--l3); }
+.thr.add svg { width: 13px; height: 13px; }
+.msg:hover .thr.add, .thr.add:focus-visible { opacity: 1; }
+.msg:hover { background: var(--side); }
+.thread .msg:hover { background: none; }
+
+/* Composer */
+.composer { padding: 6px max(16px, env(safe-area-inset-right, 0px)) calc(14px + env(safe-area-inset-bottom, 0px)) 24px; max-width: 904px; flex: none; }
+.field { display: flex; align-items: flex-end; gap: 8px; background: var(--fill); border-radius: 10px; padding: 5px 5px 5px 14px; border: 1px solid var(--sep); background: var(--bg); }
+.field textarea { flex: 1; border: 0; outline: 0; resize: none; background: none; color: var(--l1); font: inherit; min-height: 26px; max-height: 140px; padding: 3px 0; }
+.field textarea::placeholder { color: var(--l3); }
+.send { width: 26px; height: 26px; border-radius: 50%; background: var(--accent); color: #fff; display: grid; place-items: center; }
+.send svg { width: 14px; height: 14px; stroke-width: 2; }
+.field:has(textarea:placeholder-shown) .send { background: var(--fill2); color: var(--l3); }
+.presence { display: flex; gap: 16px; flex-wrap: wrap; min-height: 20px; padding: 6px 6px 0; }
+.pres { display: inline-flex; align-items: center; gap: 6px; color: var(--l2); font-size: 12.5px; }
+.pres b { color: var(--l1); font-weight: 500; }
+.pres .low { color: var(--red); }
+.pulse { width: 6px; height: 6px; border-radius: 50%; background: var(--l1); animation: pulse 1.8s ease-in-out infinite; }
+@keyframes pulse { 50% { opacity: .3; } }
+
+/* Tasks and inbox */
+.cols { display: grid; grid-template-columns: repeat(6, minmax(176px, 1fr)); gap: 12px; padding: 16px max(16px, env(safe-area-inset-right, 0px)) 16px 24px; overflow-x: auto; align-items: stretch; min-height: 100%; }
+.lane { background: var(--side); border: 1px solid var(--sep); border-radius: 10px; padding: 10px 8px; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.colh { display: flex; align-items: center; gap: 8px; font-size: 12.5px; font-weight: 500; padding: 0 4px; color: var(--l2); }
+.colh .c { color: var(--l3); font-weight: 400; margin-left: auto; font-variant-numeric: tabular-nums; }
+.cards { display: grid; gap: 8px; align-content: start; }
+.card { display: grid; gap: 8px; text-align: left; width: 100%; background: var(--bg); border: 1px solid var(--sep); border-radius: 8px; padding: 10px 11px; box-shadow: var(--shadow); }
+.card:hover { border-color: var(--l3); }
+.card .ch { display: flex; align-items: center; gap: 8px; }
+.card .ch .rc { margin-left: auto; }
+.card .ct { font-size: 13.5px; font-weight: 500; line-height: 1.35; text-wrap: pretty; }
+.card .cf { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-width: 0; }
+.card .cw { display: inline-flex; align-items: center; gap: 6px; color: var(--l2); font-size: 12.5px; min-width: 0; }
+.card .cw.none { color: var(--l3); }
+.card .st { font-size: 12px; }
+.none { color: var(--l3); font-size: 13px; padding: 8px 4px; }
+.inbox { padding: 12px max(16px, env(safe-area-inset-right, 0px)) 24px 24px; max-width: 720px; }
+.sh { font-size: 13px; font-weight: 600; color: var(--l2); margin: 18px 0 4px; }
+
+/* Inspector */
+.thread { width: 380px; border-left: 1px solid var(--sep); background: var(--bg); display: flex; flex-direction: column; min-height: 0; padding-right: env(safe-area-inset-right, 0px); }
+.thead { display: flex; align-items: center; gap: 8px; height: 52px; padding: 0 10px 0 20px; border-bottom: 1px solid var(--sep); flex: none; }
+.thead .grow { flex: 1; }
+.tbody { flex: 1; overflow-y: auto; min-height: 0; }
+.insp { padding: 18px 20px 6px; display: grid; gap: 12px; }
+.insp h2 { margin: 0; font-size: 18px; font-weight: 600; line-height: 1.3; text-wrap: balance; letter-spacing: -.01em; }
+.stline { display: flex; align-items: center; gap: 7px; color: var(--l2); font-size: 13px; flex-wrap: wrap; }
+.stline .low { color: var(--red); }
+.kv { margin-top: 0; }
+.kvr { justify-content: space-between; font-size: 13px; }
+.kvr > span:first-child { color: var(--l2); flex: none; }
+.kvr > span:last-child { text-align: right; min-width: 0; overflow-wrap: anywhere; display: inline-flex; gap: 6px; align-items: center; justify-content: flex-end; flex-wrap: wrap; }
+.mono { font: 12.5px var(--mono); }
+.field-in { flex: 1; min-width: 0; background: var(--fill); border: 0; border-radius: 7px; padding: 5px 10px; font: inherit; font-size: 13px; color: var(--l1); }
+.blockform { display: flex; gap: 8px; }
+.thread .sh { padding: 0 20px; }
+.thread .feed { padding: 0 20px 8px; }
+.thread .composer { padding: 6px 16px calc(14px + env(safe-area-inset-bottom, 0px)); }
+.phead { display: flex; gap: 12px; align-items: center; }
+
+/* Spotlight and HUD */
+.scrim { position: fixed; inset: 0; background: rgba(0, 0, 0, .16); display: grid; place-items: start center; padding: 14vh max(16px, env(safe-area-inset-right, 0px)) 16px max(16px, env(safe-area-inset-left, 0px)); z-index: 30; }
+.pal { width: min(600px, 100%); background: color-mix(in srgb, var(--bg) 86%, transparent); -webkit-backdrop-filter: blur(28px) saturate(1.6); backdrop-filter: blur(28px) saturate(1.6); border-radius: 14px; box-shadow: 0 24px 70px rgba(0, 0, 0, .3), 0 0 0 .5px var(--sep); overflow: hidden; }
+.pin { display: flex; align-items: center; gap: 10px; padding: 12px 16px; border-bottom: 1px solid var(--sep); color: var(--l2); }
+.pin svg { width: 18px; height: 18px; }
+.pin input { flex: 1; border: 0; outline: 0; background: none; font: inherit; font-size: 18px; color: var(--l1); }
+.pin input::placeholder { color: var(--l3); }
+.pal ul { list-style: none; margin: 0; padding: 6px; max-height: 50vh; overflow-y: auto; }
+.pal li button { width: 100%; display: flex; align-items: center; gap: 10px; padding: 7px 10px; border-radius: 8px; text-align: left; }
+.pal li button:hover { background: var(--fill2); }
+.pal li button.sel { background: var(--accent); color: #fff; }
+.pal .pt { margin-left: auto; color: var(--l3); font-size: 12px; }
+.pal li button.sel .pt, .pal li button.sel .tid { color: rgba(255, 255, 255, .75); }
+.toast { position: fixed; bottom: calc(24px + env(safe-area-inset-bottom, 0px)); left: 50%; transform: translateX(-50%); background: var(--hud); color: var(--hud-fg); padding: 8px 16px; border-radius: 10px; font-size: 13px; font-weight: 500; z-index: 40; box-shadow: 0 8px 24px rgba(0, 0, 0, .2); max-width: calc(100% - 32px); }
+
+@media (max-width: 1100px) { .thread { position: fixed; top: 0; right: 0; bottom: 0; width: min(380px, 100%); z-index: 20; box-shadow: -12px 0 40px rgba(0, 0, 0, .18); padding-top: env(safe-area-inset-top, 0px); } }
+@media (max-width: 760px) {
+  .app { grid-template-columns: minmax(0, 1fr); }
+  .side { position: fixed; inset: 0 auto 0 0; width: 272px; z-index: 25; transform: translateX(-100%); transition: transform .22s ease; padding-top: env(safe-area-inset-top, 0px); }
+  .side.open { transform: none; box-shadow: 12px 0 40px rgba(0, 0, 0, .25); }
+  .top { padding-left: max(10px, env(safe-area-inset-left, 0px)); gap: 8px; }
+  .top .menu { display: grid; }
+  .ttl .topic { display: none; }
+  .feed, .composer, .cols, .inbox { padding-left: max(16px, env(safe-area-inset-left, 0px)); }
+  .thread { width: 100%; }
+}
+@media (prefers-reduced-motion: reduce) { .pulse { animation: none; } .side { transition: none; } }
+</style>
+
+<div class="app">
+  <aside class="side" id="side" aria-label="Workspace"></aside>
+  <main class="main">
+    <header class="top" id="top"></header>
+    <div class="body" id="body"></div>
+    <footer class="composer" id="composer">
+      <div class="field">
+        <textarea id="input" rows="1" aria-label="Message"></textarea>
+        <button class="send" data-act="send" aria-label="Send"><svg viewBox="0 0 16 16"><path d="M8 13V3M4 7l4-4 4 4"/></svg></button>
+      </div>
+      <div class="presence" id="presence"></div>
+    </footer>
+  </main>
+  <section class="thread" id="thread" hidden aria-label="Inspector"></section>
+</div>
+<div class="scrim" id="palette" hidden><div class="pal" role="dialog" aria-label="Search"><div class="pin"><svg viewBox="0 0 16 16"><circle cx="7" cy="7" r="4.5"/><path d="m10.5 10.5 3 3"/></svg><input id="pq" placeholder="Search channels, tasks and agents" autocomplete="off"></div><ul id="pl"></ul></div></div>
+<div class="toast" id="toast" hidden></div>
+
+<script>
+const M = {
+  simon: { name: "simon", color: "#2f67a3", type: "person" },
+  tim: { name: "tim", color: "#7a52a8", type: "person" },
+  claude: { name: "claude", color: "#c2643a", type: "agent", owner: "simon", where: "Herdr pane on simon's Mac" },
+  codex: { name: "codex", color: "#2f6f68", type: "agent", owner: "simon", where: "Cloud container" },
+  gemini: { name: "gemini", color: "#4b74c9", type: "agent", owner: "tim", where: "Terminal on tim's laptop" },
+  dana: { name: "dana", color: "#59625d", type: "bridge", src: "Slack" },
+  watch: { name: "errors-watch", color: "#7b847f", type: "watcher" },
+};
+const CH = [
+  { id: "backend", topic: "Users table, migration and API" },
+  { id: "platform", topic: "Cold starts, test bots, end-to-end tests" },
+  { id: "reviews", topic: "Review threads for finished work" },
+  { id: "errors", topic: "API errors from prod, posted by errors-watch" },
+];
+const STATES = ["waiting", "ready", "claimed", "blocked", "review", "done"];
+const LABEL = { waiting: "Waiting", ready: "Ready", claimed: "Claimed", blocked: "Blocked", review: "Review", done: "Done" };
+const min = 60000, T0 = Date.now();
+const T = {
+  806: { title: "Design the users table", ch: "backend", kind: "schema", state: "ready", needs: [], assignee: null, spec: "SPEC_USERS.md" },
+  808: { title: "Run the users migration on prod", ch: "backend", kind: "prod-change", state: "waiting", needs: [806], assignee: "claude", spec: "SPEC_USERS.md" },
+  812: { title: "Build the /users API", ch: "backend", kind: "build", state: "waiting", needs: [808], assignee: "claude", spec: "SPEC_USERS.md" },
+  298: { title: "Upgrade to the paid email plan", ch: "backend", kind: "outside", state: "blocked", needs: [], reason: "Waiting on finance to approve the spend" },
+  803: { title: "Fix slow cold starts on the API Worker", ch: "platform", kind: "fix", state: "claimed", needs: [], holder: "claude", lease: T0 + 11 * min },
+  816: { title: "Lazy-load the provider registry", ch: "platform", kind: "fix", state: "review", needs: [], holder: "claude", commit: "a1b2c3d" },
+  818: { title: "Set up the staging Slack bot", ch: "platform", kind: "build", state: "done", needs: [], holder: "codex", commit: "b41e7c2" },
+  820: { title: "Run the end-to-end sign-up test", ch: "platform", kind: "verify", state: "claimed", needs: [818], holder: "codex", lease: T0 + 3 * min },
+  822: { title: "Write the README", ch: "platform", kind: "docs", state: "waiting", needs: [803], assignee: "gemini" },
+  824: { title: "Delete the paused ad campaign 'Spring test'", ch: "platform", kind: "spend", state: "claimed", needs: [], holder: "codex", lease: T0 + 9 * min, ask: { q: "Delete the paused ad campaign 'Spring test'?", d: "Paused since 14 Nov, $0 spent this month. Deleting can't be undone.", yes: "Delete it", no: "Keep it" } },
+};
+const MSG = {
+  backend: [
+    { who: "simon", t: "09:58", text: "Plan for users is in. Table first, then the migration, then the API. @claude takes the last two.", th: "m3" },
+    { kind: "task", task: 806, who: "simon", t: "09:59" },
+    { kind: "task", task: 808, who: "simon", t: "09:59" },
+    { kind: "task", task: 812, who: "simon", t: "09:59" },
+    { who: "claude", t: "10:40", text: "Checked the chain: #812 waits on #808, which waits on the table design in #806. Nothing for me to start yet." },
+    { who: "dana", t: "11:15", text: "Can sign-up accept Google accounts too? Asking for the beta group.", th: "m1" },
+    { kind: "task", task: 298, who: "simon", t: "11:18" },
+  ],
+  platform: [
+    { kind: "event", who: "claude", t: "10:12", text: "claimed #803" },
+    { who: "codex", t: "10:20", text: "Staging bot is up on mock data in `staging-bot`. Starting the sign-up test.", task: 818 },
+    { kind: "event", who: "codex", t: "10:21", text: "claimed #820" },
+    { who: "claude", t: "10:58", text: "Cold start drops from 412 ms to 160 ms with the registry lazy-loaded. Ready for review.", task: 816 },
+    { kind: "ask", task: 824, who: "codex", t: "11:09" },
+  ],
+  reviews: [
+    { who: "claude", t: "10:59", text: "Review thread for #816. The diff touches `src/providers/registry.ts` only.", task: 816 },
+  ],
+  errors: [
+    { who: "watch", t: "08:02", text: "500 on `GET /users` 3 times in 5 minutes. First seen 07:58.", th: "m2" },
+    { who: "watch", t: "09:40", text: "Resolved: no 500s on `GET /users` for 90 minutes." },
+  ],
+};
+const R = {
+  m1: [{ who: "claude", t: "11:16", text: "Yes. It is one more entry in the provider registry. Not in the first release though." }, { who: "tim", t: "11:19", text: "Agree, beta can use email for now." }, { who: "simon", t: "11:20", text: "Make it a task after #812." }],
+  m2: [{ who: "claude", t: "08:05", text: "Looking. Probably the null email on the new column." }, { who: "claude", t: "09:38", text: "Fixed in `c0ffee1`. No 500s since." }],
+  m3: [{ who: "tim", t: "10:02", text: "Should the migration be reversible?" }, { who: "simon", t: "10:03", text: "Yes, add a down step." }],
+  806: [], 808: [], 812: [{ who: "claude", t: "10:40", text: "Starts when #808 completes. Spec read." }],
+  298: [{ who: "simon", t: "11:18", text: "Asked finance. Only needed past 1,000 emails a day." }],
+  803: [{ who: "claude", t: "10:30", text: "Profiling startup. The provider registry imports every provider at load." }],
+  816: [{ who: "claude", t: "10:58", text: "Done in `a1b2c3d`, `pnpm check` green. Cold start 412 ms to 160 ms." }, { who: "tim", t: "11:04", text: "Looks right to me. @simon your call." }],
+  818: [{ who: "codex", t: "10:20", text: "Done in `b41e7c2`." }],
+  820: [{ who: "codex", t: "10:21", text: "Running the sign-up test against staging. 6 of 10 steps so far." }],
+  822: [], 824: [{ who: "codex", t: "11:09", text: "Asked simon before deleting." }],
+};
+let thN = 10;
+Object.values(MSG).flat().forEach((m) => { if (!m.kind && !m.task && !m.th) m.th = "m" + (thN++); if (m.th && !R[m.th]) R[m.th] = []; });
+const S = { ch: "backend", view: "messages", panel: null, scope: "channel", unread: { reviews: 1, errors: 0, platform: 0, backend: 0 }, blocking: false, clock: 11 * 60 + 21 };
+
+const $ = (s) => document.querySelector(s);
+const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const now = () => { const m = S.clock++; return String(Math.floor(m / 60)).padStart(2, "0") + ":" + String(m % 60).padStart(2, "0"); };
+const rich = (s) => esc(s)
+  .replace(/`([^`]+)`/g, "<code>$1</code>")
+  .replace(/@(simon|tim|claude|codex|gemini)\b/g, '<span class="mention">@$1</span>')
+  .replace(/#(\d{3})\b/g, (m, id) => T[id] ? `<button class="tlink" data-act="open" data-id="${id}">#${id}</button>` : m);
+const I = {
+  inbox: '<svg viewBox="0 0 16 16"><path d="M2 9.5V12a1.5 1.5 0 0 0 1.5 1.5h9A1.5 1.5 0 0 0 14 12V9.5M2 9.5l1.6-5.9a1.5 1.5 0 0 1 1.4-1.1h6a1.5 1.5 0 0 1 1.4 1.1L14 9.5M2 9.5h3.2l.8 1.5h4l.8-1.5H14"/></svg>',
+  list: '<svg viewBox="0 0 16 16"><path d="M6 4h8M6 8h8M6 12h8"/><path d="M2.6 4h.1M2.6 8h.1M2.6 12h.1" stroke-width="2.4"/></svg>',
+  search: '<svg viewBox="0 0 16 16"><circle cx="7" cy="7" r="4.5"/><path d="m10.5 10.5 3 3"/></svg>',
+  close: '<svg viewBox="0 0 16 16"><path d="m4.5 4.5 7 7M11.5 4.5l-7 7"/></svg>',
+  up: '<svg viewBox="0 0 16 16"><path d="M8 13V3M4 7l4-4 4 4"/></svg>',
+  menu: '<svg viewBox="0 0 16 16"><path d="M2.5 4.5h11M2.5 8h11M2.5 11.5h11"/></svg>',
+  chat: '<svg viewBox="0 0 16 16"><path d="M3 3.5h10a1 1 0 0 1 1 1v6a1 1 0 0 1-1 1H7.5L4.5 14v-2.5H3a1 1 0 0 1-1-1v-6a1 1 0 0 1 1-1z"/></svg>',
+};
+const av = (who, size) => { const m = M[who]; return `<span class="av${m.type === "agent" ? " sq" : ""}${size ? " " + size : ""}" style="--c:${m.color}" aria-hidden="true">${esc(m.name[0].toUpperCase())}</span>`; };
+const subOf = (who) => { const m = M[who]; return m.type === "agent" ? `via ${m.owner}` : m.type === "bridge" ? `from ${m.src}` : m.type === "watcher" ? "watcher" : ""; };
+const leaseLeft = (t) => Math.max(0, Math.ceil((t.lease - Date.now()) / min));
+const dot = (s) => `<span class="sd ${s}" aria-hidden="true"></span>`;
+const stateText = (t) => {
+  switch (t.state) {
+    case "waiting": return [`Waits on ${t.needs.map((n) => "#" + n).join(", ")}`, ""];
+    case "ready": return [t.assignee ? `Ready for ${t.assignee}` : "Ready", ""];
+    case "claimed": return t.ask ? ["Asking you", "you"] : [`${t.holder} · ${leaseLeft(t)} min`, leaseLeft(t) <= 3 ? "low" : ""];
+    default: return [LABEL[t.state], ""];
+  }
+};
+const agentStatus = (a) => { const t = Object.entries(T).find(([, t]) => t.holder === a && t.state === "claimed"); if (t) return { s: "working", id: t[0] }; const b = Object.entries(T).find(([, t]) => t.holder === a && t.state === "blocked"); return b ? { s: "blocked", id: b[0] } : { s: "idle" }; };
+const inboxItems = () => Object.entries(T).filter(([, t]) => (t.ask && t.state === "claimed") || t.state === "review");
+
+function toast(text) { const el = $("#toast"); el.textContent = text; el.hidden = false; clearTimeout(toast.h); toast.h = setTimeout(() => (el.hidden = true), 2600); }
+
+function post(ch, m) { m.t = m.t || now(); MSG[ch].push(m); if (ch !== S.ch || S.view !== "messages") S.unread[ch] = (S.unread[ch] || 0) + 1; render(); if (ch === S.ch && S.view === "messages") scrollEnd(); }
+function reply(id, m) { m.t = m.t || now(); R[id].push(m); render(); const b = $("#thread .tbody"); if (b) b.scrollTop = b.scrollHeight; }
+function scrollEnd() { const b = $("#body"); b.scrollTop = b.scrollHeight; }
+
+function setState(id, state, by, note) {
+  const t = T[id]; t.state = state;
+  if (state !== "claimed") { delete t.lease; }
+  if (state !== "blocked") delete t.reason;
+  if (note) reply(id, { kind: "event", who: by, text: note });
+  if (state === "done") {
+    Object.entries(T).forEach(([did, d]) => {
+      if (d.state === "waiting" && d.needs.includes(+id) && d.needs.every((n) => T[n].state === "done")) {
+        d.state = "ready";
+        post(d.ch, { kind: "event", who: "simon", sys: true, text: `#${did} is ready: everything it needs is done` });
+        if (d.assignee && M[d.assignee].type === "agent") setTimeout(() => claim(did, d.assignee), 1400);
+      }
+    });
+  }
+  render();
+}
+function claim(id, who) {
+  const t = T[id]; if (t.state !== "ready") return;
+  t.state = "claimed"; t.holder = who; t.lease = Date.now() + 15 * min;
+  post(t.ch, { kind: "event", who, text: `claimed #${id}` });
+  reply(id, { kind: "event", who, text: "claimed this task, 15 min lease" });
+  if (M[who].type === "agent") work(id, who);
+}
+function work(id, who) {
+  const t = T[id];
+  if (t.kind === "prod-change") {
+    setTimeout(() => {
+      t.ask = { q: "Run the users migration on prod?", d: "Adds the users table and two indexes. About 4 seconds; no existing rows change.", yes: "Run it", no: "Not now" };
+      reply(id, { who, text: "Migration is ready and passed on staging. Asking simon before touching prod." });
+      post(t.ch, { kind: "ask", task: +id, who });
+      toast(`${M[who].name} is waiting for you on #${id}`);
+    }, 2200);
+  } else {
+    setTimeout(() => reply(id, { who, text: "Reading the spec and the nearest existing feature for the pattern." }), 1800);
+    setTimeout(() => {
+      const sha = Math.random().toString(16).slice(2, 9); t.commit = sha;
+      reply(id, { who, text: `Done in \`${sha}\`, \`pnpm check\` green. Ready for review.` });
+      setState(id, "review", who);
+      post(t.ch, { who, text: `Finished #${id}, ready for review.`, task: +id });
+      toast(`#${id} is ready for review`);
+    }, 7000);
+  }
+}
+function answer(id, yes) {
+  const t = T[id], q = t.ask; delete t.ask;
+  reply(id, { who: "simon", text: yes ? `${q.yes}.` : `${q.no}.` });
+  if (yes) { setTimeout(() => { reply(id, { who: t.holder, text: t.kind === "spend" ? "Deleted. Nothing else referenced it." : "Migration ran on prod in 3.8 s." }); setState(id, "done", t.holder, "completed this task"); post(t.ch, { kind: "event", who: t.holder, text: `completed #${id}` }); }, 900); }
+  else { t.state = "blocked"; t.reason = "simon said not now"; delete t.lease; post(t.ch, { kind: "event", who: t.holder, text: `blocked #${id}: simon said not now` }); }
+  render();
+}
+function createFromMention(text, ch) {
+  const m = text.match(/@(claude|codex|gemini)\b/); if (!m) return;
+  const who = m[1]; const id = Math.max(...Object.keys(T).map(Number)) + 2;
+  const title = text.replace(/@(claude|codex|gemini)\b/, "").replace(/\s+/g, " ").trim().replace(/^[,:\s]+/, "") || "Untitled task";
+  T[id] = { title: title.charAt(0).toUpperCase() + title.slice(1), ch, kind: "build", state: "ready", needs: [], assignee: who };
+  R[id] = [{ who: "simon", t: now(), text }];
+  setTimeout(() => { post(ch, { kind: "task", task: id, who: "simon" }); setTimeout(() => claim(id, who), 1000); }, 300);
+}
+
+/* Rendering */
+function renderSide() {
+  const n = inboxItems().length;
+  const row = (act, id, on, inner) => `<button class="row${on ? " on" : ""}" data-act="${act}"${id ? ` data-id="${id}"` : ""}>${inner}</button>`;
+  const agents = ["claude", "codex", "gemini"].map((a) => { const st = agentStatus(a);
+    return row("agent", a, S.panel === "agent:" + a, `<span class="avw">${av(a, "xs")}<span class="pdot ${st.s}"></span></span><span class="name">${a}</span><span class="meta">${st.s === "working" ? "#" + st.id : ""}</span>`); }).join("");
+  $("#side").innerHTML = `
+    <div class="ws"><span class="name">acme</span><button class="iconbtn" data-act="palette" aria-label="Search (⌘K)" title="Search  ⌘K">${I.search}</button></div>
+    <nav>
+      <div>
+        ${row("inbox", "", S.view === "inbox", `<span class="ic">${I.inbox}</span><span class="name">Waiting for you</span>${n ? `<span class="badge">${n}</span>` : ""}`)}
+        ${row("alltasks", "", S.view === "tasks" && S.scope === "all", `<span class="ic">${I.list}</span><span class="name">All tasks</span>`)}
+      </div>
+      <div><div class="gh">Channels</div>${CH.map((c) => { const u = S.unread[c.id] || 0; const on = S.ch === c.id && (S.view === "messages" || (S.view === "tasks" && S.scope === "channel"));
+        return `<button class="row${on ? " on" : ""}${u ? " unread" : ""}" data-act="channel" data-id="${c.id}"><span class="hash">#</span><span class="name">${c.id}</span>${u ? `<span class="meta">${u}</span>` : ""}</button>`; }).join("")}</div>
+      <div><div class="gh">Agents</div>${agents}</div>
+      <div><div class="gh">People</div>
+        ${row("noop", "", false, `${av("simon", "xs")}<span class="name">simon</span><span class="meta">you</span>`)}
+        ${row("noop", "", false, `${av("tim", "xs")}<span class="name">tim</span>`)}
+      </div>
+    </nav>`;
+}
+function renderTop() {
+  let h, topic = "", seg = "";
+  if (S.view === "inbox") { h = "Waiting for you"; topic = "Questions from agents and work to review"; }
+  else if (S.view === "tasks" && S.scope === "all") { h = "All tasks"; topic = "Every channel"; }
+  else { const c = CH.find((c) => c.id === S.ch); h = `<span class="hash">#</span>${c.id}`; topic = c.topic;
+    const open = Object.values(T).filter((t) => t.ch === c.id && t.state !== "done").length;
+    seg = `<div class="seg" role="tablist"><button class="${S.view === "messages" ? "on" : ""}" data-act="view" data-id="messages" role="tab">Messages</button><button class="${S.view === "tasks" ? "on" : ""}" data-act="view" data-id="tasks" role="tab">Tasks<span class="n">${open}</span></button></div>`; }
+  $("#top").innerHTML = `<button class="iconbtn menu" data-act="menu" aria-label="Show sidebar">${I.menu}</button><div class="ttl"><span class="h">${h}</span><span class="topic">${esc(topic)}</span></div>${seg}`;
+}
+function taskRow(id, showCh) {
+  const t = T[id], [st, cls] = stateText(t), r = (R[id] || []).length;
+  return `<button class="trow" data-act="open" data-id="${id}">${dot(t.state)}<span class="tid">${id}</span><span class="tt">${esc(t.title)}${showCh ? ` <span class="chn">#${t.ch}</span>` : ""}</span><span class="st ${cls}">${esc(st)}</span>${r ? `<span class="rc">${I.chat}${r}</span>` : ""}</button>`;
+}
+function askCard(id) {
+  const t = T[id];
+  if (!t.ask) return `<div class="list">${taskRow(id)}</div>`;
+  return `<div class="ask"><div class="q">${esc(t.ask.q)}</div><div class="d">${esc(t.ask.d)}</div>
+    <div class="btns"><button class="pbtn" data-act="yes" data-id="${id}">${esc(t.ask.yes)}</button><button class="sbtn" data-act="no" data-id="${id}">${esc(t.ask.no)}</button><button class="lbtn" data-act="open" data-id="${id}">Details</button></div></div>`;
+}
+function blocks(list) {
+  const out = []; let g = null;
+  list.forEach((m) => {
+    if (m.kind === "event") { out.push({ ev: m }); g = null; return; }
+    if (!g || g.who !== m.who) { g = { who: m.who, t: m.t, items: [] }; out.push(g); }
+    g.items.push(m);
+  });
+  return out;
+}
+function threadFooter(th) {
+  const rs = R[th] || [];
+  if (!rs.length) return `<button class="thr add" data-act="thread" data-id="${th}">${I.chat}Reply in thread</button>`;
+  const who = [...new Set(rs.map((x) => x.who).filter((w) => M[w]))].slice(0, 3);
+  return `<button class="thr" data-act="thread" data-id="${th}"><span class="stack">${who.map((w) => av(w, "xs")).join("")}</span><b>${rs.length} ${rs.length === 1 ? "reply" : "replies"}</b><span class="time">Last reply ${rs[rs.length - 1].t}</span></button>`;
+}
+function findRoot(th) { for (const [ch, list] of Object.entries(MSG)) { const m = list.find((x) => x.th === th); if (m) return { m, ch }; } }
+function groupHtml(g, inThread) {
+  let html = "", run = [];
+  const flush = () => { if (run.length) { html += `<div class="list">${run.map((id) => taskRow(id)).join("")}</div>`; run = []; } };
+  g.items.forEach((m) => {
+    if (m.kind === "task") { run.push(m.task); return; }
+    flush();
+    if (m.kind === "ask") html += askCard(m.task);
+    else { html += `<p class="text">${rich(m.text)}</p>`; if (m.task && !inThread) html += `<div class="list">${taskRow(m.task)}</div>`; if (m.th && !inThread) html += threadFooter(m.th); }
+  });
+  flush();
+  const sub = subOf(g.who);
+  return `<div class="msg">${av(g.who)}<div class="mbody"><div class="meta"><span class="who">${esc(M[g.who].name)}</span>${sub ? `<span class="sub">${sub}</span>` : ""}<span class="time">${g.t}</span></div>${html}</div></div>`;
+}
+const evHtml = (m) => `<div class="event">${m.sys ? "" : `<b>${esc(M[m.who].name)}</b> `}${rich(m.text)} <span class="time">· ${m.t}</span></div>`;
+const feedHtml = (list, inThread) => blocks(list).map((b) => (b.ev ? evHtml(b.ev) : groupHtml(b, inThread))).join("");
+function renderMessages() { $("#body").innerHTML = `<div class="feed"><div class="day">Today</div>${feedHtml(MSG[S.ch])}</div>`; }
+function card(id, showCh) {
+  const t = T[id], [st, cls] = stateText(t), r = (R[id] || []).length, who = t.holder || t.assignee;
+  return `<button class="card" data-act="open" data-id="${id}"><div class="ch"><span class="tid">${id}</span>${showCh ? `<span class="chn">#${t.ch}</span>` : ""}${r ? `<span class="rc">${I.chat}${r}</span>` : ""}</div><div class="ct">${esc(t.title)}</div><div class="cf">${who ? `<span class="cw">${av(who, "xs")}<span>${esc(who)}</span></span>` : `<span class="cw none">Unassigned</span>`}<span class="st ${cls}">${esc(st)}</span></div></button>`;
+}
+function renderTasks() {
+  const list = Object.entries(T).filter(([, t]) => S.scope === "all" || t.ch === S.ch);
+  $("#body").innerHTML = `<div class="cols">${STATES.map((s) => { const items = list.filter(([, t]) => t.state === s);
+    return `<section class="lane"><div class="colh">${dot(s)}<span>${LABEL[s]}</span><span class="c">${items.length}</span></div><div class="cards">${items.map(([id]) => card(id, S.scope === "all")).join("")}</div></section>`; }).join("")}</div>`;
+}
+function renderInbox() {
+  const items = inboxItems(), asks = items.filter(([, t]) => t.ask), reviews = items.filter(([, t]) => t.state === "review");
+  const who = (t) => `<div class="meta"><span class="who">${t.holder}</span><span class="sub">#${t.ch}</span></div>`;
+  $("#body").innerHTML = `<div class="inbox">
+    <div class="sh">Questions</div>${asks.length ? asks.map(([id, t]) => `<div class="msg">${av(t.holder)}<div class="mbody">${who(t)}${askCard(id)}</div></div>`).join("") : '<div class="none">No questions right now.</div>'}
+    <div class="sh">To review</div>${reviews.length ? reviews.map(([id, t]) => `<div class="msg">${av(t.holder)}<div class="mbody">${who(t)}<div class="ask"><div class="q">${esc(t.title)}</div><div class="d">#${id}${t.commit ? " · " + t.commit : ""}</div><div class="btns"><button class="pbtn" data-act="approve" data-id="${id}">Approve</button><button class="sbtn" data-act="changes" data-id="${id}">Ask for changes</button><button class="lbtn" data-act="open" data-id="${id}">Details</button></div></div></div></div>`).join("") : '<div class="none">Nothing to review.</div>'}
+  </div>`;
+}
+function actionsFor(id) {
+  const t = T[id], b = (act, label, cls) => `<button class="${cls}" data-act="${act}" data-id="${id}">${label}</button>`;
+  if (S.blocking === id) return `<form class="blockform" data-id="${id}" style="width:100%"><input id="reason" class="field-in" placeholder="Why is it blocked?" aria-label="Reason"><button class="dbtn" type="submit">Block</button></form>`;
+  switch (t.state) {
+    case "ready": return b("claimme", "Claim", "pbtn") + (t.assignee ? "" : b("give", "Give to claude", "sbtn")) + b("block", "Block", "dbtn");
+    case "claimed": return (t.ask ? "" : b("done", "Mark done", "pbtn")) + b("release", "Release", "sbtn") + b("block", "Block", "dbtn");
+    case "blocked": return b("unblock", "Unblock", "pbtn");
+    case "review": return b("approve", "Approve", "pbtn") + b("changes", "Ask for changes", "sbtn");
+    case "waiting": return `<span class="hint">Starts by itself when ${t.needs.map((n) => "#" + n).join(", ")} ${t.needs.length > 1 ? "are" : "is"} done.</span>`;
+    default: return `<span class="hint">Completed${t.commit ? " in " + t.commit : ""}.</span>`;
+  }
+}
+function renderPanel() {
+  const el = $("#thread");
+  if (!S.panel) { el.hidden = true; return; }
+  el.hidden = false;
+  const head = (label) => `<div class="thead">${label}<span class="grow"></span><button class="iconbtn" data-act="close" aria-label="Close">${I.close}</button></div>`;
+  if (S.panel.startsWith("agent:")) {
+    const a = S.panel.slice(6), m = M[a], st = agentStatus(a);
+    const mine = Object.entries(T).filter(([, t]) => t.holder === a || t.assignee === a);
+    el.innerHTML = `${head('<span class="sub">Agent</span>')}<div class="tbody"><div class="insp">
+      <div class="phead">${av(a, "lg")}<div><h2>${a}</h2><div class="stline"><span class="pdot ${st.s}" style="position:static;border:0"></span>${st.s === "working" ? "Working on #" + st.id : st.s === "blocked" ? "Blocked on #" + st.id : "Idle"}</div></div></div>
+      <div class="list kv"><div class="kvr"><span>Runs in</span><span>${esc(m.where)}</span></div><div class="kvr"><span>Acts for</span><span>${m.owner}</span></div></div>
+      <div class="sh" style="padding:0;margin:6px 0 -6px">Tasks</div><div class="list">${mine.map(([id]) => taskRow(id, true)).join("") || '<div class="none" style="padding:9px 12px">No tasks yet.</div>'}</div>
+    </div></div>`;
+    return;
+  }
+  if (/^m\d+$/.test(S.panel)) {
+    const th = S.panel, { m, ch } = findRoot(th), rs = R[th];
+    el.innerHTML = `${head(`<span class="sub" style="color:var(--l1);font-weight:600">Thread</span><span class="sub">#${ch}</span>`)}
+      <div class="tbody"><div class="feed" style="padding-top:16px">${groupHtml({ who: m.who, t: m.t, items: [{ ...m, th: null }] }, true)}
+        <div class="sh" style="padding:0;margin:6px 0 4px">${rs.length} ${rs.length === 1 ? "reply" : "replies"}</div>
+        ${rs.length ? feedHtml(rs, true) : '<div class="none">No replies yet.</div>'}
+        <div class="btns" style="margin-top:12px"><button class="sbtn" data-act="mktask" data-id="${th}">Make this a task</button></div></div></div>
+      <div class="composer"><div class="field"><textarea id="rinput" rows="1" placeholder="Reply" aria-label="Reply"></textarea><button class="send" data-act="rsend" data-id="${th}" aria-label="Send">${I.up}</button></div></div>`;
+    return;
+  }
+  const id = S.panel, t = T[id], [st, cls] = stateText(t);
+  const rows = [];
+  if (t.holder) rows.push(["Holder", `${av(t.holder, "xs")}${t.holder}`]);
+  else if (t.assignee) rows.push(["For", `${av(t.assignee, "xs")}${t.assignee}`]);
+  if (t.needs.length) rows.push(["Needs", t.needs.map((n) => `${dot(T[n].state)}<button class="tlink" data-act="open" data-id="${n}">#${n}</button>`).join(" ")]);
+  if (t.reason) rows.push(["Reason", `<span style="color:var(--red)">${esc(t.reason)}</span>`]);
+  if (t.spec) rows.push(["Spec", `<span class="mono">${t.spec}</span>`]);
+  if (t.commit) rows.push(["Commit", `<span class="mono">${t.commit}</span>`]);
+  rows.push(["Kind", t.kind]);
+  el.innerHTML = `${head(`<span class="tid">#${id}</span><span class="sub">#${t.ch}</span>`)}
+    <div class="tbody"><div class="insp"><h2>${esc(t.title)}</h2>
+      <div class="stline">${dot(t.state)}<span>${LABEL[t.state]}</span>${t.state === "claimed" || t.state === "waiting" || t.state === "ready" ? `<span>·</span><span class="${cls}">${esc(st)}</span>` : ""}</div>
+      <div class="list kv">${rows.map(([k, v]) => `<div class="kvr"><span>${k}</span><span>${v}</span></div>`).join("")}</div>
+      ${t.ask && t.state === "claimed" ? askCard(id) : ""}
+      <div class="btns">${actionsFor(id)}</div></div>
+      <div class="sh">Replies</div>
+      <div class="feed">${R[id].length ? feedHtml(R[id], true) : '<div class="none">No replies yet.</div>'}</div></div>
+    <div class="composer"><div class="field"><textarea id="rinput" rows="1" placeholder="Reply" aria-label="Reply"></textarea><button class="send" data-act="rsend" data-id="${id}" aria-label="Send">${I.up}</button></div></div>`;
+}
+function renderPresence() {
+  const working = ["claude", "codex", "gemini"].map((a) => [a, agentStatus(a)]).filter(([, s]) => s.s === "working");
+  $("#presence").innerHTML = working.map(([a, s]) => { const t = T[s.id], l = leaseLeft(t);
+    return `<button class="pres" data-act="open" data-id="${s.id}"><span class="pulse"></span><b>${a}</b> #${s.id} <span class="${l <= 3 ? "low" : ""}">${l} min</span></button>`; }).join("");
+  $("#input").placeholder = `Message #${S.ch}`;
+}
+function render() {
+  const keep = $("#rinput") ? $("#rinput").value : null;
+  renderSide(); renderTop();
+  if (S.view === "messages") renderMessages(); else if (S.view === "tasks") renderTasks(); else renderInbox();
+  renderPanel(); renderPresence();
+  if (keep !== null && $("#rinput")) $("#rinput").value = keep;
+}
+
+/* Actions */
+function send() {
+  const el = $("#input"), text = el.value.trim(); if (!text) return; el.value = ""; autosize(el);
+  const ch = S.view === "inbox" || S.scope === "all" ? S.ch : S.ch;
+  if (S.view !== "messages") { S.view = "messages"; S.scope = "channel"; }
+  post(ch, { who: "simon", text });
+  createFromMention(text, ch);
+}
+function openTask(id) { S.panel = String(id); S.blocking = false; render(); const b = $("#thread .tbody"); if (b) b.scrollTop = b.scrollHeight; }
+document.addEventListener("click", (e) => {
+  const b = e.target.closest("[data-act]"); if (!b) { if (!e.target.closest("#side") && $("#side").classList.contains("open") && !e.target.closest(".menu")) $("#side").classList.remove("open"); return; }
+  const a = b.dataset.act, id = b.dataset.id;
+  const closeSide = () => $("#side").classList.remove("open");
+  switch (a) {
+    case "channel": S.ch = id; S.view = "messages"; S.scope = "channel"; S.unread[id] = 0; closeSide(); render(); scrollEnd(); break;
+    case "view": S.view = id; S.scope = "channel"; render(); if (id === "messages") scrollEnd(); break;
+    case "alltasks": S.view = "tasks"; S.scope = "all"; closeSide(); render(); break;
+    case "inbox": S.view = "inbox"; closeSide(); render(); break;
+    case "agent": S.panel = "agent:" + id; closeSide(); render(); break;
+    case "open": openTask(id); break;
+    case "thread": S.panel = id; S.blocking = false; render(); { const b2 = $("#thread .tbody"); if (b2) b2.scrollTop = b2.scrollHeight; const ri = $("#rinput"); if (ri) ri.focus(); } break;
+    case "mktask": { const { m, ch } = findRoot(id); const nid = Math.max(...Object.keys(T).map(Number)) + 2;
+      const title = m.text.replace(/`/g, "").replace(/@\w+/g, "").trim().replace(/[.?]$/, ""); T[nid] = { title: title.length > 60 ? title.slice(0, 57) + "..." : title, ch, kind: "build", state: "ready", needs: [], assignee: null }; R[nid] = R[id].slice();
+      post(ch, { kind: "task", task: nid, who: "simon" }); toast(`Made #${nid} from the thread`); openTask(nid); break; }
+    case "close": S.panel = null; render(); break;
+    case "send": send(); break;
+    case "rsend": { const el = $("#rinput"), text = el.value.trim(); if (!text) return; el.value = ""; reply(id, { who: "simon", text });
+      const m = text.match(/@(claude|codex|gemini)\b/); if (m) setTimeout(() => reply(id, { who: m[1], text: "Got it, picking that up in this thread." }), 1200); break; }
+    case "yes": answer(id, true); toast("Answered"); break;
+    case "no": answer(id, false); toast("Answered"); break;
+    case "claimme": claim(id, "simon"); toast(`You claimed #${id}`); break;
+    case "give": T[id].assignee = "claude"; claim(id, "claude"); break;
+    case "done": setState(id, "done", "simon", "completed this task"); post(T[id].ch, { kind: "event", who: "simon", text: `completed #${id}` }); toast(`Completed #${id}`); break;
+    case "release": { const t = T[id]; t.state = "ready"; reply(id, { kind: "event", who: t.holder, text: "released this task" }); t.holder = null; delete t.lease; render(); toast(`Released #${id}`); break; }
+    case "block": S.blocking = id; render(); $("#reason") && $("#reason").focus(); break;
+    case "unblock": { const t = T[id]; t.state = t.holder ? "claimed" : "ready"; if (t.holder) t.lease = Date.now() + 15 * min; delete t.reason; reply(id, { kind: "event", who: "simon", text: "unblocked this task" }); if (t.holder && M[t.holder].type === "agent" && t.kind === "prod-change") work(id, t.holder); toast(`Unblocked #${id}`); break; }
+    case "approve": setState(id, "done", "simon", "approved and completed this task"); post(T[id].ch, { kind: "event", who: "simon", text: `approved #${id}` }); toast(`Approved #${id}`); break;
+    case "changes": { const t = T[id]; t.state = "claimed"; t.lease = Date.now() + 15 * min; reply(id, { who: "simon", text: "A couple of changes, see the thread." }); render(); if (t.holder && M[t.holder].type === "agent") work(id, t.holder); toast(`Sent #${id} back to ${t.holder}`); break; }
+    case "palette": openPalette(); break;
+    case "menu": $("#side").classList.toggle("open"); break;
+    case "pick": closePalette(); pickResult(b.dataset.kind, id); break;
+  }
+});
+document.addEventListener("submit", (e) => {
+  const f = e.target.closest(".blockform"); if (!f) return; e.preventDefault();
+  const id = f.dataset.id, t = T[id], reason = ($("#reason").value || "").trim() || "Blocked by simon";
+  S.blocking = false; t.state = "blocked"; t.reason = reason; delete t.lease;
+  reply(id, { kind: "event", who: "simon", text: `blocked this task: ${reason}` }); post(t.ch, { kind: "event", who: "simon", text: `blocked #${id}: ${reason}` }); toast(`Blocked #${id}`);
+});
+function autosize(el) { el.style.height = "auto"; el.style.height = Math.min(el.scrollHeight, 140) + "px"; }
+document.addEventListener("input", (e) => { if (e.target.tagName === "TEXTAREA") autosize(e.target); if (e.target.id === "pq") listPalette(); });
+document.addEventListener("keydown", (e) => {
+  if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") { e.preventDefault(); $("#palette").hidden ? openPalette() : closePalette(); return; }
+  if (e.key === "Escape") { if (!$("#palette").hidden) closePalette(); else if (S.blocking) { S.blocking = false; render(); } else if (S.panel) { S.panel = null; render(); } return; }
+  if (e.key === "Enter" && !e.shiftKey && e.target.id === "input") { e.preventDefault(); send(); }
+  if (e.key === "Enter" && !e.shiftKey && e.target.id === "rinput") { e.preventDefault(); document.querySelector('[data-act="rsend"]').click(); }
+  if (e.target.id === "pq" && e.key === "Enter") { e.preventDefault(); const f = $("#pl button"); if (f) f.click(); }
+});
+
+/* Palette */
+function openPalette() { $("#palette").hidden = false; $("#pq").value = ""; listPalette(); $("#pq").focus(); }
+function closePalette() { $("#palette").hidden = true; }
+$("#palette").addEventListener("click", (e) => { if (e.target.id === "palette") closePalette(); });
+function listPalette() {
+  const q = $("#pq").value.toLowerCase().replace(/^#/, "");
+  const rows = [
+    ...CH.map((c) => ({ k: "channel", id: c.id, html: `<span class="tid">#</span><span>${c.id}</span>` })),
+    ...Object.entries(T).map(([id, t]) => ({ k: "task", id, text: `${id} ${t.title}`, html: `${dot(t.state)}<span class="tid">${id}</span><span>${esc(t.title)}</span>` })),
+    ...["claude", "codex", "gemini"].map((a) => ({ k: "agent", id: a, html: `${av(a, "xs")}<span>${a}</span>` })),
+  ].filter((r) => !q || (r.text || r.id).toLowerCase().includes(q)).slice(0, 9);
+  $("#pl").innerHTML = rows.map((r, i) => `<li><button class="${i === 0 ? "sel" : ""}" data-act="pick" data-kind="${r.k}" data-id="${r.id}">${r.html}<span class="pt">${r.k}</span></button></li>`).join("") || '<li class="none" style="padding:10px">No results</li>';
+}
+function pickResult(kind, id) {
+  if (kind === "channel") { S.ch = id; S.view = "messages"; S.scope = "channel"; S.unread[id] = 0; render(); scrollEnd(); }
+  else if (kind === "task") { const t = T[id]; S.ch = t.ch; S.view = "messages"; S.scope = "channel"; openTask(id); }
+  else { S.panel = "agent:" + id; render(); }
+}
+
+setInterval(() => { Object.entries(T).forEach(([id, t]) => { if (t.state === "claimed" && t.lease && t.lease < Date.now() && !t.ask) { t.state = "ready"; post(t.ch, { kind: "event", who: t.holder, text: `lease ran out on #${id}, back to ready` }); t.holder = null; delete t.lease; } }); render(); }, 20000);
+render(); scrollEnd();
+</script>

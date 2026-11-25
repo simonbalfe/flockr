@@ -1,0 +1,36 @@
+{
+  "name": "@flockr/server",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./dev": "./src/dev.ts"
+  },
+  "scripts": {
+    "start": "bun src/main.ts",
+    "openapi": "bun scripts/openapi.ts",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "bun scripts/migrate.ts",
+    "seed": "bun scripts/seed.ts",
+    "test": "bun test --timeout 20000",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@flockr/contracts": "workspace:*",
+    "@hono/swagger-ui": "0.6.2",
+    "@hono/zod-openapi": "1.6.3",
+    "@modelcontextprotocol/sdk": "1.32.2",
+    "drizzle-orm": "0.45.4",
+    "hono": "4.13.17",
+    "postgres": "3.4.9",
+    "zod": "4.6.7"
+  },
+  "devDependencies": {
+    "@hono/vite-dev-server": "0.26.1",
+    "@types/bun": "1.4.4",
+    "@types/ws": "8.18.2",
+    "drizzle-kit": "0.31.11",
+    "typescript": "7.0.2",
+    "vite": "8.3.8"
+  }
+}

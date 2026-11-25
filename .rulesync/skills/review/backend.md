@@ -1,0 +1,104 @@
+# Backend review checklist
+
+Scope: `apps/server` (routes, board rules, the database, live events, the lease sweeper, MCP), `packages/contracts`, `apps/cli`, and the migrations the change adds. Read `docs/guides/GUIDE_ARCHITECTURE_MODEL.md`, Design choices, first: the rules below hold those choices.
+
+- **Claims and the event log (the biggest risk):**
+  - a claim is one Postgres transaction that locks the oldest ready row with `FOR UPDATE SKIP LOCKED`, so two agents claiming at once give exactly one winner; test it with concurrent claims, not one after the other
+  - every claim raises the task's fence number (`claimEpoch`); a renew, complete, submit, fail, release or reply that carries an older number is refused, and the refusal says the claim moved on; reproduce by claiming, letting the lease run out, claiming again as a second agent, then finishing as the first
+  - only the holder renews; a renew after the lease ran out is refused, never a silent re-claim
+  - the sweeper releases an expired lease once, however many server instances run it, and a second sweep over the same task changes nothing
+  - every change writes its event with the next per-board sequence number in the same transaction as the table it updates; a write that changes a table without its event, or an event without its change, is a finding
+  - events are never updated or deleted; an edit is a new event, and a reader rebuilds the latest state from the log
+  - reading "after N" returns every event above N, oldest first, with no gap and no repeat, also while writes land; `NOTIFY` is sent after commit, so a listener never sees an event it cannot read
+  - a reconnecting client (`flockr tail`, the web app's live socket) asks for "after N" and misses nothing
+- **Needs:**
+  - completing a task checks every task that waits on it in the same transaction, and a task turns ready only when all its needs are done
+  - a need on a missing task, on itself or that makes a cycle is refused when it is set
+  - a task assigned to one agent is claimable only by that agent; claiming by labels matches only tasks with those labels
+- **Identity and access:**
+  - until sign-in ships (ADR 0010), the server binds to `127.0.0.1` only (`host` in `apps/server/src/config.ts`) and the compose file publishes Postgres on `127.0.0.1`; a change that listens wider is a finding
+  - the acting member comes from the request's identity (today the `x-flockr-member` header, later a key), never from a field in the body
+  - "claude via simon": every write records the agent and the person it acts for, from the identity, never from input
+  - once keys exist: another board's id answers exactly like a missing one (404), lists leave it out, and a key limited to some channels reaches nothing else
+  - a board rule that needs a kind of caller (a person, never an agent, answers a question card or approves review) checks it itself; it does not trust that the route already did
+- **The write path:**
+  - every state-changing operation converges however many times it runs and wherever a previous run stopped: it reads what exists, compares it to the goal and applies only the difference; ask what if this runs twice, and what if it crashed at every point
+  - a write that can be retried carries something that makes the repeat harmless (the fence number, a unique constraint, an idempotency key, a row made before the side effect)
+  - a conflict returns the existing row's id, never a freshly minted one
+  - a timeout is ambiguous: read back before any retry, never write blind twice
+  - shared state is separated before it is serialised: each agent gets its own row or key, merged only where it is read; a lock is a last resort
+  - test concurrent same-key calls, not only sequential ones
+- **Outside services and adapters (ADRs 0007, 0009):**
+  - every outside service of one kind (sandboxes, harnesses, models, Slack, GitHub, storage) sits behind one interface with one adapter per provider; adding one is an adapter plus one entry in its list in `packages/contracts`
+  - nothing outside an adapter names a provider, harness, model or sandbox, or branches on its name; a feature reads what the adapter declares (`capabilities`). Before `if (sandbox.provider === "docker")`; after `sandboxFor(spec.runtime).capabilities.persistentDisk`
+  - only the adapter calls its service; no raw `fetch` elsewhere
+  - every response is decoded with Zod in the adapter before use
+  - every call has a timeout, and a rejection is a typed failure with its `kind`, never a thrown string
+  - a list read follows the service's paging to the end
+  - a rate limit is never a final failure: the adapter waits it out or answers 429 with `Retry-After`
+  - a model token never enters a sandbox: an egress proxy adds it outside (architecture guide, Sandbox runtime); every sandbox has a time limit, a disk cap and automatic cleanup
+  - a harness tool declares whether it is safe to replay (ADR 0008), and an unsafe one is never replayed after a crash
+- **Types, Zod at every boundary, promises:** check every line of [typescript.md](typescript.md) too.
+- **Failures:**
+  - each expected failure has a `kind` and one HTTP status, named once in `packages/contracts`, never in a per-route map; one kind answers one status everywhere; clients (web, `flockr`, MCP) branch on `kind`, never on message text
+  - no driver, SQL or Zod message reaches a caller; those carry SQL and parameters; a failure's details echo only the caller's own input
+  - an unexpected throw is logged and reported at the edge (`app.onError` in `apps/server/src/app.ts`), never swallowed by an empty `catch`
+  - a Postgres data error (classes 22, 23, 42) is our bug and answers 500; only connection and serialization failures are retried
+  - every error answer says what really failed and the next step (the route or `flockr` command to try)
+- **Routes and layers:**
+  - every route is declared with its `operationId`, a short summary, a tag and complete Zod input and output, because each becomes an MCP tool and an `flockr api <operationId>` call (ADR 0010)
+  - handlers call board functions only; SQL lives with the board rules or the database module, never in a route
+  - logic used by a route, the MCP server and the sweeper lives once, in `apps/server/src/board/`
+  - the MCP server calls the real route in-process, so it inherits the same identity, rules and failures; no MCP-only logic
+  - a feature's files sit together, at most two levels deep
+  - a route reads its body only after its identity check, capped by size
+  - a malformed path or id is a 404 or 400 in our words, never a throw
+- **Surface parity (ADRs 0003, 0010):** the API, MCP, `flockr` and the web app are thin mappings over one board function, with the same rules, failures and limits. A new capability has its route, the regenerated client (`bun run generate`), its MCP tool, an `flockr` command and a web app control, or the spec says why one is skipped. The web app calls no route an agent cannot call. `packages/client` is never hand-edited.
+- **Schema and migrations:**
+  - a schema edit in `apps/server/src/db/schema.ts` has its generated migration (`bun run db:generate`) committed, and no applied migration is edited
+  - the migration applies to an empty database and to one that holds rows: a new `NOT NULL` column has a default or a backfill
+  - the generated SQL is read, not trusted
+  - queries filter by board first and use an index for it; no N+1 in a list, the sweeper or a claim
+  - lists page by keyset (`(created_at, id)` or the sequence number) with a stable order and a unique tiebreaker, never by offset or a hard cap
+  - "latest per group" is a `LATERAL ... LIMIT 1` per group, never `DISTINCT ON` over the whole history
+  - a state or kind column has a `CHECK` built from its `packages/contracts` list
+  - tables name the same thing the same way (`board_id`, `created_at`, `updated_at`, `name`)
+  - one table per family with a kind or provider column, never a table per provider or a column per provider (`tasks.github_*` beside a future `tasks.linear_*`)
+  - every timestamp is `timestamptz`
+  - a column or code path kept for a shape that is gone is listed for removal
+- **Background work:**
+  - the sweeper, `LISTEN/NOTIFY` listeners and later jobs (pg-boss) are safe to run twice and safe with several server instances; a second firing while the first runs is harmless
+  - watchers and routines are off until someone turns them on, act only on their declared trigger, and have a rate limit each and in total (architecture guide, Design choice 9)
+  - anything that spends money or changes prod waits for a person's answer on a question card; no agent output, message text or job can answer it, create it as answered or widen it
+- **Config and secrets:**
+  - env is read only in `apps/server/src/config.ts` and the CLI's config module; a default is for local only, and a config error names the bad key, never its value
+  - no secret in code, a fixture, a log, an event or a stored failure
+  - no board, member or agent name in a constant (`boardId` in `apps/server/src/config.ts` today is the known one), so a second board is rows, never a code change
+- **Tests:**
+  - a test exists only for a rule that must hold: claims, leases and fences, needs, event order and gaps, repeat-safety, access, and the shape of a public contract; never docs wording, UI copy or file layout, never for coverage or to restate the types
+  - tests run with `bun test` against a real Postgres (`TEST_DATABASE_URL`), never a fake database, so claim and lease code runs for real
+  - a test asserts what a caller can observe (the answer, the failure `kind`, state read back, the events written), never a private helper or call order
+  - a bug fix lands the smallest failing test first when that is cheap; otherwise the report names a repro command
+  - after a second fix that did not hold, stop and test the premise both fixes shared before a third
+  - no test passes only because of another test's state: run the file twice back to back
+  - a performance number is the fastest of at least three runs, on a named machine, with the command that measured it
+  - fixtures use invented people, agents and tasks (the example chain #806, #808, #812)
+- **Typed values, never strings:** never compare a value to a raw string: compare a typed value whose type comes from its one list in `packages/contracts` (`state: TaskState`, so `state === "redy"` fails to compile); a comparison whose other side is a plain `string` is a finding.
+- **One definition per concept.** A copied literal, a second hand-written list of the same members, or a limit, timeout or model id defined twice is a bug. The one home of each:
+  - routes and their schemas: `apps/server/src/routes/`, with shared shapes in `packages/contracts/src/`; the OpenAPI document, the generated client, the MCP tools and `flockr api` derive from them
+  - config and env: `apps/server/src/config.ts`, and the CLI's config module
+  - fixed sets: one `as const` list in `packages/contracts` (`taskStates`), read as `z.enum(list)`, `(typeof list)[number]`, `Extract`, `Exclude`, CLI choices and labels
+  - product limits an agent or person can hit (lease length, page size, rate limits, message length): one limits file in `packages/contracts`, created with the first; internal tuning (a retry count) stays beside its code
+  - wording people see for a code (state names, member kinds): one label map in `packages/contracts`, keyed by its list, sent beside the code; each surface keeps its own casing
+  - constants every surface shares (`memberHeader`, `livePath`): `packages/contracts/src/constants.ts`
+  - the database schema: `apps/server/src/db/schema.ts`; migrations in `apps/server/drizzle/`
+  - board rules used in two places: one function in `apps/server/src/board/`
+  - a stored fact: one table and column; the same value stored in two places that can disagree is a finding
+  - model ids, once there are any: one file in the model adapter
+- **Subtract before you add:** dead code and one-caller wrappers go first, then the smallest change that solves the problem.
+- **`packages/contracts`:** holds only what two of server, web and CLI share; a file only one app imports moves back to that app; it imports nothing server-only (Drizzle, `postgres`, `node:`, Hono's server parts).
+- **Repo hygiene:** stray files (`*.bak`, scratch scripts, old builds) and unused dependencies are listed for removal.
+
+## Learned from reviews
+
+Each line is a class of mistake an earlier review caught, added by that review's run (step 5 of the skill), with the review file it came from. Check every line here as well as the checks above.

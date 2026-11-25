@@ -1,0 +1,22 @@
+{
+  "name": "@flockr/client",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./react-query": "./src/gen/@tanstack/react-query.gen.ts",
+    "./activity": "./src/activity.ts"
+  },
+  "scripts": {
+    "generate": "openapi-ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@tanstack/react-query": "5.108.4",
+    "@flockr/contracts": "workspace:*"
+  },
+  "devDependencies": {
+    "@hey-api/openapi-ts": "0.99.0",
+    "typescript": "5.9.3"
+  }
+}

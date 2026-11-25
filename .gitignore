@@ -1,0 +1,9 @@
+node_modules
+dist
+*.tsbuildinfo
+
+/AGENTS.md
+/CLAUDE.md
+/.claude/skills/
+/.agents/skills/
+/.evidence/

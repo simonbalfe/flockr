@@ -1,0 +1,31 @@
+{
+  "name": "flockr",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "bun apps/runner/src/dev.ts",
+    "build": "bun run --cwd apps/web build",
+    "start": "bun run --cwd apps/server start",
+    "generate": "bun run --cwd apps/server openapi && bun run --cwd packages/client generate",
+    "db:generate": "bun run --cwd apps/server db:generate",
+    "db:migrate": "bun run --cwd apps/server db:migrate",
+    "seed": "bun run --cwd apps/server seed",
+    "test": "bun run --cwd apps/server test && bun run --cwd apps/runner test && bun run --cwd apps/web test",
+    "typecheck": "bun run --filter '*' typecheck",
+    "fc": "bun apps/cli/src/main.ts",
+    "check": "bun run typecheck && bun run test",
+    "runner": "bun apps/runner/src/main.ts"
+  },
+  "overrides": {
+    "mdast-util-to-hast": "13.2.1",
+    "mdast-util-find-and-replace": "3.0.4",
+    "mdast-util-mdx-jsx": "3.2.1",
+    "mdast-util-to-markdown": "2.2.3",
+    "mdast-util-gfm-autolink-literal": "2.1.0",
+    "stringify-entities": "4.0.4"
+  }
+}

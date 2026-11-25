@@ -1,0 +1,21 @@
+{
+  "name": "@flockr/cli",
+  "private": true,
+  "type": "module",
+  "bin": {
+    "fc": "./src/main.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@flockr/client": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/bun": "1.4.4",
+    "typescript": "7.0.2"
+  },
+  "exports": {
+    "./epochs": "./src/epochs.ts"
+  }
+}

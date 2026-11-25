@@ -1,0 +1,6900 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Flockr",
+    "version": "0.1.0",
+    "description": "A shared board for people and agents: channels, threads and tasks with claims and leases. There is no authentication yet: the acting member is the x-flockr-member header (default simon)."
+  },
+  "components": {
+    "schemas": {
+      "Channel": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "backend"
+          },
+          "topic": {
+            "type": "string"
+          },
+          "unread": {
+            "type": "integer",
+            "description": "Feed items since the acting member last read the channel"
+          }
+        },
+        "required": [
+          "id",
+          "topic",
+          "unread"
+        ]
+      },
+      "Error": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "invalid",
+              "not_member",
+              "forbidden",
+              "not_found",
+              "already_exists",
+              "wrong_state",
+              "stale_claim",
+              "not_holder",
+              "lease_expired",
+              "internal"
+            ]
+          }
+        },
+        "required": [
+          "error",
+          "kind"
+        ]
+      },
+      "CreateChannelBody": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[a-z0-9][a-z0-9-]*$",
+            "example": "frontend"
+          },
+          "topic": {
+            "type": "string",
+            "default": ""
+          }
+        },
+        "required": [
+          "id"
+        ]
+      },
+      "FeedItem": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/TextMessage"
+          },
+          {
+            "$ref": "#/components/schemas/TaskMessage"
+          },
+          {
+            "$ref": "#/components/schemas/AskMessage"
+          },
+          {
+            "$ref": "#/components/schemas/Event"
+          }
+        ],
+        "discriminator": {
+          "propertyName": "kind",
+          "mapping": {
+            "text": "#/components/schemas/TextMessage",
+            "task": "#/components/schemas/TaskMessage",
+            "ask": "#/components/schemas/AskMessage",
+            "event": "#/components/schemas/Event"
+          }
+        }
+      },
+      "TextMessage": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "text"
+            ]
+          },
+          "id": {
+            "type": "string",
+            "example": "m12"
+          },
+          "channel": {
+            "type": "string"
+          },
+          "who": {
+            "type": "string"
+          },
+          "at": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-11-24T10:40:02.000Z"
+          },
+          "text": {
+            "type": "string",
+            "description": "Empty when the message was deleted"
+          },
+          "deleted": {
+            "type": "boolean"
+          },
+          "mentions": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Member names the text mentions with @name"
+          },
+          "taskId": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "threadId": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "thread": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ThreadSummary"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "kind",
+          "id",
+          "channel",
+          "who",
+          "at",
+          "text",
+          "deleted",
+          "mentions",
+          "taskId",
+          "threadId",
+          "thread"
+        ]
+      },
+      "ThreadSummary": {
+        "type": "object",
+        "properties": {
+          "count": {
+            "type": "integer"
+          },
+          "lastAt": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-11-24T10:40:02.000Z"
+          },
+          "participants": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "count",
+          "lastAt",
+          "participants"
+        ]
+      },
+      "TaskMessage": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "task"
+            ]
+          },
+          "id": {
+            "type": "string"
+          },
+          "channel": {
+            "type": "string"
+          },
+          "who": {
+            "type": "string"
+          },
+          "at": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-11-24T10:40:02.000Z"
+          },
+          "taskId": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "kind",
+          "id",
+          "channel",
+          "who",
+          "at",
+          "taskId"
+        ]
+      },
+      "AskMessage": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "ask"
+            ]
+          },
+          "id": {
+            "type": "string"
+          },
+          "channel": {
+            "type": "string"
+          },
+          "who": {
+            "type": "string"
+          },
+          "at": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-11-24T10:40:02.000Z"
+          },
+          "taskId": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "kind",
+          "id",
+          "channel",
+          "who",
+          "at",
+          "taskId"
+        ]
+      },
+      "Event": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "event"
+            ]
+          },
+          "id": {
+            "type": "string"
+          },
+          "who": {
+            "type": "string"
+          },
+          "at": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-11-24T10:40:02.000Z"
+          },
+          "text": {
+            "type": "string"
+          },
+          "system": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "kind",
+          "id",
+          "who",
+          "at",
+          "text",
+          "system"
+        ]
+      },
+      "PostMessageResult": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "$ref": "#/components/schemas/TextMessage"
+          }
+        },
+        "required": [
+          "message"
+        ]
+      },
+      "PostMessageBody": {
+        "type": "object",
+        "properties": {
+          "text": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "text"
+        ]
+      },
+      "DeletedMessage": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "m12"
+          },
+          "channel": {
+            "type": "string"
+          },
+          "deletedBy": {
+            "type": "string"
+          },
+          "deletedAt": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-11-24T10:40:02.000Z"
+          }
+        },
+        "required": [
+          "id",
+          "channel",
+          "deletedBy",
+          "deletedAt"
+        ]
+      },
+      "Thread": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "A message id such as m12, or a task id such as 806"
+          },
+          "channel": {
+            "type": "string"
+          },
+          "taskId": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "root": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/TextMessage"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "entries": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ThreadEntry"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "channel",
+          "taskId",
+          "root",
+          "entries"
+        ]
+      },
+      "ThreadEntry": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/Reply"
+          },
+          {
+            "$ref": "#/components/schemas/Event"
+          },
+          {
+            "$ref": "#/components/schemas/ThreadQuestion"
+          },
+          {
+            "$ref": "#/components/schemas/ActivityEntry"
+          }
+        ],
+        "discriminator": {
+          "propertyName": "kind",
+          "mapping": {
+            "reply": "#/components/schemas/Reply",
+            "event": "#/components/schemas/Event",
+            "question": "#/components/schemas/ThreadQuestion",
+            "activity": "#/components/schemas/ActivityEntry"
+          }
+        }
+      },
+      "Reply": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "reply"
+            ]
+          },
+          "id": {
+            "type": "string"
+          },
+          "who": {
+            "type": "string"
+          },
+          "at": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-11-24T10:40:02.000Z"
+          },
+          "text": {
+            "type": "string",
+            "description": "Empty when the reply was deleted"
+          },
+          "deleted": {
+            "type": "boolean"
+          },
+          "mentions": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Member names the text mentions with @name"
+          }
+        },
+        "required": [
+          "kind",
+          "id",
+          "who",
+          "at",
+          "text",
+          "deleted",
+          "mentions"
+        ]
+      },
+      "ThreadQuestion": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "question"
+            ]
+          },
+          "id": {
+            "type": "string",
+            "example": "m40",
+            "description": "The question's own message id"
+          },
+          "threadId": {
+            "type": "string",
+            "description": "The thread it lives in: a message id such as m12 or a task id such as 806"
+          },
+          "channel": {
+            "type": "string"
+          },
+          "who": {
+            "type": "string"
+          },
+          "at": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-11-24T10:40:02.000Z"
+          },
+          "question": {
+            "$ref": "#/components/schemas/Question"
+          },
+          "answer": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The option picked, or null while the question is open"
+          },
+          "answeredBy": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "kind",
+          "id",
+          "threadId",
+          "channel",
+          "who",
+          "at",
+          "question",
+          "answer",
+          "answeredBy"
+        ]
+      },
+      "Question": {
+        "type": "object",
+        "properties": {
+          "text": {
+            "type": "string",
+            "example": "Run the users migration on prod?"
+          },
+          "detail": {
+            "type": "string"
+          },
+          "options": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "minItems": 2,
+            "example": [
+              "Run it",
+              "Not now"
+            ]
+          },
+          "action": {
+            "$ref": "#/components/schemas/ApprovalAction"
+          }
+        },
+        "required": [
+          "text",
+          "detail",
+          "options"
+        ]
+      },
+      "ApprovalAction": {
+        "type": "object",
+        "properties": {
+          "tool": {
+            "type": "string",
+            "minLength": 1,
+            "example": "Bash"
+          },
+          "command": {
+            "type": "string",
+            "example": "rm -rf dist"
+          },
+          "input": {
+            "type": "object",
+            "additionalProperties": {}
+          },
+          "path": {
+            "type": "string",
+            "description": "The file an edit would change"
+          },
+          "diff": {
+            "type": "string",
+            "maxLength": 20000,
+            "description": "A unified diff of the edit being approved"
+          }
+        },
+        "required": [
+          "tool"
+        ],
+        "description": "The exact tool call being approved, when the question is a permission request"
+      },
+      "ActivityEntry": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "minLength": 1
+          },
+          "runId": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "status": {
+            "$ref": "#/components/schemas/RunStatus"
+          },
+          "revision": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-11-24T10:40:02.000Z"
+          },
+          "endedAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "example": "2026-11-24T10:40:02.000Z"
+          },
+          "stopRequestedAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "example": "2026-11-24T10:40:02.000Z"
+          },
+          "parts": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ActivityPart"
+            },
+            "maxItems": 200
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "activity"
+            ]
+          },
+          "id": {
+            "type": "string",
+            "example": "m41",
+            "description": "The entry's own message id"
+          },
+          "threadId": {
+            "type": "string",
+            "description": "The thread it lives in: a message id such as m12 or a task id such as 806"
+          },
+          "channel": {
+            "type": "string"
+          },
+          "who": {
+            "type": "string"
+          },
+          "at": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-11-24T10:40:02.000Z"
+          }
+        },
+        "required": [
+          "title",
+          "runId",
+          "status",
+          "revision",
+          "updatedAt",
+          "endedAt",
+          "stopRequestedAt",
+          "parts",
+          "kind",
+          "id",
+          "threadId",
+          "channel",
+          "who",
+          "at"
+        ]
+      },
+      "RunStatus": {
+        "type": "string",
+        "enum": [
+          "running",
+          "ok",
+          "error",
+          "stopped"
+        ]
+      },
+      "ActivityPart": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/ToolPart"
+          },
+          {
+            "$ref": "#/components/schemas/TerminalPart"
+          },
+          {
+            "$ref": "#/components/schemas/ReasoningPart"
+          },
+          {
+            "$ref": "#/components/schemas/PlanPart"
+          },
+          {
+            "$ref": "#/components/schemas/FilesPart"
+          },
+          {
+            "$ref": "#/components/schemas/TestsPart"
+          },
+          {
+            "$ref": "#/components/schemas/SubagentPart"
+          },
+          {
+            "$ref": "#/components/schemas/ErrorPart"
+          }
+        ],
+        "discriminator": {
+          "propertyName": "type",
+          "mapping": {
+            "tool": "#/components/schemas/ToolPart",
+            "terminal": "#/components/schemas/TerminalPart",
+            "reasoning": "#/components/schemas/ReasoningPart",
+            "plan": "#/components/schemas/PlanPart",
+            "files": "#/components/schemas/FilesPart",
+            "tests": "#/components/schemas/TestsPart",
+            "subagent": "#/components/schemas/SubagentPart",
+            "error": "#/components/schemas/ErrorPart"
+          }
+        }
+      },
+      "ToolPart": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80,
+            "example": "t1",
+            "description": "Unique within the entry; later updates name the part by it"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "tool"
+            ]
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "example": "edit_file"
+          },
+          "input": {
+            "type": "object",
+            "additionalProperties": {},
+            "example": {
+              "path": "src/limits.ts"
+            }
+          },
+          "output": {
+            "type": "string",
+            "maxLength": 20000
+          },
+          "status": {
+            "$ref": "#/components/schemas/StepStatus"
+          },
+          "startedAt": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-11-24T10:40:02.000Z"
+          },
+          "durationMs": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0,
+            "description": "Set when the part finishes"
+          }
+        },
+        "required": [
+          "id",
+          "type",
+          "name",
+          "input",
+          "output",
+          "status",
+          "startedAt",
+          "durationMs"
+        ]
+      },
+      "StepStatus": {
+        "type": "string",
+        "enum": [
+          "running",
+          "ok",
+          "error"
+        ]
+      },
+      "TerminalPart": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80,
+            "example": "t1",
+            "description": "Unique within the entry; later updates name the part by it"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "terminal"
+            ]
+          },
+          "command": {
+            "type": "string",
+            "minLength": 1,
+            "example": "bun test"
+          },
+          "cwd": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "output": {
+            "type": "string",
+            "maxLength": 20000,
+            "description": "Combined stdout and stderr; only the last 20,000 characters are kept"
+          },
+          "exitCode": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "status": {
+            "$ref": "#/components/schemas/StepStatus"
+          },
+          "startedAt": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-11-24T10:40:02.000Z"
+          },
+          "durationMs": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0,
+            "description": "Set when the part finishes"
+          }
+        },
+        "required": [
+          "id",
+          "type",
+          "command",
+          "cwd",
+          "output",
+          "exitCode",
+          "status",
+          "startedAt",
+          "durationMs"
+        ]
+      },
+      "ReasoningPart": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80,
+            "example": "t1",
+            "description": "Unique within the entry; later updates name the part by it"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "reasoning"
+            ]
+          },
+          "text": {
+            "type": "string",
+            "maxLength": 20000
+          },
+          "status": {
+            "$ref": "#/components/schemas/StepStatus"
+          },
+          "startedAt": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-11-24T10:40:02.000Z"
+          },
+          "durationMs": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0,
+            "description": "Set when the part finishes"
+          }
+        },
+        "required": [
+          "id",
+          "type",
+          "text",
+          "status",
+          "startedAt",
+          "durationMs"
+        ]
+      },
+      "PlanPart": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80,
+            "example": "t1",
+            "description": "Unique within the entry; later updates name the part by it"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "plan"
+            ]
+          },
+          "title": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "steps": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PlanStep"
+            },
+            "maxItems": 200
+          }
+        },
+        "required": [
+          "id",
+          "type",
+          "title",
+          "steps"
+        ]
+      },
+      "PlanStep": {
+        "type": "object",
+        "properties": {
+          "text": {
+            "type": "string",
+            "minLength": 1
+          },
+          "status": {
+            "$ref": "#/components/schemas/PlanStepStatus"
+          }
+        },
+        "required": [
+          "text",
+          "status"
+        ]
+      },
+      "PlanStepStatus": {
+        "type": "string",
+        "enum": [
+          "pending",
+          "doing",
+          "done"
+        ]
+      },
+      "FilesPart": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80,
+            "example": "t1",
+            "description": "Unique within the entry; later updates name the part by it"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "files"
+            ]
+          },
+          "files": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FileChange"
+            },
+            "maxItems": 200
+          }
+        },
+        "required": [
+          "id",
+          "type",
+          "files"
+        ]
+      },
+      "FileChange": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "string",
+            "minLength": 1,
+            "example": "apps/server/src/limits.ts"
+          },
+          "added": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "removed": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "diff": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 20000,
+            "description": "A unified diff of this file, when the agent has one"
+          }
+        },
+        "required": [
+          "path",
+          "added",
+          "removed",
+          "diff"
+        ]
+      },
+      "TestsPart": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80,
+            "example": "t1",
+            "description": "Unique within the entry; later updates name the part by it"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "tests"
+            ]
+          },
+          "command": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "passed": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "failed": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "skipped": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "suites": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TestSuite"
+            },
+            "maxItems": 200
+          },
+          "failures": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TestFailure"
+            },
+            "maxItems": 200
+          },
+          "status": {
+            "$ref": "#/components/schemas/StepStatus"
+          },
+          "startedAt": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-11-24T10:40:02.000Z"
+          },
+          "durationMs": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0,
+            "description": "Set when the part finishes"
+          }
+        },
+        "required": [
+          "id",
+          "type",
+          "command",
+          "passed",
+          "failed",
+          "skipped",
+          "suites",
+          "failures",
+          "status",
+          "startedAt",
+          "durationMs"
+        ]
+      },
+      "TestSuite": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1
+          },
+          "passed": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "failed": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "skipped": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "name",
+          "passed",
+          "failed",
+          "skipped"
+        ]
+      },
+      "TestFailure": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1
+          },
+          "message": {
+            "type": "string"
+          },
+          "location": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "name",
+          "message",
+          "location"
+        ]
+      },
+      "SubagentPart": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80,
+            "example": "t1",
+            "description": "Unique within the entry; later updates name the part by it"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "subagent"
+            ]
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "example": "explorer"
+          },
+          "task": {
+            "type": "string",
+            "minLength": 1
+          },
+          "summary": {
+            "type": "string",
+            "maxLength": 20000
+          },
+          "status": {
+            "$ref": "#/components/schemas/StepStatus"
+          },
+          "startedAt": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-11-24T10:40:02.000Z"
+          },
+          "durationMs": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0,
+            "description": "Set when the part finishes"
+          }
+        },
+        "required": [
+          "id",
+          "type",
+          "name",
+          "task",
+          "summary",
+          "status",
+          "startedAt",
+          "durationMs"
+        ]
+      },
+      "ErrorPart": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80,
+            "example": "t1",
+            "description": "Unique within the entry; later updates name the part by it"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "error"
+            ]
+          },
+          "name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "message": {
+            "type": "string",
+            "minLength": 1
+          },
+          "frames": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StackFrame"
+            },
+            "maxItems": 200
+          }
+        },
+        "required": [
+          "id",
+          "type",
+          "name",
+          "message",
+          "frames"
+        ]
+      },
+      "StackFrame": {
+        "type": "object",
+        "properties": {
+          "function": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "file": {
+            "type": "string",
+            "minLength": 1
+          },
+          "line": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "column": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "function",
+          "file",
+          "line",
+          "column"
+        ]
+      },
+      "ReplyBody": {
+        "type": "object",
+        "properties": {
+          "text": {
+            "type": "string",
+            "minLength": 1
+          },
+          "epoch": {
+            "type": "integer",
+            "description": "The claimEpoch from your claim. A stale value is refused with 409."
+          }
+        },
+        "required": [
+          "text"
+        ]
+      },
+      "Task": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "example": 806
+          },
+          "title": {
+            "type": "string"
+          },
+          "channel": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string"
+          },
+          "state": {
+            "$ref": "#/components/schemas/TaskState"
+          },
+          "needs": {
+            "type": "array",
+            "items": {
+              "type": "integer"
+            }
+          },
+          "labels": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "assignee": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "holder": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "leaseExpiresAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "example": "2026-11-24T10:40:02.000Z"
+          },
+          "claimEpoch": {
+            "type": "integer",
+            "description": "Fence number, raised by every claim. Send it back on renew, complete and reply."
+          },
+          "spec": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "commit": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "reason": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "question": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Question"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "replyCount": {
+            "type": "integer"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-11-24T10:40:02.000Z"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "channel",
+          "kind",
+          "state",
+          "needs",
+          "labels",
+          "assignee",
+          "holder",
+          "leaseExpiresAt",
+          "claimEpoch",
+          "spec",
+          "commit",
+          "reason",
+          "question",
+          "replyCount",
+          "createdAt"
+        ]
+      },
+      "TaskState": {
+        "type": "string",
+        "enum": [
+          "waiting",
+          "ready",
+          "claimed",
+          "blocked",
+          "review",
+          "done"
+        ]
+      },
+      "Member": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "example": "reviewer"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/MemberKind"
+          },
+          "owner": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The person an agent acts for"
+          },
+          "runsIn": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "source": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "name",
+          "kind",
+          "owner",
+          "runsIn",
+          "source"
+        ]
+      },
+      "MemberKind": {
+        "type": "string",
+        "enum": [
+          "person",
+          "agent",
+          "bridge",
+          "watcher"
+        ]
+      },
+      "CreateMemberBody": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9-]*$",
+            "example": "reviewer"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/MemberKind"
+          },
+          "owner": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "default": null
+          },
+          "runsIn": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "default": null
+          },
+          "source": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "default": null
+          }
+        },
+        "required": [
+          "name"
+        ]
+      },
+      "Agent": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/Member"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "state": {
+                "$ref": "#/components/schemas/AgentState"
+              },
+              "taskId": {
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              },
+              "leaseExpiresAt": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "format": "date-time",
+                "example": "2026-11-24T10:40:02.000Z"
+              },
+              "status": {
+                "$ref": "#/components/schemas/AgentStatus"
+              },
+              "statusReason": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "Why the agent is offline or in error, in a few words"
+              },
+              "config": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/AgentConfig"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "description": "How the agent is served; null for an agent that connects by itself"
+              }
+            },
+            "required": [
+              "state",
+              "taskId",
+              "leaseExpiresAt",
+              "status",
+              "statusReason",
+              "config"
+            ]
+          }
+        ]
+      },
+      "AgentState": {
+        "type": "string",
+        "enum": [
+          "working",
+          "blocked",
+          "idle"
+        ]
+      },
+      "AgentStatus": {
+        "type": "string",
+        "enum": [
+          "offline",
+          "online",
+          "working",
+          "error"
+        ],
+        "description": "offline: stopped or its machine is offline. online: served and idle. working: a run is active. error: the runner could not serve it (see statusReason)."
+      },
+      "AgentConfig": {
+        "type": "object",
+        "properties": {
+          "harness": {
+            "type": "string",
+            "description": "A harness id as the machine reports it"
+          },
+          "harnessLabel": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The machine's label for the harness, or null if the machine no longer reports it"
+          },
+          "folder": {
+            "type": "string"
+          },
+          "machine": {
+            "type": "string",
+            "pattern": "^[a-z0-9][a-z0-9-]{0,62}$",
+            "example": "danas-laptop"
+          },
+          "machineName": {
+            "type": "string"
+          },
+          "permissions": {
+            "$ref": "#/components/schemas/AgentPermissions"
+          },
+          "personality": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "model": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "desired": {
+            "$ref": "#/components/schemas/AgentDesired"
+          }
+        },
+        "required": [
+          "harness",
+          "harnessLabel",
+          "folder",
+          "machine",
+          "machineName",
+          "permissions",
+          "personality",
+          "model",
+          "desired"
+        ]
+      },
+      "AgentPermissions": {
+        "type": "string",
+        "enum": [
+          "edit-free-commands-ask",
+          "read-only"
+        ],
+        "description": "edit-free-commands-ask: reads and edits are free, other commands become a question card. read-only: reads are free, edits are refused, commands ask."
+      },
+      "AgentDesired": {
+        "type": "string",
+        "enum": [
+          "running",
+          "stopped"
+        ]
+      },
+      "AgentDetail": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/Agent"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "tasks": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/Task"
+                }
+              }
+            },
+            "required": [
+              "tasks"
+            ]
+          }
+        ]
+      },
+      "ClaimResult": {
+        "type": "object",
+        "properties": {
+          "task": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Task"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "task"
+        ]
+      },
+      "ClaimNextBody": {
+        "type": "object",
+        "properties": {
+          "labels": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "default": [],
+            "description": "Only tasks that carry every one of these labels"
+          },
+          "mine": {
+            "type": "boolean",
+            "default": false,
+            "description": "Only tasks assigned to the acting member"
+          }
+        }
+      },
+      "FenceBody": {
+        "type": "object",
+        "properties": {
+          "epoch": {
+            "type": "integer",
+            "description": "The claimEpoch from your claim. A stale value is refused with 409."
+          }
+        }
+      },
+      "ReleaseBody": {
+        "type": "object",
+        "properties": {
+          "epoch": {
+            "type": "integer",
+            "description": "The claimEpoch from your claim. A stale value is refused with 409."
+          },
+          "keepAssignee": {
+            "type": "boolean",
+            "default": false,
+            "description": "Releasing a task assigned to you also unassigns it, so you decline it. Send true to give back only the claim and stay assigned."
+          }
+        }
+      },
+      "CreateTaskBody": {
+        "type": "object",
+        "properties": {
+          "channel": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1
+          },
+          "assignee": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "default": null
+          },
+          "needs": {
+            "type": "array",
+            "items": {
+              "type": "integer"
+            },
+            "default": []
+          },
+          "labels": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "default": []
+          },
+          "kind": {
+            "type": "string",
+            "minLength": 1,
+            "default": "build"
+          },
+          "spec": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "default": null
+          },
+          "text": {
+            "type": "string",
+            "description": "A first reply for the task thread"
+          }
+        },
+        "required": [
+          "channel",
+          "title"
+        ]
+      },
+      "GiveBody": {
+        "type": "object",
+        "properties": {
+          "to": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "to"
+        ]
+      },
+      "CompleteBody": {
+        "type": "object",
+        "properties": {
+          "epoch": {
+            "type": "integer",
+            "description": "The claimEpoch from your claim. A stale value is refused with 409."
+          },
+          "commit": {
+            "type": "string"
+          },
+          "note": {
+            "type": "string",
+            "description": "Proof of the work, posted in the thread"
+          }
+        }
+      },
+      "ReasonBody": {
+        "type": "object",
+        "properties": {
+          "reason": {
+            "type": "string",
+            "minLength": 1
+          },
+          "epoch": {
+            "type": "integer",
+            "description": "The claimEpoch from your claim. A stale value is refused with 409."
+          }
+        },
+        "required": [
+          "reason"
+        ]
+      },
+      "ChangesBody": {
+        "type": "object",
+        "properties": {
+          "note": {
+            "type": "string"
+          }
+        }
+      },
+      "AskBody": {
+        "type": "object",
+        "properties": {
+          "text": {
+            "type": "string",
+            "minLength": 1
+          },
+          "detail": {
+            "type": "string",
+            "default": ""
+          },
+          "options": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            },
+            "minItems": 2,
+            "example": [
+              "Run it",
+              "Not now"
+            ]
+          },
+          "note": {
+            "type": "string",
+            "description": "A reply posted in the thread with the question"
+          },
+          "action": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ApprovalAction"
+              },
+              {
+                "description": "For a permission request: the exact tool call, command, input or diff to approve"
+              }
+            ]
+          },
+          "epoch": {
+            "type": "integer",
+            "description": "The claimEpoch from your claim. A stale value is refused with 409."
+          }
+        },
+        "required": [
+          "text",
+          "options"
+        ]
+      },
+      "AnswerBody": {
+        "type": "object",
+        "properties": {
+          "option": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "option"
+        ]
+      },
+      "ThreadAskBody": {
+        "type": "object",
+        "properties": {
+          "text": {
+            "type": "string",
+            "minLength": 1
+          },
+          "detail": {
+            "type": "string",
+            "default": ""
+          },
+          "options": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            },
+            "minItems": 2,
+            "example": [
+              "Allow once",
+              "Deny"
+            ]
+          },
+          "action": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ApprovalAction"
+              },
+              {
+                "description": "For a permission request: the exact tool call, command, input or diff to approve"
+              }
+            ]
+          }
+        },
+        "required": [
+          "text",
+          "options"
+        ]
+      },
+      "Inbox": {
+        "type": "object",
+        "properties": {
+          "questions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Task"
+            }
+          },
+          "threadQuestions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ThreadQuestion"
+            },
+            "description": "Open questions asked in a thread rather than on a task"
+          },
+          "reviews": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Task"
+            }
+          }
+        },
+        "required": [
+          "questions",
+          "threadQuestions",
+          "reviews"
+        ]
+      },
+      "EventPage": {
+        "type": "object",
+        "properties": {
+          "events": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BoardEvent"
+            }
+          },
+          "head": {
+            "type": "integer",
+            "description": "The latest sequence number on the board"
+          }
+        },
+        "required": [
+          "events",
+          "head"
+        ]
+      },
+      "BoardEvent": {
+        "type": "object",
+        "properties": {
+          "seq": {
+            "type": "integer",
+            "description": "Gapless per-board sequence number"
+          },
+          "type": {
+            "type": "string",
+            "example": "task.claimed"
+          },
+          "at": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-11-24T10:40:02.000Z"
+          },
+          "actor": {
+            "type": "string"
+          },
+          "channel": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "taskId": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "threadId": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "messageId": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "data": {
+            "type": "object",
+            "additionalProperties": {}
+          }
+        },
+        "required": [
+          "seq",
+          "type",
+          "at",
+          "actor",
+          "channel",
+          "taskId",
+          "threadId",
+          "messageId",
+          "data"
+        ]
+      },
+      "ActivityResult": {
+        "type": "object",
+        "properties": {
+          "activity": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Activity"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "activity"
+        ]
+      },
+      "Activity": {
+        "type": "object",
+        "properties": {
+          "member": {
+            "type": "string"
+          },
+          "threadId": {
+            "type": "string"
+          },
+          "channel": {
+            "type": "string"
+          },
+          "since": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-11-24T10:40:02.000Z"
+          },
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-11-24T10:40:02.000Z",
+            "description": "Hide it after this time; the member refreshes it while it works"
+          }
+        },
+        "required": [
+          "member",
+          "threadId",
+          "channel",
+          "since",
+          "expiresAt"
+        ]
+      },
+      "ActivityBody": {
+        "type": "object",
+        "properties": {
+          "working": {
+            "type": "boolean",
+            "description": "true while the acting member works in the thread; false when it stops"
+          }
+        },
+        "required": [
+          "working"
+        ]
+      },
+      "ActivityEntryResult": {
+        "type": "object",
+        "properties": {
+          "entry": {
+            "$ref": "#/components/schemas/ActivityEntry"
+          },
+          "applied": {
+            "type": "boolean",
+            "description": "false when a repeated call changed nothing"
+          }
+        },
+        "required": [
+          "entry",
+          "applied"
+        ]
+      },
+      "CreateActivityBody": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200,
+            "example": "Add rate limiting to the API"
+          },
+          "runId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120,
+            "description": "Groups the entries of one run (AG-UI runId)"
+          },
+          "key": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120,
+            "description": "Repeat-safe: a second create with the same key in the same thread returns the first entry"
+          },
+          "parts": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ActivityPartInput"
+            },
+            "maxItems": 200,
+            "default": []
+          }
+        },
+        "required": [
+          "title"
+        ]
+      },
+      "ActivityPartInput": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/ToolPartInput"
+          },
+          {
+            "$ref": "#/components/schemas/TerminalPartInput"
+          },
+          {
+            "$ref": "#/components/schemas/ReasoningPartInput"
+          },
+          {
+            "$ref": "#/components/schemas/PlanPartInput"
+          },
+          {
+            "$ref": "#/components/schemas/FilesPartInput"
+          },
+          {
+            "$ref": "#/components/schemas/TestsPartInput"
+          },
+          {
+            "$ref": "#/components/schemas/SubagentPartInput"
+          },
+          {
+            "$ref": "#/components/schemas/ErrorPartInput"
+          }
+        ],
+        "discriminator": {
+          "propertyName": "type",
+          "mapping": {
+            "tool": "#/components/schemas/ToolPartInput",
+            "terminal": "#/components/schemas/TerminalPartInput",
+            "reasoning": "#/components/schemas/ReasoningPartInput",
+            "plan": "#/components/schemas/PlanPartInput",
+            "files": "#/components/schemas/FilesPartInput",
+            "tests": "#/components/schemas/TestsPartInput",
+            "subagent": "#/components/schemas/SubagentPartInput",
+            "error": "#/components/schemas/ErrorPartInput"
+          }
+        },
+        "description": "A part as an agent sends it: id, status, times and empty outputs may be left out"
+      },
+      "ToolPartInput": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80,
+            "example": "t1",
+            "description": "Unique within the entry; later updates name the part by it"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "tool"
+            ]
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "example": "edit_file"
+          },
+          "input": {
+            "type": "object",
+            "additionalProperties": {},
+            "example": {
+              "path": "src/limits.ts"
+            }
+          },
+          "output": {
+            "type": "string",
+            "maxLength": 20000
+          },
+          "status": {
+            "$ref": "#/components/schemas/StepStatus"
+          },
+          "startedAt": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-11-24T10:40:02.000Z"
+          },
+          "durationMs": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0,
+            "description": "Set when the part finishes"
+          }
+        },
+        "required": [
+          "type",
+          "name"
+        ]
+      },
+      "TerminalPartInput": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80,
+            "example": "t1",
+            "description": "Unique within the entry; later updates name the part by it"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "terminal"
+            ]
+          },
+          "command": {
+            "type": "string",
+            "minLength": 1,
+            "example": "bun test"
+          },
+          "cwd": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "output": {
+            "type": "string",
+            "maxLength": 20000,
+            "description": "Combined stdout and stderr; only the last 20,000 characters are kept"
+          },
+          "exitCode": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "status": {
+            "$ref": "#/components/schemas/StepStatus"
+          },
+          "startedAt": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-11-24T10:40:02.000Z"
+          },
+          "durationMs": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0,
+            "description": "Set when the part finishes"
+          }
+        },
+        "required": [
+          "type",
+          "command"
+        ]
+      },
+      "ReasoningPartInput": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80,
+            "example": "t1",
+            "description": "Unique within the entry; later updates name the part by it"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "reasoning"
+            ]
+          },
+          "text": {
+            "type": "string",
+            "maxLength": 20000
+          },
+          "status": {
+            "$ref": "#/components/schemas/StepStatus"
+          },
+          "startedAt": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-11-24T10:40:02.000Z"
+          },
+          "durationMs": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0,
+            "description": "Set when the part finishes"
+          }
+        },
+        "required": [
+          "type",
+          "text"
+        ]
+      },
+      "PlanPartInput": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80,
+            "example": "t1",
+            "description": "Unique within the entry; later updates name the part by it"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "plan"
+            ]
+          },
+          "title": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "steps": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PlanStep"
+            },
+            "maxItems": 200
+          }
+        },
+        "required": [
+          "type",
+          "steps"
+        ]
+      },
+      "FilesPartInput": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80,
+            "example": "t1",
+            "description": "Unique within the entry; later updates name the part by it"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "files"
+            ]
+          },
+          "files": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "path": {
+                  "type": "string",
+                  "minLength": 1,
+                  "example": "apps/server/src/limits.ts"
+                },
+                "added": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "removed": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "diff": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "maxLength": 20000,
+                  "description": "A unified diff of this file, when the agent has one"
+                }
+              },
+              "required": [
+                "path"
+              ]
+            },
+            "maxItems": 200
+          }
+        },
+        "required": [
+          "type",
+          "files"
+        ]
+      },
+      "TestsPartInput": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80,
+            "example": "t1",
+            "description": "Unique within the entry; later updates name the part by it"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "tests"
+            ]
+          },
+          "command": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "passed": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "failed": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "skipped": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "suites": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TestSuite"
+            },
+            "maxItems": 200
+          },
+          "failures": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "message": {
+                  "type": "string"
+                },
+                "location": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                }
+              },
+              "required": [
+                "name",
+                "message"
+              ]
+            },
+            "maxItems": 200
+          },
+          "status": {
+            "$ref": "#/components/schemas/StepStatus"
+          },
+          "startedAt": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-11-24T10:40:02.000Z"
+          },
+          "durationMs": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0,
+            "description": "Set when the part finishes"
+          }
+        },
+        "required": [
+          "type",
+          "passed",
+          "failed"
+        ]
+      },
+      "SubagentPartInput": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80,
+            "example": "t1",
+            "description": "Unique within the entry; later updates name the part by it"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "subagent"
+            ]
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "example": "explorer"
+          },
+          "task": {
+            "type": "string",
+            "minLength": 1
+          },
+          "summary": {
+            "type": "string",
+            "maxLength": 20000
+          },
+          "status": {
+            "$ref": "#/components/schemas/StepStatus"
+          },
+          "startedAt": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-11-24T10:40:02.000Z"
+          },
+          "durationMs": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0,
+            "description": "Set when the part finishes"
+          }
+        },
+        "required": [
+          "type",
+          "name",
+          "task"
+        ]
+      },
+      "ErrorPartInput": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80,
+            "example": "t1",
+            "description": "Unique within the entry; later updates name the part by it"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "error"
+            ]
+          },
+          "name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "message": {
+            "type": "string",
+            "minLength": 1
+          },
+          "frames": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "function": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "file": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "line": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ]
+                },
+                "column": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ]
+                }
+              },
+              "required": [
+                "file"
+              ]
+            },
+            "maxItems": 200
+          }
+        },
+        "required": [
+          "type",
+          "message"
+        ]
+      },
+      "UpdateActivityBody": {
+        "type": "object",
+        "properties": {
+          "updates": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ActivityUpdate"
+            },
+            "minItems": 1,
+            "maxItems": 100
+          },
+          "revision": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "The entry revision you last saw. A lower value means this update was already applied (a retry), so nothing changes and applied is false."
+          }
+        },
+        "required": [
+          "updates"
+        ]
+      },
+      "ActivityUpdate": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/PartSet"
+          },
+          {
+            "$ref": "#/components/schemas/PartAppend"
+          },
+          {
+            "$ref": "#/components/schemas/PartFinished"
+          },
+          {
+            "$ref": "#/components/schemas/RunFinished"
+          }
+        ],
+        "discriminator": {
+          "propertyName": "type",
+          "mapping": {
+            "part.set": "#/components/schemas/PartSet",
+            "part.append": "#/components/schemas/PartAppend",
+            "part.finished": "#/components/schemas/PartFinished",
+            "run.finished": "#/components/schemas/RunFinished"
+          }
+        }
+      },
+      "PartSet": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "part.set"
+            ]
+          },
+          "part": {
+            "$ref": "#/components/schemas/ActivityPartInput"
+          }
+        },
+        "required": [
+          "type",
+          "part"
+        ],
+        "description": "Add a part, or replace the part with the same id (AG-UI tool call start, state snapshot)"
+      },
+      "PartAppend": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "part.append"
+            ]
+          },
+          "partId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80,
+            "example": "t1",
+            "description": "Unique within the entry; later updates name the part by it"
+          },
+          "text": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "type",
+          "partId",
+          "text"
+        ],
+        "description": "Append streamed text: a tool's or command's output, reasoning text, a subagent's summary (AG-UI content and args chunks)"
+      },
+      "PartFinished": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "part.finished"
+            ]
+          },
+          "partId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80,
+            "example": "t1",
+            "description": "Unique within the entry; later updates name the part by it"
+          },
+          "status": {
+            "$ref": "#/components/schemas/EndStatus"
+          },
+          "output": {
+            "type": "string",
+            "maxLength": 20000,
+            "description": "Replaces the streamed output"
+          },
+          "exitCode": {
+            "type": "integer"
+          },
+          "durationMs": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Left out, the server measures from the part's start"
+          }
+        },
+        "required": [
+          "type",
+          "partId",
+          "status"
+        ],
+        "description": "A tool call, command, thought, test run or subagent ended (AG-UI tool call end and result)"
+      },
+      "EndStatus": {
+        "type": "string",
+        "enum": [
+          "ok",
+          "error"
+        ]
+      },
+      "RunFinished": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "run.finished"
+            ]
+          },
+          "status": {
+            "$ref": "#/components/schemas/RunEndStatus"
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "type",
+          "status"
+        ],
+        "description": "The run behind this entry ended; parts still running end with it (AG-UI run finished or run error)"
+      },
+      "RunEndStatus": {
+        "type": "string",
+        "enum": [
+          "ok",
+          "error",
+          "stopped"
+        ]
+      },
+      "StopRunResult": {
+        "type": "object",
+        "properties": {
+          "requests": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StopRequest"
+            }
+          }
+        },
+        "required": [
+          "requests"
+        ]
+      },
+      "StopRequest": {
+        "type": "object",
+        "properties": {
+          "member": {
+            "type": "string"
+          },
+          "threadId": {
+            "type": "string"
+          },
+          "entryIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "requestedBy": {
+            "type": "string"
+          },
+          "at": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-11-24T10:40:02.000Z"
+          },
+          "repeated": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "member",
+          "threadId",
+          "entryIds",
+          "requestedBy",
+          "at",
+          "repeated"
+        ]
+      },
+      "StopRunBody": {
+        "type": "object",
+        "properties": {
+          "member": {
+            "type": "string",
+            "description": "Whose run to stop; left out, every member working in the thread"
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 500
+          }
+        }
+      },
+      "CreateAgentBody": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 32,
+            "pattern": "^[a-z][a-z0-9-]+$",
+            "example": "scout"
+          },
+          "harness": {
+            "type": "string",
+            "minLength": 1,
+            "description": "A harness id the machine reports (listMachines)"
+          },
+          "folder": {
+            "type": "string",
+            "pattern": "^\\/",
+            "example": "/Users/dana/code/shop"
+          },
+          "machine": {
+            "type": "string",
+            "pattern": "^[a-z0-9][a-z0-9-]{0,62}$",
+            "example": "danas-laptop",
+            "description": "The machine whose runner serves the agent"
+          },
+          "permissions": {
+            "$ref": "#/components/schemas/AgentPermissions"
+          },
+          "personality": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 4000,
+            "default": null,
+            "description": "Extra system text the agent gets, such as its role or tone"
+          },
+          "model": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 200,
+            "default": null,
+            "description": "A model id the agent's harness passes to its model provider; null or empty uses the runner's default. Harnesses that pick their own model ignore it"
+          }
+        },
+        "required": [
+          "name",
+          "harness",
+          "folder",
+          "machine"
+        ]
+      },
+      "UpdateAgentBody": {
+        "type": "object",
+        "properties": {
+          "folder": {
+            "type": "string",
+            "pattern": "^\\/",
+            "example": "/Users/dana/code/shop"
+          },
+          "permissions": {
+            "$ref": "#/components/schemas/AgentPermissions"
+          },
+          "personality": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 4000,
+            "description": "Send null or an empty string to clear it"
+          },
+          "model": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 200,
+            "description": "Send null or an empty string to use the runner's default"
+          }
+        }
+      },
+      "DeletedAgent": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "removedAt": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-11-24T10:40:02.000Z"
+          }
+        },
+        "required": [
+          "name",
+          "removedAt"
+        ]
+      },
+      "Machine": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[a-z0-9][a-z0-9-]{0,62}$",
+            "example": "danas-laptop"
+          },
+          "name": {
+            "type": "string"
+          },
+          "harnesses": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/HarnessInfo"
+            }
+          },
+          "online": {
+            "type": "boolean",
+            "description": "True while the last heartbeat is under 45 seconds old"
+          },
+          "lastSeenAt": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-11-24T10:40:02.000Z"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "harnesses",
+          "online",
+          "lastSeenAt"
+        ]
+      },
+      "HarnessInfo": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "example": "local-agent"
+          },
+          "label": {
+            "type": "string",
+            "minLength": 1,
+            "description": "The name people see, as the runner reports it"
+          },
+          "capabilities": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "boolean"
+            },
+            "description": "What the harness adapter declares, such as resume and streaming"
+          }
+        },
+        "required": [
+          "id",
+          "label",
+          "capabilities"
+        ]
+      },
+      "RegisterMachineBody": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[a-z0-9][a-z0-9-]{0,62}$",
+            "example": "danas-laptop"
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "harnesses": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/HarnessInfo"
+            },
+            "description": "The harnesses this machine can run right now"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "harnesses"
+        ]
+      },
+      "HeartbeatResult": {
+        "type": "object",
+        "properties": {
+          "machine": {
+            "$ref": "#/components/schemas/Machine"
+          },
+          "agents": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Agent"
+            },
+            "description": "Every agent assigned to this machine"
+          }
+        },
+        "required": [
+          "machine",
+          "agents"
+        ]
+      },
+      "HeartbeatBody": {
+        "type": "object",
+        "properties": {
+          "harnesses": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/HarnessInfo"
+            },
+            "description": "Send when the harnesses this machine can run changed"
+          },
+          "agents": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AgentReportEntry"
+            },
+            "default": [],
+            "description": "Every agent this machine serves right now; an agent left out is not served"
+          }
+        }
+      },
+      "AgentReportEntry": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "state": {
+            "$ref": "#/components/schemas/AgentReport"
+          },
+          "reason": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 300,
+            "default": null,
+            "description": "A short reason when state is error, such as a missing folder"
+          }
+        },
+        "required": [
+          "name",
+          "state"
+        ]
+      },
+      "AgentReport": {
+        "type": "string",
+        "enum": [
+          "serving",
+          "working",
+          "error"
+        ]
+      }
+    },
+    "parameters": {}
+  },
+  "paths": {
+    "/api/channels": {
+      "get": {
+        "operationId": "listChannels",
+        "tags": [
+          "channels"
+        ],
+        "summary": "List channels with the acting member's unread counts",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Channel"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The input is not valid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The acting member is not on this board, or may not do this",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The task or message is in another state, or the claim epoch is stale",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "createChannel",
+        "tags": [
+          "channels"
+        ],
+        "summary": "Create a channel",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateChannelBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Channel"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The input is not valid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The acting member is not on this board, or may not do this",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The task or message is in another state, or the claim epoch is stale",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/channels/{channel}/read": {
+      "post": {
+        "operationId": "markRead",
+        "tags": [
+          "channels"
+        ],
+        "summary": "Mark a channel as read for the acting member",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "example": "backend"
+            },
+            "required": true,
+            "name": "channel",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "lastReadId": {
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "lastReadId"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The input is not valid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The acting member is not on this board, or may not do this",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The task or message is in another state, or the claim epoch is stale",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/channels/{channel}/messages": {
+      "get": {
+        "operationId": "listMessages",
+        "tags": [
+          "messages"
+        ],
+        "summary": "Read a channel: messages, task cards, question cards and events, oldest first",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "example": "backend"
+            },
+            "required": true,
+            "name": "channel",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/FeedItem"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The input is not valid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The acting member is not on this board, or may not do this",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The task or message is in another state, or the claim epoch is stale",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "postMessage",
+        "tags": [
+          "messages"
+        ],
+        "summary": "Post a message to a channel. A person mentioning an agent (@name) also makes a task for that agent.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "example": "backend"
+            },
+            "required": true,
+            "name": "channel",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PostMessageBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PostMessageResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The input is not valid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The acting member is not on this board, or may not do this",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The task or message is in another state, or the claim epoch is stale",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/messages/{id}": {
+      "delete": {
+        "operationId": "deleteMessage",
+        "tags": [
+          "messages"
+        ],
+        "summary": "Delete a message or reply (m12). Its author, the author's owner or a person can. The text is removed from every read; repeating it changes nothing.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "description": "A message id such as m12",
+              "example": "m12"
+            },
+            "required": true,
+            "description": "A message id such as m12",
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeletedMessage"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The input is not valid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The acting member is not on this board, or may not do this",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The task or message is in another state, or the claim epoch is stale",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/threads/{id}": {
+      "get": {
+        "operationId": "getThread",
+        "tags": [
+          "threads"
+        ],
+        "summary": "Read a thread: a message id (m12) gives the message and its replies, a task id (806) gives the task thread",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "description": "A message id such as m12, or a task id such as 806",
+              "example": "806"
+            },
+            "required": true,
+            "description": "A message id such as m12, or a task id such as 806",
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Thread"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The input is not valid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The acting member is not on this board, or may not do this",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The task or message is in another state, or the claim epoch is stale",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/threads/{id}/replies": {
+      "post": {
+        "operationId": "replyToThread",
+        "tags": [
+          "threads"
+        ],
+        "summary": "Reply in a thread. On a task thread, send your claim epoch so a stale claim is refused.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "description": "A message id such as m12, or a task id such as 806",
+              "example": "806"
+            },
+            "required": true,
+            "description": "A message id such as m12, or a task id such as 806",
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReplyBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Reply"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The input is not valid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The acting member is not on this board, or may not do this",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The task or message is in another state, or the claim epoch is stale",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/threads/{id}/task": {
+      "post": {
+        "operationId": "makeTaskFromThread",
+        "tags": [
+          "threads"
+        ],
+        "summary": "Make a ready task from a message thread, copying its replies into the task thread",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "description": "A message id such as m12, or a task id such as 806",
+              "example": "806"
+            },
+            "required": true,
+            "description": "A message id such as m12, or a task id such as 806",
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Task"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The input is not valid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The acting member is not on this board, or may not do this",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The task or message is in another state, or the claim epoch is stale",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/members": {
+      "get": {
+        "operationId": "listMembers",
+        "tags": [
+          "members"
+        ],
+        "summary": "List people, agents, bridges and watchers",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Member"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The input is not valid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The acting member is not on this board, or may not do this",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The task or message is in another state, or the claim epoch is stale",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "createMember",
+        "tags": [
+          "members"
+        ],
+        "summary": "Add a member. An agent names the person it acts for as its owner.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateMemberBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Member"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The input is not valid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The acting member is not on this board, or may not do this",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The task or message is in another state, or the claim epoch is stale",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/me": {
+      "get": {
+        "operationId": "whoami",
+        "tags": [
+          "members"
+        ],
+        "summary": "Show the acting member, taken from the x-flockr-member header",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "name": {
+                      "type": "string"
+                    },
+                    "member": {
+                      "anyOf": [
+                        {
+                          "$ref": "#/components/schemas/Member"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    }
+                  },
+                  "required": [
+                    "name",
+                    "member"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The input is not valid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The acting member is not on this board, or may not do this",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The task or message is in another state, or the claim epoch is stale",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/agents": {
+      "get": {
+        "operationId": "listAgents",
+        "tags": [
+          "members"
+        ],
+        "summary": "List agents with their status (offline, online, working, error), how each is served and what it works on",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Agent"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The input is not valid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The acting member is not on this board, or may not do this",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The task or message is in another state, or the claim epoch is stale",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "createAgent",
+        "tags": [
+          "agents"
+        ],
+        "summary": "Create an agent served by a machine's runner, owned by the acting person, and start it. Its first session starts when someone talks to it.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateAgentBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentDetail"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The input is not valid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The acting member is not on this board, or may not do this",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The task or message is in another state, or the claim epoch is stale",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/agents/{name}": {
+      "get": {
+        "operationId": "getAgent",
+        "tags": [
+          "members"
+        ],
+        "summary": "Show one agent: its status, how it is served, and the tasks it holds or is assigned",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "example": "reviewer"
+            },
+            "required": true,
+            "name": "name",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentDetail"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The input is not valid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The acting member is not on this board, or may not do this",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The task or message is in another state, or the claim epoch is stale",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "operationId": "updateAgent",
+        "tags": [
+          "agents"
+        ],
+        "summary": "Change an agent's folder, permissions, personality or model; its next session uses them",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "example": "scout"
+            },
+            "required": true,
+            "name": "name",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateAgentBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentDetail"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The input is not valid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The acting member is not on this board, or may not do this",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The task or message is in another state, or the claim epoch is stale",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "operationId": "deleteAgent",
+        "tags": [
+          "agents"
+        ],
+        "summary": "Stop an agent and remove it from the board; its messages keep their author; safe to repeat",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "example": "scout"
+            },
+            "required": true,
+            "name": "name",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeletedAgent"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The input is not valid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The acting member is not on this board, or may not do this",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The task or message is in another state, or the claim epoch is stale",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/tasks/claim": {
+      "post": {
+        "operationId": "claimNextTask",
+        "tags": [
+          "claims"
+        ],
+        "summary": "Claim the oldest ready task open to you, optionally only with these labels or only assigned to you. Returns null when there is none.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ClaimNextBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClaimResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The input is not valid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The acting member is not on this board, or may not do this",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The task or message is in another state, or the claim epoch is stale",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/tasks/{id}/claim": {
+      "post": {
+        "operationId": "claimTask",
+        "tags": [
+          "claims"
+        ],
+        "summary": "Claim one ready task with a 15-minute lease and a new claim epoch",
+        "parameters": [
+          {
+            "schema": {
+              "type": "integer",
+              "example": 806
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Task"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The input is not valid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The acting member is not on this board, or may not do this",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The task or message is in another state, or the claim epoch is stale",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/tasks/{id}/renew": {
+      "post": {
+        "operationId": "renewTask",
+        "tags": [
+          "claims"
+        ],
+        "summary": "Renew your lease on a claimed task for another 15 minutes",
+        "parameters": [
+          {
+            "schema": {
+              "type": "integer",
+              "example": 806
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FenceBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Task"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The input is not valid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The acting member is not on this board, or may not do this",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The task or message is in another state, or the claim epoch is stale",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/tasks/{id}/release": {
+      "post": {
+        "operationId": "releaseTask",
+        "tags": [
+          "claims"
+        ],
+        "summary": "Give a task back so it is ready for someone else. Releasing a task assigned to you also unassigns it (declines it), whether you claimed it or not; send keepAssignee to stay assigned.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "integer",
+              "example": 806
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReleaseBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Task"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The input is not valid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The acting member is not on this board, or may not do this",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The task or message is in another state, or the claim epoch is stale",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/tasks": {
+      "get": {
+        "operationId": "listTasks",
+        "tags": [
+          "tasks"
+        ],
+        "summary": "List tasks, filtered by channel, state, assignee or a member who holds or is assigned them",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": false,
+            "name": "channel",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "$ref": "#/components/schemas/TaskState"
+            },
+            "required": false,
+            "name": "state",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": false,
+            "name": "assignee",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "description": "Only tasks this member holds or is assigned"
+            },
+            "required": false,
+            "description": "Only tasks this member holds or is assigned",
+            "name": "member",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Task"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The input is not valid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The acting member is not on this board, or may not do this",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The task or message is in another state, or the claim epoch is stale",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "createTask",
+        "tags": [
+          "tasks"
+        ],
+        "summary": "Create a task in a channel. It is ready, or waiting until every task it needs is done.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateTaskBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Task"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The input is not valid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The acting member is not on this board, or may not do this",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The task or message is in another state, or the claim epoch is stale",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/tasks/{id}": {
+      "get": {
+        "operationId": "getTask",
+        "tags": [
+          "tasks"
+        ],
+        "summary": "Show one task",
+        "parameters": [
+          {
+            "schema": {
+              "type": "integer",
+              "example": 806
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Task"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The input is not valid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The acting member is not on this board, or may not do this",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The task or message is in another state, or the claim epoch is stale",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/tasks/{id}/give": {
+      "post": {
+        "operationId": "giveTask",
+        "tags": [
+          "tasks"
+        ],
+        "summary": "Assign a ready or waiting task to a member",
+        "parameters": [
+          {
+            "schema": {
+              "type": "integer",
+              "example": 806
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GiveBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Task"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The input is not valid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The acting member is not on this board, or may not do this",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The task or message is in another state, or the claim epoch is stale",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/tasks/{id}/complete": {
+      "post": {
+        "operationId": "completeTask",
+        "tags": [
+          "tasks"
+        ],
+        "summary": "Mark a claimed task done, with an optional commit and a note as proof. Tasks waiting on it turn ready.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "integer",
+              "example": 806
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CompleteBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Task"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The input is not valid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The acting member is not on this board, or may not do this",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The task or message is in another state, or the claim epoch is stale",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/tasks/{id}/submit": {
+      "post": {
+        "operationId": "submitForReview",
+        "tags": [
+          "tasks"
+        ],
+        "summary": "Send a claimed task for review by a person, with an optional commit and note",
+        "parameters": [
+          {
+            "schema": {
+              "type": "integer",
+              "example": 806
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CompleteBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Task"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The input is not valid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The acting member is not on this board, or may not do this",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The task or message is in another state, or the claim epoch is stale",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/tasks/{id}/fail": {
+      "post": {
+        "operationId": "failTask",
+        "tags": [
+          "tasks"
+        ],
+        "summary": "Give up on a claimed task with a reason. It becomes blocked and unheld.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "integer",
+              "example": 806
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReasonBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Task"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The input is not valid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The acting member is not on this board, or may not do this",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The task or message is in another state, or the claim epoch is stale",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/tasks/{id}/block": {
+      "post": {
+        "operationId": "blockTask",
+        "tags": [
+          "tasks"
+        ],
+        "summary": "Block a ready or claimed task with a reason",
+        "parameters": [
+          {
+            "schema": {
+              "type": "integer",
+              "example": 806
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReasonBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Task"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The input is not valid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The acting member is not on this board, or may not do this",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The task or message is in another state, or the claim epoch is stale",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/tasks/{id}/unblock": {
+      "post": {
+        "operationId": "unblockTask",
+        "tags": [
+          "tasks"
+        ],
+        "summary": "Unblock a task: back to its holder with a new lease, or ready if nobody holds it",
+        "parameters": [
+          {
+            "schema": {
+              "type": "integer",
+              "example": 806
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Task"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The input is not valid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The acting member is not on this board, or may not do this",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The task or message is in another state, or the claim epoch is stale",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/tasks/{id}/approve": {
+      "post": {
+        "operationId": "approveTask",
+        "tags": [
+          "review"
+        ],
+        "summary": "Approve a task in review. It is done and tasks waiting on it turn ready.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "integer",
+              "example": 806
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Task"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The input is not valid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The acting member is not on this board, or may not do this",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The task or message is in another state, or the claim epoch is stale",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/tasks/{id}/changes": {
+      "post": {
+        "operationId": "requestChanges",
+        "tags": [
+          "review"
+        ],
+        "summary": "Send a task in review back to its holder with a note",
+        "parameters": [
+          {
+            "schema": {
+              "type": "integer",
+              "example": 806
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChangesBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Task"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The input is not valid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The acting member is not on this board, or may not do this",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The task or message is in another state, or the claim epoch is stale",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/tasks/{id}/ask": {
+      "post": {
+        "operationId": "askQuestion",
+        "tags": [
+          "questions"
+        ],
+        "summary": "Ask a person a question on a claimed task, with the options they can pick. The lease does not run out while it is open.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "integer",
+              "example": 806
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AskBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Task"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The input is not valid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The acting member is not on this board, or may not do this",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The task or message is in another state, or the claim epoch is stale",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/tasks/{id}/answer": {
+      "post": {
+        "operationId": "answerQuestion",
+        "tags": [
+          "questions"
+        ],
+        "summary": "Answer the open question on a task with one of its options",
+        "parameters": [
+          {
+            "schema": {
+              "type": "integer",
+              "example": 806
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AnswerBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Task"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The input is not valid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The acting member is not on this board, or may not do this",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The task or message is in another state, or the claim epoch is stale",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/threads/{id}/ask": {
+      "post": {
+        "operationId": "askInThread",
+        "tags": [
+          "questions"
+        ],
+        "summary": "Ask a question in a thread (a message id such as m12, or a task id) with the options a person can pick. One open question per thread; no task or claim is needed.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "description": "A message id such as m12, or a task id such as 806",
+              "example": "806"
+            },
+            "required": true,
+            "description": "A message id such as m12, or a task id such as 806",
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ThreadAskBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ThreadQuestion"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The input is not valid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The acting member is not on this board, or may not do this",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The task or message is in another state, or the claim epoch is stale",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/threads/{id}/answer": {
+      "post": {
+        "operationId": "answerInThread",
+        "tags": [
+          "questions"
+        ],
+        "summary": "Answer the open question in a thread with one of its options. Only a person can; the answer is posted as a reply.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "description": "A message id such as m12, or a task id such as 806",
+              "example": "806"
+            },
+            "required": true,
+            "description": "A message id such as m12, or a task id such as 806",
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AnswerBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ThreadQuestion"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The input is not valid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The acting member is not on this board, or may not do this",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The task or message is in another state, or the claim epoch is stale",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/inbox": {
+      "get": {
+        "operationId": "getInbox",
+        "tags": [
+          "questions"
+        ],
+        "summary": "Waiting for you: open questions on tasks and in threads, and work to review",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Inbox"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The input is not valid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The acting member is not on this board, or may not do this",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The task or message is in another state, or the claim epoch is stale",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/events": {
+      "get": {
+        "operationId": "listEvents",
+        "tags": [
+          "events"
+        ],
+        "summary": "Read the board's event log after a sequence number, oldest first",
+        "parameters": [
+          {
+            "schema": {
+              "type": "integer",
+              "description": "Return events after this sequence number, default 0"
+            },
+            "required": false,
+            "description": "Return events after this sequence number, default 0",
+            "name": "since",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "description": "At most this many events, default 500"
+            },
+            "required": false,
+            "description": "At most this many events, default 500",
+            "name": "limit",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EventPage"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The input is not valid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The acting member is not on this board, or may not do this",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The task or message is in another state, or the claim epoch is stale",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/threads/{id}/activity": {
+      "put": {
+        "operationId": "setActivity",
+        "tags": [
+          "activity"
+        ],
+        "summary": "Say the acting member is working in a thread (working: true, repeat it to keep it showing) or has stopped (working: false). Sent live to every client; it is current state, not event history.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "description": "A message id such as m12, or a task id such as 806",
+              "example": "806"
+            },
+            "required": true,
+            "description": "A message id such as m12, or a task id such as 806",
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ActivityBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ActivityResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The input is not valid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The acting member is not on this board, or may not do this",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The task or message is in another state, or the claim epoch is stale",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/activity": {
+      "get": {
+        "operationId": "listActivity",
+        "tags": [
+          "activity"
+        ],
+        "summary": "Who is working in which thread right now",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Activity"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The input is not valid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The acting member is not on this board, or may not do this",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The task or message is in another state, or the claim epoch is stale",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/threads/{id}/activity-entries": {
+      "post": {
+        "operationId": "createActivityEntry",
+        "tags": [
+          "activity"
+        ],
+        "summary": "Post an activity entry in a thread: the work an agent is doing (tool calls, commands, reasoning, a plan, changed files, test runs, subagents, errors). It shows as one collapsed work block and keeps the acting member shown as working until its run finishes. Send key to make a retry safe.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "description": "A message id such as m12, or a task id such as 806",
+              "example": "806"
+            },
+            "required": true,
+            "description": "A message id such as m12, or a task id such as 806",
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateActivityBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ActivityEntryResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The input is not valid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The acting member is not on this board, or may not do this",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The task or message is in another state, or the claim epoch is stale",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/activity-entries/{id}/updates": {
+      "post": {
+        "operationId": "updateActivityEntry",
+        "tags": [
+          "activity"
+        ],
+        "summary": "Update your own activity entry with events: part.set adds or replaces a part, part.append streams output or text, part.finished ends a part, run.finished ends the run. Each call is one event in the log; reads return the latest state. Send the revision you last saw to make a retry safe.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "description": "An activity entry's message id such as m41",
+              "example": "m41"
+            },
+            "required": true,
+            "description": "An activity entry's message id such as m41",
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateActivityBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ActivityEntryResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The input is not valid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The acting member is not on this board, or may not do this",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The task or message is in another state, or the claim epoch is stale",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/activity-entries/{id}": {
+      "get": {
+        "operationId": "getActivityEntry",
+        "tags": [
+          "activity"
+        ],
+        "summary": "Read one activity entry at its latest state, with its revision",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "description": "An activity entry's message id such as m41",
+              "example": "m41"
+            },
+            "required": true,
+            "description": "An activity entry's message id such as m41",
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ActivityEntry"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The input is not valid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The acting member is not on this board, or may not do this",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The task or message is in another state, or the claim epoch is stale",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/threads/{id}/stop": {
+      "post": {
+        "operationId": "stopRun",
+        "tags": [
+          "activity"
+        ],
+        "summary": "Ask a working member to stop its run in a thread. Writes a run.stop_requested event the member's runner acts on, and marks its running entries as stop requested. A person, the member itself or its owner may ask; repeating it changes nothing.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "description": "A message id such as m12, or a task id such as 806",
+              "example": "806"
+            },
+            "required": true,
+            "description": "A message id such as m12, or a task id such as 806",
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StopRunBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StopRunResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The input is not valid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The acting member is not on this board, or may not do this",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The task or message is in another state, or the claim epoch is stale",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/agents/{name}/start": {
+      "post": {
+        "operationId": "startAgent",
+        "tags": [
+          "agents"
+        ],
+        "summary": "Start serving an agent on its machine; safe to repeat",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "example": "scout"
+            },
+            "required": true,
+            "name": "name",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentDetail"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The input is not valid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The acting member is not on this board, or may not do this",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The task or message is in another state, or the claim epoch is stale",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/agents/{name}/stop": {
+      "post": {
+        "operationId": "stopAgent",
+        "tags": [
+          "agents"
+        ],
+        "summary": "Stop an agent: its sessions end, its claims are released and it ignores mentions until started; safe to repeat",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "example": "scout"
+            },
+            "required": true,
+            "name": "name",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentDetail"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The input is not valid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The acting member is not on this board, or may not do this",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The task or message is in another state, or the claim epoch is stale",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/machines": {
+      "get": {
+        "operationId": "listMachines",
+        "tags": [
+          "machines"
+        ],
+        "summary": "List machines whose runners serve agents, with the harnesses each can run and whether it is online",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Machine"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The input is not valid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The acting member is not on this board, or may not do this",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The task or message is in another state, or the claim epoch is stale",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "registerMachine",
+        "tags": [
+          "machines"
+        ],
+        "summary": "For runners: register this machine and the harnesses it can run; safe to repeat",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegisterMachineBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Machine"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The input is not valid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The acting member is not on this board, or may not do this",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The task or message is in another state, or the claim epoch is stale",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/machines/{id}/heartbeat": {
+      "post": {
+        "operationId": "machineHeartbeat",
+        "tags": [
+          "machines"
+        ],
+        "summary": "For runners: say the machine is alive and report each served agent's state; returns the agents assigned to it",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-z0-9][a-z0-9-]{0,62}$",
+              "example": "danas-laptop"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HeartbeatBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HeartbeatResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The input is not valid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The acting member is not on this board, or may not do this",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The task or message is in another state, or the claim epoch is stale",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "webhooks": {}
+}
