@@ -7,6 +7,7 @@ import { databaseUrl, host, port } from "./config"
 import { connect } from "./db/client"
 import { parseSince, type LiveSocket } from "./live/hub"
 import { startLive } from "./live/runtime"
+import { hookSettingsFrom } from "./board/hook-route"
 import { modelProxySettingsFrom } from "./model-proxy/proxy"
 
 const dist = path.resolve(import.meta.dirname, "../../web/dist")
@@ -19,7 +20,7 @@ if (!(await index.exists())) {
 
 const connection = connect(databaseUrl)
 const auth = localAuthSettings()
-const app = createApp(connection.db, { auth, modelProxy: modelProxySettingsFrom(process.env, auth.secret) })
+const app = createApp(connection.db, { auth, modelProxy: modelProxySettingsFrom(process.env, auth.secret), hooks: hookSettingsFrom(process.env) })
 const live = await startLive(databaseUrl)
 
 async function staticFile(pathname: string): Promise<Response> {

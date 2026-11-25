@@ -27,3 +27,7 @@ export const errorStatus = {
   lease_expired: 409,
   internal: 500,
 } as const satisfies Record<ErrorKind, number>
+
+// What a code host webhook can tell a task thread (5e).
+export const codeHostEventKinds = ["opened", "reopened", "closed", "merged", "commented", "approved", "changes_requested", "reviewed"] as const
+export type CodeHostEventKind = (typeof codeHostEventKinds)[number]

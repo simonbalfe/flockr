@@ -5,6 +5,7 @@ import { createAuthenticator, headerIdentity, isPublicApiPath, signInNeeded } fr
 import { requireInScope } from "./auth/scope"
 import { authOff, type AuthSettings } from "./auth/settings"
 import { BoardError, notFound, unauthenticated } from "./board/errors"
+import { hooksPath, receiveHook, type HookSettings } from "./board/hook-route"
 import type { Database } from "./db/client"
 import { mcpHandler } from "./mcp/server"
 import { modelProxyPath, proxyModel, type ModelProxySettings } from "./model-proxy/proxy"
@@ -40,6 +41,8 @@ export interface AppOptions {
   auth?: AuthSettings
   // Lets sandboxes reach the model without holding its key (PL8); off when null.
   modelProxy?: ModelProxySettings | null
+  // Code host webhooks into task threads (5e); off when null.
+  hooks?: HookSettings | null
 }
 
 export function createApp(db: Database, options: AppOptions = {}) {
@@ -49,6 +52,8 @@ export function createApp(db: Database, options: AppOptions = {}) {
   const identify: MiddlewareHandler<AppEnv> = async (c, next) => {
     // A box proves itself with its box token, checked by the proxy, not as a member.
     if (c.req.path.startsWith(`${modelProxyPath}/`)) return next()
+    // A code host proves itself by signing the delivery, checked by the hook route.
+    if (c.req.path.startsWith(`${hooksPath}/`)) return next()
     c.set("db", db)
     c.set("auth", authenticator)
     const open = authenticator.mode === "off" || isPublicApiPath(c.req.path)
@@ -97,6 +102,7 @@ export function createApp(db: Database, options: AppOptions = {}) {
 
   // Not an OpenAPI operation: it is for sandboxes, not for people or agents on the board.
   api.all(`${modelProxyPath}/*`, (c) => proxyModel(c.req.raw, options.modelProxy ?? null, new Date()))
+  api.post(`${hooksPath}/:host`, (c) => receiveHook(db, c.req.raw, c.req.param("host"), options.hooks ?? null))
   api.get("/api/openapi.json", (c) => c.json(document()))
   api.get("/api/docs", swaggerUI({ url: "/api/openapi.json" }))
   api.on(["GET", "POST"], `${authBasePath}/*`, (c) => {

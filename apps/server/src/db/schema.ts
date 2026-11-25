@@ -411,3 +411,14 @@ export type JobRow = typeof jobs.$inferSelect
 export type ApprovalRuleRow = typeof approvalRules.$inferSelect
 export type JobApprovalRow = typeof jobApprovals.$inferSelect
 export type MemberKeyRow = typeof memberKeys.$inferSelect
+
+// Each code host delivery handled once, however often the host retries it (5e).
+export const hookDeliveries = pgTable(
+  "hook_deliveries",
+  {
+    host: text("host").notNull(),
+    delivery: text("delivery").notNull(),
+    receivedAt: timestamp("received_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [primaryKey({ columns: [t.host, t.delivery] })],
+)

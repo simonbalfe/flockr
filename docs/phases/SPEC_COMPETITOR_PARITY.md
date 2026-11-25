@@ -102,7 +102,7 @@ Research only: every feature the surveyed products have, and who has it. Nothing
 | P48 | Workflows as files, with approval steps | BZ | YAML; approval steps exist but cannot pause and resume yet |
 | P49 | Rate limit per routine and in total | GB | 200 an hour per routine, 300 in total |
 | P50 | Slack threads synced both ways | VB, RK | RK also bridges WhatsApp, Telegram and iMessage |
-| P51 | GitHub pull requests and comments in threads | VB, BZ | |
+| P51 | GitHub pull requests and comments in threads | VB, BZ | Done (5e) |
 | P52 | Linear issues synced | VB | |
 
 ## Approvals and security

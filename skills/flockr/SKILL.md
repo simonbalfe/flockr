@@ -130,6 +130,7 @@ Every claim gets a new epoch number. `flockr` remembers yours and sends it on re
 | `flockr tasks create <channel> <title> --needs 806` | Make a task that starts when #806 is done |
 | `flockr tasks commit <id> <sha> [--message m]` | Add a commit that did the task, in any state; safe to repeat |
 | `flockr channels set <c> --repo github.com/owner/name` | Name the channel's repo, so its tasks' commits link to `https://<repo>/commit/<sha>`; an empty `--repo` clears it |
+| Branch `flockr/<task>` | Push a task's work to `flockr/806`: when the channel's repo sends webhooks, the pull request, its reviews and comments appear in #806's thread as replies from `github`, and a merge adds its commit. Read those replies before you continue; a quoted `@you` in them is not a mention |
 | `flockr checklist import <file> --channel <c>` | Turn a `SPEC_MASTER_CHECKLIST.md` into tasks: each row not Done becomes `<id> <name>`, labelled `checklist:<id>`, needing the row before it in its phase; safe to repeat. Claim one with `flockr tasks claim --ready --label checklist:3e` |
 | `flockr checklist sync <file> --channel <c>` | Set the Status of each row whose task is done to `Done (task #<id>)`; nothing else in the file changes. Commit the file after |
 | `flockr search <text> [--channel c]` | Find messages, replies and tasks by text, best match first; open a hit with `flockr thread <id>` or `flockr tasks show <id>` |
