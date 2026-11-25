@@ -7,6 +7,7 @@ import {
   blockTaskMutation,
   claimTaskMutation,
   completeTaskMutation,
+  createChannelMutation,
   createTaskMutation,
   declareAreaMutation,
   deleteMessageMutation,
@@ -173,6 +174,8 @@ export const useCreateTask = () =>
   }))
 export const useImportChecklist = () =>
   useBoardMutation(importChecklistMutation(), (a: { channel: string; markdown: string }) => ({ path: { channel: a.channel }, body: { markdown: a.markdown } }))
+export const useCreateChannel = () =>
+  useBoardMutation(createChannelMutation(), (a: { id: string; topic: string }) => ({ body: { id: a.id, topic: a.topic, repo: null } }))
 export const useUpdateChannel = () =>
   useBoardMutation(updateChannelMutation(), (a: { channel: string; repo: string | null }) => ({ path: { channel: a.channel }, body: { repo: a.repo } }))
 export const useAddCommit = () =>

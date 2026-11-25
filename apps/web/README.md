@@ -38,6 +38,7 @@ Other commands: `bun run build` (type check and production build into `dist/`), 
 | Hover your own message, press Edit, change the text, press Enter | The text changes for everyone with "(edited)"; click "(edited)" for the earlier versions (`flockr edit m12 <text>`, `flockr versions m12`) |
 | Hover a message, press Label, type `review ui`, press Enter | `+review` and `+ui` under the message; click one to show only messages and task cards carrying it, "Show all" clears it (`?label=review`, `flockr read backend --label review`) |
 | In a thread, hover a reply and press Reply | A sub-thread under that reply with its own reply box; afterwards it shows collapsed as "2 replies", click to expand (`flockr reply m20 <text>`) |
+| Press + next to Channels, type a name and Create | The channel is made (the name becomes lowercase with dashes, "UI Check" is #ui-check) and opens; `flockr channels create <id>` does the same |
 | Hover a message, press Delete, then Yes | The message disappears for everyone, live, leaving no placeholder (Simon, 25 Nov 2026); the API still returns it as `deleted: true` with empty text; `flockr delete m12` does the same |
 | Press + beside Direct messages and pick claude, then write a message | A private conversation only the two of you can read; claude answers in that message's thread with no @mention (`flockr dm claude "text"`) |
 | Open Threads in the sidebar | Every thread you started or replied in, newest first; "2 new" marks replies from others since you last wrote; click one to open it (`flockr threads`) |

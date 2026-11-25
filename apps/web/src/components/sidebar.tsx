@@ -7,6 +7,7 @@ import { currentUser } from "@/api/session"
 import type { Agent } from "@/api/types"
 import { AgentsHeading } from "@/components/agents/agents-heading"
 import { AgentStatusDot } from "@/components/agents/status-dot"
+import { NewChannelDialog } from "@/components/new-channel-dialog"
 import { DirectMessagesSection } from "@/components/direct-messages"
 import { MemberAvatar } from "@/components/member-avatar"
 import { useShell } from "@/components/shell-context"
@@ -123,7 +124,10 @@ export function SidebarContent() {
             </Link>
           </div>
           <div>
-            <GroupHeading>Channels</GroupHeading>
+            <div className="flex items-center justify-between pr-0.5 pb-1 pl-2">
+              <span className="text-[11px] font-semibold text-faint">Channels</span>
+              <NewChannelDialog />
+            </div>
             {(channels.data ?? []).filter((c) => c.kind === "channel").map((channel) => (
               <Link
                 key={channel.id}
