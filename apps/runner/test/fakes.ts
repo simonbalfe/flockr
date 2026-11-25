@@ -83,6 +83,7 @@ export function task(values: Partial<Task> & { id: number }): Task {
     reason: null,
     question: null,
     replyCount: 0,
+    planId: null,
     createdAt: "2026-11-24T10:00:00.000Z",
     ...values,
   }

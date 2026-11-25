@@ -1682,6 +1682,13 @@
           "replyCount": {
             "type": "integer"
           },
+          "planId": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "description": "The plan this task belongs to, or null"
+          },
           "createdAt": {
             "type": "string",
             "format": "date-time",
@@ -1706,6 +1713,7 @@
           "reason",
           "question",
           "replyCount",
+          "planId",
           "createdAt"
         ]
       },
@@ -2138,6 +2146,14 @@
           "text": {
             "type": "string",
             "description": "A first reply for the task thread"
+          },
+          "plan": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "default": null,
+            "description": "Put the new task in this plan; it must be open and in the same channel"
           }
         },
         "required": [
@@ -4293,7 +4309,12 @@
           "task.completed",
           "task.approved",
           "task.failed",
-          "task.expired"
+          "task.expired",
+          "task.planned",
+          "plan.created",
+          "plan.updated",
+          "plan.closed",
+          "plan.reopened"
         ],
         "description": "Fires once for each new event of this type in the routine's channel"
       },
@@ -5099,6 +5120,9 @@
           "unread": {
             "type": "integer",
             "description": "Replies by others since the acting member last wrote in the thread"
+          },
+          "status": {
+            "$ref": "#/components/schemas/ThreadStatus"
           }
         },
         "required": [
@@ -5111,8 +5135,21 @@
           "lastAt",
           "lastWho",
           "lastText",
-          "unread"
+          "unread",
+          "status"
         ]
+      },
+      "ThreadStatus": {
+        "type": "string",
+        "enum": [
+          "needs_you",
+          "running",
+          "blocked",
+          "unread",
+          "done",
+          "quiet"
+        ],
+        "description": "needs_you, running, blocked, unread, done or quiet, in that order of precedence"
       },
       "SentItem": {
         "type": "object",
@@ -5312,6 +5349,343 @@
           "kind",
           "target",
           "text"
+        ]
+      },
+      "Plan": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "example": 3
+          },
+          "channel": {
+            "type": "string",
+            "example": "backend"
+          },
+          "title": {
+            "type": "string",
+            "example": "Users API"
+          },
+          "goal": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "example": "A users API with sign-up behind it this week"
+          },
+          "state": {
+            "$ref": "#/components/schemas/PlanState"
+          },
+          "createdBy": {
+            "type": "string",
+            "example": "lead"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-11-25T09:00:00.000Z"
+          },
+          "closedAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "example": "2026-11-25T09:00:00.000Z"
+          },
+          "progress": {
+            "$ref": "#/components/schemas/PlanProgress"
+          }
+        },
+        "required": [
+          "id",
+          "channel",
+          "title",
+          "goal",
+          "state",
+          "createdBy",
+          "createdAt",
+          "closedAt",
+          "progress"
+        ]
+      },
+      "PlanState": {
+        "type": "string",
+        "enum": [
+          "open",
+          "closed"
+        ]
+      },
+      "PlanProgress": {
+        "type": "object",
+        "properties": {
+          "total": {
+            "type": "integer"
+          },
+          "waiting": {
+            "type": "integer"
+          },
+          "ready": {
+            "type": "integer"
+          },
+          "claimed": {
+            "type": "integer"
+          },
+          "blocked": {
+            "type": "integer"
+          },
+          "review": {
+            "type": "integer"
+          },
+          "done": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "total",
+          "waiting",
+          "ready",
+          "claimed",
+          "blocked",
+          "review",
+          "done"
+        ]
+      },
+      "CreatePlanBody": {
+        "type": "object",
+        "properties": {
+          "channel": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "goal": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 2000,
+            "default": null
+          },
+          "key": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80,
+            "description": "Repeat-safe: a second create with the same key in the same channel returns the first plan and writes nothing"
+          }
+        },
+        "required": [
+          "channel",
+          "title"
+        ]
+      },
+      "PlanDetail": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/Plan"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "tasks": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/Task"
+                },
+                "description": "The plan's tasks, in creation order"
+              }
+            },
+            "required": [
+              "tasks"
+            ]
+          }
+        ]
+      },
+      "UpdatePlanBody": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "goal": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 2000
+          }
+        }
+      },
+      "SetTaskPlanBody": {
+        "type": "object",
+        "properties": {
+          "plan": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "description": "The plan to put the task in, or null to take it out"
+          }
+        },
+        "required": [
+          "plan"
+        ]
+      },
+      "Focus": {
+        "type": "object",
+        "properties": {
+          "needsYou": {
+            "type": "object",
+            "properties": {
+              "questions": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/Task"
+                }
+              },
+              "threadQuestions": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/ThreadQuestion"
+                }
+              },
+              "reviews": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/Task"
+                }
+              },
+              "blocked": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/Task"
+                }
+              }
+            },
+            "required": [
+              "questions",
+              "threadQuestions",
+              "reviews",
+              "blocked"
+            ],
+            "description": "Everything waiting on a person, oldest first within each list"
+          },
+          "plans": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Plan"
+            },
+            "description": "Open plans, newest first"
+          },
+          "running": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FocusRun"
+            }
+          },
+          "doneToday": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Task"
+            },
+            "description": "Tasks done since 00:00 UTC, newest first"
+          }
+        },
+        "required": [
+          "needsYou",
+          "plans",
+          "running",
+          "doneToday"
+        ]
+      },
+      "FocusRun": {
+        "type": "object",
+        "properties": {
+          "agent": {
+            "type": "string",
+            "example": "codex"
+          },
+          "channel": {
+            "type": "string"
+          },
+          "threadId": {
+            "type": "string",
+            "description": "A task id such as 812, or a message id such as m12 for a conversation"
+          },
+          "taskId": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "title": {
+            "type": "string",
+            "example": "Build the /users API"
+          },
+          "startedAt": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-11-25T09:00:00.000Z"
+          },
+          "steps": {
+            "type": "integer",
+            "description": "Steps taken in this run so far"
+          },
+          "recent": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RunStep"
+            },
+            "maxItems": 3,
+            "description": "The last few steps, newest last"
+          },
+          "leaseExpiresAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "example": "2026-11-25T09:00:00.000Z"
+          }
+        },
+        "required": [
+          "agent",
+          "channel",
+          "threadId",
+          "taskId",
+          "title",
+          "startedAt",
+          "steps",
+          "recent",
+          "leaseExpiresAt"
+        ]
+      },
+      "RunStep": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "type": "string",
+            "example": "edit"
+          },
+          "text": {
+            "type": "string",
+            "example": "apps/server/src/routes/users.ts"
+          },
+          "at": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-11-25T09:00:00.000Z"
+          }
+        },
+        "required": [
+          "kind",
+          "text",
+          "at"
         ]
       },
       "SignInResult": {
@@ -13744,6 +14118,684 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/SaveDraftResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The input is not valid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sign-in is on and the request has no session or key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The acting member is not on this board, or may not do this",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The task or message is in another state, or the claim epoch is stale",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/plans": {
+      "get": {
+        "operationId": "listPlans",
+        "tags": [
+          "plans"
+        ],
+        "summary": "List plans, newest first, each with its progress counted from its tasks' states. Open plans by default; state=closed lists the closed ones; channel narrows to one channel",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": false,
+            "name": "channel",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "allOf": [
+                {
+                  "$ref": "#/components/schemas/PlanState"
+                },
+                {
+                  "description": "Default open"
+                }
+              ]
+            },
+            "required": false,
+            "description": "Default open",
+            "name": "state",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Plan"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The input is not valid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sign-in is on and the request has no session or key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The acting member is not on this board, or may not do this",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The task or message is in another state, or the claim epoch is stale",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "createPlan",
+        "tags": [
+          "plans"
+        ],
+        "summary": "Make a plan in a channel: a title and a goal that groups the tasks for one piece of work. Send a key so a retry returns the same plan and writes nothing; a channel holds at most 50 open plans",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreatePlanBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Plan"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The input is not valid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sign-in is on and the request has no session or key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The acting member is not on this board, or may not do this",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The task or message is in another state, or the claim epoch is stale",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/plans/{id}": {
+      "get": {
+        "operationId": "getPlan",
+        "tags": [
+          "plans"
+        ],
+        "summary": "Show one plan with its progress and its tasks in creation order",
+        "parameters": [
+          {
+            "schema": {
+              "type": "integer",
+              "example": 3
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlanDetail"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The input is not valid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sign-in is on and the request has no session or key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The acting member is not on this board, or may not do this",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The task or message is in another state, or the claim epoch is stale",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "operationId": "updatePlan",
+        "tags": [
+          "plans"
+        ],
+        "summary": "Change a plan's title or goal; the edit is an event, and an edit that changes nothing writes nothing",
+        "parameters": [
+          {
+            "schema": {
+              "type": "integer",
+              "example": 3
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdatePlanBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Plan"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The input is not valid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sign-in is on and the request has no session or key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The acting member is not on this board, or may not do this",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The task or message is in another state, or the claim epoch is stale",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/plans/{id}/close": {
+      "post": {
+        "operationId": "closePlan",
+        "tags": [
+          "plans"
+        ],
+        "summary": "Close a plan: it leaves the open list and no task can join it; its tasks keep going. Safe to repeat",
+        "parameters": [
+          {
+            "schema": {
+              "type": "integer",
+              "example": 3
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Plan"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The input is not valid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sign-in is on and the request has no session or key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The acting member is not on this board, or may not do this",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The task or message is in another state, or the claim epoch is stale",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/plans/{id}/reopen": {
+      "post": {
+        "operationId": "reopenPlan",
+        "tags": [
+          "plans"
+        ],
+        "summary": "Reopen a closed plan so tasks can join it again. Safe to repeat",
+        "parameters": [
+          {
+            "schema": {
+              "type": "integer",
+              "example": 3
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Plan"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The input is not valid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sign-in is on and the request has no session or key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The acting member is not on this board, or may not do this",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The task or message is in another state, or the claim epoch is stale",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/tasks/{id}/plan": {
+      "put": {
+        "operationId": "setTaskPlan",
+        "tags": [
+          "plans"
+        ],
+        "summary": "Put a task in a plan, or take it out with plan null. The plan must be open and in the task's channel; setting the plan it already has writes nothing",
+        "parameters": [
+          {
+            "schema": {
+              "type": "integer",
+              "example": 806
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetTaskPlanBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Task"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The input is not valid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sign-in is on and the request has no session or key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The acting member is not on this board, or may not do this",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The task or message is in another state, or the claim epoch is stale",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/focus": {
+      "get": {
+        "operationId": "getFocus",
+        "tags": [
+          "focus"
+        ],
+        "summary": "Everything a person should look at now, on one page: questions, thread questions, reviews and blocked tasks waiting on a person (oldest first), open plans with their progress, agent runs in progress with their last steps, and tasks done since 00:00 UTC",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Focus"
                 }
               }
             }

@@ -5,6 +5,7 @@ import { messages, tasks, type MemberRow, type TaskRow } from "../db/schema"
 import { invalid } from "./errors"
 import { mutate, type Emit } from "./events"
 import { requireActor } from "./members"
+import { requireJoinablePlan } from "./plans"
 import { findMember, findMessage, getTask, parseThreadId, requireChannel } from "./read"
 import { emitTask, feedCard, lockTask, requireState, taskReply, threadEvent, updateTask } from "./write"
 
@@ -16,6 +17,7 @@ interface NewTask {
   labels: string[]
   kind: string
   spec: string | null
+  planId?: number | null
 }
 
 async function stateForNeeds(tx: Tx, needs: number[]): Promise<"ready" | "waiting"> {
@@ -29,14 +31,16 @@ async function stateForNeeds(tx: Tx, needs: number[]): Promise<"ready" | "waitin
 export async function insertTask(tx: Tx, emit: Emit, actor: string, values: NewTask): Promise<TaskRow> {
   await requireChannel(tx, values.channel)
   if (values.assignee !== null && !(await findMember(tx, values.assignee))) throw invalid(`Member ${values.assignee} does not exist`)
+  const planId = values.planId ?? null
+  if (planId !== null) await requireJoinablePlan(tx, actor, planId, values.channel)
   const state = await stateForNeeds(tx, values.needs)
   const [row] = await tx
     .insert(tasks)
-    .values({ ...values, state })
+    .values({ ...values, planId, state })
     .returning()
   if (!row) throw new Error("Task insert returned nothing")
   await feedCard(tx, row, actor, "task")
-  emitTask(emit, "task.created", row, actor, { title: row.title, assignee: row.assignee })
+  emitTask(emit, "task.created", row, actor, { title: row.title, assignee: row.assignee, plan: row.planId })
   return row
 }
 
@@ -51,6 +55,7 @@ export async function createTask(db: Database, actor: string, body: CreateTaskBo
       labels: body.labels,
       kind: body.kind,
       spec: body.spec,
+      planId: body.plan,
     })
     if (body.text?.trim()) await taskReply(tx, row, actor, body.text.trim())
     return row.id

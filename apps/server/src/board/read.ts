@@ -98,6 +98,7 @@ function presentTaskRow(row: TaskRow, replyCount: number, commits: TaskCommit[])
     reason: row.reason,
     question: row.question,
     replyCount,
+    planId: row.planId,
     createdAt: row.createdAt.toISOString(),
   }
 }

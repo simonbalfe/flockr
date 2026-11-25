@@ -121,6 +121,29 @@ export const drafts = pgTable(
   (t) => [primaryKey({ columns: [t.member, t.kind, t.target] }), check("drafts_kind", sql`${t.kind} in ('channel', 'thread')`)],
 )
 
+export const plans = pgTable(
+  "plans",
+  {
+    id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+    channel: text("channel")
+      .notNull()
+      .references(() => channels.id),
+    title: text("title").notNull(),
+    goal: text("goal"),
+    key: text("key"),
+    createdBy: text("created_by")
+      .notNull()
+      .references(() => members.name),
+    createdAt: createdAt(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+    closedAt: timestamp("closed_at", { withTimezone: true }),
+  },
+  (t) => [
+    uniqueIndex("plans_key").on(t.channel, t.key).where(sql`${t.key} is not null`),
+    index("plans_open").on(t.channel, t.id).where(sql`${t.closedAt} is null`),
+  ],
+)
+
 export const tasks = pgTable(
   "tasks",
   {
@@ -140,6 +163,7 @@ export const tasks = pgTable(
     spec: text("spec"),
     reason: text("reason"),
     question: jsonb("question").$type<Question>(),
+    planId: integer("plan_id").references(() => plans.id),
     createdAt: createdAt(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },
@@ -147,6 +171,7 @@ export const tasks = pgTable(
     check("tasks_state", sql`${t.state} in ('waiting', 'ready', 'claimed', 'blocked', 'review', 'done')`),
     index("tasks_ready").on(t.state, t.createdAt, t.id),
     index("tasks_channel").on(t.channel),
+    index("tasks_plan").on(t.planId),
     index("tasks_search").using("gin", taskSearchVector(t.title, t.spec)),
   ],
 )
@@ -503,6 +528,7 @@ export const authVerifications = pgTable(
 )
 
 export type TaskRow = typeof tasks.$inferSelect
+export type PlanRow = typeof plans.$inferSelect
 export type WorkingAreaRow = typeof workingAreas.$inferSelect
 export type TaskCommitRow = typeof taskCommits.$inferSelect
 export type ChannelRow = typeof channels.$inferSelect

@@ -4,9 +4,9 @@ import { requireChannelAccess } from "../board/direct"
 import { forbidden } from "../board/errors"
 import { parseThreadId, type ThreadRef } from "../board/read"
 import type { Database } from "../db/client"
-import { messages, tasks } from "../db/schema"
+import { messages, plans, tasks } from "../db/schema"
 
-type Target = { kind: "channel"; channel: string | null } | { kind: "thread"; ref: ThreadRef } | { kind: "open" } | { kind: "board" }
+type Target = { kind: "channel"; channel: string | null } | { kind: "thread"; ref: ThreadRef } | { kind: "plan"; id: number } | { kind: "open" } | { kind: "board" }
 
 interface ScopedRequest {
   method: string
@@ -34,6 +34,9 @@ const threadOf = (raw: string): Target => {
 const rules: Rule[] = [
   { pattern: /^\/mcp$/, target: () => ({ kind: "open" }) },
   { method: "GET", pattern: /^\/api\/(me|members|channels)$/, target: () => ({ kind: "open" }) },
+  { method: "GET", pattern: /^\/api\/plans$/, target: () => ({ kind: "open" }) },
+  { method: "POST", pattern: /^\/api\/plans$/, target: async (_, request) => ({ kind: "channel", channel: ChannelBody.safeParse(await request.body()).data?.channel ?? null }) },
+  { pattern: /^\/api\/plans\/(\d+)(\/.*)?$/, target: (match) => ({ kind: "plan", id: Number(match[1]) }) },
   { method: "POST", pattern: /^\/api\/tasks\/claim$/, target: () => ({ kind: "open" }) },
   { method: "GET", pattern: /^\/api\/(tasks|search)$/, target: (_, request) => ({ kind: "channel", channel: request.query.get("channel") }) },
   { method: "POST", pattern: /^\/api\/tasks$/, target: async (_, request) => ({ kind: "channel", channel: ChannelBody.safeParse(await request.body()).data?.channel ?? null }) },
@@ -47,6 +50,11 @@ async function channelOfThread(db: Database, ref: ThreadRef): Promise<string | n
     ref.kind === "task"
       ? await db.select({ channel: tasks.channel }).from(tasks).where(eq(tasks.id, ref.id))
       : await db.select({ channel: messages.channel }).from(messages).where(eq(messages.id, ref.id))
+  return row?.channel ?? null
+}
+
+async function channelOfPlan(db: Database, id: number): Promise<string | null> {
+  const [row] = await db.select({ channel: plans.channel }).from(plans).where(eq(plans.id, id))
   return row?.channel ?? null
 }
 
@@ -76,6 +84,11 @@ export async function requireInScope(db: Database, limit: string[] | null, reque
       if (channel !== null && !limit.includes(channel)) throw refuse()
       return
     }
+    case "plan": {
+      const channel = await channelOfPlan(db, target.id)
+      if (channel !== null && !limit.includes(channel)) throw refuse()
+      return
+    }
     default: {
       const unhandled: never = target
       throw new Error(`Unhandled scope target ${JSON.stringify(unhandled)}`)
@@ -90,6 +103,8 @@ export async function requireDirectAccess(db: Database, member: string, request:
       return requireChannelAccess(db, member, target.channel)
     case "thread":
       return requireChannelAccess(db, member, await channelOfThread(db, target.ref))
+    case "plan":
+      return requireChannelAccess(db, member, await channelOfPlan(db, target.id))
     case "open":
     case "board":
       return

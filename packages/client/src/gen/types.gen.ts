@@ -535,6 +535,10 @@ export type Task = {
     reason: string | null;
     question: Question | null;
     replyCount: number;
+    /**
+     * The plan this task belongs to, or null
+     */
+    planId: number | null;
     createdAt: string;
 };
 
@@ -676,6 +680,10 @@ export type CreateTaskBody = {
      * A first reply for the task thread
      */
     text?: string;
+    /**
+     * Put the new task in this plan; it must be open and in the same channel
+     */
+    plan?: number | null;
 };
 
 export type GiveBody = {
@@ -1455,7 +1463,7 @@ export type EventTrigger = {
 /**
  * Fires once for each new event of this type in the routine's channel
  */
-export type WatchableEventType = 'message.posted' | 'reply.posted' | 'question.asked' | 'question.answered' | 'task.created' | 'task.ready' | 'task.claimed' | 'task.blocked' | 'task.unblocked' | 'task.asked' | 'task.answered' | 'task.submitted' | 'task.changes_requested' | 'task.completed' | 'task.approved' | 'task.failed' | 'task.expired';
+export type WatchableEventType = 'message.posted' | 'reply.posted' | 'question.asked' | 'question.answered' | 'task.created' | 'task.ready' | 'task.claimed' | 'task.blocked' | 'task.unblocked' | 'task.asked' | 'task.answered' | 'task.submitted' | 'task.changes_requested' | 'task.completed' | 'task.approved' | 'task.failed' | 'task.expired' | 'task.planned' | 'plan.created' | 'plan.updated' | 'plan.closed' | 'plan.reopened';
 
 /**
  * post a message, create a task, post @agent text so the agent starts a conversation, or post the morning brief
@@ -1707,7 +1715,13 @@ export type MyThread = {
      * Replies by others since the acting member last wrote in the thread
      */
     unread: number;
+    status: ThreadStatus;
 };
+
+/**
+ * needs_you, running, blocked, unread, done or quiet, in that order of precedence
+ */
+export type ThreadStatus = 'needs_you' | 'running' | 'blocked' | 'unread' | 'done' | 'quiet';
 
 export type SentItem = {
     id: string;
@@ -1774,6 +1788,107 @@ export type SaveDraftBody = {
      * The unsent text; empty clears the draft
      */
     text: string;
+};
+
+export type Plan = {
+    id: number;
+    channel: string;
+    title: string;
+    goal: string | null;
+    state: PlanState;
+    createdBy: string;
+    createdAt: string;
+    closedAt: string | null;
+    progress: PlanProgress;
+};
+
+export type PlanState = 'open' | 'closed';
+
+export type PlanProgress = {
+    total: number;
+    waiting: number;
+    ready: number;
+    claimed: number;
+    blocked: number;
+    review: number;
+    done: number;
+};
+
+export type CreatePlanBody = {
+    channel: string;
+    title: string;
+    goal?: string | null;
+    /**
+     * Repeat-safe: a second create with the same key in the same channel returns the first plan and writes nothing
+     */
+    key?: string;
+};
+
+export type PlanDetail = Plan & {
+    /**
+     * The plan's tasks, in creation order
+     */
+    tasks: Array<Task>;
+};
+
+export type UpdatePlanBody = {
+    title?: string;
+    goal?: string | null;
+};
+
+export type SetTaskPlanBody = {
+    /**
+     * The plan to put the task in, or null to take it out
+     */
+    plan: number | null;
+};
+
+export type Focus = {
+    /**
+     * Everything waiting on a person, oldest first within each list
+     */
+    needsYou: {
+        questions: Array<Task>;
+        threadQuestions: Array<ThreadQuestion>;
+        reviews: Array<Task>;
+        blocked: Array<Task>;
+    };
+    /**
+     * Open plans, newest first
+     */
+    plans: Array<Plan>;
+    running: Array<FocusRun>;
+    /**
+     * Tasks done since 00:00 UTC, newest first
+     */
+    doneToday: Array<Task>;
+};
+
+export type FocusRun = {
+    agent: string;
+    channel: string;
+    /**
+     * A task id such as 812, or a message id such as m12 for a conversation
+     */
+    threadId: string;
+    taskId: number | null;
+    title: string;
+    startedAt: string;
+    /**
+     * Steps taken in this run so far
+     */
+    steps: number;
+    /**
+     * The last few steps, newest last
+     */
+    recent: Array<RunStep>;
+    leaseExpiresAt: string | null;
+};
+
+export type RunStep = {
+    kind: string;
+    text: string;
+    at: string;
 };
 
 export type SignInResult = {
@@ -6054,6 +6169,350 @@ export type SaveDraftResponses = {
 };
 
 export type SaveDraftResponse = SaveDraftResponses[keyof SaveDraftResponses];
+
+export type ListPlansData = {
+    body?: never;
+    path?: never;
+    query?: {
+        channel?: string;
+        /**
+         * Default open
+         */
+        state?: PlanState & unknown;
+    };
+    url: '/api/plans';
+};
+
+export type ListPlansErrors = {
+    /**
+     * The input is not valid
+     */
+    400: Error;
+    /**
+     * Sign-in is on and the request has no session or key
+     */
+    401: Error;
+    /**
+     * The acting member is not on this board, or may not do this
+     */
+    403: Error;
+    /**
+     * Not found
+     */
+    404: Error;
+    /**
+     * The task or message is in another state, or the claim epoch is stale
+     */
+    409: Error;
+};
+
+export type ListPlansError = ListPlansErrors[keyof ListPlansErrors];
+
+export type ListPlansResponses = {
+    /**
+     * OK
+     */
+    200: Array<Plan>;
+};
+
+export type ListPlansResponse = ListPlansResponses[keyof ListPlansResponses];
+
+export type CreatePlanData = {
+    body: CreatePlanBody;
+    path?: never;
+    query?: never;
+    url: '/api/plans';
+};
+
+export type CreatePlanErrors = {
+    /**
+     * The input is not valid
+     */
+    400: Error;
+    /**
+     * Sign-in is on and the request has no session or key
+     */
+    401: Error;
+    /**
+     * The acting member is not on this board, or may not do this
+     */
+    403: Error;
+    /**
+     * Not found
+     */
+    404: Error;
+    /**
+     * The task or message is in another state, or the claim epoch is stale
+     */
+    409: Error;
+};
+
+export type CreatePlanError = CreatePlanErrors[keyof CreatePlanErrors];
+
+export type CreatePlanResponses = {
+    /**
+     * OK
+     */
+    200: Plan;
+};
+
+export type CreatePlanResponse = CreatePlanResponses[keyof CreatePlanResponses];
+
+export type GetPlanData = {
+    body?: never;
+    path: {
+        id: number;
+    };
+    query?: never;
+    url: '/api/plans/{id}';
+};
+
+export type GetPlanErrors = {
+    /**
+     * The input is not valid
+     */
+    400: Error;
+    /**
+     * Sign-in is on and the request has no session or key
+     */
+    401: Error;
+    /**
+     * The acting member is not on this board, or may not do this
+     */
+    403: Error;
+    /**
+     * Not found
+     */
+    404: Error;
+    /**
+     * The task or message is in another state, or the claim epoch is stale
+     */
+    409: Error;
+};
+
+export type GetPlanError = GetPlanErrors[keyof GetPlanErrors];
+
+export type GetPlanResponses = {
+    /**
+     * OK
+     */
+    200: PlanDetail;
+};
+
+export type GetPlanResponse = GetPlanResponses[keyof GetPlanResponses];
+
+export type UpdatePlanData = {
+    body: UpdatePlanBody;
+    path: {
+        id: number;
+    };
+    query?: never;
+    url: '/api/plans/{id}';
+};
+
+export type UpdatePlanErrors = {
+    /**
+     * The input is not valid
+     */
+    400: Error;
+    /**
+     * Sign-in is on and the request has no session or key
+     */
+    401: Error;
+    /**
+     * The acting member is not on this board, or may not do this
+     */
+    403: Error;
+    /**
+     * Not found
+     */
+    404: Error;
+    /**
+     * The task or message is in another state, or the claim epoch is stale
+     */
+    409: Error;
+};
+
+export type UpdatePlanError = UpdatePlanErrors[keyof UpdatePlanErrors];
+
+export type UpdatePlanResponses = {
+    /**
+     * OK
+     */
+    200: Plan;
+};
+
+export type UpdatePlanResponse = UpdatePlanResponses[keyof UpdatePlanResponses];
+
+export type ClosePlanData = {
+    body?: never;
+    path: {
+        id: number;
+    };
+    query?: never;
+    url: '/api/plans/{id}/close';
+};
+
+export type ClosePlanErrors = {
+    /**
+     * The input is not valid
+     */
+    400: Error;
+    /**
+     * Sign-in is on and the request has no session or key
+     */
+    401: Error;
+    /**
+     * The acting member is not on this board, or may not do this
+     */
+    403: Error;
+    /**
+     * Not found
+     */
+    404: Error;
+    /**
+     * The task or message is in another state, or the claim epoch is stale
+     */
+    409: Error;
+};
+
+export type ClosePlanError = ClosePlanErrors[keyof ClosePlanErrors];
+
+export type ClosePlanResponses = {
+    /**
+     * OK
+     */
+    200: Plan;
+};
+
+export type ClosePlanResponse = ClosePlanResponses[keyof ClosePlanResponses];
+
+export type ReopenPlanData = {
+    body?: never;
+    path: {
+        id: number;
+    };
+    query?: never;
+    url: '/api/plans/{id}/reopen';
+};
+
+export type ReopenPlanErrors = {
+    /**
+     * The input is not valid
+     */
+    400: Error;
+    /**
+     * Sign-in is on and the request has no session or key
+     */
+    401: Error;
+    /**
+     * The acting member is not on this board, or may not do this
+     */
+    403: Error;
+    /**
+     * Not found
+     */
+    404: Error;
+    /**
+     * The task or message is in another state, or the claim epoch is stale
+     */
+    409: Error;
+};
+
+export type ReopenPlanError = ReopenPlanErrors[keyof ReopenPlanErrors];
+
+export type ReopenPlanResponses = {
+    /**
+     * OK
+     */
+    200: Plan;
+};
+
+export type ReopenPlanResponse = ReopenPlanResponses[keyof ReopenPlanResponses];
+
+export type SetTaskPlanData = {
+    body: SetTaskPlanBody;
+    path: {
+        id: number;
+    };
+    query?: never;
+    url: '/api/tasks/{id}/plan';
+};
+
+export type SetTaskPlanErrors = {
+    /**
+     * The input is not valid
+     */
+    400: Error;
+    /**
+     * Sign-in is on and the request has no session or key
+     */
+    401: Error;
+    /**
+     * The acting member is not on this board, or may not do this
+     */
+    403: Error;
+    /**
+     * Not found
+     */
+    404: Error;
+    /**
+     * The task or message is in another state, or the claim epoch is stale
+     */
+    409: Error;
+};
+
+export type SetTaskPlanError = SetTaskPlanErrors[keyof SetTaskPlanErrors];
+
+export type SetTaskPlanResponses = {
+    /**
+     * OK
+     */
+    200: Task;
+};
+
+export type SetTaskPlanResponse = SetTaskPlanResponses[keyof SetTaskPlanResponses];
+
+export type GetFocusData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/focus';
+};
+
+export type GetFocusErrors = {
+    /**
+     * The input is not valid
+     */
+    400: Error;
+    /**
+     * Sign-in is on and the request has no session or key
+     */
+    401: Error;
+    /**
+     * The acting member is not on this board, or may not do this
+     */
+    403: Error;
+    /**
+     * Not found
+     */
+    404: Error;
+    /**
+     * The task or message is in another state, or the claim epoch is stale
+     */
+    409: Error;
+};
+
+export type GetFocusError = GetFocusErrors[keyof GetFocusErrors];
+
+export type GetFocusResponses = {
+    /**
+     * OK
+     */
+    200: Focus;
+};
+
+export type GetFocusResponse = GetFocusResponses[keyof GetFocusResponses];
 
 export type RequestSignInLinkData = {
     body: SignInBody;

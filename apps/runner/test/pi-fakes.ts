@@ -97,6 +97,7 @@ export class FakePiBoard implements PiBoard {
       reason: null,
       question: null,
       replyCount: 0,
+      planId: null,
       createdAt: at,
     }
   }

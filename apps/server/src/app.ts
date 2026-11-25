@@ -20,12 +20,14 @@ import { checklistRoutes } from "./routes/checklist"
 import { claimRoutes } from "./routes/claims"
 import { eventRoutes } from "./routes/events"
 import { flowRoutes } from "./routes/flow"
+import { focusRoutes } from "./routes/focus"
 import { keyRoutes } from "./routes/keys"
 import { machineRoutes } from "./routes/machines"
 import { memberRoutes } from "./routes/members"
 import { memoryRoutes } from "./routes/memory"
 import { messageRoutes } from "./routes/messages"
 import { navigationRoutes } from "./routes/navigation"
+import { planRoutes } from "./routes/plans"
 import { questionRoutes } from "./routes/questions"
 import { reviewRoutes } from "./routes/review"
 import { routineRoutes } from "./routes/routines"
@@ -100,6 +102,8 @@ export function createApp(db: Database, options: AppOptions = {}) {
     .route("/", approvalRoutes)
     .route("/", keyRoutes)
     .route("/", navigationRoutes)
+    .route("/", planRoutes)
+    .route("/", focusRoutes)
     .route("/", authRoutes)
 
   const document = () => api.getOpenAPI31Document({ openapi: "3.1.0", info })

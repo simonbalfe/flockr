@@ -32,6 +32,11 @@ export const watchableEventTypes = [
   "task.approved",
   "task.failed",
   "task.expired",
+  "task.planned",
+  "plan.created",
+  "plan.updated",
+  "plan.closed",
+  "plan.reopened",
 ] as const
 export type WatchableEventType = (typeof watchableEventTypes)[number]
 
