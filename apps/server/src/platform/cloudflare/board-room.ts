@@ -1,12 +1,25 @@
 import { DurableObject } from "cloudflare:workers"
 import { z } from "zod"
-import { createHub, parseSince, type Hub, type LiveSocket } from "../../live/hub"
+import { createHub, parseSince, type Hub, type LiveSocket, type SocketStore } from "../../live/hub"
 import { LiveSignal, pushListener } from "../live"
 import { connectWorker } from "./db"
 import { WorkerEnv } from "./env"
 
 export const signalsPath = "/signals"
 const SignalList = z.array(LiveSignal)
+const Attachment = z.object({ seq: z.number().int() })
+
+function hibernatingSockets(ctx: DurableObjectState): SocketStore {
+  const find = (socket: LiveSocket) => ctx.getWebSockets().find((open) => open === socket)
+  return {
+    list: () => ctx.getWebSockets(),
+    seqOf: (socket) => Attachment.safeParse(find(socket)?.deserializeAttachment()).data?.seq,
+    setSeq: (socket, seq) => find(socket)?.serializeAttachment({ seq }),
+    remove: (socket) => find(socket)?.serializeAttachment(null),
+    clear: () => undefined,
+    size: () => ctx.getWebSockets().length,
+  }
+}
 
 export class BoardRoom extends DurableObject {
   private readonly feed = pushListener()
@@ -15,7 +28,7 @@ export class BoardRoom extends DurableObject {
   private board(): Promise<Hub> {
     this.hub ??= (async () => {
       const env = WorkerEnv.parse(this.env)
-      const hub = createHub(connectWorker(env.HYPERDRIVE.connectionString).db, this.feed.listener)
+      const hub = createHub(connectWorker(env.HYPERDRIVE.connectionString).db, this.feed.listener, hibernatingSockets(this.ctx))
       await hub.ready
       return hub
     })()
@@ -33,15 +46,21 @@ export class BoardRoom extends DurableObject {
     return new Response("Not found", { status: 404 })
   }
 
+  override async webSocketClose(socket: WebSocket): Promise<void> {
+    const hub = await this.board()
+    hub.detach(socket)
+  }
+
+  override async webSocketError(socket: WebSocket): Promise<void> {
+    const hub = await this.board()
+    hub.detach(socket)
+  }
+
   private openSocket(hub: Hub, since: number | null): Response {
     const [client, server] = Object.values(new WebSocketPair())
     if (!client || !server) throw new Error("WebSocketPair did not return two sockets")
-    server.accept()
-    const socket: LiveSocket = { send: (text) => server.send(text) }
-    const leave = () => hub.detach(socket)
-    server.addEventListener("close", leave)
-    server.addEventListener("error", leave)
-    hub.attach(socket, since).catch((error: unknown) => {
+    this.ctx.acceptWebSocket(server)
+    hub.attach(server, since).catch((error: unknown) => {
       console.error("live attach failed", error)
       server.close(1011, "attach failed")
     })

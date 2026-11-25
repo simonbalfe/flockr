@@ -16,7 +16,7 @@ On Cloudflare no process can hold a `LISTEN` connection, so the Worker served `/
 - `wrangler.jsonc`: the `BOARD_ROOM` binding and a `v1` migration for the SQLite-backed class.
 - Typecheck in two passes: `tsconfig.json` (Bun) excludes the Cloudflare files; `tsconfig.worker.json` checks `worker.ts` and `platform/cloudflare` with Workers and Node types.
 
-**Out:** hibernating sockets (the object stays awake while a socket is open), more than one board, sign-in on the socket.
+**Out:** more than one board, sign-in on the socket.
 
 ## Rules the checks hold
 
@@ -35,5 +35,5 @@ On Cloudflare no process can hold a `LISTEN` connection, so the Worker served `/
 - The hub needed no change: `createHub(db, listener)` from PL1 runs inside the object with a `pushListener`.
 - Signals are only sent when the response is `ok`. A failed request may have queued signals from a transaction that rolled back; a stray head signal would only make the object re-read Postgres, but a stray agents or activity frame would be shown.
 - `DurableObject` already has a `connect` method, so the socket method is `openSocket`.
-- Without hibernation the object is billed while any socket is open. Hibernation needs the cursor kept in the socket attachment instead of the hub's map: a follow-up before real traffic.
+- Sockets hibernate (`ctx.acceptWebSocket`): each socket's last sent sequence number lives in its attachment, through a `SocketStore` the hub now takes (`memorySockets` on Bun, `hibernatingSockets` in the object), so an idle board costs nothing while sockets stay open. Waking from real hibernation was not forced in local tests; the smoke checks pass on the hibernating version.
 - Added dev dependencies, each at least 14 days old: `@cloudflare/workers-types` 5.20261110.1 and `@types/node` 26.6.6.

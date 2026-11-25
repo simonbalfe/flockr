@@ -7,10 +7,30 @@ export interface LiveSocket {
   send: (text: string) => void
 }
 
-interface Cursor {
-  seq: number
-  pumping: boolean
+export interface SocketStore {
+  list: () => Iterable<LiveSocket>
+  seqOf: (socket: LiveSocket) => number | undefined
+  setSeq: (socket: LiveSocket, seq: number) => void
+  remove: (socket: LiveSocket) => void
+  clear: () => void
+  size: () => number
+}
+
+interface Pumping {
+  running: boolean
   dirty: boolean
+}
+
+export function memorySockets(): SocketStore {
+  const seqs = new Map<LiveSocket, number>()
+  return {
+    list: () => seqs.keys(),
+    seqOf: (socket) => seqs.get(socket),
+    setSeq: (socket, seq) => void seqs.set(socket, seq),
+    remove: (socket) => void seqs.delete(socket),
+    clear: () => seqs.clear(),
+    size: () => seqs.size,
+  }
 }
 
 const pageSize = 500
@@ -22,40 +42,43 @@ export function parseSince(url: URL): number | null {
   return Number.isInteger(since) && since >= 0 ? since : null
 }
 
-export function createHub(db: Database, listener: LiveListener) {
-  const sockets = new Map<LiveSocket, Cursor>()
+export function createHub(db: Database, listener: LiveListener, sockets: SocketStore = memorySockets()) {
+  const pumping = new Map<LiveSocket, Pumping>()
 
   const send = (socket: LiveSocket, frame: LiveFrame) => socket.send(JSON.stringify(frame))
 
   const pump = async (socket: LiveSocket): Promise<void> => {
-    const cursor = sockets.get(socket)
-    if (!cursor) return
-    if (cursor.pumping) {
-      cursor.dirty = true
+    if (sockets.seqOf(socket) === undefined) return
+    const state = pumping.get(socket) ?? { running: false, dirty: false }
+    pumping.set(socket, state)
+    if (state.running) {
+      state.dirty = true
       return
     }
-    cursor.pumping = true
+    state.running = true
     try {
       for (;;) {
-        cursor.dirty = false
-        const events = await eventsSince(db, cursor.seq, pageSize)
-        if (!sockets.has(socket)) return
+        state.dirty = false
+        const seq = sockets.seqOf(socket)
+        if (seq === undefined) return
+        const events = await eventsSince(db, seq, pageSize)
+        if (sockets.seqOf(socket) === undefined) return
         for (const event of events) send(socket, { kind: "event", event })
         const last = events[events.length - 1]
-        if (last) cursor.seq = last.seq
-        if (events.length < pageSize && !cursor.dirty) return
+        if (last) sockets.setSeq(socket, last.seq)
+        if (events.length < pageSize && !state.dirty) return
       }
     } finally {
-      cursor.pumping = false
+      state.running = false
     }
   }
 
   const pumpAll = () => {
-    for (const socket of sockets.keys()) void pump(socket).catch((error: unknown) => console.error("live pump failed", error))
+    for (const socket of sockets.list()) void pump(socket).catch((error: unknown) => console.error("live pump failed", error))
   }
 
   const broadcast = (frame: LiveFrame) => {
-    for (const socket of sockets.keys()) send(socket, frame)
+    for (const socket of sockets.list()) send(socket, frame)
   }
 
   const onSignal = (signal: LiveSignal) => {
@@ -79,18 +102,20 @@ export function createHub(db: Database, listener: LiveListener) {
     ready: listening.then(() => undefined),
     async attach(socket: LiveSocket, since: number | null): Promise<void> {
       const head = await headSeq(db)
-      sockets.set(socket, { seq: since === null ? head : Math.min(since, head), pumping: false, dirty: false })
+      sockets.setSeq(socket, since === null ? head : Math.min(since, head))
       send(socket, { kind: "hello", head })
       await pump(socket)
     },
     detach(socket: LiveSocket): void {
-      sockets.delete(socket)
+      sockets.remove(socket)
+      pumping.delete(socket)
     },
     get size() {
-      return sockets.size
+      return sockets.size()
     },
     async close(): Promise<void> {
       sockets.clear()
+      pumping.clear()
       const stop = await listening
       await stop()
     },
