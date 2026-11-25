@@ -20,7 +20,7 @@ import { requireActor } from "./members"
 import { findMember, findMessage, findMessageForUpdate, getThread, messageKey, parseThreadId, replyOf, requireChannel, threadKeyOf } from "./read"
 import { checkEpoch, emitMessage, insertMessage, lockTask } from "./write"
 
-async function mentionsOf(tx: Tx, text: string): Promise<string[]> {
+export async function mentionsOf(tx: Tx, text: string): Promise<string[]> {
   const names = await tx.select({ name: members.name }).from(members).where(isNull(members.removedAt))
   return mentionsIn(text, new Set(names.map((m) => m.name)))
 }

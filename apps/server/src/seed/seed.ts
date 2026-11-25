@@ -1,9 +1,9 @@
-import { mentionsIn } from "@flockr/contracts"
+import { mentionsIn, routineLimits } from "@flockr/contracts"
 import { sql } from "drizzle-orm"
 import type { Database, Tx } from "../db/client"
-import { channels, members, messages, reads, taskCommits, tasks } from "../db/schema"
+import { channels, members, messages, reads, routines, taskCommits, tasks } from "../db/schema"
 import { mutate } from "../board/events"
-import { seedChannels, seedClock, seedFeeds, seedMembers, seedTasks, unreadForSimon, type SeedReply } from "./data"
+import { seedChannels, seedClock, seedFeeds, seedMembers, seedRoutines, seedTasks, unreadForSimon, type SeedReply } from "./data"
 
 const minutesOf = (clock: string) => {
   const [h, m] = clock.split(":").map(Number)
@@ -11,7 +11,7 @@ const minutesOf = (clock: string) => {
 }
 
 export async function resetBoard(db: Database): Promise<void> {
-  await db.execute(sql`truncate events, activity, reads, message_versions, messages, task_commits, tasks, channels, agents, machines, members, boards restart identity cascade`)
+  await db.execute(sql`truncate jobs, routines, events, activity, reads, message_versions, messages, task_commits, tasks, channels, agents, machines, members, boards restart identity cascade`)
 }
 
 export async function seedBoard(db: Database, now = new Date()): Promise<boolean> {
@@ -24,6 +24,9 @@ export async function seedBoard(db: Database, now = new Date()): Promise<boolean
       await tx.insert(members).values({ name: m.name, kind: m.kind, owner: m.owner ?? null, runsIn: m.runsIn ?? null, source: m.source ?? null, createdAt: at("08:00") })
     }
     for (const [i, c] of seedChannels.entries()) await tx.insert(channels).values({ ...c, createdAt: new Date(at("08:00").getTime() + i) })
+    for (const r of seedRoutines) {
+      await tx.insert(routines).values({ ...r, triggerKind: "cron", enabled: false, perHour: routineLimits.perHourDefault, createdAt: at("08:00"), updatedAt: at("08:00") })
+    }
 
     for (const t of seedTasks) {
       await tx.insert(tasks).values({

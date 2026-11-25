@@ -38,6 +38,8 @@ export function splitSubThreads<T extends { kind: string }>(entries: readonly T[
 
 export const mayManageAgent = (actor: { kind: MemberKind }): boolean => actor.kind === "person"
 
+export const mayManageRoutine = (actor: { kind: MemberKind }): boolean => actor.kind === "person"
+
 export function mentionsIn(text: string, members: ReadonlySet<string>): string[] {
   const found: string[] = []
   for (const match of text.matchAll(/(?<![\w@])@([a-z][a-z0-9-]*)/g)) {

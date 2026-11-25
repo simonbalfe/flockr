@@ -4,6 +4,7 @@ import { boardId } from "../config"
 import type { Database, Executor, Tx } from "../db/client"
 import { boards, events } from "../db/schema"
 import { liveSignals } from "../platform"
+import { enqueueWatchers } from "./watchers"
 
 export interface EventDraft {
   type: string
@@ -34,19 +35,19 @@ async function writeEvents(tx: Tx, drafts: EventDraft[]): Promise<void> {
     .returning({ lastSeq: boards.lastSeq })
   if (!board) throw new Error("Board counter missing")
   const first = board.lastSeq - drafts.length + 1
-  await tx.insert(events).values(
-    drafts.map((draft, i) => ({
-      boardId,
-      seq: first + i,
-      type: draft.type,
-      actor: draft.actor,
-      channel: draft.channel ?? null,
-      taskId: draft.taskId ?? null,
-      threadId: draft.threadId ?? null,
-      messageId: draft.messageId ?? null,
-      data: draft.data ?? {},
-    })),
-  )
+  const rows = drafts.map((draft, i) => ({
+    boardId,
+    seq: first + i,
+    type: draft.type,
+    actor: draft.actor,
+    channel: draft.channel ?? null,
+    taskId: draft.taskId ?? null,
+    threadId: draft.threadId ?? null,
+    messageId: draft.messageId ?? null,
+    data: draft.data ?? {},
+  }))
+  await tx.insert(events).values(rows)
+  await enqueueWatchers(tx, rows)
   await liveSignals.publish(tx, { kind: "head", board: boardId, head: board.lastSeq })
 }
 

@@ -11,6 +11,7 @@ Scope: `apps/server` (routes, board rules, the database, live events, the lease 
   - events are never updated or deleted; an edit is a new event, and a reader rebuilds the latest state from the log
   - reading "after N" returns every event above N, oldest first, with no gap and no repeat, also while writes land; `NOTIFY` is sent after commit, so a listener never sees an event it cannot read
   - a reconnecting client (`flockr tail`, the web app's live socket) asks for "after N" and misses nothing
+  - a job (ADR 0020, `board/jobs.ts`) is enqueued with `enqueueJob` in the transaction of what caused it, under a unique key so a repeat adds nothing; its run locks the job row and checks `attempts` (its fence) before acting, and acts in the same transaction that marks it done; a routine's run tags its events with `data.routine` so no watcher fires on them
 - **Needs:**
   - completing a task checks every task that waits on it in the same transaction, and a task turns ready only when all its needs are done
   - a need on a missing task, on itself or that makes a cycle is refused when it is set

@@ -2,7 +2,7 @@
 
 import type { Client, ClientMeta, Options as Options2, RequestResult, TDataShape } from './client';
 import { client } from './client.gen';
-import type { AddTaskCommitData, AddTaskCommitErrors, AddTaskCommitResponses, AnswerInThreadData, AnswerInThreadErrors, AnswerInThreadResponses, AnswerQuestionData, AnswerQuestionErrors, AnswerQuestionResponses, ApproveTaskData, ApproveTaskErrors, ApproveTaskResponses, AskInThreadData, AskInThreadErrors, AskInThreadResponses, AskQuestionData, AskQuestionErrors, AskQuestionResponses, BlockTaskData, BlockTaskErrors, BlockTaskResponses, ClaimNextTaskData, ClaimNextTaskErrors, ClaimNextTaskResponses, ClaimTaskData, ClaimTaskErrors, ClaimTaskResponses, CompleteTaskData, CompleteTaskErrors, CompleteTaskResponses, CreateActivityEntryData, CreateActivityEntryErrors, CreateActivityEntryResponses, CreateAgentData, CreateAgentErrors, CreateAgentResponses, CreateChannelData, CreateChannelErrors, CreateChannelResponses, CreateMemberData, CreateMemberErrors, CreateMemberResponses, CreateTaskData, CreateTaskErrors, CreateTaskResponses, DeleteAgentData, DeleteAgentErrors, DeleteAgentResponses, DeleteMessageData, DeleteMessageErrors, DeleteMessageResponses, EditMessageData, EditMessageErrors, EditMessageResponses, FailTaskData, FailTaskErrors, FailTaskResponses, GetActivityEntryData, GetActivityEntryErrors, GetActivityEntryResponses, GetAgentData, GetAgentErrors, GetAgentResponses, GetInboxData, GetInboxErrors, GetInboxResponses, GetTaskData, GetTaskErrors, GetTaskResponses, GetThreadData, GetThreadErrors, GetThreadResponses, GiveTaskData, GiveTaskErrors, GiveTaskResponses, ImportChecklistData, ImportChecklistErrors, ImportChecklistResponses, ListActivityData, ListActivityErrors, ListActivityResponses, ListAgentActivityData, ListAgentActivityErrors, ListAgentActivityResponses, ListAgentsData, ListAgentsErrors, ListAgentsResponses, ListChannelsData, ListChannelsErrors, ListChannelsResponses, ListEventsData, ListEventsErrors, ListEventsResponses, ListMachinesData, ListMachinesErrors, ListMachinesResponses, ListMembersData, ListMembersErrors, ListMembersResponses, ListMessagesData, ListMessagesErrors, ListMessagesResponses, ListMessageVersionsData, ListMessageVersionsErrors, ListMessageVersionsResponses, ListTasksData, ListTasksErrors, ListTasksResponses, MachineHeartbeatData, MachineHeartbeatErrors, MachineHeartbeatResponses, MakeTaskFromThreadData, MakeTaskFromThreadErrors, MakeTaskFromThreadResponses, MarkReadData, MarkReadErrors, MarkReadResponses, PauseAgentData, PauseAgentErrors, PauseAgentResponses, PostMessageData, PostMessageErrors, PostMessageResponses, RegisterMachineData, RegisterMachineErrors, RegisterMachineResponses, ReleaseTaskData, ReleaseTaskErrors, ReleaseTaskResponses, RenewTaskData, RenewTaskErrors, RenewTaskResponses, ReplyToThreadData, ReplyToThreadErrors, ReplyToThreadResponses, RequestChangesData, RequestChangesErrors, RequestChangesResponses, ResumeAgentData, ResumeAgentErrors, ResumeAgentResponses, SearchBoardData, SearchBoardErrors, SearchBoardResponses, SetActivityData, SetActivityErrors, SetActivityResponses, StartAgentData, StartAgentErrors, StartAgentResponses, StopAgentData, StopAgentErrors, StopAgentResponses, StopRunData, StopRunErrors, StopRunResponses, SubmitForReviewData, SubmitForReviewErrors, SubmitForReviewResponses, UnblockTaskData, UnblockTaskErrors, UnblockTaskResponses, UpdateActivityEntryData, UpdateActivityEntryErrors, UpdateActivityEntryResponses, UpdateAgentData, UpdateAgentErrors, UpdateAgentResponses, UpdateChannelData, UpdateChannelErrors, UpdateChannelResponses, WhoamiData, WhoamiErrors, WhoamiResponses } from './types.gen';
+import type { AddTaskCommitData, AddTaskCommitErrors, AddTaskCommitResponses, AnswerInThreadData, AnswerInThreadErrors, AnswerInThreadResponses, AnswerQuestionData, AnswerQuestionErrors, AnswerQuestionResponses, ApproveTaskData, ApproveTaskErrors, ApproveTaskResponses, AskInThreadData, AskInThreadErrors, AskInThreadResponses, AskQuestionData, AskQuestionErrors, AskQuestionResponses, BlockTaskData, BlockTaskErrors, BlockTaskResponses, ClaimNextTaskData, ClaimNextTaskErrors, ClaimNextTaskResponses, ClaimTaskData, ClaimTaskErrors, ClaimTaskResponses, CompleteTaskData, CompleteTaskErrors, CompleteTaskResponses, CreateActivityEntryData, CreateActivityEntryErrors, CreateActivityEntryResponses, CreateAgentData, CreateAgentErrors, CreateAgentResponses, CreateChannelData, CreateChannelErrors, CreateChannelResponses, CreateMemberData, CreateMemberErrors, CreateMemberResponses, CreateRoutineData, CreateRoutineErrors, CreateRoutineResponses, CreateTaskData, CreateTaskErrors, CreateTaskResponses, DeleteAgentData, DeleteAgentErrors, DeleteAgentResponses, DeleteMessageData, DeleteMessageErrors, DeleteMessageResponses, DeleteRoutineData, DeleteRoutineErrors, DeleteRoutineResponses, DisableRoutineData, DisableRoutineErrors, DisableRoutineResponses, EditMessageData, EditMessageErrors, EditMessageResponses, EnableRoutineData, EnableRoutineErrors, EnableRoutineResponses, FailTaskData, FailTaskErrors, FailTaskResponses, GetActivityEntryData, GetActivityEntryErrors, GetActivityEntryResponses, GetAgentData, GetAgentErrors, GetAgentResponses, GetBriefData, GetBriefErrors, GetBriefResponses, GetInboxData, GetInboxErrors, GetInboxResponses, GetRoutineData, GetRoutineErrors, GetRoutineResponses, GetTaskData, GetTaskErrors, GetTaskResponses, GetThreadData, GetThreadErrors, GetThreadResponses, GiveTaskData, GiveTaskErrors, GiveTaskResponses, ImportChecklistData, ImportChecklistErrors, ImportChecklistResponses, ListActivityData, ListActivityErrors, ListActivityResponses, ListAgentActivityData, ListAgentActivityErrors, ListAgentActivityResponses, ListAgentsData, ListAgentsErrors, ListAgentsResponses, ListChannelsData, ListChannelsErrors, ListChannelsResponses, ListEventsData, ListEventsErrors, ListEventsResponses, ListMachinesData, ListMachinesErrors, ListMachinesResponses, ListMembersData, ListMembersErrors, ListMembersResponses, ListMessagesData, ListMessagesErrors, ListMessagesResponses, ListMessageVersionsData, ListMessageVersionsErrors, ListMessageVersionsResponses, ListRoutineJobsData, ListRoutineJobsErrors, ListRoutineJobsResponses, ListRoutinesData, ListRoutinesErrors, ListRoutinesResponses, ListTasksData, ListTasksErrors, ListTasksResponses, MachineHeartbeatData, MachineHeartbeatErrors, MachineHeartbeatResponses, MakeTaskFromThreadData, MakeTaskFromThreadErrors, MakeTaskFromThreadResponses, MarkReadData, MarkReadErrors, MarkReadResponses, PauseAgentData, PauseAgentErrors, PauseAgentResponses, PostMessageData, PostMessageErrors, PostMessageResponses, RegisterMachineData, RegisterMachineErrors, RegisterMachineResponses, ReleaseTaskData, ReleaseTaskErrors, ReleaseTaskResponses, RenewTaskData, RenewTaskErrors, RenewTaskResponses, ReplyToThreadData, ReplyToThreadErrors, ReplyToThreadResponses, RequestChangesData, RequestChangesErrors, RequestChangesResponses, ResumeAgentData, ResumeAgentErrors, ResumeAgentResponses, SearchBoardData, SearchBoardErrors, SearchBoardResponses, SetActivityData, SetActivityErrors, SetActivityResponses, StartAgentData, StartAgentErrors, StartAgentResponses, StopAgentData, StopAgentErrors, StopAgentResponses, StopRunData, StopRunErrors, StopRunResponses, SubmitForReviewData, SubmitForReviewErrors, SubmitForReviewResponses, UnblockTaskData, UnblockTaskErrors, UnblockTaskResponses, UpdateActivityEntryData, UpdateActivityEntryErrors, UpdateActivityEntryResponses, UpdateAgentData, UpdateAgentErrors, UpdateAgentResponses, UpdateChannelData, UpdateChannelErrors, UpdateChannelResponses, UpdateRoutineData, UpdateRoutineErrors, UpdateRoutineResponses, WhoamiData, WhoamiErrors, WhoamiResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -517,3 +517,62 @@ export const machineHeartbeat = <ThrowOnError extends boolean = false>(options: 
  * Find messages, replies and tasks by text across channels, best match first, with a highlighted snippet. Deleted messages are never found.
  */
 export const searchBoard = <ThrowOnError extends boolean = false>(options: Options<SearchBoardData, ThrowOnError>): RequestResult<SearchBoardResponses, SearchBoardErrors, ThrowOnError> => (options.client ?? client).get<SearchBoardResponses, SearchBoardErrors, ThrowOnError>({ url: '/api/search', ...options });
+
+/**
+ * Every routine on the board: its trigger (a schedule or an event in its channel), its one action, whether it is on, and its last runs
+ */
+export const listRoutines = <ThrowOnError extends boolean = false>(options?: Options<ListRoutinesData, ThrowOnError>): RequestResult<ListRoutinesResponses, ListRoutinesErrors, ThrowOnError> => (options?.client ?? client).get<ListRoutinesResponses, ListRoutinesErrors, ThrowOnError>({ url: '/api/routines', ...options });
+
+/**
+ * Create a routine; it is off until a person turns it on. Only a person can create one
+ */
+export const createRoutine = <ThrowOnError extends boolean = false>(options: Options<CreateRoutineData, ThrowOnError>): RequestResult<CreateRoutineResponses, CreateRoutineErrors, ThrowOnError> => (options.client ?? client).post<CreateRoutineResponses, CreateRoutineErrors, ThrowOnError>({
+    url: '/api/routines',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Turn a routine off and remove it; its past runs stay; safe to repeat. Only a person can
+ */
+export const deleteRoutine = <ThrowOnError extends boolean = false>(options: Options<DeleteRoutineData, ThrowOnError>): RequestResult<DeleteRoutineResponses, DeleteRoutineErrors, ThrowOnError> => (options.client ?? client).delete<DeleteRoutineResponses, DeleteRoutineErrors, ThrowOnError>({ url: '/api/routines/{id}', ...options });
+
+/**
+ * One routine with its last runs
+ */
+export const getRoutine = <ThrowOnError extends boolean = false>(options: Options<GetRoutineData, ThrowOnError>): RequestResult<GetRoutineResponses, GetRoutineErrors, ThrowOnError> => (options.client ?? client).get<GetRoutineResponses, GetRoutineErrors, ThrowOnError>({ url: '/api/routines/{id}', ...options });
+
+/**
+ * Change a routine's name, channel, trigger, action or hourly limit; whether it is on does not change. Only a person can change one
+ */
+export const updateRoutine = <ThrowOnError extends boolean = false>(options: Options<UpdateRoutineData, ThrowOnError>): RequestResult<UpdateRoutineResponses, UpdateRoutineErrors, ThrowOnError> => (options.client ?? client).patch<UpdateRoutineResponses, UpdateRoutineErrors, ThrowOnError>({
+    url: '/api/routines/{id}',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Turn a routine on: it fires on its own trigger from now on; safe to repeat. Only a person can
+ */
+export const enableRoutine = <ThrowOnError extends boolean = false>(options: Options<EnableRoutineData, ThrowOnError>): RequestResult<EnableRoutineResponses, EnableRoutineErrors, ThrowOnError> => (options.client ?? client).post<EnableRoutineResponses, EnableRoutineErrors, ThrowOnError>({ url: '/api/routines/{id}/on', ...options });
+
+/**
+ * Turn a routine off: runs already queued are skipped; safe to repeat. Only a person can
+ */
+export const disableRoutine = <ThrowOnError extends boolean = false>(options: Options<DisableRoutineData, ThrowOnError>): RequestResult<DisableRoutineResponses, DisableRoutineErrors, ThrowOnError> => (options.client ?? client).post<DisableRoutineResponses, DisableRoutineErrors, ThrowOnError>({ url: '/api/routines/{id}/off', ...options });
+
+/**
+ * A routine's runs, newest first: what caused each, its state, attempts, what it did and its last error
+ */
+export const listRoutineJobs = <ThrowOnError extends boolean = false>(options: Options<ListRoutineJobsData, ThrowOnError>): RequestResult<ListRoutineJobsResponses, ListRoutineJobsErrors, ThrowOnError> => (options.client ?? client).get<ListRoutineJobsResponses, ListRoutineJobsErrors, ThrowOnError>({ url: '/api/routines/{id}/jobs', ...options });
+
+/**
+ * The morning brief as of now: tasks finished in the last 24 hours, every blocked task with its reason, and the questions and reviews waiting for a person, plus the text the brief action posts
+ */
+export const getBrief = <ThrowOnError extends boolean = false>(options?: Options<GetBriefData, ThrowOnError>): RequestResult<GetBriefResponses, GetBriefErrors, ThrowOnError> => (options?.client ?? client).get<GetBriefResponses, GetBriefErrors, ThrowOnError>({ url: '/api/brief', ...options });

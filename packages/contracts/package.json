@@ -9,7 +9,9 @@
     "./activity": "./src/activity.ts",
     "./agents": "./src/agents.ts",
     "./activity-rules": "./src/activity-rules.ts",
-    "./checklist": "./src/checklist.ts"
+    "./checklist": "./src/checklist.ts",
+    "./cron": "./src/cron.ts",
+    "./routines": "./src/routines.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit"

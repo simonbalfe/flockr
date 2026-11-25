@@ -1,4 +1,4 @@
-import type { MemberKind, Question, TaskState } from "@flockr/contracts"
+import type { MemberKind, Question, RoutineAction, TaskState } from "@flockr/contracts"
 
 export interface SeedMember {
   name: string
@@ -54,6 +54,16 @@ export const seedChannels = [
 ]
 
 export const unreadForSimon = ["reviews"]
+
+export interface SeedRoutine {
+  name: string
+  channel: string
+  schedule: string
+  action: RoutineAction
+  createdBy: string
+}
+
+export const seedRoutines: SeedRoutine[] = [{ name: "Morning brief", channel: "backend", schedule: "0 8 * * 1-5", action: { kind: "brief" }, createdBy: "simon" }]
 
 export const seedTasks: SeedTask[] = [
   { id: 806, title: "Design the users table", channel: "backend", kind: "schema", state: "ready", at: "09:59", spec: "SPEC_USERS.md" },

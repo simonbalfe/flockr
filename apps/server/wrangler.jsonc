@@ -6,6 +6,7 @@
   "compatibility_flags": ["nodejs_compat"],
   "durable_objects": { "bindings": [{ "name": "BOARD_ROOM", "class_name": "BoardRoom" }] },
   "migrations": [{ "tag": "v1", "new_sqlite_classes": ["BoardRoom"] }],
+  "triggers": { "crons": ["* * * * *"] },
   "hyperdrive": [
     {
       "binding": "HYPERDRIVE",

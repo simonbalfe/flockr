@@ -3719,6 +3719,541 @@
           "snippet",
           "rank"
         ]
+      },
+      "Routine": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "example": 1
+          },
+          "name": {
+            "type": "string"
+          },
+          "channel": {
+            "type": "string"
+          },
+          "trigger": {
+            "$ref": "#/components/schemas/RoutineTrigger"
+          },
+          "action": {
+            "$ref": "#/components/schemas/RoutineAction"
+          },
+          "enabled": {
+            "type": "boolean",
+            "description": "A routine is off until a person turns it on"
+          },
+          "perHour": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 60,
+            "description": "At most this many runs an hour; further firings are skipped"
+          },
+          "createdBy": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-11-25T08:00:00.000Z"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-11-25T08:00:00.000Z"
+          },
+          "nextRunAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "example": "2026-11-25T08:00:00.000Z",
+            "description": "When a scheduled routine that is on fires next"
+          },
+          "recentJobs": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Job"
+            },
+            "description": "The last 5 runs, newest first"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "channel",
+          "trigger",
+          "action",
+          "enabled",
+          "perHour",
+          "createdBy",
+          "createdAt",
+          "updatedAt",
+          "nextRunAt",
+          "recentJobs"
+        ]
+      },
+      "RoutineTrigger": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/CronTrigger"
+          },
+          {
+            "$ref": "#/components/schemas/EventTrigger"
+          }
+        ],
+        "discriminator": {
+          "propertyName": "kind",
+          "mapping": {
+            "cron": "#/components/schemas/CronTrigger",
+            "event": "#/components/schemas/EventTrigger"
+          }
+        }
+      },
+      "CronTrigger": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "cron"
+            ]
+          },
+          "schedule": {
+            "type": "string",
+            "example": "0 8 * * 1-5",
+            "description": "Five fields in UTC: minute hour day-of-month month day-of-week, each *, a value, a list (1,15), a range (1-5) or a step (*/15)"
+          }
+        },
+        "required": [
+          "kind",
+          "schedule"
+        ]
+      },
+      "EventTrigger": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "event"
+            ]
+          },
+          "eventType": {
+            "$ref": "#/components/schemas/WatchableEventType"
+          }
+        },
+        "required": [
+          "kind",
+          "eventType"
+        ]
+      },
+      "WatchableEventType": {
+        "type": "string",
+        "enum": [
+          "message.posted",
+          "reply.posted",
+          "question.asked",
+          "question.answered",
+          "task.created",
+          "task.ready",
+          "task.claimed",
+          "task.blocked",
+          "task.unblocked",
+          "task.asked",
+          "task.answered",
+          "task.submitted",
+          "task.changes_requested",
+          "task.completed",
+          "task.approved",
+          "task.failed",
+          "task.expired"
+        ],
+        "description": "Fires once for each new event of this type in the routine's channel"
+      },
+      "RoutineAction": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/PostAction"
+          },
+          {
+            "$ref": "#/components/schemas/TaskAction"
+          },
+          {
+            "$ref": "#/components/schemas/MentionAction"
+          },
+          {
+            "$ref": "#/components/schemas/BriefAction"
+          }
+        ],
+        "discriminator": {
+          "propertyName": "kind",
+          "mapping": {
+            "post": "#/components/schemas/PostAction",
+            "task": "#/components/schemas/TaskAction",
+            "mention": "#/components/schemas/MentionAction",
+            "brief": "#/components/schemas/BriefAction"
+          }
+        },
+        "description": "post a message, create a task, post @agent text so the agent starts a conversation, or post the morning brief"
+      },
+      "PostAction": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "post"
+            ]
+          },
+          "text": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4000
+          }
+        },
+        "required": [
+          "kind",
+          "text"
+        ]
+      },
+      "TaskAction": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "task"
+            ]
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4000
+          },
+          "assignee": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "default": null
+          }
+        },
+        "required": [
+          "kind",
+          "title"
+        ]
+      },
+      "MentionAction": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "mention"
+            ]
+          },
+          "agent": {
+            "type": "string",
+            "minLength": 1,
+            "example": "claude"
+          },
+          "text": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4000
+          }
+        },
+        "required": [
+          "kind",
+          "agent",
+          "text"
+        ]
+      },
+      "BriefAction": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "brief"
+            ]
+          }
+        },
+        "required": [
+          "kind"
+        ]
+      },
+      "Job": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "routine"
+            ]
+          },
+          "routineId": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "state": {
+            "$ref": "#/components/schemas/JobState"
+          },
+          "cause": {
+            "$ref": "#/components/schemas/JobCause"
+          },
+          "runAt": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-11-25T08:00:00.000Z"
+          },
+          "attempts": {
+            "type": "integer"
+          },
+          "maxAttempts": {
+            "type": "integer"
+          },
+          "result": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "What it did, such as posted m42, or why it was skipped"
+          },
+          "lastError": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-11-25T08:00:00.000Z"
+          },
+          "finishedAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "example": "2026-11-25T08:00:00.000Z"
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "routineId",
+          "state",
+          "cause",
+          "runAt",
+          "attempts",
+          "maxAttempts",
+          "result",
+          "lastError",
+          "createdAt",
+          "finishedAt"
+        ]
+      },
+      "JobState": {
+        "type": "string",
+        "enum": [
+          "queued",
+          "running",
+          "done",
+          "failed",
+          "skipped"
+        ],
+        "description": "queued: waits for its run time. running: claimed by a drainer. done: it acted. skipped: it did not act (the routine was off, deleted or over a limit). failed: it gave up after its last attempt; lastError says why."
+      },
+      "JobCause": {
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "cron"
+                ]
+              },
+              "scheduledFor": {
+                "type": "string",
+                "format": "date-time",
+                "example": "2026-11-25T08:00:00.000Z"
+              }
+            },
+            "required": [
+              "kind",
+              "scheduledFor"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "event"
+                ]
+              },
+              "seq": {
+                "type": "integer"
+              },
+              "type": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "kind",
+              "seq",
+              "type"
+            ]
+          }
+        ]
+      },
+      "CreateRoutineBody": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80,
+            "example": "Morning brief"
+          },
+          "channel": {
+            "type": "string",
+            "example": "backend"
+          },
+          "trigger": {
+            "$ref": "#/components/schemas/RoutineTrigger"
+          },
+          "action": {
+            "$ref": "#/components/schemas/RoutineAction"
+          },
+          "perHour": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 60,
+            "default": 4
+          }
+        },
+        "required": [
+          "name",
+          "channel",
+          "trigger",
+          "action"
+        ]
+      },
+      "UpdateRoutineBody": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80
+          },
+          "channel": {
+            "type": "string"
+          },
+          "trigger": {
+            "$ref": "#/components/schemas/RoutineTrigger"
+          },
+          "action": {
+            "$ref": "#/components/schemas/RoutineAction"
+          },
+          "perHour": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 60
+          }
+        }
+      },
+      "DeletedRoutine": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "deletedAt": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-11-25T08:00:00.000Z"
+          }
+        },
+        "required": [
+          "id",
+          "deletedAt"
+        ]
+      },
+      "Brief": {
+        "type": "object",
+        "properties": {
+          "since": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-11-25T08:00:00.000Z"
+          },
+          "until": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-11-25T08:00:00.000Z"
+          },
+          "text": {
+            "type": "string",
+            "description": "The message the brief action posts"
+          },
+          "finished": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Task"
+            },
+            "description": "Tasks done in the window"
+          },
+          "blocked": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Task"
+            },
+            "description": "Every blocked task, with its reason"
+          },
+          "questions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Task"
+            },
+            "description": "Tasks whose holder waits for a person's answer"
+          },
+          "threadQuestions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ThreadQuestion"
+            }
+          },
+          "reviews": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Task"
+            }
+          }
+        },
+        "required": [
+          "since",
+          "until",
+          "text",
+          "finished",
+          "blocked",
+          "questions",
+          "threadQuestions",
+          "reviews"
+        ]
       }
     },
     "parameters": {}
@@ -8150,6 +8685,651 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/SearchResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The input is not valid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The acting member is not on this board, or may not do this",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The task or message is in another state, or the claim epoch is stale",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/routines": {
+      "get": {
+        "operationId": "listRoutines",
+        "tags": [
+          "routines"
+        ],
+        "summary": "Every routine on the board: its trigger (a schedule or an event in its channel), its one action, whether it is on, and its last runs",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Routine"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The input is not valid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The acting member is not on this board, or may not do this",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The task or message is in another state, or the claim epoch is stale",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "createRoutine",
+        "tags": [
+          "routines"
+        ],
+        "summary": "Create a routine; it is off until a person turns it on. Only a person can create one",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateRoutineBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Routine"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The input is not valid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The acting member is not on this board, or may not do this",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The task or message is in another state, or the claim epoch is stale",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/routines/{id}": {
+      "get": {
+        "operationId": "getRoutine",
+        "tags": [
+          "routines"
+        ],
+        "summary": "One routine with its last runs",
+        "parameters": [
+          {
+            "schema": {
+              "type": "integer",
+              "example": 1
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Routine"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The input is not valid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The acting member is not on this board, or may not do this",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The task or message is in another state, or the claim epoch is stale",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "operationId": "updateRoutine",
+        "tags": [
+          "routines"
+        ],
+        "summary": "Change a routine's name, channel, trigger, action or hourly limit; whether it is on does not change. Only a person can change one",
+        "parameters": [
+          {
+            "schema": {
+              "type": "integer",
+              "example": 1
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateRoutineBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Routine"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The input is not valid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The acting member is not on this board, or may not do this",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The task or message is in another state, or the claim epoch is stale",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "operationId": "deleteRoutine",
+        "tags": [
+          "routines"
+        ],
+        "summary": "Turn a routine off and remove it; its past runs stay; safe to repeat. Only a person can",
+        "parameters": [
+          {
+            "schema": {
+              "type": "integer",
+              "example": 1
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeletedRoutine"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The input is not valid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The acting member is not on this board, or may not do this",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The task or message is in another state, or the claim epoch is stale",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/routines/{id}/on": {
+      "post": {
+        "operationId": "enableRoutine",
+        "tags": [
+          "routines"
+        ],
+        "summary": "Turn a routine on: it fires on its own trigger from now on; safe to repeat. Only a person can",
+        "parameters": [
+          {
+            "schema": {
+              "type": "integer",
+              "example": 1
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Routine"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The input is not valid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The acting member is not on this board, or may not do this",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The task or message is in another state, or the claim epoch is stale",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/routines/{id}/off": {
+      "post": {
+        "operationId": "disableRoutine",
+        "tags": [
+          "routines"
+        ],
+        "summary": "Turn a routine off: runs already queued are skipped; safe to repeat. Only a person can",
+        "parameters": [
+          {
+            "schema": {
+              "type": "integer",
+              "example": 1
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Routine"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The input is not valid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The acting member is not on this board, or may not do this",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The task or message is in another state, or the claim epoch is stale",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/routines/{id}/jobs": {
+      "get": {
+        "operationId": "listRoutineJobs",
+        "tags": [
+          "routines"
+        ],
+        "summary": "A routine's runs, newest first: what caused each, its state, attempts, what it did and its last error",
+        "parameters": [
+          {
+            "schema": {
+              "type": "integer",
+              "example": 1
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "description": "At most this many runs, newest first; default 20, at most 50"
+            },
+            "required": false,
+            "description": "At most this many runs, newest first; default 20, at most 50",
+            "name": "limit",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Job"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The input is not valid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The acting member is not on this board, or may not do this",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The task or message is in another state, or the claim epoch is stale",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/brief": {
+      "get": {
+        "operationId": "getBrief",
+        "tags": [
+          "routines"
+        ],
+        "summary": "The morning brief as of now: tasks finished in the last 24 hours, every blocked task with its reason, and the questions and reviews waiting for a person, plus the text the brief action posts",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Brief"
                 }
               }
             }

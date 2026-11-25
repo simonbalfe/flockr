@@ -1,4 +1,4 @@
-import type { ActivityState, AgentDesired, AgentPermissions, AgentReport, HarnessInfo, MemberKind, Question, TaskState } from "@flockr/contracts"
+import type { ActivityState, AgentDesired, AgentPermissions, AgentReport, HarnessInfo, JobKind, JobState, MemberKind, Question, RoutineTriggerKind, TaskState } from "@flockr/contracts"
 import { sql } from "drizzle-orm"
 import { bigint, boolean, check, index, integer, jsonb, pgTable, primaryKey, text, timestamp, uniqueIndex, type AnyPgColumn } from "drizzle-orm/pg-core"
 
@@ -221,6 +221,63 @@ export const events = pgTable(
   (t) => [primaryKey({ columns: [t.boardId, t.seq] })],
 )
 
+export const routines = pgTable(
+  "routines",
+  {
+    id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+    name: text("name").notNull(),
+    channel: text("channel")
+      .notNull()
+      .references(() => channels.id),
+    triggerKind: text("trigger_kind").$type<RoutineTriggerKind>().notNull(),
+    schedule: text("schedule"),
+    eventType: text("event_type"),
+    action: jsonb("action").$type<Record<string, unknown>>().notNull(),
+    enabled: boolean("enabled").notNull().default(false),
+    perHour: integer("per_hour").notNull(),
+    nextRunAt: timestamp("next_run_at", { withTimezone: true }),
+    createdBy: text("created_by").notNull(),
+    createdAt: createdAt(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+    deletedAt: timestamp("deleted_at", { withTimezone: true }),
+  },
+  (t) => [
+    check("routines_trigger", sql`(${t.triggerKind} = 'cron' and ${t.schedule} is not null and ${t.eventType} is null) or (${t.triggerKind} = 'event' and ${t.eventType} is not null and ${t.schedule} is null)`),
+    check("routines_per_hour", sql`${t.perHour} > 0`),
+    index("routines_watch").on(t.channel, t.eventType).where(sql`${t.enabled} and ${t.deletedAt} is null`),
+    index("routines_due").on(t.nextRunAt).where(sql`${t.enabled} and ${t.deletedAt} is null`),
+  ],
+)
+
+export const jobs = pgTable(
+  "jobs",
+  {
+    id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+    kind: text("kind").$type<JobKind>().notNull(),
+    key: text("key").notNull(),
+    routineId: integer("routine_id").references(() => routines.id),
+    payload: jsonb("payload").$type<Record<string, unknown>>().notNull().default({}),
+    state: text("state").$type<JobState>().notNull().default("queued"),
+    runAt: timestamp("run_at", { withTimezone: true }).notNull().defaultNow(),
+    attempts: integer("attempts").notNull().default(0),
+    maxAttempts: integer("max_attempts").notNull(),
+    lockedUntil: timestamp("locked_until", { withTimezone: true }),
+    result: text("result"),
+    lastError: text("last_error"),
+    createdAt: createdAt(),
+    startedAt: timestamp("started_at", { withTimezone: true }),
+    finishedAt: timestamp("finished_at", { withTimezone: true }),
+  },
+  (t) => [
+    check("jobs_state", sql`${t.state} in ('queued', 'running', 'done', 'failed', 'skipped')`),
+    uniqueIndex("jobs_key").on(t.key),
+    index("jobs_due").on(t.runAt, t.id).where(sql`${t.state} = 'queued'`),
+    index("jobs_stuck").on(t.lockedUntil).where(sql`${t.state} = 'running'`),
+    index("jobs_routine").on(t.routineId, t.id),
+    index("jobs_fired").on(t.finishedAt).where(sql`${t.state} = 'done'`),
+  ],
+)
+
 export type TaskRow = typeof tasks.$inferSelect
 export type TaskCommitRow = typeof taskCommits.$inferSelect
 export type ChannelRow = typeof channels.$inferSelect
@@ -230,3 +287,5 @@ export type MemberRow = typeof members.$inferSelect
 export type ActivityRow = typeof activity.$inferSelect
 export type AgentRow = typeof agents.$inferSelect
 export type MachineRow = typeof machines.$inferSelect
+export type RoutineRow = typeof routines.$inferSelect
+export type JobRow = typeof jobs.$inferSelect

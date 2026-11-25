@@ -20,7 +20,7 @@ Every phase and sub-phase with its status: "where are we". Phases are product fe
 | **Phase 2: Slack-style web app** | on a phone, Simon watches the chain move live, answers the migration question card, and approves #812 from the review lane | Not started |
 | **Phase 3: Any agent connects** | an agent on another machine, with its own key and only the MCP server, claims and completes an example task, and its commit shows on the task | Not started |
 | **Phase 4: Launchers** | a task turning ready opens a Herdr pane with its agent by itself, and another runs in a cloud container with the laptop shut | Not started |
-| **Phase 5: Watchers, routines and sync** | a reply in a Slack thread unblocks an example task, and a daily summary of open tasks posts by itself; both are off until someone turns them on | Not started |
+| **Phase 5: Watchers, routines and sync** | a reply in a Slack thread unblocks an example task, and a daily summary of open tasks posts by itself; both are off until someone turns them on | In progress: 5a, 5b done |
 | **Phase 6: Reports and search** | one query lists every blocked task across all boards, and search finds a message by its text | Not started |
 
 ## Now and Blocked
@@ -86,8 +86,8 @@ Done when: a reply in a Slack thread unblocks an example task, and a daily summa
 
 | Sub-phase | For | Delivers | Covers | Status |
 |---|---|---|---|---|
-| 5a Watchers | both | Code that runs on each new event in a channel, as a job in a Postgres `jobs` table with retries, drained by the platform scheduler (ADR 0020) | P44 | Not started |
-| 5b Routines | both | Run on a schedule or an event (webhook, Slack, GitHub); off until turned on; act only on their trigger; a rate limit each and in total | P45, P46, P49 | Not started |
+| 5a Watchers | both | Code that runs on each new event in a channel, as a job in a Postgres `jobs` table with retries, drained by the platform scheduler (ADR 0020) | P44 | Done (Work: 5-routines): routines with an event trigger enqueue one job per matching event in the event\'s transaction; `docs/phases/phase-5/SPEC_PHASE_5B_ROUTINES.md` |
+| 5b Routines | both | Run on a schedule or an event (webhook, Slack, GitHub); off until turned on; act only on their trigger; a rate limit each and in total | P45, P46, P49 | Done (Work: 5-routines): schedule or channel-event triggers, post, task, mention or brief actions, off until a person turns them on, per-routine and board-wide hourly limits; `jobs` table drained by the platform scheduler (Bun timer, Cloudflare Cron Trigger). Webhook, Slack and GitHub triggers wait for 5d and 5e |
 | 5c Approval rules | people | Per action kind: allow, ask or block, above a floor no rule can lower (spending money and prod changes always ask); an approval step a queued job waits on | P48, P53, P54, P76 | Not started |
 | 5d Slack sync | people | Slack threads and board threads synced both ways; Slack tokens held by the server, never by an agent | P50, P57 | Not started |
 | 5e GitHub sync | both | Pull requests and their comments come into threads | P51 | Not started |
@@ -100,7 +100,7 @@ Done when: one query lists every blocked task across all boards, and search find
 |---|---|---|---|---|
 | 6a Event copy | people | Reports run straight on the events table in Postgres; a copy to a column store only if it gets slow | Our own | Done: reports read Postgres directly; every blocked task across channels is one call (`GET /api/tasks?state=blocked`, `flockr tasks list --state blocked`); no column store needed yet, and one board exists so far (audited 25 Nov 2026) |
 | 6b Search | people | Find messages and tasks by text across channels | P15 | Done (Work: 6b-search) |
-| 6c Morning brief | people | One daily summary: what finished, what is blocked, what waits for you | P74 | Not started |
+| 6c Morning brief | people | One daily summary: what finished, what is blocked, what waits for you | P74 | Done (Work: 5-routines): the `brief` routine action and `GET /api/brief`; a weekday 08:00 UTC Morning brief routine is seeded off |
 
 ## Unplaced
 

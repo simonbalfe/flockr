@@ -1246,6 +1246,167 @@ export type TaskHit = {
     rank: number;
 };
 
+export type Routine = {
+    id: number;
+    name: string;
+    channel: string;
+    trigger: RoutineTrigger;
+    action: RoutineAction;
+    /**
+     * A routine is off until a person turns it on
+     */
+    enabled: boolean;
+    /**
+     * At most this many runs an hour; further firings are skipped
+     */
+    perHour: number;
+    createdBy: string;
+    createdAt: string;
+    updatedAt: string;
+    /**
+     * When a scheduled routine that is on fires next
+     */
+    nextRunAt: string | null;
+    /**
+     * The last 5 runs, newest first
+     */
+    recentJobs: Array<Job>;
+};
+
+export type RoutineTrigger = ({
+    kind: 'cron';
+} & CronTrigger) | ({
+    kind: 'event';
+} & EventTrigger);
+
+export type CronTrigger = {
+    kind: 'cron';
+    /**
+     * Five fields in UTC: minute hour day-of-month month day-of-week, each *, a value, a list (1,15), a range (1-5) or a step (*15)
+     */
+    schedule: string;
+};
+
+export type EventTrigger = {
+    kind: 'event';
+    eventType: WatchableEventType;
+};
+
+/**
+ * Fires once for each new event of this type in the routine's channel
+ */
+export type WatchableEventType = 'message.posted' | 'reply.posted' | 'question.asked' | 'question.answered' | 'task.created' | 'task.ready' | 'task.claimed' | 'task.blocked' | 'task.unblocked' | 'task.asked' | 'task.answered' | 'task.submitted' | 'task.changes_requested' | 'task.completed' | 'task.approved' | 'task.failed' | 'task.expired';
+
+/**
+ * post a message, create a task, post @agent text so the agent starts a conversation, or post the morning brief
+ */
+export type RoutineAction = ({
+    kind: 'post';
+} & PostAction) | ({
+    kind: 'task';
+} & TaskAction) | ({
+    kind: 'mention';
+} & MentionAction) | ({
+    kind: 'brief';
+} & BriefAction);
+
+export type PostAction = {
+    kind: 'post';
+    text: string;
+};
+
+export type TaskAction = {
+    kind: 'task';
+    title: string;
+    assignee?: string | null;
+};
+
+export type MentionAction = {
+    kind: 'mention';
+    agent: string;
+    text: string;
+};
+
+export type BriefAction = {
+    kind: 'brief';
+};
+
+export type Job = {
+    id: number;
+    kind: 'routine';
+    routineId: number | null;
+    state: JobState;
+    cause: JobCause;
+    runAt: string;
+    attempts: number;
+    maxAttempts: number;
+    /**
+     * What it did, such as posted m42, or why it was skipped
+     */
+    result: string | null;
+    lastError: string | null;
+    createdAt: string;
+    finishedAt: string | null;
+};
+
+/**
+ * queued: waits for its run time. running: claimed by a drainer. done: it acted. skipped: it did not act (the routine was off, deleted or over a limit). failed: it gave up after its last attempt; lastError says why.
+ */
+export type JobState = 'queued' | 'running' | 'done' | 'failed' | 'skipped';
+
+export type JobCause = {
+    kind: 'cron';
+    scheduledFor: string;
+} | {
+    kind: 'event';
+    seq: number;
+    type: string;
+};
+
+export type CreateRoutineBody = {
+    name: string;
+    channel: string;
+    trigger: RoutineTrigger;
+    action: RoutineAction;
+    perHour?: number;
+};
+
+export type UpdateRoutineBody = {
+    name?: string;
+    channel?: string;
+    trigger?: RoutineTrigger;
+    action?: RoutineAction;
+    perHour?: number;
+};
+
+export type DeletedRoutine = {
+    id: number;
+    deletedAt: string;
+};
+
+export type Brief = {
+    since: string;
+    until: string;
+    /**
+     * The message the brief action posts
+     */
+    text: string;
+    /**
+     * Tasks done in the window
+     */
+    finished: Array<Task>;
+    /**
+     * Every blocked task, with its reason
+     */
+    blocked: Array<Task>;
+    /**
+     * Tasks whose holder waits for a person's answer
+     */
+    questions: Array<Task>;
+    threadQuestions: Array<ThreadQuestion>;
+    reviews: Array<Task>;
+};
+
 export type ListChannelsData = {
     body?: never;
     path?: never;
@@ -3559,3 +3720,353 @@ export type SearchBoardResponses = {
 };
 
 export type SearchBoardResponse = SearchBoardResponses[keyof SearchBoardResponses];
+
+export type ListRoutinesData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/routines';
+};
+
+export type ListRoutinesErrors = {
+    /**
+     * The input is not valid
+     */
+    400: Error;
+    /**
+     * The acting member is not on this board, or may not do this
+     */
+    403: Error;
+    /**
+     * Not found
+     */
+    404: Error;
+    /**
+     * The task or message is in another state, or the claim epoch is stale
+     */
+    409: Error;
+};
+
+export type ListRoutinesError = ListRoutinesErrors[keyof ListRoutinesErrors];
+
+export type ListRoutinesResponses = {
+    /**
+     * OK
+     */
+    200: Array<Routine>;
+};
+
+export type ListRoutinesResponse = ListRoutinesResponses[keyof ListRoutinesResponses];
+
+export type CreateRoutineData = {
+    body: CreateRoutineBody;
+    path?: never;
+    query?: never;
+    url: '/api/routines';
+};
+
+export type CreateRoutineErrors = {
+    /**
+     * The input is not valid
+     */
+    400: Error;
+    /**
+     * The acting member is not on this board, or may not do this
+     */
+    403: Error;
+    /**
+     * Not found
+     */
+    404: Error;
+    /**
+     * The task or message is in another state, or the claim epoch is stale
+     */
+    409: Error;
+};
+
+export type CreateRoutineError = CreateRoutineErrors[keyof CreateRoutineErrors];
+
+export type CreateRoutineResponses = {
+    /**
+     * OK
+     */
+    200: Routine;
+};
+
+export type CreateRoutineResponse = CreateRoutineResponses[keyof CreateRoutineResponses];
+
+export type DeleteRoutineData = {
+    body?: never;
+    path: {
+        id: number;
+    };
+    query?: never;
+    url: '/api/routines/{id}';
+};
+
+export type DeleteRoutineErrors = {
+    /**
+     * The input is not valid
+     */
+    400: Error;
+    /**
+     * The acting member is not on this board, or may not do this
+     */
+    403: Error;
+    /**
+     * Not found
+     */
+    404: Error;
+    /**
+     * The task or message is in another state, or the claim epoch is stale
+     */
+    409: Error;
+};
+
+export type DeleteRoutineError = DeleteRoutineErrors[keyof DeleteRoutineErrors];
+
+export type DeleteRoutineResponses = {
+    /**
+     * OK
+     */
+    200: DeletedRoutine;
+};
+
+export type DeleteRoutineResponse = DeleteRoutineResponses[keyof DeleteRoutineResponses];
+
+export type GetRoutineData = {
+    body?: never;
+    path: {
+        id: number;
+    };
+    query?: never;
+    url: '/api/routines/{id}';
+};
+
+export type GetRoutineErrors = {
+    /**
+     * The input is not valid
+     */
+    400: Error;
+    /**
+     * The acting member is not on this board, or may not do this
+     */
+    403: Error;
+    /**
+     * Not found
+     */
+    404: Error;
+    /**
+     * The task or message is in another state, or the claim epoch is stale
+     */
+    409: Error;
+};
+
+export type GetRoutineError = GetRoutineErrors[keyof GetRoutineErrors];
+
+export type GetRoutineResponses = {
+    /**
+     * OK
+     */
+    200: Routine;
+};
+
+export type GetRoutineResponse = GetRoutineResponses[keyof GetRoutineResponses];
+
+export type UpdateRoutineData = {
+    body: UpdateRoutineBody;
+    path: {
+        id: number;
+    };
+    query?: never;
+    url: '/api/routines/{id}';
+};
+
+export type UpdateRoutineErrors = {
+    /**
+     * The input is not valid
+     */
+    400: Error;
+    /**
+     * The acting member is not on this board, or may not do this
+     */
+    403: Error;
+    /**
+     * Not found
+     */
+    404: Error;
+    /**
+     * The task or message is in another state, or the claim epoch is stale
+     */
+    409: Error;
+};
+
+export type UpdateRoutineError = UpdateRoutineErrors[keyof UpdateRoutineErrors];
+
+export type UpdateRoutineResponses = {
+    /**
+     * OK
+     */
+    200: Routine;
+};
+
+export type UpdateRoutineResponse = UpdateRoutineResponses[keyof UpdateRoutineResponses];
+
+export type EnableRoutineData = {
+    body?: never;
+    path: {
+        id: number;
+    };
+    query?: never;
+    url: '/api/routines/{id}/on';
+};
+
+export type EnableRoutineErrors = {
+    /**
+     * The input is not valid
+     */
+    400: Error;
+    /**
+     * The acting member is not on this board, or may not do this
+     */
+    403: Error;
+    /**
+     * Not found
+     */
+    404: Error;
+    /**
+     * The task or message is in another state, or the claim epoch is stale
+     */
+    409: Error;
+};
+
+export type EnableRoutineError = EnableRoutineErrors[keyof EnableRoutineErrors];
+
+export type EnableRoutineResponses = {
+    /**
+     * OK
+     */
+    200: Routine;
+};
+
+export type EnableRoutineResponse = EnableRoutineResponses[keyof EnableRoutineResponses];
+
+export type DisableRoutineData = {
+    body?: never;
+    path: {
+        id: number;
+    };
+    query?: never;
+    url: '/api/routines/{id}/off';
+};
+
+export type DisableRoutineErrors = {
+    /**
+     * The input is not valid
+     */
+    400: Error;
+    /**
+     * The acting member is not on this board, or may not do this
+     */
+    403: Error;
+    /**
+     * Not found
+     */
+    404: Error;
+    /**
+     * The task or message is in another state, or the claim epoch is stale
+     */
+    409: Error;
+};
+
+export type DisableRoutineError = DisableRoutineErrors[keyof DisableRoutineErrors];
+
+export type DisableRoutineResponses = {
+    /**
+     * OK
+     */
+    200: Routine;
+};
+
+export type DisableRoutineResponse = DisableRoutineResponses[keyof DisableRoutineResponses];
+
+export type ListRoutineJobsData = {
+    body?: never;
+    path: {
+        id: number;
+    };
+    query?: {
+        /**
+         * At most this many runs, newest first; default 20, at most 50
+         */
+        limit?: number;
+    };
+    url: '/api/routines/{id}/jobs';
+};
+
+export type ListRoutineJobsErrors = {
+    /**
+     * The input is not valid
+     */
+    400: Error;
+    /**
+     * The acting member is not on this board, or may not do this
+     */
+    403: Error;
+    /**
+     * Not found
+     */
+    404: Error;
+    /**
+     * The task or message is in another state, or the claim epoch is stale
+     */
+    409: Error;
+};
+
+export type ListRoutineJobsError = ListRoutineJobsErrors[keyof ListRoutineJobsErrors];
+
+export type ListRoutineJobsResponses = {
+    /**
+     * OK
+     */
+    200: Array<Job>;
+};
+
+export type ListRoutineJobsResponse = ListRoutineJobsResponses[keyof ListRoutineJobsResponses];
+
+export type GetBriefData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/brief';
+};
+
+export type GetBriefErrors = {
+    /**
+     * The input is not valid
+     */
+    400: Error;
+    /**
+     * The acting member is not on this board, or may not do this
+     */
+    403: Error;
+    /**
+     * Not found
+     */
+    404: Error;
+    /**
+     * The task or message is in another state, or the claim epoch is stale
+     */
+    409: Error;
+};
+
+export type GetBriefError = GetBriefErrors[keyof GetBriefErrors];
+
+export type GetBriefResponses = {
+    /**
+     * OK
+     */
+    200: Brief;
+};
+
+export type GetBriefResponse = GetBriefResponses[keyof GetBriefResponses];

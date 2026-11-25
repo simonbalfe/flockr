@@ -3,8 +3,8 @@
 import { queryOptions, type UseMutationOptions } from '@tanstack/react-query';
 
 import { client } from '../client.gen';
-import { addTaskCommit, answerInThread, answerQuestion, approveTask, askInThread, askQuestion, blockTask, claimNextTask, claimTask, completeTask, createActivityEntry, createAgent, createChannel, createMember, createTask, deleteAgent, deleteMessage, editMessage, failTask, getActivityEntry, getAgent, getInbox, getTask, getThread, giveTask, importChecklist, listActivity, listAgentActivity, listAgents, listChannels, listEvents, listMachines, listMembers, listMessages, listMessageVersions, listTasks, machineHeartbeat, makeTaskFromThread, markRead, type Options, pauseAgent, postMessage, registerMachine, releaseTask, renewTask, replyToThread, requestChanges, resumeAgent, searchBoard, setActivity, startAgent, stopAgent, stopRun, submitForReview, unblockTask, updateActivityEntry, updateAgent, updateChannel, whoami } from '../sdk.gen';
-import type { AddTaskCommitData, AddTaskCommitError, AddTaskCommitResponse, AnswerInThreadData, AnswerInThreadError, AnswerInThreadResponse, AnswerQuestionData, AnswerQuestionError, AnswerQuestionResponse, ApproveTaskData, ApproveTaskError, ApproveTaskResponse, AskInThreadData, AskInThreadError, AskInThreadResponse, AskQuestionData, AskQuestionError, AskQuestionResponse, BlockTaskData, BlockTaskError, BlockTaskResponse, ClaimNextTaskData, ClaimNextTaskError, ClaimNextTaskResponse, ClaimTaskData, ClaimTaskError, ClaimTaskResponse, CompleteTaskData, CompleteTaskError, CompleteTaskResponse, CreateActivityEntryData, CreateActivityEntryError, CreateActivityEntryResponse, CreateAgentData, CreateAgentError, CreateAgentResponse, CreateChannelData, CreateChannelError, CreateChannelResponse, CreateMemberData, CreateMemberError, CreateMemberResponse, CreateTaskData, CreateTaskError, CreateTaskResponse, DeleteAgentData, DeleteAgentError, DeleteAgentResponse, DeleteMessageData, DeleteMessageError, DeleteMessageResponse, EditMessageData, EditMessageError, EditMessageResponse, FailTaskData, FailTaskError, FailTaskResponse, GetActivityEntryData, GetActivityEntryError, GetActivityEntryResponse, GetAgentData, GetAgentError, GetAgentResponse, GetInboxData, GetInboxError, GetInboxResponse, GetTaskData, GetTaskError, GetTaskResponse, GetThreadData, GetThreadError, GetThreadResponse, GiveTaskData, GiveTaskError, GiveTaskResponse, ImportChecklistData, ImportChecklistError, ImportChecklistResponse, ListActivityData, ListActivityError, ListActivityResponse, ListAgentActivityData, ListAgentActivityError, ListAgentActivityResponse, ListAgentsData, ListAgentsError, ListAgentsResponse, ListChannelsData, ListChannelsError, ListChannelsResponse, ListEventsData, ListEventsError, ListEventsResponse, ListMachinesData, ListMachinesError, ListMachinesResponse, ListMembersData, ListMembersError, ListMembersResponse, ListMessagesData, ListMessagesError, ListMessagesResponse, ListMessageVersionsData, ListMessageVersionsError, ListMessageVersionsResponse, ListTasksData, ListTasksError, ListTasksResponse, MachineHeartbeatData, MachineHeartbeatError, MachineHeartbeatResponse, MakeTaskFromThreadData, MakeTaskFromThreadError, MakeTaskFromThreadResponse, MarkReadData, MarkReadError, MarkReadResponse, PauseAgentData, PauseAgentError, PauseAgentResponse, PostMessageData, PostMessageError, PostMessageResponse, RegisterMachineData, RegisterMachineError, RegisterMachineResponse, ReleaseTaskData, ReleaseTaskError, ReleaseTaskResponse, RenewTaskData, RenewTaskError, RenewTaskResponse, ReplyToThreadData, ReplyToThreadError, ReplyToThreadResponse, RequestChangesData, RequestChangesError, RequestChangesResponse, ResumeAgentData, ResumeAgentError, ResumeAgentResponse, SearchBoardData, SearchBoardError, SearchBoardResponse, SetActivityData, SetActivityError, SetActivityResponse, StartAgentData, StartAgentError, StartAgentResponse, StopAgentData, StopAgentError, StopAgentResponse, StopRunData, StopRunError, StopRunResponse, SubmitForReviewData, SubmitForReviewError, SubmitForReviewResponse, UnblockTaskData, UnblockTaskError, UnblockTaskResponse, UpdateActivityEntryData, UpdateActivityEntryError, UpdateActivityEntryResponse, UpdateAgentData, UpdateAgentError, UpdateAgentResponse, UpdateChannelData, UpdateChannelError, UpdateChannelResponse, WhoamiData, WhoamiError, WhoamiResponse } from '../types.gen';
+import { addTaskCommit, answerInThread, answerQuestion, approveTask, askInThread, askQuestion, blockTask, claimNextTask, claimTask, completeTask, createActivityEntry, createAgent, createChannel, createMember, createRoutine, createTask, deleteAgent, deleteMessage, deleteRoutine, disableRoutine, editMessage, enableRoutine, failTask, getActivityEntry, getAgent, getBrief, getInbox, getRoutine, getTask, getThread, giveTask, importChecklist, listActivity, listAgentActivity, listAgents, listChannels, listEvents, listMachines, listMembers, listMessages, listMessageVersions, listRoutineJobs, listRoutines, listTasks, machineHeartbeat, makeTaskFromThread, markRead, type Options, pauseAgent, postMessage, registerMachine, releaseTask, renewTask, replyToThread, requestChanges, resumeAgent, searchBoard, setActivity, startAgent, stopAgent, stopRun, submitForReview, unblockTask, updateActivityEntry, updateAgent, updateChannel, updateRoutine, whoami } from '../sdk.gen';
+import type { AddTaskCommitData, AddTaskCommitError, AddTaskCommitResponse, AnswerInThreadData, AnswerInThreadError, AnswerInThreadResponse, AnswerQuestionData, AnswerQuestionError, AnswerQuestionResponse, ApproveTaskData, ApproveTaskError, ApproveTaskResponse, AskInThreadData, AskInThreadError, AskInThreadResponse, AskQuestionData, AskQuestionError, AskQuestionResponse, BlockTaskData, BlockTaskError, BlockTaskResponse, ClaimNextTaskData, ClaimNextTaskError, ClaimNextTaskResponse, ClaimTaskData, ClaimTaskError, ClaimTaskResponse, CompleteTaskData, CompleteTaskError, CompleteTaskResponse, CreateActivityEntryData, CreateActivityEntryError, CreateActivityEntryResponse, CreateAgentData, CreateAgentError, CreateAgentResponse, CreateChannelData, CreateChannelError, CreateChannelResponse, CreateMemberData, CreateMemberError, CreateMemberResponse, CreateRoutineData, CreateRoutineError, CreateRoutineResponse, CreateTaskData, CreateTaskError, CreateTaskResponse, DeleteAgentData, DeleteAgentError, DeleteAgentResponse, DeleteMessageData, DeleteMessageError, DeleteMessageResponse, DeleteRoutineData, DeleteRoutineError, DeleteRoutineResponse, DisableRoutineData, DisableRoutineError, DisableRoutineResponse, EditMessageData, EditMessageError, EditMessageResponse, EnableRoutineData, EnableRoutineError, EnableRoutineResponse, FailTaskData, FailTaskError, FailTaskResponse, GetActivityEntryData, GetActivityEntryError, GetActivityEntryResponse, GetAgentData, GetAgentError, GetAgentResponse, GetBriefData, GetBriefError, GetBriefResponse, GetInboxData, GetInboxError, GetInboxResponse, GetRoutineData, GetRoutineError, GetRoutineResponse, GetTaskData, GetTaskError, GetTaskResponse, GetThreadData, GetThreadError, GetThreadResponse, GiveTaskData, GiveTaskError, GiveTaskResponse, ImportChecklistData, ImportChecklistError, ImportChecklistResponse, ListActivityData, ListActivityError, ListActivityResponse, ListAgentActivityData, ListAgentActivityError, ListAgentActivityResponse, ListAgentsData, ListAgentsError, ListAgentsResponse, ListChannelsData, ListChannelsError, ListChannelsResponse, ListEventsData, ListEventsError, ListEventsResponse, ListMachinesData, ListMachinesError, ListMachinesResponse, ListMembersData, ListMembersError, ListMembersResponse, ListMessagesData, ListMessagesError, ListMessagesResponse, ListMessageVersionsData, ListMessageVersionsError, ListMessageVersionsResponse, ListRoutineJobsData, ListRoutineJobsError, ListRoutineJobsResponse, ListRoutinesData, ListRoutinesError, ListRoutinesResponse, ListTasksData, ListTasksError, ListTasksResponse, MachineHeartbeatData, MachineHeartbeatError, MachineHeartbeatResponse, MakeTaskFromThreadData, MakeTaskFromThreadError, MakeTaskFromThreadResponse, MarkReadData, MarkReadError, MarkReadResponse, PauseAgentData, PauseAgentError, PauseAgentResponse, PostMessageData, PostMessageError, PostMessageResponse, RegisterMachineData, RegisterMachineError, RegisterMachineResponse, ReleaseTaskData, ReleaseTaskError, ReleaseTaskResponse, RenewTaskData, RenewTaskError, RenewTaskResponse, ReplyToThreadData, ReplyToThreadError, ReplyToThreadResponse, RequestChangesData, RequestChangesError, RequestChangesResponse, ResumeAgentData, ResumeAgentError, ResumeAgentResponse, SearchBoardData, SearchBoardError, SearchBoardResponse, SetActivityData, SetActivityError, SetActivityResponse, StartAgentData, StartAgentError, StartAgentResponse, StopAgentData, StopAgentError, StopAgentResponse, StopRunData, StopRunError, StopRunResponse, SubmitForReviewData, SubmitForReviewError, SubmitForReviewResponse, UnblockTaskData, UnblockTaskError, UnblockTaskResponse, UpdateActivityEntryData, UpdateActivityEntryError, UpdateActivityEntryResponse, UpdateAgentData, UpdateAgentError, UpdateAgentResponse, UpdateChannelData, UpdateChannelError, UpdateChannelResponse, UpdateRoutineData, UpdateRoutineError, UpdateRoutineResponse, WhoamiData, WhoamiError, WhoamiResponse } from '../types.gen';
 
 export type QueryKey<TOptions extends Options> = [
     Pick<TOptions, 'baseUrl' | 'body' | 'headers' | 'path' | 'query'> & {
@@ -1040,4 +1040,161 @@ export const searchBoardOptions = (options: Options<SearchBoardData>) => queryOp
         return data;
     },
     queryKey: searchBoardQueryKey(options)
+});
+
+export const listRoutinesQueryKey = (options?: Options<ListRoutinesData>) => createQueryKey('listRoutines', options);
+
+/**
+ * Every routine on the board: its trigger (a schedule or an event in its channel), its one action, whether it is on, and its last runs
+ */
+export const listRoutinesOptions = (options?: Options<ListRoutinesData>) => queryOptions<ListRoutinesResponse, ListRoutinesError, ListRoutinesResponse, ReturnType<typeof listRoutinesQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await listRoutines({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: listRoutinesQueryKey(options)
+});
+
+/**
+ * Create a routine; it is off until a person turns it on. Only a person can create one
+ */
+export const createRoutineMutation = (options?: Partial<Options<CreateRoutineData>>): UseMutationOptions<CreateRoutineResponse, CreateRoutineError, Options<CreateRoutineData>> => {
+    const mutationOptions: UseMutationOptions<CreateRoutineResponse, CreateRoutineError, Options<CreateRoutineData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await createRoutine({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+/**
+ * Turn a routine off and remove it; its past runs stay; safe to repeat. Only a person can
+ */
+export const deleteRoutineMutation = (options?: Partial<Options<DeleteRoutineData>>): UseMutationOptions<DeleteRoutineResponse, DeleteRoutineError, Options<DeleteRoutineData>> => {
+    const mutationOptions: UseMutationOptions<DeleteRoutineResponse, DeleteRoutineError, Options<DeleteRoutineData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await deleteRoutine({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+export const getRoutineQueryKey = (options: Options<GetRoutineData>) => createQueryKey('getRoutine', options);
+
+/**
+ * One routine with its last runs
+ */
+export const getRoutineOptions = (options: Options<GetRoutineData>) => queryOptions<GetRoutineResponse, GetRoutineError, GetRoutineResponse, ReturnType<typeof getRoutineQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await getRoutine({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: getRoutineQueryKey(options)
+});
+
+/**
+ * Change a routine's name, channel, trigger, action or hourly limit; whether it is on does not change. Only a person can change one
+ */
+export const updateRoutineMutation = (options?: Partial<Options<UpdateRoutineData>>): UseMutationOptions<UpdateRoutineResponse, UpdateRoutineError, Options<UpdateRoutineData>> => {
+    const mutationOptions: UseMutationOptions<UpdateRoutineResponse, UpdateRoutineError, Options<UpdateRoutineData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await updateRoutine({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+/**
+ * Turn a routine on: it fires on its own trigger from now on; safe to repeat. Only a person can
+ */
+export const enableRoutineMutation = (options?: Partial<Options<EnableRoutineData>>): UseMutationOptions<EnableRoutineResponse, EnableRoutineError, Options<EnableRoutineData>> => {
+    const mutationOptions: UseMutationOptions<EnableRoutineResponse, EnableRoutineError, Options<EnableRoutineData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await enableRoutine({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+/**
+ * Turn a routine off: runs already queued are skipped; safe to repeat. Only a person can
+ */
+export const disableRoutineMutation = (options?: Partial<Options<DisableRoutineData>>): UseMutationOptions<DisableRoutineResponse, DisableRoutineError, Options<DisableRoutineData>> => {
+    const mutationOptions: UseMutationOptions<DisableRoutineResponse, DisableRoutineError, Options<DisableRoutineData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await disableRoutine({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+export const listRoutineJobsQueryKey = (options: Options<ListRoutineJobsData>) => createQueryKey('listRoutineJobs', options);
+
+/**
+ * A routine's runs, newest first: what caused each, its state, attempts, what it did and its last error
+ */
+export const listRoutineJobsOptions = (options: Options<ListRoutineJobsData>) => queryOptions<ListRoutineJobsResponse, ListRoutineJobsError, ListRoutineJobsResponse, ReturnType<typeof listRoutineJobsQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await listRoutineJobs({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: listRoutineJobsQueryKey(options)
+});
+
+export const getBriefQueryKey = (options?: Options<GetBriefData>) => createQueryKey('getBrief', options);
+
+/**
+ * The morning brief as of now: tasks finished in the last 24 hours, every blocked task with its reason, and the questions and reviews waiting for a person, plus the text the brief action posts
+ */
+export const getBriefOptions = (options?: Options<GetBriefData>) => queryOptions<GetBriefResponse, GetBriefError, GetBriefResponse, ReturnType<typeof getBriefQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await getBrief({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: getBriefQueryKey(options)
 });

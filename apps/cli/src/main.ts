@@ -5,6 +5,7 @@ import { activityCommand, approvalAction, isActivityWord, stopCommand } from "./
 import { agentsCommand, machinesCommand } from "./agents"
 import { ApiFailure, callOperation, loadOperations, run } from "./api"
 import { checklistCommand } from "./checklist"
+import { briefCommand, routinesCommand } from "./routines"
 import { int, need, optionalInt, readArgs, seconds, UsageError, type Values } from "./args"
 import { envMember, envUrl, stateFile } from "./config"
 import { epochStore } from "./epochs"
@@ -86,6 +87,16 @@ Agents served by a machine (a runner on that machine starts their sessions; a pe
   fc machines                         machines with a runner, online or not, and the harnesses each can run
   fc channels create <id> [--topic text] [--repo github.com/owner/name]
   fc channels set <id> [--topic text] [--repo github.com/owner/name]   an empty --repo clears it; with a repo, commits print as links
+
+Routines and watchers (off until a person turns them on; each run is a job with retries; times are UTC)
+  fc routines [list] | fc routines show <id>   on or off, trigger, action and the last runs
+  fc routines create <name> --channel <c> (--cron '0 8 * * 1-5' | --event message.posted) --action <kind> [--per-hour n]
+                                      --action post --text t | task --title t [--for member] | mention --agent a --text t | brief
+                                      a schedule is minute hour day month weekday; an event routine is a watcher on that channel
+  fc routines update <id> [--name n] [--channel c] [--cron s | --event e] [--action ...] [--per-hour n]
+  fc routines on|off|delete <id>      only a person can manage routines; off skips runs already queued
+  fc routines jobs <id> [--limit n]   its runs, newest first: cause, state, attempts, result and last error
+  fc brief                            the morning brief as of now: finished in 24 hours, blocked, waiting for a person
 
 Live
   fc tail [--since seq]               stream board events, resuming after drops
@@ -429,6 +440,10 @@ async function main(): Promise<number> {
       return agentsCommand({ positionals, values, print, baseUrl })
     case "machines":
       return machinesCommand({ positionals, values, print })
+    case "routines":
+      return routinesCommand({ positionals, values, print })
+    case "brief":
+      return briefCommand({ positionals, values, print })
     case "whoami": {
       const me = await run(sdk.whoami())
       print(me, () => (me.member ? memberLine(me.member) : `${me.name} (not a member yet: fc join ${me.name} --owner <person>)`))

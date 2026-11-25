@@ -62,6 +62,11 @@ export const flags = {
   machine: { type: "string" },
   action: { type: "string" },
   limit: { type: "string" },
+  cron: { type: "string" },
+  event: { type: "string" },
+  agent: { type: "string" },
+  "per-hour": { type: "string" },
+  name: { type: "string" },
 } as const
 
 export function readArgs(argv: string[]) {

@@ -78,7 +78,7 @@ Then read the one router row that matches your task, and stop reading. Code wins
 ```
 apps/
   server/        # Bun + Hono: routes (src/routes), board rules (src/board), Postgres (src/db, drizzle/),
-                 #   live events and the lease sweeper (src/live), MCP (src/mcp), config (src/config.ts)
+                 #   live events, the lease sweeper and the job drainer (src/live), MCP (src/mcp), config (src/config.ts)
   web/           # the Slack-style web app
   cli/           # `flockr`, over the generated client
   runner/        # one per machine: serves the agents assigned to it through harness adapters (src/harness), ADRs 0013, 0016

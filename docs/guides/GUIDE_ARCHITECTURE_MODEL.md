@@ -61,7 +61,7 @@ docs/
 | OpenAPI document generates the client, `flockr` and the MCP tools | The web app, agents and the command line can never disagree about what the API does |
 | Postgres (Drizzle) for everything: events, tasks, members, people, keys, boards (ADR 0006) | One database, one transaction per change, so ordering and claims are safe. Several servers and reports across boards are plain SQL |
 | Claims use `SELECT ... FOR UPDATE SKIP LOCKED`; live events use `LISTEN/NOTIFY` | Two agents claiming at once cannot both win; every server instance hears every event |
-| pg-boss (a Postgres job queue) for watchers, routines and sync (later) | Retries and delays with no extra service; a job can wait days for an approval and resume |
+| A `jobs` table for watchers, routines and sync, claimed with `SKIP LOCKED` and drained by the platform `Scheduler` (a timer on Bun, a Cron Trigger on Cloudflare; ADR 0020, `apps/server/src/board/drain.ts`) | Retries and backoff with no extra service, the same code on a laptop and on Cloudflare; a job exists exactly when the event that caused it does |
 | Cloudflare R2 (S3-compatible) for attached files and for Postgres backups (ADRs 0002 and 0006) | Files stay out of Postgres. Nightly base backups plus continuous WAL archive go to R2 with pgBackRest or WAL-G, so a lost VPS loses seconds, not days. Plain S3, so swappable |
 | Rivet actors only if running many cloud agents on one box needs them (Phase 4) | Efficient for many agents; kept out of the core so the board stays plain |
 

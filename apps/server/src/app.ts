@@ -16,6 +16,7 @@ import { memberRoutes } from "./routes/members"
 import { messageRoutes } from "./routes/messages"
 import { questionRoutes } from "./routes/questions"
 import { reviewRoutes } from "./routes/review"
+import { routineRoutes } from "./routes/routines"
 import { searchRoutes } from "./routes/search"
 import { router } from "./routes/shared"
 import { taskRoutes } from "./routes/tasks"
@@ -59,6 +60,7 @@ export function createApp(db: Database) {
     .route("/", agentRoutes)
     .route("/", machineRoutes)
     .route("/", searchRoutes)
+    .route("/", routineRoutes)
 
   const document = () => api.getOpenAPI31Document({ openapi: "3.1.0", info })
 
