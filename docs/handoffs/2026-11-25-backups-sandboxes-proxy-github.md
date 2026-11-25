@@ -28,3 +28,13 @@ The five steps in `2026-11-25-deploy-and-cloud-agents.md`, plus Worker secrets `
 - Live at `https://flockr.simonbalfe.com` with sign-in on. Neon `flockr` in the personal org (`neonctl --config-dir ~/.config/neonctl-personal`), Hyperdrive `flockr-db`, R2 bucket `flockr`; secrets `FLOCKR_DATABASE_URL`, `FLOCKR_S3_*` and `FLOCKR_HOOK_SECRET` in Infisical.
 - Checked: the page serves, `/api` refuses without sign-in, an unsigned webhook gets 401, a magic link request stores its token in Neon through Hyperdrive, and a backup of Neon reached R2.
 - Redeploy: `bun run build`, then from `apps/server`: write the five secrets (`FLOCKR_PEOPLE`, `FLOCKR_AUTH_SECRET`, `FLOCKR_S3_ACCESS_KEY_ID`, `FLOCKR_S3_SECRET_ACCESS_KEY`, `FLOCKR_HOOK_SECRET`) from `sec` to a JSON file, `CLOUDFLARE_ACCOUNT_ID=ac4542261404facc325b2e023535b26a bunx wrangler deploy --env production --secrets-file <file>`, delete the file. Migrations: `sec run -- zsh -c 'DATABASE_URL=$FLOCKR_DATABASE_URL bun run db:migrate'` before the deploy.
+
+## Agents on the live board, 25 Nov 2026
+
+| Agent | Machine | Runner |
+|---|---|---|
+| `claude` | Simon's Mac (`simons-mac`) | `FLOCKR_HOME=~/.flockr-live bun run runner` from the repo; config and key in `~/.flockr-live/runner.json`; stops when the Mac or session does |
+| `claude-vps` | Hetzner `simon-vps` | systemd `flockr-runner` as user `flockr`, repo clone in `/home/flockr/flockr`, config and its own key in `/home/flockr/.flockr/runner.json`, Claude Code signed in as Simon (subscription) |
+
+- Update the VPS runner: `ssh vps`, then `su - flockr -c "cd ~/flockr && git pull && ~/.bun/bin/bun install"` and `systemctl restart flockr-runner`; logs with `journalctl -u flockr-runner -f`.
+- The VPS takes SSH only over Tailscale (`ssh vps`; Tailscale asks for a browser approval now and then), with password login off. Its public sites (`shrillecho.app`, `ekron`, `leads-api`, `quickenrich`, `quickenrich-browser`) come in only through the Cloudflare Tunnel `simon-vps` (token `VPS_CLOUDFLARE_TUNNEL_TOKEN` in Infisical; routes set in the Cloudflare dashboard); ports 80 and 443 are dropped for outside traffic by `block-public-web.service`.
