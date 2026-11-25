@@ -16,7 +16,8 @@
     "./routines": "./src/routines.ts"
   },
   "scripts": {
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test": "bun test test"
   },
   "dependencies": {
     "@hono/zod-openapi": "1.6.3",

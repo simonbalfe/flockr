@@ -40,6 +40,9 @@ function toBlocks(entries: Entry[]): Block[] {
   return blocks
 }
 
+// A deleted message or reply leaves no trace in the feed or a thread.
+const shownGone = (entry: Entry): boolean => (entry.kind === "text" || entry.kind === "reply") && entry.deleted
+
 function subLabel(member: Member | undefined): string {
   if (!member) return ""
   if (member.kind === "agent") return `via ${member.owner}`
@@ -100,7 +103,7 @@ export function Feed({ entries, inThread = false, subThreads = null }: { entries
   const tasks = new Map((taskList.data ?? []).map((t) => [t.id, t]))
   return (
     <>
-      {toBlocks(entries).map((block) => {
+      {toBlocks(entries.filter((entry) => !shownGone(entry))).map((block) => {
         if (block.kind === "event") return <EventRow key={block.event.id} event={block.event} />
         const { group } = block
         const sub = subLabel(members.data?.find((m) => m.name === group.who))

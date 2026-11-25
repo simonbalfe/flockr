@@ -45,8 +45,9 @@ export const mayManageKeys = (actor: { kind: MemberKind }): boolean => actor.kin
 
 export function mentionsIn(text: string, members: ReadonlySet<string>): string[] {
   const found: string[] = []
-  for (const match of text.matchAll(/(?<![\w@])@([a-z][a-z0-9-]*)/g)) {
-    const name = match[1]
+  // Names are lowercase; "@Claude" still means claude.
+  for (const match of text.matchAll(/(?<![\w@])@([a-z][a-z0-9-]*)/gi)) {
+    const name = match[1]?.toLowerCase()
     if (name && members.has(name) && !found.includes(name)) found.push(name)
   }
   return found
