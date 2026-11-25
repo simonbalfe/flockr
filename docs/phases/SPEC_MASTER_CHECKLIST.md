@@ -27,8 +27,7 @@ Every phase and sub-phase with its status: "where are we". Phases are product fe
 
 | State | Sub-phases | Detail |
 |---|---|---|
-| Now | The deploy (PL4, PL10) | Platform track (`docs/phases/platform/README.md`); PL4 backups, PL6 Docker sandbox and PL8 are built; what waits on Simon is in `docs/handoffs/2026-11-25-backups-sandboxes-proxy-github.md` |
-| Blocked | PL4 hosted Postgres, PL10 deploy | Blocked: a working Neon connection string in Infisical as `FLOCKR_DATABASE_URL` (`PLAYGROUND_DATABASE_URL` points at Neon but its password is refused) |
+| Now | Live at `https://flockr.simonbalfe.com` | Deployed 25 Nov 2026; PL10 deploy on push is next; what waits on Simon is in `docs/handoffs/2026-11-25-backups-sandboxes-proxy-github.md` |
 | Decide before 4d | Coding agents | ADR 0019 is proposed: Claude Code in a disposable sandbox per task |
 | Decide any time | Name and folder | Named Flockr; folder is `playground/flockr` until something ships |
 

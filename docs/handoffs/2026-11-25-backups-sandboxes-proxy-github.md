@@ -13,8 +13,7 @@
 
 | What | Unblocks |
 |---|---|
-| A working Neon connection string as `FLOCKR_DATABASE_URL` in Infisical (`PLAYGROUND_DATABASE_URL` points at Neon but its password is refused) | The deploy (PL4, PL10) |
-| An R2 bucket `flockr` and an R2 S3 API token for it | Nightly backups on the deploy |
+| A yes to delete the retired `creator-crawl` Neon project (its dumps are in R2) | Nothing; tidying |
 | Yes or no on ADR 0019 (Claude Code in a sandbox per task) | 4d |
 | Containers on the Cloudflare account (Workers Paid) | PL6's Cloudflare adapter, 4c, 4d |
 | A GitHub App (PL7), and a yes to spend on OpenRouter | PL5, 4c, 4d, posting back to GitHub |
@@ -23,3 +22,9 @@
 ## Next: the deploy
 
 The five steps in `2026-11-25-deploy-and-cloud-agents.md`, plus Worker secrets `FLOCKR_S3_ENDPOINT` (`https://<account>.r2.cloudflarestorage.com`), `FLOCKR_S3_BUCKET`, `FLOCKR_S3_ACCESS_KEY_ID`, `FLOCKR_S3_SECRET_ACCESS_KEY`, optionally `FLOCKR_HOOK_SECRET`; then `wrangler deploy --env production`, one manual `bun run db:backup` against Neon and one `bun run db:restore` into a scratch Neon branch.
+
+## Deployed, 25 Nov 2026
+
+- Live at `https://flockr.simonbalfe.com` with sign-in on. Neon `flockr` in the personal org (`neonctl --config-dir ~/.config/neonctl-personal`), Hyperdrive `flockr-db`, R2 bucket `flockr`; secrets `FLOCKR_DATABASE_URL`, `FLOCKR_S3_*` and `FLOCKR_HOOK_SECRET` in Infisical.
+- Checked: the page serves, `/api` refuses without sign-in, an unsigned webhook gets 401, a magic link request stores its token in Neon through Hyperdrive, and a backup of Neon reached R2.
+- Redeploy: `bun run build`, then from `apps/server`: write the five secrets (`FLOCKR_PEOPLE`, `FLOCKR_AUTH_SECRET`, `FLOCKR_S3_ACCESS_KEY_ID`, `FLOCKR_S3_SECRET_ACCESS_KEY`, `FLOCKR_HOOK_SECRET`) from `sec` to a JSON file, `CLOUDFLARE_ACCOUNT_ID=ac4542261404facc325b2e023535b26a bunx wrangler deploy --env production --secrets-file <file>`, delete the file. Migrations: `sec run -- zsh -c 'DATABASE_URL=$FLOCKR_DATABASE_URL bun run db:migrate'` before the deploy.

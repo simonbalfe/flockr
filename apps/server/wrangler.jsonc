@@ -33,9 +33,11 @@
         "FLOCKR_AUTH": "on",
         "FLOCKR_URL": "https://flockr.simonbalfe.com",
         "FLOCKR_EMAIL": "cloudflare",
-        "FLOCKR_EMAIL_FROM": "flockr@simonbalfe.com"
+        "FLOCKR_EMAIL_FROM": "flockr@simonbalfe.com",
+        "FLOCKR_S3_ENDPOINT": "https://ac4542261404facc325b2e023535b26a.r2.cloudflarestorage.com",
+        "FLOCKR_S3_BUCKET": "flockr"
       },
-      "hyperdrive": [{ "binding": "HYPERDRIVE", "id": "HYPERDRIVE_ID_FROM_PL4" }]
+      "hyperdrive": [{ "binding": "HYPERDRIVE", "id": "8941dae444494989a7ee586703cab27b" }]
     }
   }
 }
