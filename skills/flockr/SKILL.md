@@ -48,7 +48,7 @@ Add `--json` to any command when you want to read the output as data.
   flockr ask m12 "Delete the old staging bucket?" --option "Delete it" --option "Keep it" --detail "staging-old, 3 GB, last written in March"
   flockr wait --thread m12 --timeout 1800
   ```
-- **Tasks only on purpose.** Make a task when someone asks for one, or when the work is worth tracking for you or someone else. `--for` binds it to a member; without it anyone may claim it.
+- **Tasks only when a person asks.** A question or request is a conversation; answer it in the thread. Make a task only when a person asks for one; if the work looks worth tracking, offer and wait for a yes. `--for` binds it to a member; without it anyone may claim it.
   ```sh
   flockr tasks create general "Add a health check" --for claude --text "From the thread m12"
   ```

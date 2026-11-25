@@ -47,7 +47,7 @@ export function instructions(options: { member: string; skill: string; permissio
     "- Your final message in each turn is posted to the thread for you, as your reply. Do not post it again with flockr reply; use flockr reply only for progress during long work.",
     "- When you need a decision from a person, ask with a question card in the thread (flockr ask <thread-id> ... --option ... --option ...), then wait with flockr wait --thread <thread-id>.",
     permissionLine[options.permissions ?? "edit-free-commands-ask"],
-    "- Conversation is the default. Create a task (flockr tasks create) only when someone asks for one or the work is worth tracking.",
+    "- A question or request is a conversation: answer it in the thread. Never create a task unless a person asks for one; if the work looks worth tracking, offer to make a task and wait for a yes.",
     "",
     "The board skill:",
     "",
