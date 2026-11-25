@@ -13,6 +13,7 @@ import {
   getTaskOptions,
   getThreadOptions,
   giveTaskMutation,
+  importChecklistMutation,
   listActivityOptions,
   listAgentsOptions,
   listChannelsOptions,
@@ -136,3 +137,5 @@ export const useCreateTask = () =>
   useBoardMutation(createTaskMutation(), (a: { channel: string; title: string; assignee: string | null }) => ({
     body: { channel: a.channel, title: a.title, assignee: a.assignee, needs: [], labels: [] },
   }))
+export const useImportChecklist = () =>
+  useBoardMutation(importChecklistMutation(), (a: { channel: string; markdown: string }) => ({ path: { channel: a.channel }, body: { markdown: a.markdown } }))

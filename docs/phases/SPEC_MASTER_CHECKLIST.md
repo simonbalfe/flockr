@@ -67,7 +67,7 @@ Done when: an agent on another machine, with its own key and only the MCP server
 | 3b Board skill | agents | A Markdown skill for coding agents: find the channel, read the thread first, claim, reply with progress, complete with proof, ask instead of guessing | P37 | Done (built before the checklist was tracked; audited 25 Nov 2026) |
 | 3c Agent keys | both | Each agent gets its own key, shown with its owner and turned off alone; a key can be limited to some channels | P35, P58, P79 | Not started |
 | 3d Commit links | both | A task stores the commits that did it; the thread links to each | P25 | Partial: one commit per task, shown as text; left: several commits, a repo per channel, links |
-| 3e Checklist import | both | A repo's `SPEC_MASTER_CHECKLIST.md` rows become tasks with their order; completing a task ticks its row | Our own | Not started |
+| 3e Checklist import | both | A repo's `SPEC_MASTER_CHECKLIST.md` rows become tasks with their order; completing a task ticks its row | Our own | Done (Work: 3e-checklist-import) |
 
 ## Phase 4: Launchers
 

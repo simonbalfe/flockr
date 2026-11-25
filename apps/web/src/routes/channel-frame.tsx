@@ -2,6 +2,7 @@ import { getRouteApi, Outlet, useNavigate, useRouterState } from "@tanstack/reac
 import { useEffect } from "react"
 import { useChannels, useMarkRead, useTasks } from "@/api/hooks"
 import { Composer } from "@/components/composer"
+import { ImportChecklistDialog } from "@/components/import-checklist-dialog"
 import { NewTaskDialog } from "@/components/new-task-dialog"
 import { PageHeader } from "@/components/page-header"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -53,6 +54,7 @@ export function ChannelFrame() {
             </TabsTrigger>
           </TabsList>
         </Tabs>
+        {onTasks && <ImportChecklistDialog channel={channel} />}
         {onTasks && <NewTaskDialog channel={channel} />}
       </PageHeader>
       <Outlet />

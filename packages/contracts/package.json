@@ -8,7 +8,8 @@
     "./rules": "./src/rules.ts",
     "./activity": "./src/activity.ts",
     "./agents": "./src/agents.ts",
-    "./activity-rules": "./src/activity-rules.ts"
+    "./activity-rules": "./src/activity-rules.ts",
+    "./checklist": "./src/checklist.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit"

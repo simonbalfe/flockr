@@ -7,6 +7,7 @@ import { activityRoutes } from "./routes/activity"
 import { activityEntryRoutes } from "./routes/activity-entries"
 import { agentRoutes } from "./routes/agents"
 import { channelRoutes } from "./routes/channels"
+import { checklistRoutes } from "./routes/checklist"
 import { claimRoutes } from "./routes/claims"
 import { eventRoutes } from "./routes/events"
 import { flowRoutes } from "./routes/flow"
@@ -47,6 +48,7 @@ export function createApp(db: Database) {
     .route("/", memberRoutes)
     .route("/", claimRoutes)
     .route("/", taskRoutes)
+    .route("/", checklistRoutes)
     .route("/", flowRoutes)
     .route("/", reviewRoutes)
     .route("/", questionRoutes)

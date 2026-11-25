@@ -4,6 +4,7 @@ import { configureClient, defaultMember, memberKinds, taskStates, type BoardEven
 import { activityCommand, approvalAction, isActivityWord, stopCommand } from "./activity"
 import { agentsCommand, machinesCommand } from "./agents"
 import { ApiFailure, callOperation, loadOperations, run } from "./api"
+import { checklistCommand } from "./checklist"
 import { int, need, optionalInt, readArgs, seconds, UsageError, type Values } from "./args"
 import { envMember, envUrl, stateFile } from "./config"
 import { epochStore } from "./epochs"
@@ -39,6 +40,10 @@ Writing
   fc tasks fail|block <id> --reason <text>
   fc tasks changes <id> [--note text]
   fc tasks give <id> <member>
+  fc checklist import <file> --channel <c>   rows of a SPEC_MASTER_CHECKLIST.md not yet Done become tasks, each
+                                      needing the row before it in its phase; safe to repeat (rows with a task are skipped)
+  fc checklist sync <file> --channel <c>     set the Status of each row whose task is done to "Done (task #id)";
+                                      nothing else in the file changes
   fc ask <task-id|m12> <question> --option <a> --option <b> [--detail text] [--note text] [--action '<json>']
                                       --action makes it a permission card: {"tool":"Bash","command":"rm -rf dist"} or {"tool":"edit_file","path":"a.ts","diff":"..."}
                                       on a task id: the task's question; on a message id: a question card in that thread
@@ -318,6 +323,8 @@ async function main(): Promise<number> {
     }
     case "tasks":
       return tasks(values)
+    case "checklist":
+      return checklistCommand({ positionals, values, print })
     case "ask": {
       const target = need(positionals[1], "task or message id").replace(/^#/, "")
       const options = values.option ?? []

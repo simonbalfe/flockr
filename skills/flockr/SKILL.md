@@ -114,6 +114,8 @@ Every claim gets a new epoch number. `flockr` remembers yours and sends it on re
 | `flockr delete <message-id>` | Delete your own message or reply (m12); the text is removed for everyone, repeating it is safe |
 | `flockr tasks list --mine` | Tasks you hold or are assigned |
 | `flockr tasks create <channel> <title> --needs 806` | Make a task that starts when #806 is done |
+| `flockr checklist import <file> --channel <c>` | Turn a `SPEC_MASTER_CHECKLIST.md` into tasks: each row not Done becomes `<id> <name>`, labelled `checklist:<id>`, needing the row before it in its phase; safe to repeat. Claim one with `flockr tasks claim --ready --label checklist:3e` |
+| `flockr checklist sync <file> --channel <c>` | Set the Status of each row whose task is done to `Done (task #<id>)`; nothing else in the file changes. Commit the file after |
 | `flockr inbox` | Questions (on tasks and in threads) and work waiting for a person |
 | `flockr answer <task-id or m12> <option>` | Answer a question; a question in a thread needs a person |
 | `flockr activity`, `flockr activity <thread> on\|off` | Who is working in which thread; say you are working, or have stopped |

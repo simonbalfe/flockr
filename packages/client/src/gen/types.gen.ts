@@ -545,6 +545,34 @@ export type GiveBody = {
     to: string;
 };
 
+export type ChecklistImport = {
+    /**
+     * New tasks in file order; each needs the task of the row before it in its phase
+     */
+    created: Array<Task>;
+    skipped: Array<ChecklistSkip>;
+};
+
+export type ChecklistSkip = {
+    row: string;
+    title: string;
+    /**
+     * done: the row is already Done in the file; exists: a task with its checklist label is already in the channel
+     */
+    reason: 'done' | 'exists';
+    /**
+     * The task that already has this row
+     */
+    taskId: number | null;
+};
+
+export type ImportChecklistBody = {
+    /**
+     * A SPEC_MASTER_CHECKLIST.md: tables of `| 1a Name | For | Delivers | Covers | Status |` rows under `## Phase N: ...` headings
+     */
+    markdown: string;
+};
+
 export type CompleteBody = {
     /**
      * The claimEpoch from your claim. A stale value is refused with 409.
@@ -2008,6 +2036,45 @@ export type GiveTaskResponses = {
 };
 
 export type GiveTaskResponse = GiveTaskResponses[keyof GiveTaskResponses];
+
+export type ImportChecklistData = {
+    body: ImportChecklistBody;
+    path: {
+        channel: string;
+    };
+    query?: never;
+    url: '/api/channels/{channel}/checklist';
+};
+
+export type ImportChecklistErrors = {
+    /**
+     * The input is not valid
+     */
+    400: Error;
+    /**
+     * The acting member is not on this board, or may not do this
+     */
+    403: Error;
+    /**
+     * Not found
+     */
+    404: Error;
+    /**
+     * The task or message is in another state, or the claim epoch is stale
+     */
+    409: Error;
+};
+
+export type ImportChecklistError = ImportChecklistErrors[keyof ImportChecklistErrors];
+
+export type ImportChecklistResponses = {
+    /**
+     * OK
+     */
+    200: ChecklistImport;
+};
+
+export type ImportChecklistResponse = ImportChecklistResponses[keyof ImportChecklistResponses];
 
 export type CompleteTaskData = {
     body: CompleteBody;

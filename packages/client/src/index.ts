@@ -8,6 +8,7 @@ export type { Client } from "./gen/client"
 export { connectLive, liveUrl, type LiveConnection, type LiveOptions } from "./live"
 export { activitySeconds, defaultMember, errorKinds, leaseMinutes, memberHeader, memberKinds, taskStates } from "@flockr/contracts/constants"
 export { mayDeleteMessage, mayManageAgent, mentionsIn, type MessageDeleteCheck } from "@flockr/contracts/rules"
+export { checklistLabel, doneTasksByRow, parseChecklist, tickChecklist, type ChecklistRow, type Ticked } from "@flockr/contracts/checklist"
 export {
   agentEventTypes,
   agentLimits,

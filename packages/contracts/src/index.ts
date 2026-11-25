@@ -1,6 +1,7 @@
 export * from "./activity"
 export * from "./agents"
 export * from "./board"
+export * from "./checklist"
 export * from "./constants"
 export * from "./live"
 export * from "./requests"

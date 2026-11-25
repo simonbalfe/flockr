@@ -1805,6 +1805,76 @@
           "to"
         ]
       },
+      "ChecklistImport": {
+        "type": "object",
+        "properties": {
+          "created": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Task"
+            },
+            "description": "New tasks in file order; each needs the task of the row before it in its phase"
+          },
+          "skipped": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ChecklistSkip"
+            }
+          }
+        },
+        "required": [
+          "created",
+          "skipped"
+        ]
+      },
+      "ChecklistSkip": {
+        "type": "object",
+        "properties": {
+          "row": {
+            "type": "string",
+            "example": "1a"
+          },
+          "title": {
+            "type": "string",
+            "example": "1a Skeleton"
+          },
+          "reason": {
+            "type": "string",
+            "enum": [
+              "done",
+              "exists"
+            ],
+            "description": "done: the row is already Done in the file; exists: a task with its checklist label is already in the channel"
+          },
+          "taskId": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "description": "The task that already has this row"
+          }
+        },
+        "required": [
+          "row",
+          "title",
+          "reason",
+          "taskId"
+        ]
+      },
+      "ImportChecklistBody": {
+        "type": "object",
+        "properties": {
+          "markdown": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 500000,
+            "description": "A SPEC_MASTER_CHECKLIST.md: tables of `| 1a Name | For | Delivers | Covers | Status |` rows under `## Phase N: ...` headings"
+          }
+        },
+        "required": [
+          "markdown"
+        ]
+      },
       "CompleteBody": {
         "type": "object",
         "properties": {
@@ -4984,6 +5054,88 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Task"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The input is not valid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The acting member is not on this board, or may not do this",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The task or message is in another state, or the claim epoch is stale",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/channels/{channel}/checklist": {
+      "post": {
+        "operationId": "importChecklist",
+        "tags": [
+          "tasks"
+        ],
+        "summary": "Import a SPEC_MASTER_CHECKLIST.md into a channel: each row not Done becomes a task titled `<id> <name>`, labelled checklist and checklist:<id>, needing the row before it in its phase. Rows that already have a task are skipped, so it is safe to repeat.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "example": "backend"
+            },
+            "required": true,
+            "name": "channel",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ImportChecklistBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChecklistImport"
                 }
               }
             }

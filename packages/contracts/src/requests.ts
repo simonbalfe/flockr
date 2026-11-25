@@ -1,6 +1,7 @@
 import { z } from "@hono/zod-openapi"
 import { ApprovalAction } from "./activity"
 import { Activity, MemberKind, orNull, Task, TaskState, TextMessage } from "./board"
+import { checklistLimits, checklistSkipReasons } from "./checklist"
 
 const text = z.string().trim().min(1)
 const epoch = z.number().int().optional().openapi({ description: "The claimEpoch from your claim. A stale value is refused with 409." })
@@ -102,6 +103,32 @@ export const ActivityBody = z
   .openapi("ActivityBody")
 export const ActivityResult = z.object({ activity: orNull(Activity) }).openapi("ActivityResult")
 
+export const ImportChecklistBody = z
+  .object({
+    markdown: z
+      .string()
+      .min(1)
+      .max(checklistLimits.markdownChars)
+      .openapi({ description: "A SPEC_MASTER_CHECKLIST.md: tables of `| 1a Name | For | Delivers | Covers | Status |` rows under `## Phase N: ...` headings" }),
+  })
+  .openapi("ImportChecklistBody")
+
+export const ChecklistSkip = z
+  .object({
+    row: z.string().openapi({ example: "1a" }),
+    title: z.string().openapi({ example: "1a Skeleton" }),
+    reason: z.enum(checklistSkipReasons).openapi({ description: "done: the row is already Done in the file; exists: a task with its checklist label is already in the channel" }),
+    taskId: z.number().int().nullable().openapi({ description: "The task that already has this row" }),
+  })
+  .openapi("ChecklistSkip")
+
+export const ChecklistImport = z
+  .object({
+    created: z.array(Task).openapi({ description: "New tasks in file order; each needs the task of the row before it in its phase" }),
+    skipped: z.array(ChecklistSkip),
+  })
+  .openapi("ChecklistImport")
+
 export const EventsQuery = z.object({
   since: z.coerce.number().int().min(0).default(0).openapi({ type: "integer", description: "Return events after this sequence number, default 0" }),
   limit: z.coerce.number().int().min(1).max(1000).default(500).openapi({ type: "integer", description: "At most this many events, default 500" }),
@@ -113,5 +140,8 @@ export type CreateMemberBody = z.infer<typeof CreateMemberBody>
 export type AskBody = z.infer<typeof AskBody>
 export type CompleteBody = z.infer<typeof CompleteBody>
 export type ThreadAskBody = z.infer<typeof ThreadAskBody>
+export type ImportChecklistBody = z.infer<typeof ImportChecklistBody>
+export type ChecklistImport = z.infer<typeof ChecklistImport>
+export type ChecklistSkip = z.infer<typeof ChecklistSkip>
 export type ListTasksQuery = z.infer<typeof ListTasksQuery>
 export type ReleaseBody = z.infer<typeof ReleaseBody>
