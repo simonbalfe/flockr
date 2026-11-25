@@ -15,5 +15,27 @@
       "id": "00000000000000000000000000000000",
       "localConnectionString": "postgres://flockr:flockr@127.0.0.1:5432/flockr"
     }
-  ]
+  ],
+  "env": {
+    "production": {
+      "name": "flockr",
+      "routes": [{ "pattern": "flockr.simonbalfe.com", "custom_domain": true }],
+      "assets": {
+        "directory": "../web/dist",
+        "not_found_handling": "single-page-application",
+        "run_worker_first": ["/api/*", "/mcp", "/ws"]
+      },
+      "durable_objects": { "bindings": [{ "name": "BOARD_ROOM", "class_name": "BoardRoom" }] },
+      "migrations": [{ "tag": "v1", "new_sqlite_classes": ["BoardRoom"] }],
+      "triggers": { "crons": ["* * * * *"] },
+      "send_email": [{ "name": "EMAIL" }],
+      "vars": {
+        "FLOCKR_AUTH": "on",
+        "FLOCKR_URL": "https://flockr.simonbalfe.com",
+        "FLOCKR_EMAIL": "cloudflare",
+        "FLOCKR_EMAIL_FROM": "flockr@simonbalfe.com"
+      },
+      "hyperdrive": [{ "binding": "HYPERDRIVE", "id": "HYPERDRIVE_ID_FROM_PL4" }]
+    }
+  }
 }
