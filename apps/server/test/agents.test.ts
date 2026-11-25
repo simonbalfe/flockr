@@ -237,4 +237,17 @@ describe("runs left behind", () => {
     await registerMachine(db, "simon", machineBody, at(62))
     expect((await getActivityEntry(db, second.entry.id)).status).toBe("stopped")
   })
+
+  test("a run left on a machine that was already offline ends on the next sweep", async () => {
+    const { db, call } = await boardWithMachine()
+    await call("simon", "POST", "/api/agents", scout)
+    const posted = z.object({ message: z.object({ id: z.string() }).loose() }).parse((await call("simon", "POST", "/api/channels/backend/messages", { text: "@scout look" })).json).message
+    const t0 = new Date()
+    const at = (seconds: number) => new Date(t0.getTime() + seconds * 1000)
+    await registerMachine(db, "simon", machineBody, t0)
+    expect(await sweepMachines(db, at(60))).toEqual(["danas-laptop"])
+    const orphan = await createActivityEntry(db, "scout", posted.id, { title: "Looking", parts: [] }, at(61))
+    expect(await sweepMachines(db, at(62))).toEqual([])
+    expect((await getActivityEntry(db, orphan.entry.id)).status).toBe("stopped")
+  })
 })

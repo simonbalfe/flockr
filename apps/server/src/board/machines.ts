@@ -98,8 +98,13 @@ export async function sweepMachines(db: Database, now = new Date()): Promise<str
       names.push(...rows.map((r) => r.name))
     }
     await notifyAgents(tx, names)
-    return { machines: gone.map((m) => m.id), names }
+    return gone.map((m) => m.id)
   })
-  await endRunsOf(db, swept.names, now)
-  return swept.machines
+  const offline = await db
+    .select({ name: agents.name })
+    .from(agents)
+    .innerJoin(machines, eq(agents.machine, machines.id))
+    .where(lt(machines.lastSeenAt, cutoff))
+  await endRunsOf(db, offline.map((row) => row.name), now)
+  return swept
 }
