@@ -1,6 +1,6 @@
 # 0002: Cloudflare R2 holds files and Postgres backups
 
-Status: accepted again through [0006](0006-postgres-is-the-data-store.md) after 0004 briefly superseded it. Accepted 24 Nov 2026. Adds to [0001](0001-flockr-runs-on-a-vps-not-cloudflare.md); supersedes nothing.
+Status: accepted again through [0006](0006-postgres-is-the-data-store.md) after 0004 briefly superseded it. Accepted 24 Nov 2026. Adds to [0001](0001-flockr-runs-on-a-vps-not-cloudflare.md); supersedes nothing. Its backup method (base backup plus WAL archive) is superseded in part by [0023](0023-backups-are-nightly-logical-copies-in-the-bucket.md).
 
 ## Problem
 

@@ -6,7 +6,7 @@
   "compatibility_flags": ["nodejs_compat"],
   "durable_objects": { "bindings": [{ "name": "BOARD_ROOM", "class_name": "BoardRoom" }] },
   "migrations": [{ "tag": "v1", "new_sqlite_classes": ["BoardRoom"] }],
-  "triggers": { "crons": ["* * * * *"] },
+  "triggers": { "crons": ["* * * * *", "0 3 * * *"] },
   "send_email": [{ "name": "EMAIL" }],
   "vars": { "FLOCKR_EMAIL_FROM": "flockr@example.com" },
   "hyperdrive": [
@@ -27,7 +27,7 @@
       },
       "durable_objects": { "bindings": [{ "name": "BOARD_ROOM", "class_name": "BoardRoom" }] },
       "migrations": [{ "tag": "v1", "new_sqlite_classes": ["BoardRoom"] }],
-      "triggers": { "crons": ["* * * * *"] },
+      "triggers": { "crons": ["* * * * *", "0 3 * * *"] },
       "send_email": [{ "name": "EMAIL" }],
       "vars": {
         "FLOCKR_AUTH": "on",

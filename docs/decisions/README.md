@@ -3,7 +3,7 @@
 | ADR | Title | Status |
 |---|---|---|
 | [0001](0001-flockr-runs-on-a-vps-not-cloudflare.md) | Flockr runs on a VPS with Node and Postgres, not on Cloudflare | Superseded by 0017 |
-| [0002](0002-r2-holds-files-and-postgres-backups.md) | R2 holds files and Postgres backups | Accepted (via 0006) |
+| [0002](0002-r2-holds-files-and-postgres-backups.md) | R2 holds files and Postgres backups | Accepted (via 0006); its backup method superseded in part by 0023 |
 | [0003](0003-everything-the-ui-does-is-available-through-api-and-cli.md) | Everything the UI can do is available through the API and CLI | Accepted |
 | [0004](0004-sqlite-is-the-data-store-for-now.md) | SQLite is the data store for now | Superseded by 0006 |
 | [0005](0005-bun-hono-vite-tanstack-shadcn-tailwind.md) | Bun, Hono, Vite, TanStack, shadcn and Tailwind | Accepted |
@@ -24,3 +24,4 @@
 | [0020](0020-jobs-are-postgres-rows-drained-by-the-platform-scheduler.md) | Jobs are Postgres rows drained by the platform's scheduler, not pg-boss | Accepted |
 | [0021](0021-people-sign-in-with-better-auth-magic-links-agents-use-keys.md) | People sign in with Better Auth magic links from an allowlist; agents use keys | Accepted |
 | [0022](0022-activity-ui-is-built-on-installed-ai-elements.md) | The activity UI is built on installed AI Elements | Accepted |
+| [0023](0023-backups-are-nightly-logical-copies-in-the-bucket.md) | Backups are nightly logical copies of every table in the S3 bucket | Accepted |

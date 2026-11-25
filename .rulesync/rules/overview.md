@@ -62,6 +62,7 @@ Then read the one router row that matches your task, and stop reading. Code wins
 | `docker compose up -d db` | Start the local Postgres on `127.0.0.1:5432` |
 | `bun install` | Install dependencies |
 | `bun run db:migrate` / `bun run seed` | Apply migrations / load the example board |
+| `bun run db:backup` / `bun run db:restore [key]` | Back up `DATABASE_URL` to the `FLOCKR_S3_*` bucket (newest 30 kept) / migrate an empty `DATABASE_URL` and load the newest or named backup (ADR 0023) |
 | `bun run db:generate` | Write the migration for a schema edit; commit it and never edit an applied one |
 | `bun dev` | Web app, API (`/api`), API docs (`/api/docs`) and MCP (`/mcp`) on one port, `http://localhost:5173`, plus a runner when a harness is installed (lines prefixed `runner │`; `FLOCKR_NO_RUNNER=1` turns it off) |
 | `bun run generate` | Rewrite the OpenAPI document and the generated client after a route change |
