@@ -1,7 +1,7 @@
 import { parseCron, routineActionKinds, routineActionLabels, routineLimits, routineTriggerKinds, routineTriggerLabels, watchableEventTypes } from "@flockr/client"
 import { useState, type FormEvent, type ReactNode } from "react"
 import { toast } from "sonner"
-import { errorText, useAgents, useChannels, useMembers } from "@/api/hooks"
+import { errorText, useAgents, useChannelList, useMembers } from "@/api/hooks"
 import { useCreateRoutine } from "@/api/routines"
 import type { RoutineAction, RoutineTrigger } from "@/api/types"
 import { Button } from "@/components/ui/button"
@@ -24,7 +24,7 @@ function Field({ label, hint, children }: { label: string; hint?: string; childr
 }
 
 export function NewRoutineDialog({ disabled }: { disabled: boolean }) {
-  const channels = useChannels()
+  const channels = useChannelList()
   const members = useMembers()
   const agents = useAgents()
   const create = useCreateRoutine()

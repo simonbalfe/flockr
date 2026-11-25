@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from "react"
 import { toast } from "sonner"
-import { useChannels, useCreateTask, useMembers } from "@/api/hooks"
+import { useChannelList, useCreateTask, useMembers } from "@/api/hooks"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { usePanel } from "@/lib/panel"
@@ -9,7 +9,7 @@ const fieldClass = "h-8 w-full rounded-lg border bg-background px-2.5 text-[13.5
 const anyone = ""
 
 export function NewTaskDialog({ channel, variant = "outline" }: { channel?: string; variant?: "outline" | "secondary" }) {
-  const channels = useChannels()
+  const channels = useChannelList()
   const members = useMembers()
   const create = useCreateTask()
   const { openTask } = usePanel()

@@ -18,7 +18,7 @@ export const taskRoutes = router()
       request: { query: ListTasksQuery },
       responses: ok(z.array(Task)),
     }),
-    async (c) => c.json(await listTasks(c.var.db, c.req.valid("query")), 200),
+    async (c) => c.json(await listTasks(c.var.db, c.req.valid("query"), c.var.member), 200),
   )
   .openapi(
     operation({ method: "get", path: "/api/tasks/{id}", operationId: "getTask", tags, summary: "Show one task", request: { params: TaskParams }, responses: ok(Task) }),

@@ -10,7 +10,7 @@ export function ReplyBox({ threadId }: { threadId: string }) {
   return (
     <div className="flex-none px-4 pt-1.5 pb-[calc(14px+env(safe-area-inset-bottom))]">
       {working.length > 0 && <div className="px-1 pb-1.5 text-xs text-muted-foreground">Steer: your reply goes to {names} while it works</div>}
-      <MessageInput label={working.length ? "Steer" : "Reply"} placeholder={working.length ? `Steer ${names}` : "Reply"} onSend={(text) => send.mutate({ threadId, text })} />
+      <MessageInput key={threadId} draft={{ kind: "thread", target: threadId }} label={working.length ? "Steer" : "Reply"} placeholder={working.length ? `Steer ${names}` : "Reply"} onSend={(text) => send.mutate({ threadId, text })} />
     </div>
   )
 }

@@ -3,7 +3,7 @@ import { MessageInput } from "@/components/message-input"
 import { OfflineMentionNote, useOfflineMentions } from "@/components/agents/offline-note"
 import { Presence } from "@/components/presence"
 
-export function Composer({ channel, onPosted }: { channel: string; onPosted: () => void }) {
+export function Composer({ channel, placeholder, onPosted }: { channel: string; placeholder: string; onPosted: () => void }) {
   const post = usePostMessage()
   const offline = useOfflineMentions()
   return (
@@ -12,8 +12,10 @@ export function Composer({ channel, onPosted }: { channel: string; onPosted: () 
       <OfflineMentionNote names={offline.names} onClear={offline.clear} />
       <div className="mt-1.5">
         <MessageInput
+          key={channel}
           label="Message"
-          placeholder={`Message #${channel}`}
+          placeholder={placeholder}
+          draft={{ kind: "channel", target: channel }}
           onSend={(text) =>
             post.mutate(
               { channel, text },

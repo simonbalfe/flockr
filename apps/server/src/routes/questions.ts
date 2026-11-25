@@ -58,5 +58,5 @@ export const questionRoutes = router()
   )
   .openapi(
     operation({ method: "get", path: "/api/inbox", operationId: "getInbox", tags, summary: "Waiting for you: open questions on tasks and in threads, and work to review", responses: ok(Inbox) }),
-    async (c) => c.json(await getInbox(c.var.db), 200),
+    async (c) => c.json(await getInbox(c.var.db, c.var.member), 200),
   )

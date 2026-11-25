@@ -5,6 +5,27 @@ import { event, member, memoryItem, messageThread, reply, setup, task } from "./
 const mention = (thread: string, actor = "simon") => event({ type: "message.posted", actor, messageId: thread, threadId: thread, data: { mentions: [member] } })
 const replied = (thread: string, id: string, actor = "simon") => event({ type: "reply.posted", actor, threadId: thread, messageId: id, data: { mentions: [] } })
 
+describe("direct messages", () => {
+  test("a message in a direct conversation wakes the agent without an @mention, and so does a reply in its thread", async () => {
+    const { runner, board, started } = setup()
+    board.threads.set("m20", messageThread("m20", "simon", "can you check the build?", [reply("m21", member, "Looking.")]))
+    await runner.receive(event({ type: "message.posted", actor: "simon", messageId: "m20", threadId: "m20", data: { mentions: [member], direct: true } }))
+    expect(started).toHaveLength(1)
+    started[0]?.end({ kind: "finished", text: "Green." })
+    await runner.idle()
+    board.threads.set("m30", messageThread("m30", member, "Build is green.", [reply("m31", "simon", "and the tests?")]))
+    await runner.receive(event({ type: "reply.posted", actor: "simon", threadId: "m30", messageId: "m31", data: { mentions: [member], direct: true } }))
+    expect(started).toHaveLength(2)
+  })
+
+  test("a reply that merely mentions the agent in a thread it never joined is still ignored", async () => {
+    const { runner, board, started } = setup()
+    board.threads.set("m40", messageThread("m40", "simon", "lunch?", [reply("m41", "simon", "@claude thoughts")]))
+    await runner.receive(event({ type: "reply.posted", actor: "simon", threadId: "m40", messageId: "m41", data: { mentions: [member] } }))
+    expect(started).toHaveLength(0)
+  })
+})
+
 describe("conversations", () => {
   test("a mention starts a session in the channel's folder and the final text becomes the reply", async () => {
     const { runner, board, started, sessions } = setup()

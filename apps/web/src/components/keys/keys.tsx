@@ -3,7 +3,7 @@ import { KeyRound } from "lucide-react"
 import { useState, type FormEvent } from "react"
 import { toast } from "sonner"
 import { useCreateKey, useKeys, useMayManageKeys, useRevokeKey } from "@/api/auth"
-import { useChannels, useMembers } from "@/api/hooks"
+import { useChannelList, useMembers } from "@/api/hooks"
 import { CopyCommand } from "@/components/agents/copy-command"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
@@ -66,7 +66,7 @@ export function KeyList({ member }: { member?: string }) {
 
 export function NewKeyDialog({ member, size = "sm" }: { member?: string; size?: "sm" | "default" }) {
   const members = useMembers()
-  const channels = useChannels()
+  const channels = useChannelList()
   const create = useCreateKey()
   const mayManage = useMayManageKeys()
   const [open, setOpen] = useState(false)

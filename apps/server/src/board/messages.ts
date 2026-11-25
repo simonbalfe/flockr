@@ -14,6 +14,8 @@ import {
 import { count, eq, isNull } from "drizzle-orm"
 import type { Database, Tx } from "../db/client"
 import { members, messages, messageVersions, type MemberRow, type MessageRow } from "../db/schema"
+import { addressedIn } from "./direct"
+import { clearDraft } from "./drafts"
 import { forbidden, invalid, wrongState } from "./errors"
 import { mutate, type Emit } from "./events"
 import { requireActor } from "./members"
@@ -34,10 +36,11 @@ export async function postMessage(db: Database, actor: string, channel: string, 
   const row = await mutate(db, async (tx, emit) => {
     await requireActor(tx, actor)
     await requireChannel(tx, channel)
-    const mentions = await mentionsOf(tx, said.text)
+    const { mentions, direct } = await addressedIn(tx, { channel, actor, mentions: await mentionsOf(tx, said.text) })
     const labels = labelSet(said.labels)
     const created = await insertMessage(tx, { channel, kind: "text", who: actor, body: said.text, mentions, labels })
-    emitMessage(emit, "message.posted", created, actor, messageKey(created.id), { mentions, labels })
+    emitMessage(emit, "message.posted", created, actor, messageKey(created.id), { mentions, labels, ...(direct ? { direct } : {}) })
+    await clearDraft(tx, { member: actor, kind: "channel", target: channel })
     return created
   })
   const thread = await getThread(db, messageKey(row.id))
@@ -49,11 +52,12 @@ interface ReplyDraft extends Said {
   epoch?: number | undefined
 }
 
-async function replyUnder(tx: Tx, emit: Emit, options: { actor: string; parent: MessageRow; draft: ReplyDraft; mentions: string[] }): Promise<MessageRow> {
-  const { actor, parent, draft, mentions } = options
+async function replyUnder(tx: Tx, emit: Emit, options: { actor: string; parent: MessageRow; draft: ReplyDraft; said: string[] }): Promise<MessageRow> {
+  const { actor, parent, draft } = options
   if (parent.kind !== "text") throw invalid(`${messageKey(parent.id)} is not a reply; reply to a message, a reply or a task`)
+  const { mentions, direct } = await addressedIn(tx, { channel: parent.channel, actor, mentions: options.said })
   const anchor = parent.replyToId ?? parent.id
-  const data = { mentions, labels: labelSet(draft.labels), replyTo: messageKey(anchor) }
+  const data = { mentions, labels: labelSet(draft.labels), replyTo: messageKey(anchor), ...(direct ? { direct } : {}) }
   const base = { channel: parent.channel, kind: "text" as const, who: actor, body: draft.text, mentions, labels: data.labels, replyToId: anchor }
   if (parent.threadTaskId !== null) {
     const task = await lockTask(tx, parent.threadTaskId)
@@ -71,20 +75,29 @@ export async function reply(db: Database, actor: string, threadId: string, draft
   const row: MessageRow = await mutate(db, async (tx, emit) => {
     await requireActor(tx, actor)
     const ref = parseThreadId(threadId)
-    const mentions = await mentionsOf(tx, draft.text)
+    const said = await mentionsOf(tx, draft.text)
     const labels = labelSet(draft.labels)
+    const draftKey = { member: actor, kind: "thread" as const, target: ref.kind === "task" ? String(ref.id) : messageKey(ref.id) }
     if (ref.kind === "task") {
       const task = await lockTask(tx, ref.id)
       checkEpoch(task, draft.epoch)
+      const { mentions, direct } = await addressedIn(tx, { channel: task.channel, actor, mentions: said })
       const created = await insertMessage(tx, { channel: task.channel, kind: "text", who: actor, body: draft.text, mentions, labels, threadTaskId: task.id })
-      emitMessage(emit, "reply.posted", created, actor, String(task.id), { mentions, labels })
+      emitMessage(emit, "reply.posted", created, actor, String(task.id), { mentions, labels, ...(direct ? { direct } : {}) })
+      await clearDraft(tx, draftKey)
       return created
     }
     const parent = await findMessage(tx, ref.id)
-    if (parent.parentId !== null || parent.threadTaskId !== null) return replyUnder(tx, emit, { actor, parent, draft, mentions })
+    if (parent.parentId !== null || parent.threadTaskId !== null) {
+      const created = await replyUnder(tx, emit, { actor, parent, draft, said })
+      await clearDraft(tx, draftKey)
+      return created
+    }
     if (parent.kind !== "text") throw invalid(`${threadId} is not a message; reply to a message or a task`)
+    const { mentions, direct } = await addressedIn(tx, { channel: parent.channel, actor, mentions: said })
     const created = await insertMessage(tx, { channel: parent.channel, kind: "text", who: actor, body: draft.text, mentions, labels, parentId: parent.id })
-    emitMessage(emit, "reply.posted", created, actor, messageKey(parent.id), { mentions, labels })
+    emitMessage(emit, "reply.posted", created, actor, messageKey(parent.id), { mentions, labels, ...(direct ? { direct } : {}) })
+    await clearDraft(tx, draftKey)
     return created
   })
   return replyOf(row)

@@ -3,6 +3,8 @@ import { useEffect } from "react"
 import { usePanel } from "@/lib/panel"
 import { Button } from "@/components/ui/button"
 import { useAreas, useChannels, useMarkRead, useTasks } from "@/api/hooks"
+import { currentUser } from "@/api/session"
+import { MemberAvatar } from "@/components/member-avatar"
 import { ChannelRepoDialog } from "@/components/channel-repo-dialog"
 import { Composer } from "@/components/composer"
 import { DeclareAreaDialog } from "@/components/declare-area-dialog"
@@ -36,6 +38,26 @@ export function ChannelFrame() {
   }
 
   const tabPath = { tasks: "/c/$channel/tasks", areas: "/c/$channel/areas", messages: "/c/$channel" } as const
+
+  if (current?.kind === "dm") {
+    const other = current.members.find((m) => m !== currentUser) ?? currentUser
+    return (
+      <>
+        <PageHeader
+          title={
+            <span className="flex items-center gap-2">
+              <MemberAvatar name={other} size="xs" />
+              {other}
+            </span>
+          }
+          topic="Direct message: only the two of you can read this"
+        />
+        <Outlet />
+        <Composer channel={channel} placeholder={`Message ${other}`} onPosted={() => undefined} />
+      </>
+    )
+  }
+
   const showTab = (tab: string) =>
     void navigate({
       to: tab === "tasks" || tab === "areas" ? tabPath[tab] : tabPath.messages,
@@ -74,7 +96,7 @@ export function ChannelFrame() {
         {onAreas && <DeclareAreaDialog channel={channel} />}
       </PageHeader>
       <Outlet />
-      <Composer channel={channel} onPosted={() => (onTasks || onAreas) && showTab("messages")} />
+      <Composer channel={channel} placeholder={`Message #${channel}`} onPosted={() => (onTasks || onAreas) && showTab("messages")} />
     </>
   )
 }

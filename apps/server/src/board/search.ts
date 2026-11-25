@@ -3,6 +3,7 @@ import { and, desc, eq, isNull, sql, type SQL } from "drizzle-orm"
 import type { Executor } from "../db/client"
 import { messageSearchVector, messages, taskSearchVector, tasks } from "../db/schema"
 import { messageKey, requireChannel, threadKeyOf } from "./read"
+import { visibleTo } from "./visibility"
 
 const startMark = "\u0002"
 const stopMark = "\u0003"
@@ -36,6 +37,7 @@ interface Search {
   phrase: string
   channel: string | undefined
   limit: number
+  viewer: string | null
 }
 
 const phraseBonus = (phrase: string, text: SQL) => sql`case when position(${phrase} in lower(${text})) > 0 then 1 else 0 end`
@@ -50,6 +52,7 @@ async function messageHits(db: Executor, search: Search): Promise<MessageHit[]> 
       and(
         sql`${messages.kind} = 'text'`,
         isNull(messages.deletedAt),
+        visibleTo(messages.channel, search.viewer),
         sql`${vector} @@ ${search.query}`,
         search.channel === undefined ? undefined : eq(messages.channel, search.channel),
       ),
@@ -81,7 +84,7 @@ async function taskHits(db: Executor, search: Search): Promise<TaskHit[]> {
       who: sql<string | null>`(select m.who from messages m where m.task_id = "tasks"."id" and m.kind = 'task' order by m.id limit 1)`,
     })
     .from(tasks)
-    .where(and(sql`${vector} @@ ${search.query}`, search.channel === undefined ? undefined : eq(tasks.channel, search.channel)))
+    .where(and(sql`${vector} @@ ${search.query}`, visibleTo(tasks.channel, search.viewer), search.channel === undefined ? undefined : eq(tasks.channel, search.channel)))
     .orderBy(desc(rank), desc(tasks.id))
     .limit(search.limit)
   return rows.map(({ row, rank, headline, who }) => ({
@@ -99,7 +102,7 @@ async function taskHits(db: Executor, search: Search): Promise<TaskHit[]> {
 
 const byRank = (a: SearchHit, b: SearchHit) => b.rank - a.rank || Date.parse(b.at) - Date.parse(a.at)
 
-export async function searchBoard(db: Executor, input: SearchQuery): Promise<SearchResult> {
+export async function searchBoard(db: Executor, input: SearchQuery, viewer: string | null): Promise<SearchResult> {
   if (input.channel !== undefined) await requireChannel(db, input.channel)
   const query = searchQuery(input.q)
   if (query === null) return { query: input.q, hits: [] }
@@ -108,6 +111,7 @@ export async function searchBoard(db: Executor, input: SearchQuery): Promise<Sea
     phrase: input.q.toLowerCase().replace(/\s+/g, " "),
     channel: input.channel,
     limit: input.limit,
+    viewer,
   }
   const [found, made] = await Promise.all([messageHits(db, search), taskHits(db, search)])
   return { query: input.q, hits: [...found, ...made].sort(byRank).slice(0, input.limit) }

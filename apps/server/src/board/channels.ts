@@ -15,7 +15,7 @@ export async function createChannel(db: Database, actor: string, body: CreateCha
     if (existing) throw alreadyExists(`Channel ${id} already exists`)
     await tx.insert(channels).values({ id, topic, repo })
     emit({ type: "channel.created", actor, channel: id, data: { topic, repo } })
-    return { id, topic, repo, unread: 0 }
+    return { id, kind: "channel", members: [], topic, repo, unread: 0 }
   })
 }
 

@@ -3,6 +3,7 @@ import { and, asc, eq, gte } from "drizzle-orm"
 import type { Executor } from "../db/client"
 import { tasks } from "../db/schema"
 import { getInbox, presentTasks } from "./read"
+import { visibleTo } from "./visibility"
 
 const taskRef = (t: Task) => `#${t.id} ${t.title}`
 
@@ -29,10 +30,10 @@ export async function buildBrief(db: Executor, now = new Date()): Promise<Brief>
   const finishedRows = await db
     .select()
     .from(tasks)
-    .where(and(eq(tasks.state, "done"), gte(tasks.updatedAt, since)))
+    .where(and(eq(tasks.state, "done"), gte(tasks.updatedAt, since), visibleTo(tasks.channel, null)))
     .orderBy(asc(tasks.updatedAt), asc(tasks.id))
-  const blockedRows = await db.select().from(tasks).where(eq(tasks.state, "blocked")).orderBy(asc(tasks.id))
-  const [finished, blocked, inbox] = await Promise.all([presentTasks(db, finishedRows), presentTasks(db, blockedRows), getInbox(db)])
+  const blockedRows = await db.select().from(tasks).where(and(eq(tasks.state, "blocked"), visibleTo(tasks.channel, null))).orderBy(asc(tasks.id))
+  const [finished, blocked, inbox] = await Promise.all([presentTasks(db, finishedRows), presentTasks(db, blockedRows), getInbox(db, null)])
   const parts = { finished, blocked, questions: inbox.questions, threadQuestions: inbox.threadQuestions, reviews: inbox.reviews }
   return { since: since.toISOString(), until: now.toISOString(), text: briefText(parts), ...parts }
 }

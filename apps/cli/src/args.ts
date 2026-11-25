@@ -34,6 +34,7 @@ export const flags = {
   "runs-in": { type: "string" },
   topic: { type: "string" },
   keep: { type: "boolean" },
+  clear: { type: "boolean" },
   part: { type: "string", multiple: true },
   update: { type: "string", multiple: true },
   revision: { type: "string" },

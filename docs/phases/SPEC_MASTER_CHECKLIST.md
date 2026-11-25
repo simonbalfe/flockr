@@ -60,7 +60,7 @@ Done when: on a phone, Simon watches the chain move live, answers the migration 
 | 2d Waiting for you | people | Question cards an agent posts and a person answers in one tap; the review lane with approve and ask for changes; a count in the sidebar | P31, P68, P73 | Done (built before the checklist was tracked; audited 25 Nov 2026) |
 | 2e Mentions and quick switcher | people | `@claude <text>` records the mention and starts a conversation in that message's thread, never a task (ADR 0014, superseding the earlier "creates a task" wording); tasks are made only on purpose (`flockr tasks create`, New task, Make this a task); ⌘K jumps to any channel, task or agent | P3, P24 | Done: mentions, New task, Make this a task and the ⌘K switcher (audited 25 Nov 2026) |
 | 2f Phone layout and presence | people | Works at phone width with the sidebar behind a button and the thread full screen; "claude is working on #803, 11 min left" under the message box | P32 | Mostly built: sidebar behind a button, full-screen panel, presence line; left: a real phone run of the done-when flow |
-| 2g Slack navigation | people | The sidebar works like Slack's: direct messages between people and agents, a Threads view of every thread you are in, Saved items, and Drafts & sent | Our own | Not started |
+| 2g Slack navigation | people | The sidebar works like Slack's: direct messages between people and agents, a Threads view of every thread you are in, Saved items, and Drafts & sent | Our own | Done (Work: 2g-slack-navigation) |
 
 ## Phase 3: Any agent connects
 

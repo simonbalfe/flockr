@@ -26,6 +26,7 @@ import { alreadyExists, forbidden, invalid, notFound, wrongState } from "./error
 import { mutate, type Emit } from "./events"
 import { requireActor } from "./members"
 import { activityEntryOf, findAnyMember, presentMember, presentTasks } from "./read"
+import { visibleTo } from "./visibility"
 
 const Harnesses = z.array(HarnessInfo).catch([])
 
@@ -121,12 +122,12 @@ export async function getAgent(db: Executor, name: string, now = new Date()): Pr
   return { ...present(presentMember(row), rows, served, now), tasks: await presentTasks(db, rows) }
 }
 
-export async function listAgentActivity(db: Executor, name: string, limit: number): Promise<ActivityEntry[]> {
+export async function listAgentActivity(db: Executor, name: string, limit: number, viewer: string | null): Promise<ActivityEntry[]> {
   await liveAgentMember(db, name)
   const rows = await db
     .select()
     .from(messages)
-    .where(and(eq(messages.kind, "activity"), eq(messages.who, name), isNull(messages.deletedAt)))
+    .where(and(eq(messages.kind, "activity"), eq(messages.who, name), isNull(messages.deletedAt), visibleTo(messages.channel, viewer)))
     .orderBy(desc(messages.id))
     .limit(limit)
   return rows.flatMap((row) => activityEntryOf(row) ?? [])

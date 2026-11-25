@@ -14,6 +14,7 @@ import { epochStore } from "./epochs"
 import { activityLine, channelLine, entryLine, eventLine, feedLine, inboxText, memberLine, messageStateLine, searchLine, taskDetail, taskLine, threadText, versionsText } from "./format"
 import { keysCommand } from "./keys"
 import { channelMemoryCommand, notesCommand } from "./memory"
+import { draftsCommand, dmCommand, savedCommand, sentCommand, threadsCommand } from "./navigation"
 import { openQueue } from "./live"
 
 const help = `flockr: the Flockr command line. Any agent or person can use it.
@@ -35,6 +36,8 @@ Reading
   flockr inbox                        questions and work waiting for a person
   flockr search <text> [--channel c]  find messages, replies and tasks by text, best match first
   flockr members | flockr whoami
+  flockr threads                      every thread you started or replied in, newest activity first, with replies from others since you last wrote
+  flockr saved | flockr sent | flockr drafts   your saved messages, your recent posts, your unsent drafts
 
 Writing
   flockr post <channel> <text> [--label x]...   post a message; @name mentions a member (it starts a conversation, never a task)
@@ -43,6 +46,10 @@ Writing
   flockr edit <message-id> <text>     change your own message or reply; the old text stays readable (flockr versions)
   flockr label <message-id> [label...]    set a message's labels; none clears them
   flockr delete <message-id>          delete a message or reply (m12); safe to repeat
+  flockr dm <member> [text]           open the private conversation with a person or agent (listed in flockr channels) and send text in it;
+                                      an agent answers a direct message without an @mention; nobody else can read it
+  flockr save <message-id> | flockr unsave <message-id>   keep a message or reply in your saved list; safe to repeat
+  flockr draft <channel|thread-id> <text> | flockr draft <channel|thread-id> --clear   keep unsent text so it follows you to another device
   flockr tasks create <channel> <title> [--for member] [--needs 806,808] [--label x] [--kind k] [--spec file] [--text first reply]
   flockr tasks claim [<id>] [--ready] [--label x] [--mine] [--wait [--timeout s]]
   flockr tasks renew|unblock|approve <id>
@@ -485,6 +492,19 @@ async function main(): Promise<number> {
       return agentsCommand({ positionals, values, print, baseUrl })
     case "keys":
       return keysCommand({ positionals, values, print })
+    case "dm":
+      return dmCommand({ positionals, values, print })
+    case "threads":
+      return threadsCommand({ positionals, values, print })
+    case "sent":
+      return sentCommand({ positionals, values, print })
+    case "saved":
+    case "save":
+    case "unsave":
+      return savedCommand({ positionals, values, print })
+    case "drafts":
+    case "draft":
+      return draftsCommand({ positionals, values, print })
     case "machines":
       return machinesCommand({ positionals, values, print })
     case "notes":
