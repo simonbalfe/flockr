@@ -47,6 +47,7 @@ export function instructions(options: { member: string; skill: string; permissio
     "- Your final message in each turn is posted to the thread for you, as your reply. Do not post it again with flockr reply; use flockr reply only for progress during long work.",
     "- When you need a decision from a person, ask with a question card in the thread (flockr ask <thread-id> ... --option ... --option ...), then wait with flockr wait --thread <thread-id>.",
     permissionLine[options.permissions ?? "edit-free-commands-ask"],
+    "- Memory: your first prompt starts with what the channel remembers and your own notes, when there are any. Use them without being told again, and never retry a dead end they list. When a decision is made, a person states a preference, or you learn a fact or a failed approach worth knowing next week, save it in one short sentence: flockr notes add \"...\" --kind decision|dead-end|preference|fact|todo --thread <thread-id> for yourself, flockr memory add --channel <channel> ... for what every agent in the channel should know. Check flockr notes list first so you do not repeat one; edit or archive a note that is now wrong instead of adding a contradicting one.",
     "- A question or request is a conversation: answer it in the thread. Never create a task unless a person asks for one; if the work looks worth tracking, offer to make a task and wait for a yes.",
     "",
     "The board skill:",
@@ -55,17 +56,18 @@ export function instructions(options: { member: string; skill: string; permissio
   ].join("\n")
 }
 
-export function conversationPrompt(thread: Thread): string {
-  return [`A conversation in #${thread.channel}, thread ${thread.id}. So far:`, "", threadLines(thread), "", `Answer the latest message. Your final message is posted as your reply in thread ${thread.id}.`].join("\n")
+export function conversationPrompt(thread: Thread, memory = ""): string {
+  return [...(memory ? [memory, ""] : []), `A conversation in #${thread.channel}, thread ${thread.id}. So far:`, "", threadLines(thread), "", `Answer the latest message. Your final message is posted as your reply in thread ${thread.id}.`].join("\n")
 }
 
 export function followUpPrompt(options: { thread: string; who: string; text: string }): string {
   return `${options.who} replied in thread ${options.thread}:\n\n${clip(options.text)}`
 }
 
-export function workPrompt(options: { task: Task; thread: Thread }): string {
-  const { task, thread } = options
+export function workPrompt(options: { task: Task; thread: Thread; memory?: string }): string {
+  const { task, thread, memory } = options
   return [
+    ...(memory ? [memory, ""] : []),
     `The runner claimed task #${task.id} in #${task.channel} for you.`,
     "",
     `Title: ${task.title}`,

@@ -5,6 +5,7 @@ import { activitySink, type ActivitySink } from "./activity"
 import type { BoardPort, Claim } from "./board"
 import { folderFor, isFolder, leaseRenewMs } from "./config"
 import type { Harness, PermissionBridge, Session, SessionExit } from "./harness/types"
+import { memoryBlock, noMemory } from "./memory"
 import { ruleFor } from "./permissions"
 import { conversationPrompt, failedText, followUpPrompt, missingFolderText, resumeWorkPrompt, stoppedText, timeLimitText, workPrompt } from "./prompt"
 import { claimable, eventData, eventTypes, holds, isTaskEvent, routeReply, startsConversation, waitsFor } from "./routing"
@@ -112,6 +113,16 @@ export function createRunner(deps: RunnerDeps) {
     if (!harness.capabilities.resume) return null
     const stored = deps.sessions.get()[keyOf(thread)]
     return stored && stored.harness === harness.name ? stored.id : null
+  }
+
+  // A board that cannot answer must not stop a run: it goes without memory and the log says so.
+  async function memoryText(channel: string): Promise<string> {
+    try {
+      return memoryBlock(channel, await board.memory(channel))
+    } catch (error) {
+      log(`${member}: could not read memory for #${channel}: ${error instanceof Error ? error.message : String(error)}`)
+      return memoryBlock(channel, noMemory)
+    }
   }
 
   async function folderOrNotice(thread: string, channel: string): Promise<string | null> {
@@ -290,13 +301,14 @@ export function createRunner(deps: RunnerDeps) {
     if (!claimed) return
     epochs.set(claimed.id, claimed.claimEpoch)
     const history = await board.thread(thread)
+    const memory = await memoryText(task.channel)
     launch(
       {
         thread,
         channel: task.channel,
         purpose: "work",
         claim: { taskId: claimed.id, epoch: claimed.claimEpoch },
-        prompt: () => workPrompt({ task: claimed, thread: history }),
+        prompt: () => workPrompt({ task: claimed, thread: history, memory }),
       },
       folder,
     )
@@ -309,13 +321,14 @@ export function createRunner(deps: RunnerDeps) {
     if (!folder || !hasRoom()) return
     epochs.set(task.id, task.claimEpoch)
     const history = await board.thread(thread)
+    const memory = await memoryText(task.channel)
     launch(
       {
         thread,
         channel: task.channel,
         purpose: "work",
         claim: { taskId: task.id, epoch: task.claimEpoch },
-        prompt: (resuming) => (resuming ? resumeWorkPrompt(task) : workPrompt({ task, thread: history })),
+        prompt: (resuming) => (resuming ? resumeWorkPrompt(task) : workPrompt({ task, thread: history, memory })),
       },
       folder,
     )
@@ -340,8 +353,9 @@ export function createRunner(deps: RunnerDeps) {
     const task = history.taskId === null ? null : await board.task(history.taskId)
     const claim = task && task.state === "claimed" && task.holder === member ? { taskId: task.id, epoch: task.claimEpoch } : null
     if (claim) epochs.set(claim.taskId, claim.epoch)
+    const memory = await memoryText(channel)
     launch(
-      { thread, channel, purpose: "talk", claim, prompt: (resuming) => (resuming && message !== null ? message : conversationPrompt(history)) },
+      { thread, channel, purpose: "talk", claim, prompt: (resuming) => (resuming && message !== null ? message : conversationPrompt(history, memory)) },
       folder,
     )
   }

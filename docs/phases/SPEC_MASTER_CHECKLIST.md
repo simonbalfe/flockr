@@ -25,7 +25,7 @@ Every phase and sub-phase with its status: "where are we". Phases are product fe
 | **Phase 7: Shared agent** | Simon and a friend each start a thread with the same agent on a VPS, in different channels, and both get answers at once without the threads mixing | Not started |
 | **Phase 8: Codebase coordination** | two agents on different machines (one on a VPS, one on the Mac) work one repo; each sees what the other is touching, and neither overwrites the other's work | Not started |
 | **Phase 9: Agents on demand** | from the app, Simon starts a new agent with a chosen model and a task, and it runs in the cloud with the laptop shut | Not started |
-| **Phase 10: Agent memory** | an agent uses a decision from last week's thread without being told it again | Not started |
+| **Phase 10: Agent memory** | an agent uses a decision from last week's thread without being told it again | Done (Work: 10-agent-memory) |
 | **Phase 11: Teams** | two teams share one board, each with its own channels and agents, and a person sees only their teams | Not started |
 
 ## Now and Blocked
@@ -143,8 +143,8 @@ Done when: an agent uses a decision from last week's thread without being told i
 
 | Sub-phase | For | Delivers | Covers | Status |
 |---|---|---|---|---|
-| 10a Agent notes | agents | Each agent keeps notes it can read and write across conversations, stored in Postgres | P41, P26 | Not started |
-| 10b Channel memory | both | A channel keeps decisions and facts every agent in it reads first; people can see and edit them | P75 | Not started |
+| 10a Agent notes | agents | Each agent keeps notes it can read and write across conversations, stored in Postgres | P41, P26 | Done (Work: 10-agent-memory): `flockr notes`, the agent panel's Notes, injected at session start (`phase-10/SPEC_PHASE_10_AGENT_MEMORY.md`) |
+| 10b Channel memory | both | A channel keeps decisions and facts every agent in it reads first; people can see and edit them | P75 | Done (Work: 10-agent-memory): `flockr memory`, the channel Memory panel, injected into conversation and work prompts |
 
 ## Phase 11: Teams
 

@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test"
-import { event, member, messageThread, reply, setup, task } from "./fakes"
+import { memoryBlock } from "../src/memory"
+import { event, member, memoryItem, messageThread, reply, setup, task } from "./fakes"
 
 const mention = (thread: string, actor = "simon") => event({ type: "message.posted", actor, messageId: thread, threadId: thread, data: { mentions: [member] } })
 const replied = (thread: string, id: string, actor = "simon") => event({ type: "reply.posted", actor, threadId: thread, messageId: id, data: { mentions: [] } })
@@ -259,5 +260,45 @@ describe("the harness interface", () => {
     await runner.receive(replied("m10", "m12"))
     expect(started[0]?.spec.resumeId).toBeNull()
     expect(started[0]?.spec.prompt).toContain("claude: Hello.")
+  })
+})
+
+describe("memory in prompts (10a, 10b)", () => {
+  test("a new conversation starts with the channel's memory and the agent's notes, dead ends and decisions first; a resumed one does not repeat them", async () => {
+    const { runner, board, started } = setup()
+    board.memory.channel.push(memoryItem(1, "Release is Friday"), memoryItem(2, "Primary keys are uuid", { kind: "decision", sourceThread: "m12" }), memoryItem(3, "Do not use the v1 importer", { kind: "dead-end" }))
+    board.memory.notes.push(memoryItem(4, "Simon wants short answers", { scope: "agent", owner: member, kind: "preference" }))
+    board.threads.set("m10", messageThread("m10", "simon", "@claude say hello"))
+    await runner.receive(mention("m10"))
+    const prompt = started[0]?.spec.prompt ?? ""
+    expect(prompt).toContain("Primary keys are uuid (from m12)")
+    expect(prompt).toContain("Simon wants short answers")
+    expect(prompt.indexOf("Do not use the v1 importer")).toBeLessThan(prompt.indexOf("Primary keys are uuid"))
+    expect(prompt.indexOf("Primary keys are uuid")).toBeLessThan(prompt.indexOf("Release is Friday"))
+    expect(prompt.indexOf("What #general remembers")).toBeLessThan(prompt.indexOf("A conversation in #general"))
+  })
+
+  test("a work prompt carries the memory too, and a board that cannot answer does not stop the run", async () => {
+    const { runner, board, started } = setup()
+    board.memory.channel.push(memoryItem(1, "Tests run with bun test"))
+    board.tasks.set(830, task({ id: 830, claimEpoch: 4 }))
+    await runner.receive(event({ type: "task.created", actor: "simon", taskId: 830, threadId: "830", data: { state: "ready" } }))
+    expect(started[0]?.spec.prompt).toContain("Tests run with bun test")
+    const broken = setup()
+    broken.board.port.memory = async () => {
+      throw new Error("down")
+    }
+    broken.board.threads.set("m10", messageThread("m10", "simon", "@claude hi"))
+    await broken.runner.receive(mention("m10"))
+    expect(broken.started).toHaveLength(1)
+    expect(broken.logs.some((l) => l.includes("could not read memory"))).toBe(true)
+  })
+
+  test("the block stays inside its cap and says how many items it left out", () => {
+    const items = Array.from({ length: 40 }, (_, i) => memoryItem(i + 1, `Fact number ${i + 1} ${"x".repeat(80)}`, { updatedAt: `2026-11-${String((i % 28) + 1).padStart(2, "0")}T10:00:00.000Z` }))
+    const block = memoryBlock("general", { notes: [], channel: items }, { notes: 1000, channel: 1000 })
+    expect(block.length).toBeLessThan(1000 + 300)
+    expect(block).toMatch(/\(\d+ more; flockr memory list --channel general\)/)
+    expect(memoryBlock("general", { notes: [], channel: [] })).toBe("")
   })
 })

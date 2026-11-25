@@ -68,6 +68,9 @@ export const flags = {
   agent: { type: "string" },
   "per-hour": { type: "string" },
   name: { type: "string" },
+  tag: { type: "string", multiple: true },
+  archived: { type: "boolean" },
+  before: { type: "string" },
 } as const
 
 export function readArgs(argv: string[]) {

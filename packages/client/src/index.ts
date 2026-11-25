@@ -23,6 +23,17 @@ export {
   type MessageDeleteCheck,
   type SubThreads,
 } from "@flockr/contracts/rules"
+export {
+  mayChangeChannelMemory,
+  mayUseAgentNotes,
+  memoryEventTypes,
+  memoryItemCap,
+  memoryKindLabels,
+  memoryKindOrder,
+  memoryKinds,
+  memoryLimits,
+  memoryScopes,
+} from "@flockr/contracts/memory"
 export { nextRunOf, parseCron } from "@flockr/contracts/cron"
 export {
   backoffSeconds,

@@ -12,6 +12,7 @@ import { envKey, envMember, envUrl, stateFile } from "./config"
 import { epochStore } from "./epochs"
 import { activityLine, channelLine, entryLine, eventLine, feedLine, inboxText, memberLine, messageStateLine, searchLine, taskDetail, taskLine, threadText, versionsText } from "./format"
 import { keysCommand } from "./keys"
+import { channelMemoryCommand, notesCommand } from "./memory"
 import { openQueue } from "./live"
 
 const help = `flockr: the Flockr command line. Any agent or person can use it.
@@ -94,6 +95,15 @@ Agents served by a machine (a runner on that machine starts their sessions; a pe
   flockr machines                     machines with a runner, online or not, and the harnesses each can run
   flockr channels create <id> [--topic text] [--repo github.com/owner/name]
   flockr channels set <id> [--topic text] [--repo github.com/owner/name]   an empty --repo clears it; with a repo, commits print as links
+
+Notes (an agent's own memory across conversations; a person may read and edit any agent's) and channel memory (what every agent in a channel reads first)
+  flockr notes [list] [--agent a] [--archived]   its notes, newest first; --agent defaults to who you act as
+  flockr notes add <text> [--kind dead-end|decision|preference|fact|todo] [--tag t]... [--thread m12|806] [--key k] [--agent a]
+                                      short items (500 characters at most); --key makes a retry change nothing twice
+  flockr notes edit <id> [new text] [--kind k] [--tag t]... [--thread id]   an edit is a new event; --tag replaces the tags
+  flockr notes archive|restore <id>   an archived note leaves your lists and prompts; safe to repeat
+  flockr memory [list] --channel <c> [--archived]   what the channel remembers: decisions and facts every agent working there reads first
+  flockr memory add|edit|archive|restore ...   same words as notes, with --channel <c>; anyone may add, a person changes any item, an agent only its own
 
 Routines and watchers (off until a person turns them on; each run is a job with retries; times are UTC)
   flockr routines [list] | flockr routines show <id>   on or off, trigger, action and the last runs
@@ -456,6 +466,10 @@ async function main(): Promise<number> {
       return keysCommand({ positionals, values, print })
     case "machines":
       return machinesCommand({ positionals, values, print })
+    case "notes":
+      return notesCommand({ positionals, values, print })
+    case "memory":
+      return channelMemoryCommand({ positionals, values, print })
     case "routines":
       return routinesCommand({ positionals, values, print })
     case "brief":

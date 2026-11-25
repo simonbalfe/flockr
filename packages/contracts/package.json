@@ -13,6 +13,7 @@
     "./activity-rules": "./src/activity-rules.ts",
     "./checklist": "./src/checklist.ts",
     "./cron": "./src/cron.ts",
+    "./memory": "./src/memory.ts",
     "./routines": "./src/routines.ts"
   },
   "scripts": {

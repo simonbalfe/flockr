@@ -1,5 +1,6 @@
 import * as sdk from "@flockr/client"
 import { callTimeoutMs } from "./config"
+import type { MemoryContext } from "./memory"
 import type { ActionKind, ActivityUpdate, Agent, AgentDetail, ApprovalVerdict, Client, CreateAgentBody, HeartbeatBody, RegisterMachineBody, RunEndStatus, Task, TaskState, Thread, ThreadQuestion } from "@flockr/client"
 
 export type AskResult = { kind: "asked"; question: ThreadQuestion } | { kind: "refused"; reason: string }
@@ -20,6 +21,7 @@ export interface BoardPort {
   finishEntry: (entryId: string, status: RunEndStatus) => Promise<void>
   ask: (thread: string, question: { text: string; detail: string; options: string[] }) => Promise<AskResult>
   approval: (kind: ActionKind, channel: string) => Promise<ApprovalVerdict>
+  memory: (channel: string) => Promise<MemoryContext>
 }
 
 export interface Claim {
@@ -104,6 +106,13 @@ export function boardClient(options: { member: string; client: Client }): BoardP
         if (error instanceof BoardFailure) return { kind: "refused", reason: `${member} could not ask in ${thread}: ${error.message}` }
         throw error
       }
+    },
+    async memory(channel) {
+      const [notes, shared] = await Promise.all([
+        call(sdk.listAgentNotes({ ...on(), path: { name: member }, query: { state: "active" } })),
+        call(sdk.listChannelMemory({ ...on(), path: { channel }, query: { state: "active" } })),
+      ])
+      return { notes, channel: shared }
     },
     async approval(kind, channel) {
       try {
