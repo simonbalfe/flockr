@@ -6,6 +6,7 @@ import { agentsCommand, machinesCommand } from "./agents"
 import { ApiFailure, callOperation, loadOperations, run } from "./api"
 import { checklistCommand } from "./checklist"
 import { briefCommand, routinesCommand } from "./routines"
+import { rulesCommand } from "./rules"
 import { int, need, optionalInt, readArgs, seconds, UsageError, type Values } from "./args"
 import { envMember, envUrl, stateFile } from "./config"
 import { epochStore } from "./epochs"
@@ -97,6 +98,12 @@ Routines and watchers (off until a person turns them on; each run is a job with 
   fc routines on|off|delete <id>      only a person can manage routines; off skips runs already queued
   fc routines jobs <id> [--limit n]   its runs, newest first: cause, state, attempts, result and last error
   fc brief                            the morning brief as of now: finished in 24 hours, blocked, waiting for a person
+
+Approval rules (allow, ask or block per action kind, board-wide or per channel; a floor no rule can lower)
+  fc rules [list] [--channel c]       every kind (post, task, mention, brief, command, spend, prod) with its verdict, floor and the rules set
+  fc rules set <kind> allow|ask|block [--channel c]   only a person; spend and prod never go below ask
+  fc rules clear <kind> [--channel c] back to the board rule or the default
+  fc rules check <kind> [--channel c] what happens if you do it here: allow, ask (ask a person first) or block
 
 Live
   fc tail [--since seq]               stream board events, resuming after drops
@@ -444,6 +451,8 @@ async function main(): Promise<number> {
       return routinesCommand({ positionals, values, print })
     case "brief":
       return briefCommand({ positionals, values, print })
+    case "rules":
+      return rulesCommand({ positionals, values, print })
     case "whoami": {
       const me = await run(sdk.whoami())
       print(me, () => (me.member ? memberLine(me.member) : `${me.name} (not a member yet: fc join ${me.name} --owner <person>)`))

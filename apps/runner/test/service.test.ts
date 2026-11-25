@@ -99,7 +99,7 @@ function serviceSetup(options: { agents: Agent[]; folders?: string[]; harnessNam
         sessions,
         instructions: () => "be brief",
         sessionEnv: {},
-        bridge: (thread) => ({ command: "bun", args: [], env: { FLOCKR_THREAD: thread } }),
+        bridge: ({ thread }) => ({ command: "bun", args: [], env: { FLOCKR_THREAD: thread } }),
         log: (line) => void logs.push(line),
         folderExists: (folder) => folders.has(folder),
         hasRoom: spec.hasRoom,

@@ -6,6 +6,7 @@ import { mcpHandler } from "./mcp/server"
 import { activityRoutes } from "./routes/activity"
 import { activityEntryRoutes } from "./routes/activity-entries"
 import { agentRoutes } from "./routes/agents"
+import { approvalRoutes } from "./routes/approvals"
 import { channelRoutes } from "./routes/channels"
 import { checklistRoutes } from "./routes/checklist"
 import { claimRoutes } from "./routes/claims"
@@ -61,6 +62,7 @@ export function createApp(db: Database) {
     .route("/", machineRoutes)
     .route("/", searchRoutes)
     .route("/", routineRoutes)
+    .route("/", approvalRoutes)
 
   const document = () => api.getOpenAPI31Document({ openapi: "3.1.0", info })
 

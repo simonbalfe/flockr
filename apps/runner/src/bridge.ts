@@ -4,7 +4,6 @@ import { bridgeEnv } from "./config"
 import { permissionGate, type Answer, type AnswerWatch } from "./gate"
 import { harnessFor } from "./harness/registry"
 import { mcpHandler, serveStdio } from "./mcp"
-import { ruleFor } from "./permissions"
 import { eventData, eventTypes } from "./routing"
 
 const env = bridgeEnv()
@@ -40,9 +39,10 @@ const gate = permissionGate({
   board: boardClient({ member: env.member, client: memberClient({ baseUrl: env.url, member: env.member }) }),
   codec: harnessFor(env.harness).permissions,
   thread: env.thread,
+  channel: env.channel,
   watch: watchAnswers,
   log: (line) => console.error(line),
-  rule: ruleFor(env.permissions),
+  permissions: env.permissions,
 })
 
 await serveStdio(mcpHandler(gate))

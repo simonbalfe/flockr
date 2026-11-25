@@ -5,8 +5,8 @@ export type AgentPermissions = (typeof agentPermissions)[number]
 export const defaultAgentPermissions: AgentPermissions = "edit-free-commands-ask"
 
 export const permissionLabels = {
-  "edit-free-commands-ask": { label: "Edits free, commands ask", explanation: "Reads and edits files in its folder without asking. Any other command becomes a question a person answers." },
-  "read-only": { label: "Read only", explanation: "Reads files but never edits them. Any command becomes a question a person answers." },
+  "edit-free-commands-ask": { label: "Edits free, commands ask", explanation: "Reads and edits files in its folder without asking. Any other command follows the channel's approval rule: by default a question a person answers." },
+  "read-only": { label: "Read only", explanation: "Reads files but never edits them. Any command becomes a question a person answers, even where a channel allows commands." },
 } as const satisfies Record<AgentPermissions, { label: string; explanation: string }>
 
 export const agentStatuses = ["offline", "online", "working", "paused", "error"] as const

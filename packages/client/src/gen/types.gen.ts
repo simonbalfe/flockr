@@ -1341,7 +1341,7 @@ export type Job = {
     attempts: number;
     maxAttempts: number;
     /**
-     * What it did, such as posted m42, or why it was skipped
+     * What it did, such as posted m42, why it was skipped, or the question it waits on
      */
     result: string | null;
     lastError: string | null;
@@ -1350,9 +1350,9 @@ export type Job = {
 };
 
 /**
- * queued: waits for its run time. running: claimed by a drainer. done: it acted. skipped: it did not act (the routine was off, deleted or over a limit). failed: it gave up after its last attempt; lastError says why.
+ * queued: waits for its run time. running: claimed by a drainer. waiting: its action needs a person's approval, and a question card in the routine's channel holds it until Allow once (it runs) or Deny (it is skipped). done: it acted. skipped: it did not act (the routine was off, deleted, over a limit, blocked or denied). failed: it gave up after its last attempt; lastError says why.
  */
-export type JobState = 'queued' | 'running' | 'done' | 'failed' | 'skipped';
+export type JobState = 'queued' | 'running' | 'waiting' | 'done' | 'failed' | 'skipped';
 
 export type JobCause = {
     kind: 'cron';
@@ -1406,6 +1406,79 @@ export type Brief = {
     threadQuestions: Array<ThreadQuestion>;
     reviews: Array<Task>;
 };
+
+export type ApprovalRules = {
+    /**
+     * Every action kind with its floor and default
+     */
+    kinds: Array<ActionKindInfo>;
+    /**
+     * The rules people have set, board-wide first
+     */
+    rules: Array<ApprovalRule>;
+};
+
+export type ActionKindInfo = {
+    kind: ActionKind;
+    label: string;
+    floor: ApprovalVerdict;
+    default: ApprovalVerdict & unknown;
+};
+
+/**
+ * post a message, create a task, mention an agent, post the morning brief, run a shell command, spend money, change prod
+ */
+export type ActionKind = 'post' | 'task' | 'mention' | 'brief' | 'command' | 'spend' | 'prod';
+
+/**
+ * The most permissive verdict a rule may set; spending money and changing prod are at least ask
+ */
+export type ApprovalVerdict = 'allow' | 'ask' | 'block';
+
+export type ApprovalRule = {
+    kind: ActionKind;
+    /**
+     * null for the whole board
+     */
+    channel: string | null;
+    verdict: ApprovalVerdict & unknown;
+    setBy: string;
+    updatedAt: string;
+};
+
+export type SetApprovalRuleBody = {
+    kind: ActionKind;
+    /**
+     * The channel the rule holds in; null for the whole board. A channel rule beats the board rule
+     */
+    channel?: string | null;
+    verdict: ApprovalVerdict & unknown;
+};
+
+export type ClearedApprovalRule = {
+    kind: ActionKind;
+    channel: string | null;
+    /**
+     * false when there was no rule to clear
+     */
+    cleared: boolean;
+};
+
+export type ApprovalCheck = {
+    kind: ActionKind;
+    channel: string | null;
+    verdict: ApprovalVerdict & unknown;
+    source: ApprovalSource;
+    floor: ApprovalVerdict & unknown;
+    rule: ApprovalRule & ({
+        [key: string]: unknown;
+    } | null);
+};
+
+/**
+ * Where the verdict came from: the channel's rule, the board rule, or the default
+ */
+export type ApprovalSource = 'channel' | 'board' | 'default';
 
 export type ListChannelsData = {
     body?: never;
@@ -4070,3 +4143,169 @@ export type GetBriefResponses = {
 };
 
 export type GetBriefResponse = GetBriefResponses[keyof GetBriefResponses];
+
+export type ClearApprovalRuleData = {
+    body?: never;
+    path?: never;
+    query: {
+        /**
+         * post a message, create a task, mention an agent, post the morning brief, run a shell command, spend money, change prod
+         */
+        kind: ActionKind;
+        /**
+         * Left out, the whole board
+         */
+        channel?: string;
+    };
+    url: '/api/approval-rules';
+};
+
+export type ClearApprovalRuleErrors = {
+    /**
+     * The input is not valid
+     */
+    400: Error;
+    /**
+     * The acting member is not on this board, or may not do this
+     */
+    403: Error;
+    /**
+     * Not found
+     */
+    404: Error;
+    /**
+     * The task or message is in another state, or the claim epoch is stale
+     */
+    409: Error;
+};
+
+export type ClearApprovalRuleError = ClearApprovalRuleErrors[keyof ClearApprovalRuleErrors];
+
+export type ClearApprovalRuleResponses = {
+    /**
+     * OK
+     */
+    200: ClearedApprovalRule;
+};
+
+export type ClearApprovalRuleResponse = ClearApprovalRuleResponses[keyof ClearApprovalRuleResponses];
+
+export type ListApprovalRulesData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/approval-rules';
+};
+
+export type ListApprovalRulesErrors = {
+    /**
+     * The input is not valid
+     */
+    400: Error;
+    /**
+     * The acting member is not on this board, or may not do this
+     */
+    403: Error;
+    /**
+     * Not found
+     */
+    404: Error;
+    /**
+     * The task or message is in another state, or the claim epoch is stale
+     */
+    409: Error;
+};
+
+export type ListApprovalRulesError = ListApprovalRulesErrors[keyof ListApprovalRulesErrors];
+
+export type ListApprovalRulesResponses = {
+    /**
+     * OK
+     */
+    200: ApprovalRules;
+};
+
+export type ListApprovalRulesResponse = ListApprovalRulesResponses[keyof ListApprovalRulesResponses];
+
+export type SetApprovalRuleData = {
+    body: SetApprovalRuleBody;
+    path?: never;
+    query?: never;
+    url: '/api/approval-rules';
+};
+
+export type SetApprovalRuleErrors = {
+    /**
+     * The input is not valid
+     */
+    400: Error;
+    /**
+     * The acting member is not on this board, or may not do this
+     */
+    403: Error;
+    /**
+     * Not found
+     */
+    404: Error;
+    /**
+     * The task or message is in another state, or the claim epoch is stale
+     */
+    409: Error;
+};
+
+export type SetApprovalRuleError = SetApprovalRuleErrors[keyof SetApprovalRuleErrors];
+
+export type SetApprovalRuleResponses = {
+    /**
+     * OK
+     */
+    200: ApprovalRule;
+};
+
+export type SetApprovalRuleResponse = SetApprovalRuleResponses[keyof SetApprovalRuleResponses];
+
+export type CheckApprovalData = {
+    body?: never;
+    path?: never;
+    query: {
+        /**
+         * post a message, create a task, mention an agent, post the morning brief, run a shell command, spend money, change prod
+         */
+        kind: ActionKind;
+        /**
+         * Left out, the whole board
+         */
+        channel?: string;
+    };
+    url: '/api/approval-rules/check';
+};
+
+export type CheckApprovalErrors = {
+    /**
+     * The input is not valid
+     */
+    400: Error;
+    /**
+     * The acting member is not on this board, or may not do this
+     */
+    403: Error;
+    /**
+     * Not found
+     */
+    404: Error;
+    /**
+     * The task or message is in another state, or the claim epoch is stale
+     */
+    409: Error;
+};
+
+export type CheckApprovalError = CheckApprovalErrors[keyof CheckApprovalErrors];
+
+export type CheckApprovalResponses = {
+    /**
+     * OK
+     */
+    200: ApprovalCheck;
+};
+
+export type CheckApprovalResponse = CheckApprovalResponses[keyof CheckApprovalResponses];

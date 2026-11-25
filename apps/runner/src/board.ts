@@ -1,6 +1,6 @@
 import * as sdk from "@flockr/client"
 import { callTimeoutMs } from "./config"
-import type { ActivityUpdate, Agent, AgentDetail, Client, CreateAgentBody, HeartbeatBody, RegisterMachineBody, RunEndStatus, Task, TaskState, Thread, ThreadQuestion } from "@flockr/client"
+import type { ActionKind, ActivityUpdate, Agent, AgentDetail, ApprovalVerdict, Client, CreateAgentBody, HeartbeatBody, RegisterMachineBody, RunEndStatus, Task, TaskState, Thread, ThreadQuestion } from "@flockr/client"
 
 export type AskResult = { kind: "asked"; question: ThreadQuestion } | { kind: "refused"; reason: string }
 
@@ -19,6 +19,7 @@ export interface BoardPort {
   updateEntry: (entryId: string, updates: ActivityUpdate[]) => Promise<void>
   finishEntry: (entryId: string, status: RunEndStatus) => Promise<void>
   ask: (thread: string, question: { text: string; detail: string; options: string[] }) => Promise<AskResult>
+  approval: (kind: ActionKind, channel: string) => Promise<ApprovalVerdict>
 }
 
 export interface Claim {
@@ -101,6 +102,14 @@ export function boardClient(options: { member: string; client: Client }): BoardP
         return { kind: "asked", question: await call(sdk.askInThread({ ...on(), path: { id: thread }, body: question })) }
       } catch (error) {
         if (error instanceof BoardFailure) return { kind: "refused", reason: `${member} could not ask in ${thread}: ${error.message}` }
+        throw error
+      }
+    },
+    async approval(kind, channel) {
+      try {
+        return (await call(sdk.checkApproval({ ...on(), query: { kind, channel } }))).verdict
+      } catch (error) {
+        if (error instanceof BoardFailure) return "ask"
         throw error
       }
     },

@@ -170,6 +170,7 @@ export function fakeBoard() {
       record(`finish ${entryId} ${status}`)
     },
     ask: async () => ({ kind: "refused", reason: "not in this fake" }),
+    approval: async () => "ask",
   }
   return {
     port,
@@ -249,7 +250,7 @@ export function setup(options: { config?: Partial<TestOptions>; capabilities?: {
     sessions,
     instructions: (settings) => `be brief${settings.personality ? `; ${settings.personality}` : ""}`,
     sessionEnv: { FC_URL: "http://localhost:5173", FC_AS: member, PATH: "/bin" },
-    bridge: (thread, settings) => ({ command: "bun", args: ["bridge.ts"], env: { FLOCKR_THREAD: thread, FLOCKR_PERMISSIONS: settings.permissions } }),
+    bridge: ({ thread, channel }, settings) => ({ command: "bun", args: ["bridge.ts"], env: { FLOCKR_THREAD: thread, FLOCKR_CHANNEL: channel, FLOCKR_PERMISSIONS: settings.permissions } }),
     log: (line) => void logs.push(line),
     problem: (reason) => void problems.push(reason),
     timers,

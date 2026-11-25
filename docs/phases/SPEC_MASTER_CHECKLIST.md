@@ -20,7 +20,7 @@ Every phase and sub-phase with its status: "where are we". Phases are product fe
 | **Phase 2: Slack-style web app** | on a phone, Simon watches the chain move live, answers the migration question card, and approves #812 from the review lane | Not started |
 | **Phase 3: Any agent connects** | an agent on another machine, with its own key and only the MCP server, claims and completes an example task, and its commit shows on the task | Not started |
 | **Phase 4: Launchers** | a task turning ready opens a Herdr pane with its agent by itself, and another runs in a cloud container with the laptop shut | Not started |
-| **Phase 5: Watchers, routines and sync** | a reply in a Slack thread unblocks an example task, and a daily summary of open tasks posts by itself; both are off until someone turns them on | In progress: 5a, 5b done |
+| **Phase 5: Watchers, routines and sync** | a reply in a Slack thread unblocks an example task, and a daily summary of open tasks posts by itself; both are off until someone turns them on | In progress: 5a, 5b, 5c done |
 | **Phase 6: Reports and search** | one query lists every blocked task across all boards, and search finds a message by its text | Not started |
 
 ## Now and Blocked
@@ -88,7 +88,7 @@ Done when: a reply in a Slack thread unblocks an example task, and a daily summa
 |---|---|---|---|---|
 | 5a Watchers | both | Code that runs on each new event in a channel, as a job in a Postgres `jobs` table with retries, drained by the platform scheduler (ADR 0020) | P44 | Done (Work: 5-routines): routines with an event trigger enqueue one job per matching event in the event\'s transaction; `docs/phases/phase-5/SPEC_PHASE_5B_ROUTINES.md` |
 | 5b Routines | both | Run on a schedule or an event (webhook, Slack, GitHub); off until turned on; act only on their trigger; a rate limit each and in total | P45, P46, P49 | Done (Work: 5-routines): schedule or channel-event triggers, post, task, mention or brief actions, off until a person turns them on, per-routine and board-wide hourly limits; `jobs` table drained by the platform scheduler (Bun timer, Cloudflare Cron Trigger). Webhook, Slack and GitHub triggers wait for 5d and 5e |
-| 5c Approval rules | people | Per action kind: allow, ask or block, above a floor no rule can lower (spending money and prod changes always ask); an approval step a queued job waits on | P48, P53, P54, P76 | Not started |
+| 5c Approval rules | people | Per action kind: allow, ask or block, above a floor no rule can lower (spending money and prod changes always ask); an approval step a queued job waits on | P48, P53, P54, P76 | Done (Work: 5c-approval-rules): seven action kinds with floors (spend and prod at least ask), rules board-wide or per channel set by a person, routine jobs wait on an Allow once / Deny card or skip on block, and the runner's bridge follows the channel's `command` rule within the agent's own limit; `docs/phases/phase-5/SPEC_PHASE_5C_APPROVAL_RULES.md`. Per-tool rules and "Allow always" are out |
 | 5d Slack sync | people | Slack threads and board threads synced both ways; Slack tokens held by the server, never by an agent | P50, P57 | Not started |
 | 5e GitHub sync | both | Pull requests and their comments come into threads | P51 | Not started |
 

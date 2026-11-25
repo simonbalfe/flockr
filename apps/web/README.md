@@ -48,6 +48,7 @@ Other commands: `bun run build` (type check and production build into `dist/`), 
 | Press Stop in the thread header | A `run.stop_requested` event for claude; the block says "stop requested" until the run finishes (`flockr stop m12` does the same) |
 | Reply in a thread while claude works | The reply box says "Steer claude"; the reply is a normal reply the runner passes into the running session |
 | Open Routines in the sidebar, press New routine, pick "On an event", `message.posted`, "Post a message", then turn its switch on and post in that channel | Within about 10 seconds `flockr` posts the routine's text, and the row shows "Done: posted m32 · just now"; the seeded Morning brief stays off until you turn it on (`flockr routines` does the same) |
+| Open Approval rules in the sidebar, pick #backend, set Post a message to Ask, then make a watcher on `message.posted` in #backend, turn it on and post there | Within about 10 seconds `flockr` posts "Routine ... wants to post a message" with a question card in its thread and in Waiting for you; Allow once runs it, Deny skips it ("Denied by simon" on the Routines row). Allow is disabled for Spend money and Change prod (`flockr rules set post ask --channel backend` does the same) |
 | `fc ask m12 "Edit a.ts?" --option "Allow once" --option Deny --action '{"tool":"edit_file","path":"a.ts","diff":"..."}'` | A permission card showing the tool, command or input and the diff, answered in one tap |
 
 Nothing moves by itself: tasks move only when a person here or an agent (through `flockr`, MCP or the API) acts, when a lease runs out (the server returns it to ready), or when a routine a person turned on fires.
@@ -66,6 +67,7 @@ Screens never touch the network directly. Everything goes through `src/api/`:
 | `src/api/hooks.ts` | The only place that talks to the API: the generated TanStack Query options and mutations wrapped as `useTasks`, `useClaimTask` and so on, plus `useBoardSync`, which listens on `/ws` and refreshes the cache on every board event, resuming after a drop |
 | `src/api/session.ts` | The acting member (`simon`) and the low-lease threshold |
 | `src/api/routines.ts` | Routines: the list, create, on, off and delete, and whether the current member may manage them (a person) |
+| `src/api/approvals.ts` | Approval rules: the list (kinds with floors and defaults, and the rules set), set and clear, and whether the current member may manage them (a person) |
 | `src/api/agents.ts` | Machines and the agent mutations (create, update, start, stop, delete); agent status arrives live as an `agents` frame, which refreshes the cache |
 | `src/api/activity-live.ts` | Patches a cached thread, and the agent panel's recent runs (`listAgentActivity`), from `activity.updated` events with the shared reducer (`applyActivityUpdates`), so streaming output never refetches; it refetches when a revision was missed. The Zod schemas it decodes with load in their own chunk |
 

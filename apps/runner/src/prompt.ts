@@ -31,8 +31,8 @@ export function stripFrontmatter(skill: string): string {
 }
 
 const permissionLine = {
-  "edit-free-commands-ask": "- Reading and editing files in the working folder needs no approval. Any other shell command than flockr, git status, git diff, git log and ls becomes a question card a person answers. If one is denied, do not retry it; say what you could not do.",
-  "read-only": "- You are read only: you may read files, but every edit is refused. Any other shell command than flockr, git status, git diff, git log and ls becomes a question card a person answers. If one is denied, do not retry it; say what you could not do.",
+  "edit-free-commands-ask": "- Reading and editing files in the working folder needs no approval. Any other shell command than flockr, git status, git diff, git log and ls follows the channel's approval rule for shell commands: by default it becomes a question card a person answers, and a person may allow or block commands in a channel. If one is denied or blocked, do not retry it; say what you could not do.",
+  "read-only": "- You are read only: you may read files, but every edit is refused. Any other shell command than flockr, git status, git diff, git log and ls becomes a question card a person answers, even in a channel that allows commands, and is refused in a channel that blocks them. If one is denied or blocked, do not retry it; say what you could not do.",
 } as const satisfies Record<AgentPermissions, string>
 
 export function instructions(options: { member: string; skill: string; permissions?: AgentPermissions; personality?: string | null }): string {

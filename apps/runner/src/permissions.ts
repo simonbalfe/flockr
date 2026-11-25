@@ -1,4 +1,5 @@
 import { defaultAgentPermissions, type AgentPermissions } from "@flockr/contracts/agents"
+import { approvalOptions, type ApprovalVerdict } from "@flockr/contracts/approvals"
 
 export const toolKinds = ["read", "edit", "command", "other"] as const
 export type ToolKind = (typeof toolKinds)[number]
@@ -32,7 +33,7 @@ export const freeCommands = [
   { words: ["ls"], refused: [] },
 ] as const
 
-export const permissionOptions = { allow: "Allow once", deny: "Deny" } as const
+export const permissionOptions = approvalOptions
 
 const outsideQuotes = new Set([";", "&", "|", "<", ">", "(", ")", "`", "$", "\\", "\n", "\r", "*", "?", "~", "{", "}", "!", "#"])
 const insideDoubleQuotes = new Set(["`", "$", "\\"])
@@ -90,6 +91,21 @@ export function decide(request: ToolRequest, rule: PermissionRule = defaultRule)
   if (request.kind === "command" && request.command !== null && commandIsFree(request.command)) return "allow"
   return "ask"
 }
+
+export const commandLimits = { "edit-free-commands-ask": "allow", "read-only": "ask" } as const satisfies Record<AgentPermissions, Verdict>
+
+const boardVerdicts = { allow: "allow", ask: "ask", block: "deny" } as const satisfies Record<ApprovalVerdict, Verdict>
+
+const verdictRank = { allow: 0, ask: 1, deny: 2 } as const satisfies Record<Verdict, number>
+
+export const stricter = (a: Verdict, b: Verdict): Verdict => (verdictRank[a] >= verdictRank[b] ? a : b)
+
+export const consultsBoard = (request: ToolRequest, own: Verdict): boolean => request.kind === "command" && own === "ask"
+
+export const withBoard = (permissions: AgentPermissions, board: ApprovalVerdict): Verdict => stricter(boardVerdicts[board], commandLimits[permissions])
+
+export const blockedText = (request: ToolRequest) =>
+  `Shell commands are blocked in this channel by an approval rule, so ${request.tool} was not run. Do not retry it; say in your reply what you would have run.`
 
 export const deniedText = (request: ToolRequest) => `This agent is read only, so ${request.tool} is not allowed. Do not retry it; say in your reply what you would have changed.`
 

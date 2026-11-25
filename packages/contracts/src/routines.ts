@@ -2,7 +2,7 @@ import { z } from "@hono/zod-openapi"
 import { Task, ThreadQuestion } from "./board"
 import { parseCron } from "./cron"
 
-export const jobStates = ["queued", "running", "done", "failed", "skipped"] as const
+export const jobStates = ["queued", "running", "waiting", "done", "failed", "skipped"] as const
 export type JobState = (typeof jobStates)[number]
 
 export const jobKinds = ["routine"] as const
@@ -66,9 +66,9 @@ export const routineEventTypes = {
   deleted: "routine.deleted",
 } as const
 
-export const jobEventTypes = { finished: "job.finished", retrying: "job.retrying", failed: "job.failed" } as const
+export const jobEventTypes = { finished: "job.finished", retrying: "job.retrying", failed: "job.failed", waiting: "job.waiting", approved: "job.approved" } as const
 
-export const jobStateLabels = { queued: "Queued", running: "Running", done: "Done", failed: "Failed", skipped: "Skipped" } as const satisfies Record<JobState, string>
+export const jobStateLabels = { queued: "Queued", running: "Running", waiting: "Waiting for approval", done: "Done", failed: "Failed", skipped: "Skipped" } as const satisfies Record<JobState, string>
 
 export const routineActionLabels = { post: "Post a message", task: "Create a task", mention: "Mention an agent", brief: "Post the morning brief" } as const satisfies Record<RoutineActionKind, string>
 
@@ -90,7 +90,7 @@ export const CronSchedule = z
 
 export const WatchableEventType = z.enum(watchableEventTypes).openapi("WatchableEventType")
 export const JobStateSchema = z.enum(jobStates).openapi("JobState", {
-  description: "queued: waits for its run time. running: claimed by a drainer. done: it acted. skipped: it did not act (the routine was off, deleted or over a limit). failed: it gave up after its last attempt; lastError says why.",
+  description: "queued: waits for its run time. running: claimed by a drainer. waiting: its action needs a person's approval, and a question card in the routine's channel holds it until Allow once (it runs) or Deny (it is skipped). done: it acted. skipped: it did not act (the routine was off, deleted, over a limit, blocked or denied). failed: it gave up after its last attempt; lastError says why.",
 })
 
 export const RoutineTrigger = z
@@ -126,7 +126,7 @@ export const Job = z
     runAt: timestamp,
     attempts: z.number().int(),
     maxAttempts: z.number().int(),
-    result: z.string().nullable().openapi({ description: "What it did, such as posted m42, or why it was skipped" }),
+    result: z.string().nullable().openapi({ description: "What it did, such as posted m42, why it was skipped, or the question it waits on" }),
     lastError: z.string().nullable(),
     createdAt: timestamp,
     finishedAt: timestamp.nullable(),

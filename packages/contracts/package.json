@@ -8,6 +8,7 @@
     "./rules": "./src/rules.ts",
     "./activity": "./src/activity.ts",
     "./agents": "./src/agents.ts",
+    "./approvals": "./src/approvals.ts",
     "./activity-rules": "./src/activity-rules.ts",
     "./checklist": "./src/checklist.ts",
     "./cron": "./src/cron.ts",

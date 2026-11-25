@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router"
-import { Inbox, ListChecks, Repeat, Search } from "lucide-react"
+import { Inbox, ListChecks, Repeat, Search, ShieldCheck } from "lucide-react"
 import type { ReactNode } from "react"
 import { useAgents, useChannels, useInbox, useMembers } from "@/api/hooks"
 import { currentUser } from "@/api/session"
@@ -73,6 +73,10 @@ export function SidebarContent() {
             <Link to="/routines" search={(prev) => prev} className={rowClass} activeProps={{ className: activeClass }}>
               <Repeat className="size-4 w-[18px]" />
               <span className="flex-1">Routines</span>
+            </Link>
+            <Link to="/approvals" search={(prev) => prev} className={rowClass} activeProps={{ className: activeClass }}>
+              <ShieldCheck className="size-4 w-[18px]" />
+              <span className="flex-1">Approval rules</span>
             </Link>
           </div>
           <div>

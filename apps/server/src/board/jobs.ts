@@ -70,14 +70,32 @@ export async function lockClaimedJob(tx: Tx, job: JobRow): Promise<boolean> {
   return row !== undefined && row.state === "running" && row.attempts === job.attempts
 }
 
-export type JobOutcome = { state: "done"; result: string } | { state: "skipped"; result: string }
+export type JobOutcome = { state: "done"; result: string } | { state: "skipped"; result: string } | { state: "waiting"; result: string }
+
+const outcomeMeaning = {
+  done: { event: jobEventTypes.finished, ends: true },
+  skipped: { event: jobEventTypes.finished, ends: true },
+  waiting: { event: jobEventTypes.waiting, ends: false },
+} as const satisfies Record<JobOutcome["state"], { event: string; ends: boolean }>
 
 export async function finishJob(tx: Tx, emit: Emit, job: JobRow, outcome: JobOutcome, now: Date): Promise<void> {
+  const meaning = outcomeMeaning[outcome.state]
   await tx
     .update(jobs)
-    .set({ state: outcome.state, result: outcome.result, lastError: null, lockedUntil: null, finishedAt: now })
+    .set({ state: outcome.state, result: outcome.result, lastError: null, lockedUntil: null, finishedAt: meaning.ends ? now : null })
     .where(eq(jobs.id, job.id))
-  emitJob(emit, jobEventTypes.finished, job, { state: outcome.state, result: outcome.result })
+  emitJob(emit, meaning.event, job, { state: outcome.state, result: outcome.result })
+}
+
+export async function lockWaitingJob(tx: Tx, id: number): Promise<JobRow | null> {
+  const [row] = await tx.select().from(jobs).where(eq(jobs.id, id)).for("update")
+  return row !== undefined && row.state === "waiting" ? row : null
+}
+
+export async function approveWaitingJob(tx: Tx, emit: Emit, job: JobRow, by: string, now: Date): Promise<void> {
+  const result = `Allowed once by ${by}`
+  await tx.update(jobs).set({ state: "queued", runAt: now, result }).where(eq(jobs.id, job.id))
+  emitJob(emit, jobEventTypes.approved, job, { by, result })
 }
 
 export const errorText = (error: unknown) => (error instanceof Error ? error.message : String(error)).slice(0, jobLimits.errorMax)

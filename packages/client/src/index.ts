@@ -13,6 +13,7 @@ export {
   mayEditMessage,
   mayLabelMessage,
   mayManageAgent,
+  mayManageApprovalRules,
   mayManageRoutine,
   mentionsIn,
   sameLabels,
@@ -61,6 +62,17 @@ export {
   runStatuses,
   stepStatuses,
 } from "@flockr/contracts/activity-rules"
+export {
+  actionKindRules,
+  actionKinds,
+  allowedVerdicts,
+  approvalOptions,
+  approvalVerdictLabels,
+  approvalVerdicts,
+  effectiveVerdict,
+  stricterVerdict,
+  verdictAllowed,
+} from "@flockr/contracts/approvals"
 
 export function configureClient(options: { baseUrl: string; member?: string }): void {
   client.setConfig({ baseUrl: options.baseUrl, headers: { [memberHeader]: options.member ?? defaultMember } })

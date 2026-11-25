@@ -1,6 +1,6 @@
-import type { ActivityState, AgentDesired, AgentPermissions, AgentReport, HarnessInfo, JobKind, JobState, MemberKind, Question, RoutineTriggerKind, TaskState } from "@flockr/contracts"
+import type { ActionKind, ActivityState, AgentDesired, AgentPermissions, AgentReport, ApprovalVerdict, HarnessInfo, JobKind, JobState, MemberKind, Question, RoutineTriggerKind, TaskState } from "@flockr/contracts"
 import { sql } from "drizzle-orm"
-import { bigint, boolean, check, index, integer, jsonb, pgTable, primaryKey, text, timestamp, uniqueIndex, type AnyPgColumn } from "drizzle-orm/pg-core"
+import { bigint, boolean, check, index, integer, jsonb, pgTable, primaryKey, text, timestamp, unique, uniqueIndex, type AnyPgColumn } from "drizzle-orm/pg-core"
 
 const createdAt = () => timestamp("created_at", { withTimezone: true }).notNull().defaultNow()
 
@@ -269,13 +269,48 @@ export const jobs = pgTable(
     finishedAt: timestamp("finished_at", { withTimezone: true }),
   },
   (t) => [
-    check("jobs_state", sql`${t.state} in ('queued', 'running', 'done', 'failed', 'skipped')`),
+    check("jobs_state", sql`${t.state} in ('queued', 'running', 'waiting', 'done', 'failed', 'skipped')`),
     uniqueIndex("jobs_key").on(t.key),
     index("jobs_due").on(t.runAt, t.id).where(sql`${t.state} = 'queued'`),
     index("jobs_stuck").on(t.lockedUntil).where(sql`${t.state} = 'running'`),
     index("jobs_routine").on(t.routineId, t.id),
     index("jobs_fired").on(t.finishedAt).where(sql`${t.state} = 'done'`),
   ],
+)
+
+export const approvalRules = pgTable(
+  "approval_rules",
+  {
+    id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+    kind: text("kind").$type<ActionKind>().notNull(),
+    channel: text("channel").references(() => channels.id),
+    verdict: text("verdict").$type<ApprovalVerdict>().notNull(),
+    setBy: text("set_by").notNull(),
+    createdAt: createdAt(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [check("approval_rules_verdict", sql`${t.verdict} in ('allow', 'ask', 'block')`), unique("approval_rules_scope").on(t.kind, t.channel).nullsNotDistinct()],
+)
+
+export const jobApprovals = pgTable(
+  "job_approvals",
+  {
+    jobId: integer("job_id")
+      .primaryKey()
+      .references(() => jobs.id),
+    kind: text("kind").$type<ActionKind>().notNull(),
+    channel: text("channel")
+      .notNull()
+      .references(() => channels.id),
+    questionId: integer("question_id")
+      .notNull()
+      .references(() => messages.id),
+    answer: text("answer"),
+    answeredBy: text("answered_by"),
+    answeredAt: timestamp("answered_at", { withTimezone: true }),
+    createdAt: createdAt(),
+  },
+  (t) => [uniqueIndex("job_approvals_question").on(t.questionId)],
 )
 
 export type TaskRow = typeof tasks.$inferSelect
@@ -289,3 +324,5 @@ export type AgentRow = typeof agents.$inferSelect
 export type MachineRow = typeof machines.$inferSelect
 export type RoutineRow = typeof routines.$inferSelect
 export type JobRow = typeof jobs.$inferSelect
+export type ApprovalRuleRow = typeof approvalRules.$inferSelect
+export type JobApprovalRow = typeof jobApprovals.$inferSelect

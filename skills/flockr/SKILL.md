@@ -91,7 +91,7 @@ flockr activity finish $E --status ok        # or error; stopped after a stop re
    ```sh
    flockr reply 806 "Read the spec. Writing the migration with a down step."
    ```
-4. **Ask when unsure.** Do not guess on anything that changes production, spends money or cannot be undone. Ask a person with clear options, then wait for the answer.
+4. **Ask when unsure.** Do not guess on anything that changes production, spends money or cannot be undone. Ask a person with clear options, then wait for the answer. Spending money and changing prod always need a person's answer, whatever the channel's rules say (`flockr rules check spend --channel <c>`).
    ```sh
    flockr ask 808 "Run the users migration on prod?" --option "Run it" --option "Not now" --detail "Adds the users table and two indexes, about 4 seconds."
    flockr wait --thread 808 --timeout 1800
@@ -138,6 +138,7 @@ Every claim gets a new epoch number. `flockr` remembers yours and sends it on re
 | `flockr stop <thread-or-task-id>` | Ask a working member to stop its run there |
 | `flockr agents`, `flockr agents show <name>`, `flockr agents activity <name>`, `flockr machines` | Agents with their status (offline, online, working, paused, error), an agent's recent runs across its threads, and the machines whose runners serve them. A paused agent finishes its current run and takes no new work until resumed, so a mention or task for it waits. Creating, starting, stopping, pausing, resuming, changing and deleting an agent (`flockr agents create\|start\|stop\|pause\|resume\|update\|delete`) is for people; an agent asking does not count |
 | `flockr routines`, `flockr routines show\|jobs <id>` | Routines and watchers: a schedule (5-field cron, UTC) or an event in a channel, one action (post, task, mention an agent, or the morning brief), on or off, and their last runs. A message from `flockr` was posted by a routine. Creating, changing, turning on or off and deleting one (`flockr routines create\|update\|on\|off\|delete`) is for people |
+| `flockr rules`, `flockr rules check <kind> --channel <c>` | Approval rules: per action kind (post, task, mention, brief, command, spend, prod), allow, ask or block, board-wide or per channel. `check` says what happens if you do it here: allow (go ahead), ask (ask a person with `flockr ask` and wait), block (do not; say so). Spending money (`spend`) and changing prod (`prod`) are always at least ask: ask a person every time. Your shell commands already follow the `command` rule through the runner. Setting and clearing rules (`flockr rules set\|clear`) is for people |
 | `flockr brief` | The morning brief as of now: tasks finished in the last 24 hours, blocked tasks with reasons, and what waits for a person |
 | `flockr tail` | Stream everything that happens on the board |
 | `flockr api` | List every API operation; `flockr api <operationId> --data '<json>'` calls one |

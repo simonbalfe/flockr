@@ -93,10 +93,10 @@ function spawn(spec: Spawn) {
     sessions,
     instructions: (settings) => instructions({ member: spec.name, skill, permissions: settings.permissions, personality: settings.personality }),
     sessionEnv: { ...inherited(spec.harness.passEnv), ...fcEnv, PATH: sessionPath },
-    bridge: (thread, settings) => ({
+    bridge: ({ thread, channel }, settings) => ({
       command: bunBinary,
       args: [bridgeEntry],
-      env: { ...inherited(["HOME", "TMPDIR"]), ...fcEnv, PATH: inheritedPath, FLOCKR_THREAD: thread, FLOCKR_HARNESS: spec.harness.name, FLOCKR_PERMISSIONS: settings.permissions },
+      env: { ...inherited(["HOME", "TMPDIR"]), ...fcEnv, PATH: inheritedPath, FLOCKR_THREAD: thread, FLOCKR_CHANNEL: channel, FLOCKR_HARNESS: spec.harness.name, FLOCKR_PERMISSIONS: settings.permissions },
     }),
     log,
     hasRoom: spec.hasRoom,

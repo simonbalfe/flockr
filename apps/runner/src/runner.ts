@@ -28,6 +28,11 @@ export const realTimers: Timers = {
   },
 }
 
+export interface BridgePlace {
+  thread: string
+  channel: string
+}
+
 export interface AgentSettings {
   folder: string
   permissions: AgentPermissions
@@ -47,7 +52,7 @@ export interface RunnerDeps {
   sessions: JsonStore<SessionMap>
   instructions: (settings: AgentSettings) => string
   sessionEnv: Record<string, string>
-  bridge: (thread: string, settings: AgentSettings) => PermissionBridge
+  bridge: (place: BridgePlace, settings: AgentSettings) => PermissionBridge
   log: (line: string) => void
   timers?: Timers
   folderExists?: (folder: string) => boolean
@@ -133,7 +138,7 @@ export function createRunner(deps: RunnerDeps) {
       folder,
       env: deps.sessionEnv,
       resumeId,
-      bridge: deps.bridge(spec.thread, settings),
+      bridge: deps.bridge({ thread: spec.thread, channel: spec.channel }, settings),
       timeLimitMs: maxMinutes * 60_000,
       rule: ruleFor(settings.permissions),
       thread: spec.thread,

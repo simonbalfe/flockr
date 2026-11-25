@@ -2,13 +2,15 @@ import { describe, expect, test } from "bun:test"
 import { mkdtempSync, writeFileSync } from "node:fs"
 import { tmpdir } from "node:os"
 import path from "node:path"
+import type { AgentPermissions } from "@flockr/contracts/agents"
+import type { ApprovalVerdict } from "@flockr/contracts/approvals"
 import type { BoardPort } from "../src/board"
 import { ConfigError, folderFor, parseConfig } from "../src/config"
 import { permissionGate, type AnswerWatch } from "../src/gate"
 import { claudeArgs, claudeCode } from "../src/harness/claude-code"
 import { harnessFor } from "../src/harness/registry"
 import { mcpHandler } from "../src/mcp"
-import { commandIsFree, decide, defaultRule, ruleFor, shellWords, type ToolRequest } from "../src/permissions"
+import { commandIsFree, decide, defaultRule, ruleFor, shellWords, withBoard, type ToolRequest } from "../src/permissions"
 import { conversationPrompt, instructions, workPrompt } from "../src/prompt"
 import { routeReply, startsConversation } from "../src/routing"
 import { emptyState, jsonStore, RunnerState } from "../src/store"
@@ -83,24 +85,53 @@ describe("permission gate", () => {
 
   test("a free command is allowed without a question", async () => {
     const asked: string[] = []
-    const gate = permissionGate({ board: asking(fakeBoard().port, asked), codec: claudeCode.permissions, thread: "m10", watch: watchWith("Allow once"), log: () => undefined })
+    const gate = permissionGate({ board: asking(fakeBoard().port, asked), codec: claudeCode.permissions, thread: "m10", channel: "general", watch: watchWith("Allow once"), log: () => undefined })
     expect(await gate(args("git status"))).toEqual({ behavior: "allow", updatedInput: { command: "git status" } })
     expect(asked).toEqual([])
   })
 
   test("another command becomes a question card; Allow once runs it, Deny refuses it", async () => {
     const asked: string[] = []
-    const allow = permissionGate({ board: asking(fakeBoard().port, asked), codec: claudeCode.permissions, thread: "m10", watch: watchWith("Allow once"), log: () => undefined })
+    const allow = permissionGate({ board: asking(fakeBoard().port, asked), codec: claudeCode.permissions, thread: "m10", channel: "general", watch: watchWith("Allow once"), log: () => undefined })
     expect(await allow(args("date"))).toEqual({ behavior: "allow", updatedInput: { command: "date" } })
     expect(asked).toEqual(["m10: Run `date`?"])
-    const deny = permissionGate({ board: asking(fakeBoard().port, asked), codec: claudeCode.permissions, thread: "m10", watch: watchWith("Deny"), log: () => undefined })
+    const deny = permissionGate({ board: asking(fakeBoard().port, asked), codec: claudeCode.permissions, thread: "m10", channel: "general", watch: watchWith("Deny"), log: () => undefined })
     expect(await deny(args("date"))).toMatchObject({ behavior: "deny" })
   })
 
   test("when the board refuses the question the command is denied", async () => {
-    const gate = permissionGate({ board: fakeBoard().port, codec: claudeCode.permissions, thread: "m10", watch: watchWith("Allow once"), log: () => undefined })
+    const gate = permissionGate({ board: fakeBoard().port, codec: claudeCode.permissions, thread: "m10", channel: "general", watch: watchWith("Allow once"), log: () => undefined })
     expect(await gate(args("date"))).toMatchObject({ behavior: "deny" })
     expect(await gate({ nonsense: true })).toMatchObject({ behavior: "deny" })
+  })
+
+  test("the channel's approval rule decides a command, and the stricter of it and the agent's own setting wins", async () => {
+    const rules: Record<string, ApprovalVerdict> = { backend: "allow", platform: "block" }
+    const checked: string[] = []
+    const asked: string[] = []
+    const board: BoardPort = {
+      ...asking(fakeBoard().port, asked),
+      approval: async (kind, channel) => {
+        checked.push(`${kind} ${channel}`)
+        return rules[channel] ?? "ask"
+      },
+    }
+    const gateFor = (channel: string, permissions: AgentPermissions) =>
+      permissionGate({ board, codec: claudeCode.permissions, thread: "m10", channel, watch: watchWith("Deny"), log: () => undefined, permissions })
+    const outcome = async (channel: string, permissions: AgentPermissions, request: unknown) => {
+      asked.length = 0
+      const result = await gateFor(channel, permissions)(request)
+      return `${JSON.stringify(result).includes('"allow"') ? "allow" : "deny"}${asked.length ? " after asking" : ""}`
+    }
+    expect(await outcome("backend", "edit-free-commands-ask", args("date"))).toBe("allow")
+    expect(await outcome("general", "edit-free-commands-ask", args("date"))).toBe("deny after asking")
+    expect(await outcome("platform", "edit-free-commands-ask", args("date"))).toBe("deny")
+    expect(await outcome("backend", "read-only", args("date"))).toBe("deny after asking")
+    expect(await outcome("platform", "read-only", args("date"))).toBe("deny")
+    expect(await outcome("platform", "edit-free-commands-ask", args("git status"))).toBe("allow")
+    expect(await outcome("backend", "read-only", { tool_name: "Write", input: { file_path: "a.ts" } })).toBe("deny")
+    expect(checked).toEqual(["command backend", "command general", "command platform", "command backend", "command platform"])
+    expect(withBoard("edit-free-commands-ask", "ask")).toBe("ask")
   })
 })
 

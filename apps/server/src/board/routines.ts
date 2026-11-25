@@ -1,8 +1,10 @@
 import {
+  actionKindRules,
   JobCause,
   mayManageRoutine,
   nextRunOf,
   RoutineAction,
+  routineActionKind,
   routineActor,
   routineEventTypes,
   routineLimits,
@@ -18,6 +20,7 @@ import { and, asc, count, desc, eq, gt, isNull, lte, sql } from "drizzle-orm"
 import { z } from "zod"
 import type { Database, Executor, Tx } from "../db/client"
 import { jobs, members, routines, type JobRow, type MemberRow, type RoutineRow } from "../db/schema"
+import { allowedOnce, askApproval, verdictFor } from "./approvals"
 import { buildBrief } from "./brief"
 import { forbidden, invalid, notFound } from "./errors"
 import { mutate, type Emit } from "./events"
@@ -280,13 +283,60 @@ async function act(tx: Tx, emit: Emit, routine: RoutineRow, now: Date): Promise<
   }
 }
 
-async function fire(tx: Tx, emit: Emit, routine: RoutineRow | undefined, now: Date): Promise<JobOutcome> {
+export function actionDetail(action: RoutineAction, channel: string): string {
+  switch (action.kind) {
+    case "post":
+      return `Post in #${channel}: ${action.text}`
+    case "task":
+      return `Create a task in #${channel}: ${action.title}${action.assignee ? ` (for ${action.assignee})` : ""}`
+    case "mention":
+      return `Post in #${channel}: @${action.agent} ${action.text}`
+    case "brief":
+      return `Post the morning brief in #${channel}`
+    default: {
+      const never: never = action
+      throw invalid(`Unknown action ${JSON.stringify(never)}`)
+    }
+  }
+}
+
+interface Firing {
+  job: JobRow
+  routine: RoutineRow | undefined
+  now: Date
+}
+
+async function approval(tx: Tx, emit: Emit, job: JobRow, routine: RoutineRow): Promise<JobOutcome | null> {
+  const action = RoutineAction.parse(routine.action)
+  const kind = routineActionKind[action.kind]
+  const label = actionKindRules[kind].label.toLowerCase()
+  const verdict = await verdictFor(tx, kind, routine.channel)
+  switch (verdict) {
+    case "allow":
+      return null
+    case "block":
+      return { state: "skipped", result: `Blocked: the approval rule for ${label} in #${routine.channel} is block` }
+    case "ask": {
+      if (await allowedOnce(tx, job.id)) return null
+      const asked = await askApproval(tx, emit, { job, kind, channel: routine.channel, text: `Routine ${routine.name} wants to ${label}`, detail: actionDetail(action, routine.channel) })
+      return { state: "waiting", result: asked }
+    }
+    default: {
+      const never: never = verdict
+      throw invalid(`Unknown verdict ${String(never)}`)
+    }
+  }
+}
+
+async function fire(tx: Tx, emit: Emit, { job, routine, now }: Firing): Promise<JobOutcome> {
   if (!routine || routine.deletedAt) return { state: "skipped", result: "The routine was deleted" }
   if (!routine.enabled) return { state: "skipped", result: "The routine is off" }
   const hourAgo = new Date(now.getTime() - 3_600_000)
   if ((await firedSince(tx, hourAgo, routine.id)) >= routine.perHour) return { state: "skipped", result: `Over its limit of ${routine.perHour} runs an hour` }
   if ((await firedSince(tx, hourAgo)) >= routineLimits.totalPerHour) return { state: "skipped", result: `Over the board's limit of ${routineLimits.totalPerHour} routine runs an hour` }
   await ensureRoutineActor(tx, emit)
+  const held = await approval(tx, emit, job, routine)
+  if (held) return held
   return { state: "done", result: await act(tx, emit, routine, now) }
 }
 
@@ -296,6 +346,6 @@ export async function runRoutineJob(db: Database, job: JobRow, now: Date): Promi
     await tx.execute(sql`select pg_advisory_xact_lock(hashtext('flockr.routines'))`)
     const [routine] = job.routineId === null ? [] : await tx.select().from(routines).where(eq(routines.id, job.routineId)).for("update")
     const tagged: Emit = (draft) => emit({ ...draft, data: { ...draft.data, routine: job.routineId } })
-    await finishJob(tx, emit, job, await fire(tx, tagged, routine, now), now)
+    await finishJob(tx, emit, job, await fire(tx, tagged, { job, routine, now }), now)
   })
 }

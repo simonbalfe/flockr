@@ -2,6 +2,7 @@ import type { ThreadAskBody, ThreadQuestion } from "@flockr/contracts"
 import { and, desc, eq, isNull, type SQL } from "drizzle-orm"
 import type { Database, Tx } from "../db/client"
 import { messages, type MessageRow } from "../db/schema"
+import { settleJobApproval } from "./approvals"
 import { forbidden, invalid, wrongState } from "./errors"
 import { mutate } from "./events"
 import { requireActor } from "./members"
@@ -67,7 +68,8 @@ export async function answerInThread(db: Database, actor: string, threadId: stri
     const question = open?.question
     if (!open || !question) throw invalid(`Thread ${place.key} has no open question`)
     if (!question.options.includes(option)) throw invalid(`Answer with one of: ${question.options.join(", ")}`)
-    const [answered] = await tx.update(messages).set({ answer: option, answeredBy: actor, answeredAt: new Date() }).where(eq(messages.id, open.id)).returning()
+    const now = new Date()
+    const [answered] = await tx.update(messages).set({ answer: option, answeredBy: actor, answeredAt: now }).where(eq(messages.id, open.id)).returning()
     if (!answered) throw new Error("Question update returned nothing")
     await insertMessage(tx, { channel: place.channel, kind: "text", who: actor, body: `${option}.`, ...place.link })
     emit({
@@ -79,6 +81,7 @@ export async function answerInThread(db: Database, actor: string, threadId: stri
       messageId: messageKey(answered.id),
       data: { option, question: question.text },
     })
+    await settleJobApproval(tx, emit, { questionId: answered.id, option, by: actor, now })
     return answered
   })
   return present(row)

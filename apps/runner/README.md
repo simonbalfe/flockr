@@ -87,6 +87,7 @@ Each agent has one of two permission sets (`agentPermissions` in `packages/contr
 | `read-only` ("Read only") | free | refused | ask |
 
 - "Ask" means the runner's bridge (`src/bridge.ts`, an MCP server the harness calls for permission) allows `flockr` or `fc` without `--as` or `--url`, `git status`, `git diff`, `git log` and `ls`, and turns anything else, or anything that chains, redirects or substitutes, into a question card in the thread: "Run `date`? Allow once / Deny". The session waits until a person answers. Only a person can answer.
+- A person can decide commands per channel without changing the agent: before asking, the bridge reads the board's approval rule for `command` in the thread's channel (`checkApproval`; the runner passes the channel as `FLOCKR_CHANNEL`). Allow runs the command with no card, ask asks as above, block refuses it. The agent's setting stays a limit and the stricter wins (`commandLimits` in `src/permissions.ts`): an `edit-free-commands-ask` agent follows the channel, a `read-only` agent still asks where commands are allowed, since a command can write files. The free commands stay free, and the agent's own refusals never reach the board. If the board cannot answer, the bridge asks. Rules: `flockr rules`, the Approval rules page, `docs/phases/phase-5/SPEC_PHASE_5C_APPROVAL_RULES.md`.
 - Permissions are never skipped, and full access is not offered.
 
 ## The session

@@ -3,8 +3,8 @@
 import { queryOptions, type UseMutationOptions } from '@tanstack/react-query';
 
 import { client } from '../client.gen';
-import { addTaskCommit, answerInThread, answerQuestion, approveTask, askInThread, askQuestion, blockTask, claimNextTask, claimTask, completeTask, createActivityEntry, createAgent, createChannel, createMember, createRoutine, createTask, deleteAgent, deleteMessage, deleteRoutine, disableRoutine, editMessage, enableRoutine, failTask, getActivityEntry, getAgent, getBrief, getInbox, getRoutine, getTask, getThread, giveTask, importChecklist, listActivity, listAgentActivity, listAgents, listChannels, listEvents, listMachines, listMembers, listMessages, listMessageVersions, listRoutineJobs, listRoutines, listTasks, machineHeartbeat, makeTaskFromThread, markRead, type Options, pauseAgent, postMessage, registerMachine, releaseTask, renewTask, replyToThread, requestChanges, resumeAgent, searchBoard, setActivity, startAgent, stopAgent, stopRun, submitForReview, unblockTask, updateActivityEntry, updateAgent, updateChannel, updateRoutine, whoami } from '../sdk.gen';
-import type { AddTaskCommitData, AddTaskCommitError, AddTaskCommitResponse, AnswerInThreadData, AnswerInThreadError, AnswerInThreadResponse, AnswerQuestionData, AnswerQuestionError, AnswerQuestionResponse, ApproveTaskData, ApproveTaskError, ApproveTaskResponse, AskInThreadData, AskInThreadError, AskInThreadResponse, AskQuestionData, AskQuestionError, AskQuestionResponse, BlockTaskData, BlockTaskError, BlockTaskResponse, ClaimNextTaskData, ClaimNextTaskError, ClaimNextTaskResponse, ClaimTaskData, ClaimTaskError, ClaimTaskResponse, CompleteTaskData, CompleteTaskError, CompleteTaskResponse, CreateActivityEntryData, CreateActivityEntryError, CreateActivityEntryResponse, CreateAgentData, CreateAgentError, CreateAgentResponse, CreateChannelData, CreateChannelError, CreateChannelResponse, CreateMemberData, CreateMemberError, CreateMemberResponse, CreateRoutineData, CreateRoutineError, CreateRoutineResponse, CreateTaskData, CreateTaskError, CreateTaskResponse, DeleteAgentData, DeleteAgentError, DeleteAgentResponse, DeleteMessageData, DeleteMessageError, DeleteMessageResponse, DeleteRoutineData, DeleteRoutineError, DeleteRoutineResponse, DisableRoutineData, DisableRoutineError, DisableRoutineResponse, EditMessageData, EditMessageError, EditMessageResponse, EnableRoutineData, EnableRoutineError, EnableRoutineResponse, FailTaskData, FailTaskError, FailTaskResponse, GetActivityEntryData, GetActivityEntryError, GetActivityEntryResponse, GetAgentData, GetAgentError, GetAgentResponse, GetBriefData, GetBriefError, GetBriefResponse, GetInboxData, GetInboxError, GetInboxResponse, GetRoutineData, GetRoutineError, GetRoutineResponse, GetTaskData, GetTaskError, GetTaskResponse, GetThreadData, GetThreadError, GetThreadResponse, GiveTaskData, GiveTaskError, GiveTaskResponse, ImportChecklistData, ImportChecklistError, ImportChecklistResponse, ListActivityData, ListActivityError, ListActivityResponse, ListAgentActivityData, ListAgentActivityError, ListAgentActivityResponse, ListAgentsData, ListAgentsError, ListAgentsResponse, ListChannelsData, ListChannelsError, ListChannelsResponse, ListEventsData, ListEventsError, ListEventsResponse, ListMachinesData, ListMachinesError, ListMachinesResponse, ListMembersData, ListMembersError, ListMembersResponse, ListMessagesData, ListMessagesError, ListMessagesResponse, ListMessageVersionsData, ListMessageVersionsError, ListMessageVersionsResponse, ListRoutineJobsData, ListRoutineJobsError, ListRoutineJobsResponse, ListRoutinesData, ListRoutinesError, ListRoutinesResponse, ListTasksData, ListTasksError, ListTasksResponse, MachineHeartbeatData, MachineHeartbeatError, MachineHeartbeatResponse, MakeTaskFromThreadData, MakeTaskFromThreadError, MakeTaskFromThreadResponse, MarkReadData, MarkReadError, MarkReadResponse, PauseAgentData, PauseAgentError, PauseAgentResponse, PostMessageData, PostMessageError, PostMessageResponse, RegisterMachineData, RegisterMachineError, RegisterMachineResponse, ReleaseTaskData, ReleaseTaskError, ReleaseTaskResponse, RenewTaskData, RenewTaskError, RenewTaskResponse, ReplyToThreadData, ReplyToThreadError, ReplyToThreadResponse, RequestChangesData, RequestChangesError, RequestChangesResponse, ResumeAgentData, ResumeAgentError, ResumeAgentResponse, SearchBoardData, SearchBoardError, SearchBoardResponse, SetActivityData, SetActivityError, SetActivityResponse, StartAgentData, StartAgentError, StartAgentResponse, StopAgentData, StopAgentError, StopAgentResponse, StopRunData, StopRunError, StopRunResponse, SubmitForReviewData, SubmitForReviewError, SubmitForReviewResponse, UnblockTaskData, UnblockTaskError, UnblockTaskResponse, UpdateActivityEntryData, UpdateActivityEntryError, UpdateActivityEntryResponse, UpdateAgentData, UpdateAgentError, UpdateAgentResponse, UpdateChannelData, UpdateChannelError, UpdateChannelResponse, UpdateRoutineData, UpdateRoutineError, UpdateRoutineResponse, WhoamiData, WhoamiError, WhoamiResponse } from '../types.gen';
+import { addTaskCommit, answerInThread, answerQuestion, approveTask, askInThread, askQuestion, blockTask, checkApproval, claimNextTask, claimTask, clearApprovalRule, completeTask, createActivityEntry, createAgent, createChannel, createMember, createRoutine, createTask, deleteAgent, deleteMessage, deleteRoutine, disableRoutine, editMessage, enableRoutine, failTask, getActivityEntry, getAgent, getBrief, getInbox, getRoutine, getTask, getThread, giveTask, importChecklist, listActivity, listAgentActivity, listAgents, listApprovalRules, listChannels, listEvents, listMachines, listMembers, listMessages, listMessageVersions, listRoutineJobs, listRoutines, listTasks, machineHeartbeat, makeTaskFromThread, markRead, type Options, pauseAgent, postMessage, registerMachine, releaseTask, renewTask, replyToThread, requestChanges, resumeAgent, searchBoard, setActivity, setApprovalRule, startAgent, stopAgent, stopRun, submitForReview, unblockTask, updateActivityEntry, updateAgent, updateChannel, updateRoutine, whoami } from '../sdk.gen';
+import type { AddTaskCommitData, AddTaskCommitError, AddTaskCommitResponse, AnswerInThreadData, AnswerInThreadError, AnswerInThreadResponse, AnswerQuestionData, AnswerQuestionError, AnswerQuestionResponse, ApproveTaskData, ApproveTaskError, ApproveTaskResponse, AskInThreadData, AskInThreadError, AskInThreadResponse, AskQuestionData, AskQuestionError, AskQuestionResponse, BlockTaskData, BlockTaskError, BlockTaskResponse, CheckApprovalData, CheckApprovalError, CheckApprovalResponse, ClaimNextTaskData, ClaimNextTaskError, ClaimNextTaskResponse, ClaimTaskData, ClaimTaskError, ClaimTaskResponse, ClearApprovalRuleData, ClearApprovalRuleError, ClearApprovalRuleResponse, CompleteTaskData, CompleteTaskError, CompleteTaskResponse, CreateActivityEntryData, CreateActivityEntryError, CreateActivityEntryResponse, CreateAgentData, CreateAgentError, CreateAgentResponse, CreateChannelData, CreateChannelError, CreateChannelResponse, CreateMemberData, CreateMemberError, CreateMemberResponse, CreateRoutineData, CreateRoutineError, CreateRoutineResponse, CreateTaskData, CreateTaskError, CreateTaskResponse, DeleteAgentData, DeleteAgentError, DeleteAgentResponse, DeleteMessageData, DeleteMessageError, DeleteMessageResponse, DeleteRoutineData, DeleteRoutineError, DeleteRoutineResponse, DisableRoutineData, DisableRoutineError, DisableRoutineResponse, EditMessageData, EditMessageError, EditMessageResponse, EnableRoutineData, EnableRoutineError, EnableRoutineResponse, FailTaskData, FailTaskError, FailTaskResponse, GetActivityEntryData, GetActivityEntryError, GetActivityEntryResponse, GetAgentData, GetAgentError, GetAgentResponse, GetBriefData, GetBriefError, GetBriefResponse, GetInboxData, GetInboxError, GetInboxResponse, GetRoutineData, GetRoutineError, GetRoutineResponse, GetTaskData, GetTaskError, GetTaskResponse, GetThreadData, GetThreadError, GetThreadResponse, GiveTaskData, GiveTaskError, GiveTaskResponse, ImportChecklistData, ImportChecklistError, ImportChecklistResponse, ListActivityData, ListActivityError, ListActivityResponse, ListAgentActivityData, ListAgentActivityError, ListAgentActivityResponse, ListAgentsData, ListAgentsError, ListAgentsResponse, ListApprovalRulesData, ListApprovalRulesError, ListApprovalRulesResponse, ListChannelsData, ListChannelsError, ListChannelsResponse, ListEventsData, ListEventsError, ListEventsResponse, ListMachinesData, ListMachinesError, ListMachinesResponse, ListMembersData, ListMembersError, ListMembersResponse, ListMessagesData, ListMessagesError, ListMessagesResponse, ListMessageVersionsData, ListMessageVersionsError, ListMessageVersionsResponse, ListRoutineJobsData, ListRoutineJobsError, ListRoutineJobsResponse, ListRoutinesData, ListRoutinesError, ListRoutinesResponse, ListTasksData, ListTasksError, ListTasksResponse, MachineHeartbeatData, MachineHeartbeatError, MachineHeartbeatResponse, MakeTaskFromThreadData, MakeTaskFromThreadError, MakeTaskFromThreadResponse, MarkReadData, MarkReadError, MarkReadResponse, PauseAgentData, PauseAgentError, PauseAgentResponse, PostMessageData, PostMessageError, PostMessageResponse, RegisterMachineData, RegisterMachineError, RegisterMachineResponse, ReleaseTaskData, ReleaseTaskError, ReleaseTaskResponse, RenewTaskData, RenewTaskError, RenewTaskResponse, ReplyToThreadData, ReplyToThreadError, ReplyToThreadResponse, RequestChangesData, RequestChangesError, RequestChangesResponse, ResumeAgentData, ResumeAgentError, ResumeAgentResponse, SearchBoardData, SearchBoardError, SearchBoardResponse, SetActivityData, SetActivityError, SetActivityResponse, SetApprovalRuleData, SetApprovalRuleError, SetApprovalRuleResponse, StartAgentData, StartAgentError, StartAgentResponse, StopAgentData, StopAgentError, StopAgentResponse, StopRunData, StopRunError, StopRunResponse, SubmitForReviewData, SubmitForReviewError, SubmitForReviewResponse, UnblockTaskData, UnblockTaskError, UnblockTaskResponse, UpdateActivityEntryData, UpdateActivityEntryError, UpdateActivityEntryResponse, UpdateAgentData, UpdateAgentError, UpdateAgentResponse, UpdateChannelData, UpdateChannelError, UpdateChannelResponse, UpdateRoutineData, UpdateRoutineError, UpdateRoutineResponse, WhoamiData, WhoamiError, WhoamiResponse } from '../types.gen';
 
 export type QueryKey<TOptions extends Options> = [
     Pick<TOptions, 'baseUrl' | 'body' | 'headers' | 'path' | 'query'> & {
@@ -1197,4 +1197,74 @@ export const getBriefOptions = (options?: Options<GetBriefData>) => queryOptions
         return data;
     },
     queryKey: getBriefQueryKey(options)
+});
+
+/**
+ * Clear the rule for an action kind in one channel, or board-wide with no channel, so the board rule or the default applies again. Only a person can clear a rule
+ */
+export const clearApprovalRuleMutation = (options?: Partial<Options<ClearApprovalRuleData>>): UseMutationOptions<ClearApprovalRuleResponse, ClearApprovalRuleError, Options<ClearApprovalRuleData>> => {
+    const mutationOptions: UseMutationOptions<ClearApprovalRuleResponse, ClearApprovalRuleError, Options<ClearApprovalRuleData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await clearApprovalRule({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+export const listApprovalRulesQueryKey = (options?: Options<ListApprovalRulesData>) => createQueryKey('listApprovalRules', options);
+
+/**
+ * Every action kind with its floor (the loosest verdict any rule may set) and default, and the allow, ask or block rules people have set, board-wide or per channel
+ */
+export const listApprovalRulesOptions = (options?: Options<ListApprovalRulesData>) => queryOptions<ListApprovalRulesResponse, ListApprovalRulesError, ListApprovalRulesResponse, ReturnType<typeof listApprovalRulesQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await listApprovalRules({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: listApprovalRulesQueryKey(options)
+});
+
+/**
+ * Set an action kind to allow, ask or block, for one channel or (channel null) the whole board. A verdict looser than the kind's floor is refused: spending money and changing prod always ask at least. Only a person can set a rule; setting the same verdict again changes nothing
+ */
+export const setApprovalRuleMutation = (options?: Partial<Options<SetApprovalRuleData>>): UseMutationOptions<SetApprovalRuleResponse, SetApprovalRuleError, Options<SetApprovalRuleData>> => {
+    const mutationOptions: UseMutationOptions<SetApprovalRuleResponse, SetApprovalRuleError, Options<SetApprovalRuleData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await setApprovalRule({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+export const checkApprovalQueryKey = (options: Options<CheckApprovalData>) => createQueryKey('checkApproval', options);
+
+/**
+ * What happens when an agent or a routine does this kind of action in this channel: allow (go ahead), ask (ask a person in the thread first and wait for Allow once) or block (do not do it). The stricter of the rule and the floor
+ */
+export const checkApprovalOptions = (options: Options<CheckApprovalData>) => queryOptions<CheckApprovalResponse, CheckApprovalError, CheckApprovalResponse, ReturnType<typeof checkApprovalQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await checkApproval({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: checkApprovalQueryKey(options)
 });

@@ -139,11 +139,12 @@ const BridgeEnv = z.object({
   FC_URL: z.url(),
   FC_AS: z.string().min(1),
   FLOCKR_THREAD: z.string().min(1),
+  FLOCKR_CHANNEL: z.string().min(1),
   FLOCKR_HARNESS: z.string().min(1),
   FLOCKR_PERMISSIONS: z.enum(agentPermissions),
 })
 
 export function bridgeEnv() {
   const env = BridgeEnv.parse(process.env)
-  return { url: env.FC_URL, member: env.FC_AS, thread: env.FLOCKR_THREAD, harness: env.FLOCKR_HARNESS, permissions: env.FLOCKR_PERMISSIONS }
+  return { url: env.FC_URL, member: env.FC_AS, thread: env.FLOCKR_THREAD, channel: env.FLOCKR_CHANNEL, harness: env.FLOCKR_HARNESS, permissions: env.FLOCKR_PERMISSIONS }
 }

@@ -4025,7 +4025,7 @@
               "string",
               "null"
             ],
-            "description": "What it did, such as posted m42, or why it was skipped"
+            "description": "What it did, such as posted m42, why it was skipped, or the question it waits on"
           },
           "lastError": {
             "type": [
@@ -4067,11 +4067,12 @@
         "enum": [
           "queued",
           "running",
+          "waiting",
           "done",
           "failed",
           "skipped"
         ],
-        "description": "queued: waits for its run time. running: claimed by a drainer. done: it acted. skipped: it did not act (the routine was off, deleted or over a limit). failed: it gave up after its last attempt; lastError says why."
+        "description": "queued: waits for its run time. running: claimed by a drainer. waiting: its action needs a person's approval, and a question card in the routine's channel holds it until Allow once (it runs) or Deny (it is skipped). done: it acted. skipped: it did not act (the routine was off, deleted, over a limit, blocked or denied). failed: it gave up after its last attempt; lastError says why."
       },
       "JobCause": {
         "oneOf": [
@@ -4254,6 +4255,245 @@
           "threadQuestions",
           "reviews"
         ]
+      },
+      "ApprovalRules": {
+        "type": "object",
+        "properties": {
+          "kinds": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ActionKindInfo"
+            },
+            "description": "Every action kind with its floor and default"
+          },
+          "rules": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ApprovalRule"
+            },
+            "description": "The rules people have set, board-wide first"
+          }
+        },
+        "required": [
+          "kinds",
+          "rules"
+        ]
+      },
+      "ActionKindInfo": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "$ref": "#/components/schemas/ActionKind"
+          },
+          "label": {
+            "type": "string",
+            "example": "Spend money"
+          },
+          "floor": {
+            "$ref": "#/components/schemas/ApprovalVerdict"
+          },
+          "default": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ApprovalVerdict"
+              },
+              {
+                "description": "The verdict with no rule"
+              }
+            ]
+          }
+        },
+        "required": [
+          "kind",
+          "label",
+          "floor",
+          "default"
+        ]
+      },
+      "ActionKind": {
+        "type": "string",
+        "enum": [
+          "post",
+          "task",
+          "mention",
+          "brief",
+          "command",
+          "spend",
+          "prod"
+        ],
+        "description": "post a message, create a task, mention an agent, post the morning brief, run a shell command, spend money, change prod"
+      },
+      "ApprovalVerdict": {
+        "type": "string",
+        "enum": [
+          "allow",
+          "ask",
+          "block"
+        ],
+        "description": "The most permissive verdict a rule may set; spending money and changing prod are at least ask"
+      },
+      "ApprovalRule": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "$ref": "#/components/schemas/ActionKind"
+          },
+          "channel": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "null for the whole board"
+          },
+          "verdict": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ApprovalVerdict"
+              },
+              {
+                "description": "allow: it runs. ask: it waits for a person to answer a question card. block: it does not run."
+              }
+            ]
+          },
+          "setBy": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-11-25T08:00:00.000Z"
+          }
+        },
+        "required": [
+          "kind",
+          "channel",
+          "verdict",
+          "setBy",
+          "updatedAt"
+        ]
+      },
+      "SetApprovalRuleBody": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "$ref": "#/components/schemas/ActionKind"
+          },
+          "channel": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "minLength": 1,
+            "default": null,
+            "example": "backend",
+            "description": "The channel the rule holds in; null for the whole board. A channel rule beats the board rule"
+          },
+          "verdict": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ApprovalVerdict"
+              },
+              {
+                "description": "allow: it runs. ask: it waits for a person to answer a question card. block: it does not run."
+              }
+            ]
+          }
+        },
+        "required": [
+          "kind",
+          "verdict"
+        ]
+      },
+      "ClearedApprovalRule": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "$ref": "#/components/schemas/ActionKind"
+          },
+          "channel": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "cleared": {
+            "type": "boolean",
+            "description": "false when there was no rule to clear"
+          }
+        },
+        "required": [
+          "kind",
+          "channel",
+          "cleared"
+        ]
+      },
+      "ApprovalCheck": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "$ref": "#/components/schemas/ActionKind"
+          },
+          "channel": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "verdict": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ApprovalVerdict"
+              },
+              {
+                "description": "What happens: the stricter of the rule (or the default) and the floor"
+              }
+            ]
+          },
+          "source": {
+            "$ref": "#/components/schemas/ApprovalSource"
+          },
+          "floor": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ApprovalVerdict"
+              },
+              {
+                "description": "allow: it runs. ask: it waits for a person to answer a question card. block: it does not run."
+              }
+            ]
+          },
+          "rule": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ApprovalRule"
+              },
+              {
+                "type": [
+                  "object",
+                  "null"
+                ],
+                "description": "The rule that applied; null for the default"
+              }
+            ]
+          }
+        },
+        "required": [
+          "kind",
+          "channel",
+          "verdict",
+          "source",
+          "floor",
+          "rule"
+        ]
+      },
+      "ApprovalSource": {
+        "type": "string",
+        "enum": [
+          "channel",
+          "board",
+          "default"
+        ],
+        "description": "Where the verdict came from: the channel's rule, the board rule, or the default"
       }
     },
     "parameters": {}
@@ -9330,6 +9570,302 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Brief"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The input is not valid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The acting member is not on this board, or may not do this",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The task or message is in another state, or the claim epoch is stale",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/approval-rules": {
+      "get": {
+        "operationId": "listApprovalRules",
+        "tags": [
+          "approvals"
+        ],
+        "summary": "Every action kind with its floor (the loosest verdict any rule may set) and default, and the allow, ask or block rules people have set, board-wide or per channel",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApprovalRules"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The input is not valid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The acting member is not on this board, or may not do this",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The task or message is in another state, or the claim epoch is stale",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "operationId": "setApprovalRule",
+        "tags": [
+          "approvals"
+        ],
+        "summary": "Set an action kind to allow, ask or block, for one channel or (channel null) the whole board. A verdict looser than the kind's floor is refused: spending money and changing prod always ask at least. Only a person can set a rule; setting the same verdict again changes nothing",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetApprovalRuleBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApprovalRule"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The input is not valid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The acting member is not on this board, or may not do this",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The task or message is in another state, or the claim epoch is stale",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "operationId": "clearApprovalRule",
+        "tags": [
+          "approvals"
+        ],
+        "summary": "Clear the rule for an action kind in one channel, or board-wide with no channel, so the board rule or the default applies again. Only a person can clear a rule",
+        "parameters": [
+          {
+            "schema": {
+              "$ref": "#/components/schemas/ActionKind"
+            },
+            "required": true,
+            "description": "post a message, create a task, mention an agent, post the morning brief, run a shell command, spend money, change prod",
+            "name": "kind",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "example": "backend",
+              "description": "Left out, the whole board"
+            },
+            "required": false,
+            "description": "Left out, the whole board",
+            "name": "channel",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClearedApprovalRule"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The input is not valid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The acting member is not on this board, or may not do this",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The task or message is in another state, or the claim epoch is stale",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/approval-rules/check": {
+      "get": {
+        "operationId": "checkApproval",
+        "tags": [
+          "approvals"
+        ],
+        "summary": "What happens when an agent or a routine does this kind of action in this channel: allow (go ahead), ask (ask a person in the thread first and wait for Allow once) or block (do not do it). The stricter of the rule and the floor",
+        "parameters": [
+          {
+            "schema": {
+              "$ref": "#/components/schemas/ActionKind"
+            },
+            "required": true,
+            "description": "post a message, create a task, mention an agent, post the morning brief, run a shell command, spend money, change prod",
+            "name": "kind",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "example": "backend",
+              "description": "Left out, the whole board"
+            },
+            "required": false,
+            "description": "Left out, the whole board",
+            "name": "channel",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApprovalCheck"
                 }
               }
             }
