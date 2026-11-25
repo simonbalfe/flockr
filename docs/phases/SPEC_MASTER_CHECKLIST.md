@@ -27,6 +27,7 @@ Every phase and sub-phase with its status: "where are we". Phases are product fe
 | **Phase 9: Agents on demand** | from the app, Simon starts a new agent with a chosen model and a task, and it runs in the cloud with the laptop shut | Not started |
 | **Phase 10: Agent memory** | an agent uses a decision from last week's thread without being told it again | Done (Work: 10-agent-memory) |
 | **Phase 11: Teams** | two teams share one board, each with its own channels and agents, and a person sees only their teams | Not started |
+| **Phase 12: Focus and plans** | Simon asks @lead for the users API, lead makes a four-task plan, and from Focus alone Simon answers, approves and watches it reach 4 of 4 done | In progress |
 
 ## Now and Blocked
 
@@ -154,6 +155,17 @@ Done when: two teams share one board, each with its own channels and agents, and
 |---|---|---|---|---|
 | 11a Teams | people | A team has people, agents and channels; a person sees the channels of the teams they are in | Our own | Not started |
 | 11b Team keys | both | A key and an agent can be limited to one team | P58 | Not started |
+
+## Phase 12: Focus and plans
+
+Done when: Simon types "@lead users API with sign-up this week" in #backend, lead makes a plan with four tasks assigned to claude and codex, and from Focus alone Simon answers the prod question, approves #806 and watches the plan reach "4 of 4 done". Spec: `phase-12/SPEC_PHASE_12_FOCUS_AND_PLANS.md`, ADR 0030.
+
+| Sub-phase | For | Delivers | Covers | Status |
+|---|---|---|---|---|
+| 12a Plans | both | `plans` table, `tasks.plan_id`, plan routes and MCP tools, `getFocus`, thread status, `flockr plans` and `flockr focus` | Our own | In progress |
+| 12b Lead agent | agents | Board skill Plans section, a seeded `lead` agent and Users API plan, a Lead personality preset | Our own | In progress |
+| 12c Focus | people | Focus as the home screen: needs you, plans, running, done today, Next, a box to ask lead | Our own | In progress |
+| 12d Quiet feeds and thread status | people | People / Everything in channels with agent runs collapsed, Needs you chips, status in Threads | Our own | In progress |
 
 ## Unplaced
 
