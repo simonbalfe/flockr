@@ -21,7 +21,7 @@ export function LeadBox({ defaultChannel }: { defaultChannel: string | null }) {
 
   if (agents.isSuccess && lead === null) {
     return (
-      <div className="flex flex-wrap items-center gap-3 rounded-xl bg-muted px-3.5 py-2.5 text-sm">
+      <div className="flex flex-wrap items-center gap-3 bg-muted px-3.5 py-2.5 text-sm">
         <span className="flex-1 text-muted-foreground">No lead agent yet. Make one with the Lead personality to plan goals for you.</span>
         <Button size="sm" variant="outline" onClick={openNewAgent}>
           New agent
@@ -49,7 +49,7 @@ export function LeadBox({ defaultChannel }: { defaultChannel: string | null }) {
 
   return (
     <form onSubmit={submit}>
-      <InputGroup className="h-11 rounded-xl bg-background">
+      <InputGroup className="h-11 bg-background">
         <InputGroupAddon>
           <MemberAvatar name={name} size="xs" />
         </InputGroupAddon>

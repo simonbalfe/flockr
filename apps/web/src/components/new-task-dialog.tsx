@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { usePanel } from "@/lib/panel"
 
-const fieldClass = "h-8 w-full rounded-lg border bg-background px-2.5 text-[13.5px] outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+const fieldClass = "h-8 w-full  border bg-background px-2.5 text-[13.5px] outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
 const anyone = ""
 
 export function NewTaskDialog({ channel, variant = "outline" }: { channel?: string; variant?: "outline" | "secondary" }) {

@@ -26,7 +26,7 @@ function MoreMenu({ routine, disabled }: { routine: Routine; disabled: boolean }
         </Button>
       </DropdownMenu.Trigger>
       <DropdownMenu.Portal>
-        <DropdownMenu.Content align="end" sideOffset={4} className="z-50 min-w-[180px] rounded-lg border bg-popover p-1 text-[13px] text-popover-foreground shadow-md">
+        <DropdownMenu.Content align="end" sideOffset={4} className="z-50 min-w-[180px] border bg-popover p-1 text-[13px] text-popover-foreground shadow-md">
           <DropdownMenu.Item
             onSelect={(event) => {
               if (!confirming) {
@@ -36,7 +36,7 @@ function MoreMenu({ routine, disabled }: { routine: Routine; disabled: boolean }
               }
               remove.mutate(routine.id, { onSuccess: () => void toast(`Deleted ${routine.name}. Its past runs stay.`), onError: (error) => void toast(errorText(error)) })
             }}
-            className="cursor-pointer rounded-md px-2 py-1.5 text-destructive outline-none data-[highlighted]:bg-accent"
+            className="cursor-pointer px-2 py-1.5 text-destructive outline-none data-[highlighted]:bg-accent"
           >
             {confirming ? `Delete ${routine.name}? Click again` : "Delete routine"}
           </DropdownMenu.Item>

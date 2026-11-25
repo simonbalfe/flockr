@@ -9,7 +9,7 @@ import { cn } from "@/lib/utils"
 export function WorkingLine({ member }: { member: string }) {
   return (
     <span className="inline-flex items-center gap-1.5 text-[12.5px] text-muted-foreground">
-      <span className="animate-presence size-1.5 rounded-full bg-foreground" />
+      <span className="animate-presence size-1.5 bg-foreground" />
       <b className="font-medium text-foreground">{member}</b> is working...
     </span>
   )
@@ -35,7 +35,7 @@ export function Presence({ channel }: { channel?: string }) {
           onClick={() => agent.taskId !== null && openTask(agent.taskId)}
           className="inline-flex items-center gap-1.5 text-[12.5px] text-muted-foreground hover:text-foreground"
         >
-          <span className="animate-presence size-1.5 rounded-full bg-foreground" />
+          <span className="animate-presence size-1.5 bg-foreground" />
           <b className="font-medium text-foreground">{agent.name}</b> #{agent.taskId}
           <span className={cn(isLowLease(agent.leaseExpiresAt, now) && "text-destructive")}>{leaseLeft(agent.leaseExpiresAt, now)} min left</span>
         </button>

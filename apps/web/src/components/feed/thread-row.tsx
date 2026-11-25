@@ -36,7 +36,7 @@ export function ThreadRow({ thread, place, when, showChip, onOpen }: ThreadRowPr
         type="button"
         onClick={onOpen}
         className={cn(
-          "grid min-h-11 w-full items-start gap-3 rounded-md px-1 py-2.5 text-left outline-none hover:bg-muted/60 focus-visible:ring-3 focus-visible:ring-ring/50",
+          "grid min-h-11 w-full items-start gap-3  px-1 py-2.5 text-left outline-none hover:bg-muted/60 focus-visible:ring-3 focus-visible:ring-ring/50",
           showChip ? "grid-cols-[76px_minmax(0,1fr)]" : "grid-cols-1",
         )}
       >

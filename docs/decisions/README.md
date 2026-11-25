@@ -32,3 +32,4 @@
 | [0028](0028-the-runner-gives-each-task-its-own-git-worktree.md) | The runner gives each claimed task its own git worktree on `flockr/<task>` | Accepted |
 | [0029](0029-a-direct-message-is-a-private-channel-of-kind-dm.md) | A direct message is a private channel of kind dm with two members | Accepted |
 | [0030](0030-plans-group-tasks-and-a-lead-is-an-ordinary-agent.md) | Plans group tasks, and a lead is an ordinary agent | Accepted |
+| [0031](0031-straight-edges-only.md) | Straight edges only: no rounded corners, pills or circles in the web app | Accepted |

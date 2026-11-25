@@ -50,7 +50,7 @@ function EditedMark({ id }: { id: string }) {
 function LabelList({ labels, clickable }: { labels: string[]; clickable: boolean }) {
   const { filterLabel } = usePanel()
   if (!labels.length) return null
-  const chip = "inline-flex h-5 items-center rounded-4xl border px-2 text-xs font-medium text-muted-foreground"
+  const chip = "inline-flex h-5 items-center  border px-2 text-xs font-medium text-muted-foreground"
   return (
     <span className="inline-flex flex-wrap gap-1">
       {labels.map((label) =>
@@ -98,7 +98,7 @@ function SubThread({ parent, replies, open, onOpenChange }: { parent: Reply; rep
           type="button"
           onClick={() => onOpenChange(!open)}
           aria-expanded={open}
-          className="-ml-1.5 inline-flex items-center gap-2 rounded-lg border border-transparent py-[3px] pr-2.5 pl-1.5 text-[12.5px] text-muted-foreground hover:border-border hover:bg-muted"
+          className="-ml-1.5 inline-flex items-center gap-2 border border-transparent py-[3px] pr-2.5 pl-1.5 text-[12.5px] text-muted-foreground hover:border-border hover:bg-muted"
         >
           <Chevron className="size-3.5" />
           <span className="flex">

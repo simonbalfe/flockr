@@ -10,7 +10,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { cn } from "@/lib/utils"
 
-const rowClass = "flex h-7 w-full items-center gap-[9px] rounded-md px-2 text-left text-[13.5px] hover:bg-accent"
+const rowClass = "flex h-7 w-full items-center gap-[9px]  px-2 text-left text-[13.5px] hover:bg-accent"
 
 export const otherMember = (channel: Channel) => channel.members.find((m) => m !== currentUser) ?? currentUser
 

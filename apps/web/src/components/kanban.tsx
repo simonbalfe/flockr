@@ -15,7 +15,7 @@ function TaskCard({ task, showChannel }: { task: Task; showChannel: boolean }) {
     <button
       type="button"
       onClick={() => openTask(task.id)}
-      className="grid w-full gap-2 rounded-lg border bg-background px-[11px] py-2.5 text-left shadow-xs hover:border-faint"
+      className="grid w-full gap-2 border bg-background px-[11px] py-2.5 text-left shadow-xs hover:border-faint"
     >
       <span className="flex h-[18px] items-center gap-2">
         <span className="font-mono text-xs text-faint">{task.id}</span>
@@ -47,7 +47,7 @@ export function Kanban({ tasks, showChannel }: { tasks: Task[]; showChannel: boo
         {taskStates.map((state) => {
           const items = tasks.filter((t) => t.state === state)
           return (
-            <section key={state} className="flex min-w-0 flex-col gap-2 rounded-[10px] border bg-sidebar px-2 py-2.5" aria-label={stateLabel[state]}>
+            <section key={state} className="flex min-w-0 flex-col gap-2 border bg-sidebar px-2 py-2.5" aria-label={stateLabel[state]}>
               <div className="flex items-center gap-2 px-1 text-[12.5px] font-medium text-muted-foreground">
                 <StateDot state={state} />
                 <span>{stateLabel[state]}</span>

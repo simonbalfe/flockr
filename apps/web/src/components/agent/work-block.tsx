@@ -40,7 +40,7 @@ export function WorkBlock({ entries }: { entries: ActivityEntry[] }) {
   const facts = [summary.detail, summary.failed ? `${summary.failed} failed` : ""].filter(Boolean).join(" · ")
 
   return (
-    <ChainOfThought open={open} onOpenChange={setOpen} className="ai-elements-mono mt-1.5 max-w-[640px] space-y-0 rounded-xl bg-muted/60 px-3.5 py-2.5">
+    <ChainOfThought open={open} onOpenChange={setOpen} className="ai-elements-mono mt-1.5 max-w-[640px] space-y-0 bg-muted/60 px-3.5 py-2.5">
       <ChainOfThoughtHeader
         aria-label={open ? "Hide steps" : "Show steps"}
         className="items-start gap-2.5 text-foreground outline-none hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50 [&>svg]:mt-[3px] [&>svg]:size-3.5 [&>svg]:text-muted-foreground [&>span]:min-w-0 [&>svg:first-child]:hidden"

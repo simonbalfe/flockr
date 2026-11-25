@@ -54,7 +54,7 @@ function Settings({ name, config, editable }: { name: string; config: AgentConfi
     return (
       <>
         <div className={sectionClass}>Personality</div>
-        <p className="rounded-[10px] bg-muted px-3 py-[9px] text-[13px] whitespace-pre-wrap text-muted-foreground">{config.personality ?? "None"}</p>
+        <p className="bg-muted px-3 py-[9px] text-[13px] whitespace-pre-wrap text-muted-foreground">{config.personality ?? "None"}</p>
       </>
     )
   }
@@ -101,7 +101,7 @@ function MoreMenu({ name }: { name: string }) {
         </Button>
       </DropdownMenu.Trigger>
       <DropdownMenu.Portal>
-        <DropdownMenu.Content align="end" sideOffset={4} className="z-50 min-w-[180px] rounded-lg border bg-popover p-1 text-[13px] text-popover-foreground shadow-md">
+        <DropdownMenu.Content align="end" sideOffset={4} className="z-50 min-w-[180px] border bg-popover p-1 text-[13px] text-popover-foreground shadow-md">
           <DropdownMenu.Item
             onSelect={(event) => {
               if (!confirming) {
@@ -116,7 +116,7 @@ function MoreMenu({ name }: { name: string }) {
                 },
               })
             }}
-            className="cursor-pointer rounded-md px-2 py-1.5 text-destructive outline-none data-[highlighted]:bg-accent"
+            className="cursor-pointer px-2 py-1.5 text-destructive outline-none data-[highlighted]:bg-accent"
           >
             {confirming ? `Delete ${name}? Click again` : "Delete agent"}
           </DropdownMenu.Item>
@@ -254,7 +254,7 @@ export function AgentProfile({ name }: { name: string }) {
             </div>
           </div>
           {current.status === "error" && current.statusReason && (
-            <div role="alert" className="rounded-[10px] border border-destructive/30 px-3 py-2.5 text-[13px] text-destructive">
+            <div role="alert" className="border border-destructive/30 px-3 py-2.5 text-[13px] text-destructive">
               {current.statusReason}
             </div>
           )}
@@ -287,7 +287,7 @@ export function AgentProfile({ name }: { name: string }) {
           <AgentNotes name={name} />
           <Keys name={name} />
           <div className={sectionClass}>Tasks</div>
-          <div className="overflow-hidden rounded-[10px] bg-muted">
+          <div className="overflow-hidden bg-muted">
             {current.tasks.length ? current.tasks.map((task) => <TaskRow key={task.id} task={task} showChannel />) : <div className="px-3 py-[9px] text-[13px] text-faint">No tasks yet.</div>}
           </div>
         </div>

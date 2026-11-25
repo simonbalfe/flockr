@@ -13,7 +13,7 @@ export function CommitLinksProvider({ commits, children }: { commits: TaskCommit
   return <CommitLinks.Provider value={links}>{children}</CommitLinks.Provider>
 }
 
-const codeClass = "rounded bg-muted px-1 py-px font-mono text-[12.5px]"
+const codeClass = " bg-muted px-1 py-px font-mono text-[12.5px]"
 const linkClass = "underline decoration-accent underline-offset-[3px] hover:decoration-foreground"
 
 function ShaLink({ url, title, children }: { url: string; title?: string; children: ReactNode }) {

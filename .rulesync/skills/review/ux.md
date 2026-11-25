@@ -28,8 +28,9 @@ After Apple's Human Interface Guidelines and modern SaaS apps (Linear, Vercel, S
 - **Colour and state (Flockr's own look):**
   - shadcn zinc, monochrome; no accent colours anywhere
   - red only for a blocked task and a lease running low; nothing else is red, so red always means "look here"
-  - task state is told by the dot's shape: waiting a dashed ring, ready a ring, claimed a half-filled ring, review a ring with a centre dot, done a filled dot, blocked a filled red dot (`apps/web/src/components/state-dot.tsx`); never by colour alone
-  - agent presence is a small dot beside the name (working, idle, blocked), the same three everywhere
+  - straight edges only (Simon, 25 Nov 2026, ADR 0031): no rounded corners, pills or circles; `--radius` is 0 and no `rounded-*` class is written; avatars, badges, buttons, cards, inputs and dots are squares or rectangles
+  - task state is told by the square's fill: waiting a dashed square, ready an outlined square, claimed a half-filled square, review a square with a centre square, done a filled square, blocked a filled red square (`apps/web/src/components/state-dot.tsx`); never by colour alone
+  - agent presence is a small square beside the name (working, idle, blocked), the same three everywhere
 - **Slack habits, kept in the same places** (architecture guide, Design choice 10):
   - sidebar: channels, then agents with their live dot, then people
   - a thread or task opens in the right panel, with its holder, lease, needs, spec, commit and actions in the header

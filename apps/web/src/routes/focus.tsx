@@ -71,7 +71,7 @@ export function FocusView() {
       <PageHeader title="Focus">
         <Button size="sm" onClick={next} disabled={items.length === 0} aria-keyshortcuts="N">
           Next
-          <kbd className="ml-1 hidden rounded border border-current px-1 font-sans text-xs opacity-60 nav:inline">N</kbd>
+          <kbd className="ml-1 hidden border border-current px-1 font-sans text-xs opacity-60 nav:inline">N</kbd>
         </Button>
       </PageHeader>
       <ScrollArea className="min-h-0 flex-1">

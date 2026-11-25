@@ -19,7 +19,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { usePanel } from "@/lib/panel"
 import { cn } from "@/lib/utils"
 
-const staticRowClass = "flex h-7 w-full items-center gap-[9px] rounded-md px-2 text-left text-[13.5px]"
+const staticRowClass = "flex h-7 w-full items-center gap-[9px]  px-2 text-left text-[13.5px]"
 const rowClass = `${staticRowClass} hover:bg-accent`
 const activeClass = "bg-accent"
 
@@ -33,7 +33,7 @@ function AgentRow({ agent }: { agent: Agent }) {
     <button type="button" onClick={() => openAgent(agent.name)} className={cn(rowClass, search.agent === agent.name && activeClass)}>
       <span className="relative inline-grid">
         <MemberAvatar name={agent.name} size="xs" />
-        <AgentStatusDot status={agent.status} reason={agent.statusReason} className="absolute -right-[4px] -bottom-[4px] rounded-full bg-sidebar p-px" />
+        <AgentStatusDot status={agent.status} reason={agent.statusReason} className="absolute -right-[4px] -bottom-[4px] bg-sidebar p-px" />
       </span>
       <span className="min-w-0 flex-1 truncate">{agent.name}</span>
       <span className="text-xs text-faint tabular-nums">{agent.state === "working" ? `#${agent.taskId}` : ""}</span>
@@ -141,12 +141,12 @@ function BoardSidebar() {
             <Link to="/" search={(prev) => prev} className={rowClass} activeOptions={{ exact: true }} activeProps={{ className: activeClass }}>
               <Target className="size-4 w-[18px]" />
               <span className="flex-1">Focus</span>
-              {waiting > 0 && <Badge className="h-[18px] min-w-[18px] rounded-full px-1.5 text-[11px] tabular-nums">{waiting}</Badge>}
+              {waiting > 0 && <Badge className="h-[18px] min-w-[18px] px-1.5 text-[11px] tabular-nums">{waiting}</Badge>}
             </Link>
             <Link to="/threads" search={(prev) => prev} className={cn(rowClass, newReplies > 0 && "font-semibold")} activeProps={{ className: activeClass }}>
               <MessagesSquare className="size-4 w-[18px]" />
               <span className="flex-1">Threads</span>
-              {newReplies > 0 && <Badge className="h-[18px] min-w-[18px] rounded-full px-1.5 text-[11px] tabular-nums">{newReplies}</Badge>}
+              {newReplies > 0 && <Badge className="h-[18px] min-w-[18px] px-1.5 text-[11px] tabular-nums">{newReplies}</Badge>}
             </Link>
             <Link to="/saved" search={(prev) => prev} className={rowClass} activeProps={{ className: activeClass }}>
               <Bookmark className="size-4 w-[18px]" />

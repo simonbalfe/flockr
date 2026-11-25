@@ -74,7 +74,7 @@ export function MessageInput({ label, placeholder, onSend, initial = "", onCance
   }
 
   return (
-    <InputGroup className="rounded-[10px] bg-background dark:bg-background">
+    <InputGroup className="bg-background dark:bg-background">
       <InputGroupTextarea
         rows={1}
         value={text}
@@ -91,7 +91,7 @@ export function MessageInput({ label, placeholder, onSend, initial = "", onCance
           variant="default"
           aria-label="Send"
           onClick={send}
-          className={cn("size-[26px] rounded-full", empty && "bg-accent text-faint hover:bg-accent")}
+          className={cn("size-[26px] ", empty && "bg-accent text-faint hover:bg-accent")}
         >
           <ArrowUp className="size-3.5" strokeWidth={2} />
         </InputGroupButton>

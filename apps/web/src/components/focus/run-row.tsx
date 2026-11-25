@@ -17,12 +17,12 @@ export function RunRow({ run }: { run: FocusRun }) {
   const now = useNow()
   const last = run.recent.length - 1
   return (
-    <div className="rounded-xl">
+    <div>
       <button
         type="button"
         aria-expanded={open}
         onClick={() => setOpen((value) => !value)}
-        className="flex min-h-11 w-full items-center gap-3 rounded-xl px-2 py-2 text-left outline-none hover:bg-muted/60 focus-visible:ring-3 focus-visible:ring-ring/50"
+        className="flex min-h-11 w-full items-center gap-3 px-2 py-2 text-left outline-none hover:bg-muted/60 focus-visible:ring-3 focus-visible:ring-ring/50"
       >
         <ChevronRight className={cn("size-4 shrink-0 text-faint transition-transform motion-reduce:transition-none", open && "rotate-90")} />
         <MemberAvatar name={run.agent} size="xs" />

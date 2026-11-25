@@ -32,7 +32,7 @@ const components: Components = {
     </a>
   ),
   table: ({ children }) => (
-    <div className="my-2 max-w-full overflow-x-auto rounded-lg border">
+    <div className="my-2 max-w-full overflow-x-auto border">
       <table className="w-full border-collapse text-[13px]">{children}</table>
     </div>
   ),

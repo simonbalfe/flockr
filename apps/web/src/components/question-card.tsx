@@ -31,7 +31,7 @@ export function ReviewCard({ task }: { task: Task }) {
   const { openTask } = usePanel()
   const actions = useTaskActions()
   return (
-    <div className="mt-1.5 max-w-[640px] rounded-xl bg-muted px-3.5 pt-[13px] pb-3">
+    <div className="mt-1.5 max-w-[640px] bg-muted px-3.5 pt-[13px] pb-3">
       <div className="font-semibold">{task.title}</div>
       <div className="mt-[3px] mb-3 text-[13px] text-muted-foreground">
         #{task.id}

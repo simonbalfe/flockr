@@ -21,7 +21,7 @@ export function RichText({ text }: { text: string }) {
       parts.push(<InlineCode key={start} text={code} />)
     } else if (mention && memberNames.has(mention)) {
       parts.push(
-        <span key={start} className="rounded bg-muted px-[3px] font-medium text-foreground">
+        <span key={start} className="bg-muted px-[3px] font-medium text-foreground">
           @{mention}
         </span>,
       )

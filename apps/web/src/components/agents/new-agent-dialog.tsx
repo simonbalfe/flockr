@@ -10,7 +10,7 @@ import { cn } from "@/lib/utils"
 import { CopyCommand } from "./copy-command"
 import { setNewAgentOpen, useNewAgentOpen } from "./new-agent-store"
 
-export const fieldClass = "h-8 w-full rounded-lg border bg-background px-2.5 text-[13.5px] outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+export const fieldClass = "h-8 w-full  border bg-background px-2.5 text-[13.5px] outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
 const labelClass = "grid gap-1.5 text-[13px] font-medium"
 const hintClass = "text-xs font-normal text-muted-foreground"
 
@@ -21,7 +21,7 @@ export function PermissionChoice({ value, onChange }: { value: AgentPermissions;
       {agentPermissions.map((option) => (
         <label
           key={option}
-          className={cn("flex cursor-pointer items-start gap-2.5 rounded-lg border px-3 py-2.5 text-[13px]", value === option ? "border-foreground/40 bg-muted" : "hover:bg-muted/60")}
+          className={cn("flex cursor-pointer items-start gap-2.5  border px-3 py-2.5 text-[13px]", value === option ? "border-foreground/40 bg-muted" : "hover:bg-muted/60")}
         >
           <input type="radio" name="permissions" className="mt-[3px] accent-foreground" checked={value === option} onChange={() => onChange(option)} />
           <span className="grid gap-0.5">
@@ -36,7 +36,7 @@ export function PermissionChoice({ value, onChange }: { value: AgentPermissions;
 
 function NoRunner() {
   return (
-    <div className="grid gap-3 rounded-[10px] bg-muted px-4 py-4 text-[13px]">
+    <div className="grid gap-3 bg-muted px-4 py-4 text-[13px]">
       <div className="font-medium">No runner is connected</div>
       <p className="text-muted-foreground">An agent needs a machine to run on. Start a runner on the machine that should run it, then come back here.</p>
       <CopyCommand command={runnerCommand} />
@@ -108,7 +108,7 @@ function CreateForm({ machines, onDone }: { machines: Machine[]; onDone: () => v
           </select>
         </label>
       ) : (
-        <div className="flex items-center justify-between rounded-lg bg-muted px-3 py-2 text-[13px]">
+        <div className="flex items-center justify-between bg-muted px-3 py-2 text-[13px]">
           <span className="text-muted-foreground">Runs on</span>
           <span className="font-medium">{machine?.name}</span>
         </div>
@@ -145,7 +145,7 @@ function CreateForm({ machines, onDone }: { machines: Machine[]; onDone: () => v
                 type="button"
                 aria-pressed={preset?.id === option.id}
                 onClick={() => pickPreset(option)}
-                className={cn("h-6 rounded-md border px-2 text-xs font-normal", preset?.id === option.id ? "border-foreground/40 bg-muted" : "text-muted-foreground hover:bg-muted/60")}
+                className={cn("h-6  border px-2 text-xs font-normal", preset?.id === option.id ? "border-foreground/40 bg-muted" : "text-muted-foreground hover:bg-muted/60")}
               >
                 {option.label}
               </button>

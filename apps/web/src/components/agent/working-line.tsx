@@ -30,7 +30,7 @@ export function AgentWorkingLine({ activity, stop = false }: { activity: Activit
 
   return (
     <span className="inline-flex min-w-0 max-w-full items-center gap-1.5 text-[12.5px] text-muted-foreground">
-      <span className="animate-presence size-1.5 shrink-0 rounded-full bg-foreground" />
+      <span className="animate-presence size-1.5 shrink-0 bg-foreground" />
       <span className="min-w-0 truncate">
         <b className="font-medium text-foreground">{activity.member}</b> is working
         {entry && step && step !== entry.title ? (
@@ -74,7 +74,7 @@ function CompactWorking({ activity }: { activity: Activity }) {
   const stopping = entry !== undefined && entry.stopRequestedAt !== null
   return (
     <span className="inline-flex min-w-0 items-center gap-1.5 text-[12.5px] text-muted-foreground">
-      <span className="animate-presence size-1.5 shrink-0 rounded-full bg-foreground" />
+      <span className="animate-presence size-1.5 shrink-0 bg-foreground" />
       <b className="min-w-0 truncate font-medium text-foreground">{activity.member}</b>
       {stopping ? (
         <span className="shrink-0">stopping</span>

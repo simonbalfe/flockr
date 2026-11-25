@@ -24,7 +24,7 @@ function TaskLine({ task }: { task: Task }) {
 }
 
 function Body({ children }: { children: ReactNode }) {
-  return <div className="mt-1.5 max-w-[640px] rounded-xl bg-muted px-3.5 pt-3 pb-3">{children}</div>
+  return <div className="mt-1.5 max-w-[640px] bg-muted px-3.5 pt-3 pb-3">{children}</div>
 }
 
 function OpenThread({ item }: { item: NeedItem }) {
@@ -158,7 +158,7 @@ export function NeedCard({ item, focused }: { item: NeedItem; focused: boolean }
   const now = useNow()
   const channel = item.kind === "threadQuestion" ? item.entry.channel : item.task.channel
   return (
-    <div data-need={item.key} className={cn("grid scroll-my-24 grid-cols-[30px_minmax(0,1fr)] gap-3 rounded-xl px-2 py-3 transition-colors", focused && "bg-accent/60")}>
+    <div data-need={item.key} className={cn("grid scroll-my-24 grid-cols-[30px_minmax(0,1fr)] gap-3  px-2 py-3 transition-colors", focused && "bg-accent/60")}>
       {item.who === null ? <span aria-hidden /> : <MemberAvatar name={item.who} />}
       <div className="min-w-0">
         <div className="flex items-baseline gap-2">

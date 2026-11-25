@@ -16,7 +16,7 @@ export function FocusSection({ title, count, action, children }: { title: string
 
 export function FocusEmpty({ title, next }: { title: string; next: string }) {
   return (
-    <div className="rounded-xl bg-muted/60 px-4 py-6 text-center text-sm">
+    <div className="bg-muted/60 px-4 py-6 text-center text-sm">
       <div className="font-medium">{title}</div>
       <div className="mt-1 text-muted-foreground">{next}</div>
     </div>

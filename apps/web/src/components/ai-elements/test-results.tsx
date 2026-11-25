@@ -141,7 +141,7 @@ export const TestResults = ({
   return (
     <TestResultsContext.Provider value={contextValue}>
       <div
-        className={cn("rounded-lg border bg-background", className)}
+        className={cn(" border bg-background", className)}
         {...props}
       >
         {children ??
@@ -176,7 +176,7 @@ export const TestResultsProgress = ({
     <div className={cn("space-y-2", className)} {...props}>
       {children ?? (
         <>
-          <div className="flex h-2 overflow-hidden rounded-full bg-muted">
+          <div className="flex h-2 overflow-hidden bg-muted">
             <div
               className="bg-green-500 transition-all"
               style={{ width: `${passedPercent}%` }}
@@ -256,7 +256,7 @@ export const TestSuite = ({
 
   return (
     <TestSuiteContext.Provider value={contextValue}>
-      <Collapsible className={cn("rounded-lg border", className)} {...props}>
+      <Collapsible className={cn(" border", className)} {...props}>
         {children}
       </Collapsible>
     </TestSuiteContext.Provider>
@@ -450,7 +450,7 @@ export const TestError = ({
 }: TestErrorProps) => (
   <div
     className={cn(
-      "mt-2 rounded-md bg-red-50 p-3 dark:bg-red-900/20",
+      "mt-2  bg-red-50 p-3 dark:bg-red-900/20",
       className
     )}
     {...props}

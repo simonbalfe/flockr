@@ -9,7 +9,7 @@ import { cn } from "@/lib/utils"
 
 const reveal = "opacity-0 group-hover/msg:opacity-100 focus-within:opacity-100 [@media(hover:none)]:opacity-100"
 const control =
-  "inline-flex items-center gap-1.5 rounded-lg px-2 py-[3px] text-[12.5px] text-muted-foreground outline-none hover:bg-muted hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50"
+  "inline-flex items-center gap-1.5  px-2 py-[3px] text-[12.5px] text-muted-foreground outline-none hover:bg-muted hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50"
 
 export interface MessageActions {
   onEdit: (() => void) | null
@@ -42,7 +42,7 @@ export function MessageToolbar({ id, who, replyThreadId, actions }: { id: string
     })
 
   return (
-    <div className={cn("absolute -top-5 right-2 flex items-center gap-0.5 rounded-lg border bg-background p-0.5", confirming ? "opacity-100" : reveal)}>
+    <div className={cn("absolute -top-5 right-2 flex items-center gap-0.5  border bg-background p-0.5", confirming ? "opacity-100" : reveal)}>
       {replyThreadId !== null && !confirming && (
         <button type="button" onClick={() => openThread(replyThreadId)} className={control}>
           <MessageSquare className="size-[13px]" />

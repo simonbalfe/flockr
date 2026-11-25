@@ -82,7 +82,7 @@ export const FileTree = ({
     <FileTreeContext.Provider value={contextValue}>
       <div
         className={cn(
-          "rounded-lg border bg-background font-mono text-sm",
+          " border bg-background font-mono text-sm",
           className
         )}
         role="tree"
@@ -171,7 +171,7 @@ export const FileTreeFolder = ({
         >
           <div
             className={cn(
-              "flex w-full items-center gap-1 rounded px-2 py-1 text-left transition-colors hover:bg-muted/50",
+              "flex w-full items-center gap-1  px-2 py-1 text-left transition-colors hover:bg-muted/50",
               isSelected && "bg-muted"
             )}
           >
@@ -258,7 +258,7 @@ export const FileTreeFile = ({
     <FileTreeFileContext.Provider value={fileContextValue}>
       <div
         className={cn(
-          "flex cursor-pointer items-center gap-1 rounded px-2 py-1 transition-colors hover:bg-muted/50",
+          "flex cursor-pointer items-center gap-1  px-2 py-1 transition-colors hover:bg-muted/50",
           isSelected && "bg-muted",
           className
         )}

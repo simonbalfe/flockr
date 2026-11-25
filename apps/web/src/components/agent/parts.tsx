@@ -111,7 +111,7 @@ function ToolLine({ part, title, defaultOpen, children }: { part: TimedPart; tit
   const state = useOpen(defaultOpen, part.status === "running")
   const elapsed = useElapsed(part)
   return (
-    <Tool {...state} className="mb-0 rounded-none border-0">
+    <Tool {...state} className="mb-0 border-0">
       <ToolHeader
         type="dynamic-tool"
         toolName={title}
@@ -127,7 +127,7 @@ function ToolLine({ part, title, defaultOpen, children }: { part: TimedPart; tit
 function TerminalOutput({ output, running }: { output: string; running: boolean }) {
   const clean = output.replace(ansiCodes, "")
   return (
-    <Terminal output={clean} isStreaming={running} className="rounded-md">
+    <Terminal output={clean} isStreaming={running}>
       <TerminalHeader className="px-3 py-1">
         <TerminalTitle className="text-xs">Output</TerminalTitle>
         <TerminalActions>
@@ -313,7 +313,7 @@ export function PartRow({ part }: { part: ActivityPart }) {
     case "plan": {
       const doing = part.steps.some((s) => s.status === "doing")
       return (
-        <Plan isStreaming={doing} defaultOpen className="gap-0 overflow-visible rounded-none bg-transparent py-0 ring-0">
+        <Plan isStreaming={doing} defaultOpen className="gap-0 overflow-visible bg-transparent py-0 ring-0">
           <PlanHeader className="flex items-center justify-start gap-2 px-0">
             <ListChecks className="size-4 shrink-0 text-muted-foreground" />
             <PlanTitle className="min-w-0 truncate text-sm font-normal text-muted-foreground">{partHeadline(part)}</PlanTitle>
@@ -338,7 +338,7 @@ export function PartRow({ part }: { part: ActivityPart }) {
         <TaskPart part={part} icon={FlaskConical} defaultOpen={part.failed > 0 ? true : undefined}>
           <TestResults
             summary={{ passed: part.passed, failed: part.failed, skipped: part.skipped, total: part.passed + part.failed + part.skipped, duration: part.durationMs ?? undefined }}
-            className="rounded-md"
+           
           >
             <TestResultsHeader className="flex-wrap gap-2 px-3 py-2">
               <TestResultsSummary className="flex-wrap gap-1.5" />
@@ -377,7 +377,7 @@ export function PartRow({ part }: { part: ActivityPart }) {
       )
     case "error":
       return (
-        <StackTrace trace={stackText(part)} defaultOpen className="rounded-md">
+        <StackTrace trace={stackText(part)} defaultOpen>
           <StackTraceHeader className="gap-2 px-3 py-2">
             <StackTraceError>
               {part.name && <StackTraceErrorType className="text-xs">{part.name}</StackTraceErrorType>}

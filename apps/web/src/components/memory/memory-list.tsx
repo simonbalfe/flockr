@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button"
 import { usePanel } from "@/lib/panel"
 import { clock } from "@/lib/time"
 
-const fieldClass = "w-full rounded-md border bg-background px-2.5 py-1.5 text-[13px] outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
+const fieldClass = "w-full  border bg-background px-2.5 py-1.5 text-[13px] outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
 
 const fail = (error: unknown) => void toast(errorText(error))
 
@@ -151,7 +151,7 @@ export function MemoryList({
           </Button>
         ))}
       </div>
-      <div className="overflow-hidden rounded-[10px] bg-muted">
+      <div className="overflow-hidden bg-muted">
         {items.length ? items.map((item) => <Row key={item.id} item={item} actions={actions} canChange={canChange(item)} />) : <div className="px-3 py-[9px] text-[13px] text-faint">{empty}</div>}
       </div>
     </div>

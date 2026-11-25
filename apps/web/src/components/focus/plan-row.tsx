@@ -23,12 +23,12 @@ export function PlanRow({ plan }: { plan: Plan }) {
   const { done, total } = plan.progress
   const share = total === 0 ? 0 : Math.round((done / total) * 100)
   return (
-    <div className="rounded-xl">
+    <div>
       <button
         type="button"
         aria-expanded={open}
         onClick={() => setOpen((value) => !value)}
-        className="flex min-h-11 w-full items-center gap-3 rounded-xl px-2 py-2 text-left outline-none hover:bg-muted/60 focus-visible:ring-3 focus-visible:ring-ring/50"
+        className="flex min-h-11 w-full items-center gap-3 px-2 py-2 text-left outline-none hover:bg-muted/60 focus-visible:ring-3 focus-visible:ring-ring/50"
       >
         <ChevronRight className={cn("size-4 shrink-0 text-faint transition-transform motion-reduce:transition-none", open && "rotate-90")} />
         <MemberAvatar name={plan.createdBy} size="xs" />
@@ -38,8 +38,8 @@ export function PlanRow({ plan }: { plan: Plan }) {
             {plan.createdBy} · #{plan.channel} · {progressText(plan)}
           </span>
         </span>
-        <span className="h-1 w-24 shrink-0 overflow-hidden rounded-full bg-muted max-sm:w-12" role="progressbar" aria-valuemin={0} aria-valuemax={total} aria-valuenow={done} aria-label={`${plan.title} progress`}>
-          <span className="block h-full rounded-full bg-foreground" style={{ width: `${share}%` }} />
+        <span className="h-1 w-24 shrink-0 overflow-hidden bg-muted max-sm:w-12" role="progressbar" aria-valuemin={0} aria-valuemax={total} aria-valuenow={done} aria-label={`${plan.title} progress`}>
+          <span className="block h-full bg-foreground" style={{ width: `${share}%` }} />
         </span>
       </button>
       {open && (

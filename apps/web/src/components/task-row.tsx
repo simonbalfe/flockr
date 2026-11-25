@@ -29,7 +29,7 @@ export function TaskRow({ task, showChannel = false }: { task: Task; showChannel
 
 export function TaskList({ tasks, showChannel }: { tasks: Task[]; showChannel?: boolean }) {
   return (
-    <div className="mt-1.5 max-w-[640px] overflow-hidden rounded-[10px] bg-muted">
+    <div className="mt-1.5 max-w-[640px] overflow-hidden bg-muted">
       {tasks.map((task) => (
         <TaskRow key={task.id} task={task} showChannel={showChannel} />
       ))}

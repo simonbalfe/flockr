@@ -57,7 +57,7 @@ export function ChannelMessages() {
             <span>
               Only <b className="font-semibold text-foreground">+{search.label}</b>
             </span>
-            <button type="button" onClick={() => filterLabel(undefined)} className="inline-flex items-center gap-1 rounded-lg px-1.5 py-0.5 hover:bg-muted hover:text-foreground">
+            <button type="button" onClick={() => filterLabel(undefined)} className="inline-flex items-center gap-1 px-1.5 py-0.5 hover:bg-muted hover:text-foreground">
               <X className="size-3" />
               Show all
             </button>

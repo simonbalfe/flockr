@@ -23,7 +23,7 @@ export function PanelFrame({ title, children, footer, chat = false }: { title: R
 
 export function KeyValueList({ rows }: { rows: { label: string; value: ReactNode }[] }) {
   return (
-    <div className="overflow-hidden rounded-[10px] bg-muted">
+    <div className="overflow-hidden bg-muted">
       {rows.map((row) => (
         <div key={row.label} className="flex items-center justify-between gap-3 px-3 py-[9px] text-[13px] [&:not(:first-child)]:border-t">
           <span className="flex-none text-muted-foreground">{row.label}</span>

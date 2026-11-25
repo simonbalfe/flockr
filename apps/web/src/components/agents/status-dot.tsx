@@ -4,9 +4,9 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { cn } from "@/lib/utils"
 
 const shape = {
-  offline: <circle cx="4" cy="4" r="3" fill="none" stroke="currentColor" strokeWidth="1.4" />,
-  online: <circle cx="4" cy="4" r="3.6" fill="currentColor" />,
-  working: <circle cx="4" cy="4" r="3.6" fill="currentColor" />,
+  offline: <rect x="1" y="1" width="6" height="6" fill="none" stroke="currentColor" strokeWidth="1.4" />,
+  online: <rect x="0.4" y="0.4" width="7.2" height="7.2" fill="currentColor" />,
+  working: <rect x="0.4" y="0.4" width="7.2" height="7.2" fill="currentColor" />,
   paused: (
     <>
       <path d="M2.2 1v6" stroke="currentColor" strokeWidth="1.6" />
@@ -15,7 +15,7 @@ const shape = {
   ),
   error: (
     <>
-      <circle cx="4" cy="4" r="3" fill="none" stroke="currentColor" strokeWidth="1.4" />
+      <rect x="1" y="1" width="6" height="6" fill="none" stroke="currentColor" strokeWidth="1.4" />
       <path d="M1.9 6.1 6.1 1.9" stroke="currentColor" strokeWidth="1.4" />
     </>
   ),

@@ -60,7 +60,7 @@ function Buttons({ question, pending, onAnswer, extra }: PromptProps) {
 
 function ApprovalCard({ question, pending, onAnswer, extra, action }: PromptProps & { action: ApprovalAction }) {
   return (
-    <Confirmation approval={{ id: question.text }} state="approval-requested" className="ai-elements-mono mt-1.5 max-w-[640px] gap-3 rounded-xl border-0 bg-muted px-3.5 py-3">
+    <Confirmation approval={{ id: question.text }} state="approval-requested" className="ai-elements-mono mt-1.5 max-w-[640px] gap-3 border-0 bg-muted px-3.5 py-3">
       <div className="flex min-w-0 items-start gap-3">
         <ShieldQuestion className="mt-0.5 size-4 shrink-0" />
         <div className="min-w-0">
@@ -90,7 +90,7 @@ function Choices({ question, pending, onAnswer, extra }: PromptProps) {
     if (typeof picked === "string") onAnswer(picked)
   }
   return (
-    <div className="mt-1.5 max-w-[640px] rounded-xl bg-muted px-3.5 pt-3 pb-3">
+    <div className="mt-1.5 max-w-[640px] bg-muted px-3.5 pt-3 pb-3">
       <Questionnaire shortcuts="numbers" onSubmit={submit} items={[{ name: "answer", required: true, choices: question.options.map((value) => ({ value })) }]}>
         <QuestionnaireItem name="answer" required className="gap-3">
           <div>
@@ -116,7 +116,7 @@ export function QuestionPrompt(props: PromptProps) {
   if (question.action) return <ApprovalCard {...props} action={question.action} />
   if (question.options.length > 2) return <Choices {...props} />
   return (
-    <div className="mt-1.5 max-w-[640px] rounded-xl bg-muted px-3.5 pt-[13px] pb-3">
+    <div className="mt-1.5 max-w-[640px] bg-muted px-3.5 pt-[13px] pb-3">
       <div className="font-semibold">{question.text}</div>
       {question.detail && <div className="mt-[3px] text-[13px] text-muted-foreground">{question.detail}</div>}
       <div className="mt-3">
