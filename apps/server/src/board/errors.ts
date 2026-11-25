@@ -22,3 +22,4 @@ export const staleClaim = (message: string) => new BoardError("stale_claim", mes
 export const notHolder = (message: string) => new BoardError("not_holder", message)
 export const unauthenticated = (message: string) => new BoardError("unauthenticated", message)
 export const leaseExpired =(message: string) => new BoardError("lease_expired", message)
+export const areaOverlap = (message: string) => new BoardError("area_overlap", message)

@@ -9,6 +9,7 @@ import { memoryBlock, noMemory } from "./memory"
 import { ruleFor } from "./permissions"
 import { conversationPrompt, failedText, followUpPrompt, missingFolderText, resumeWorkPrompt, stoppedText, timeLimitText, workPrompt } from "./prompt"
 import { claimable, eventData, eventTypes, holds, isTaskEvent, routeReply, startsConversation, waitsFor } from "./routing"
+import type { Workspace } from "./workspace/types"
 import { sessionKey, type JsonStore, type SessionMap } from "./store"
 
 const exitStatus = { finished: "ok", failed: "error", stopped: "stopped" } as const satisfies Record<SessionExit["kind"], RunEndStatus>
@@ -62,6 +63,7 @@ export interface RunnerDeps {
   freed?: () => void
   problem?: (reason: string) => void
   showRun?: (run: { thread: string; folder: string }) => void
+  workspace?: Workspace
 }
 
 type Purpose = "work" | "talk"
@@ -134,6 +136,17 @@ export function createRunner(deps: RunnerDeps) {
     await board.reply(thread, missingFolderText(folder))
     log(`${member}: folder ${folder} not found, told thread ${thread}`)
     return null
+  }
+
+  async function workFolder(folder: string, task: Task): Promise<{ folder: string; worktree: boolean }> {
+    if (!deps.workspace) return { folder, worktree: false }
+    const prepared = await deps.workspace.prepare({ folder, taskId: task.id, branch: task.branch }).catch((error: unknown) => ({ kind: "plain" as const, folder, reason: error instanceof Error ? error.message : String(error) }))
+    if (prepared.kind === "plain") {
+      log(`${member}: #${task.id} works in ${folder} (${prepared.reason})`)
+      return { folder, worktree: false }
+    }
+    log(`${member}: #${task.id} works on ${prepared.branch} in ${prepared.folder}${prepared.created ? " (new worktree)" : ""}`)
+    return { folder: prepared.folder, worktree: true }
   }
 
   function launch(spec: Launch, folder: string): void {
@@ -302,15 +315,16 @@ export function createRunner(deps: RunnerDeps) {
     epochs.set(claimed.id, claimed.claimEpoch)
     const history = await board.thread(thread)
     const memory = await memoryText(task.channel)
+    const place = await workFolder(folder, claimed)
     launch(
       {
         thread,
         channel: task.channel,
         purpose: "work",
         claim: { taskId: claimed.id, epoch: claimed.claimEpoch },
-        prompt: () => workPrompt({ task: claimed, thread: history, memory }),
+        prompt: () => workPrompt({ task: claimed, thread: history, memory, worktree: place.worktree }),
       },
-      folder,
+      place.folder,
     )
   }
 
@@ -322,15 +336,16 @@ export function createRunner(deps: RunnerDeps) {
     epochs.set(task.id, task.claimEpoch)
     const history = await board.thread(thread)
     const memory = await memoryText(task.channel)
+    const place = await workFolder(folder, task)
     launch(
       {
         thread,
         channel: task.channel,
         purpose: "work",
         claim: { taskId: task.id, epoch: task.claimEpoch },
-        prompt: (resuming) => (resuming ? resumeWorkPrompt(task) : workPrompt({ task, thread: history, memory })),
+        prompt: (resuming) => (resuming ? resumeWorkPrompt(task) : workPrompt({ task, thread: history, memory, worktree: place.worktree })),
       },
-      folder,
+      place.folder,
     )
   }
 
@@ -354,9 +369,10 @@ export function createRunner(deps: RunnerDeps) {
     const claim = task && task.state === "claimed" && task.holder === member ? { taskId: task.id, epoch: task.claimEpoch } : null
     if (claim) epochs.set(claim.taskId, claim.epoch)
     const memory = await memoryText(channel)
+    const place = task && claim ? await workFolder(folder, task) : { folder }
     launch(
       { thread, channel, purpose: "talk", claim, prompt: (resuming) => (resuming && message !== null ? message : conversationPrompt(history, memory)) },
-      folder,
+      place.folder,
     )
   }
 
@@ -395,6 +411,18 @@ export function createRunner(deps: RunnerDeps) {
     await converse({ thread, channel: event.channel, message: null })
   }
 
+  async function onHandoff(event: BoardEvent): Promise<void> {
+    const taskId = event.taskId
+    if (taskId === null) return
+    const { from, to } = eventData(event)
+    const run = runs.get(String(taskId))
+    if (run && from === member && to !== member) {
+      stop(run, "lost")
+      return
+    }
+    if (to === member && !run) await adopt(await board.task(taskId))
+  }
+
   async function onTaskEvent(event: BoardEvent): Promise<void> {
     const taskId = event.taskId
     if (taskId === null) return
@@ -419,7 +447,8 @@ export function createRunner(deps: RunnerDeps) {
   }
 
   async function handle(event: BoardEvent): Promise<void> {
-    if (event.actor === member) logOwn(event)
+    if (event.type === eventTypes.handedOff) await onHandoff(event)
+    else if (event.actor === member) logOwn(event)
     else if (startsConversation(event, member)) await onPost(event)
     else if (event.type === eventTypes.replied) await onReply(event)
     else if (event.type === eventTypes.stopRequested) onStopRequest(event)

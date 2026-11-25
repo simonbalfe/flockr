@@ -28,3 +28,5 @@
 | [0024](0024-the-board-is-the-model-key-proxy.md) | The board is the model key proxy, reached with signed box tokens | Accepted |
 | [0025](0025-agents-make-tasks-only-when-a-person-asks.md) | Agents make tasks only when a person asks | Accepted |
 | [0026](0026-agent-notes-and-channel-memory-are-postgres-items-the-runner-injects.md) | Agent notes and channel memory are Postgres items the runner puts in the prompt | Accepted |
+| [0027](0027-working-areas-warn-on-overlap-and-live-with-the-claim.md) | Working areas warn on overlap by default and live as long as the task's claim | Accepted |
+| [0028](0028-the-runner-gives-each-task-its-own-git-worktree.md) | The runner gives each claimed task its own git worktree on `flockr/<task>` | Accepted |

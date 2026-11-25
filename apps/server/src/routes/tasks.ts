@@ -1,5 +1,6 @@
-import { CreateTaskBody, GiveBody, ListTasksQuery, Task, TaskParams } from "@flockr/contracts"
+import { CreateTaskBody, GiveBody, HandoffBody, ListTasksQuery, Task, TaskParams } from "@flockr/contracts"
 import { z } from "@hono/zod-openapi"
+import { handOffTask } from "../board/handoff"
 import { getTask, listTasks } from "../board/read"
 import { createTask, giveTask } from "../board/tasks"
 import { jsonBody, ok, operation, router } from "./shared"
@@ -46,4 +47,17 @@ export const taskRoutes = router()
       responses: ok(Task),
     }),
     async (c) => c.json(await giveTask(c.var.db, c.var.member, c.req.valid("param").id, c.req.valid("json").to), 200),
+  )
+  .openapi(
+    operation({
+      method: "post",
+      path: "/api/tasks/{id}/handoff",
+      operationId: "handOffTask",
+      tags,
+      summary:
+        "Hand a claimed task you hold to another member, with a note: they hold it now under a new claim epoch with a fresh lease, the thread gets the note, and its branch and working areas move with it. Your old epoch is refused afterwards; repeating the same call changes nothing.",
+      request: { params: TaskParams, body: jsonBody(HandoffBody) },
+      responses: ok(Task),
+    }),
+    async (c) => c.json(await handOffTask(c.var.db, c.var.member, c.req.valid("param").id, c.req.valid("json")), 200),
   )

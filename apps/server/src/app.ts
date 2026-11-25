@@ -13,6 +13,7 @@ import { activityRoutes } from "./routes/activity"
 import { activityEntryRoutes } from "./routes/activity-entries"
 import { agentRoutes } from "./routes/agents"
 import { approvalRoutes } from "./routes/approvals"
+import { areaRoutes } from "./routes/areas"
 import { authRoutes } from "./routes/auth"
 import { channelRoutes } from "./routes/channels"
 import { checklistRoutes } from "./routes/checklist"
@@ -84,6 +85,7 @@ export function createApp(db: Database, options: AppOptions = {}) {
     .route("/", memberRoutes)
     .route("/", claimRoutes)
     .route("/", taskRoutes)
+    .route("/", areaRoutes)
     .route("/", checklistRoutes)
     .route("/", flowRoutes)
     .route("/", reviewRoutes)

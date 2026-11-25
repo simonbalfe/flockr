@@ -7,6 +7,7 @@ export const eventTypes = {
   asked: "question.asked",
   answered: "question.answered",
   taskAsked: "task.asked",
+  handedOff: "task.handed_off",
   stopRequested: activityEventTypes.stopRequested,
 } as const
 
@@ -17,6 +18,8 @@ const EventData = z.object({
   state: z.enum(taskStates).optional().catch(undefined),
   option: z.string().optional().catch(undefined),
   member: z.string().optional().catch(undefined),
+  from: z.string().nullable().optional().catch(undefined),
+  to: z.string().optional().catch(undefined),
 })
 
 export const eventData = (event: BoardEvent) => EventData.parse(event.data)

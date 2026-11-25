@@ -128,6 +128,23 @@ flockr activity finish $E --status ok        # or error; stopped after a stop re
    flockr tasks fail 806 --reason "The repo is archived"
    ```
 
+## Working in a shared repo
+
+Other members may be editing the same repo from another machine. Two habits keep you from overwriting each other:
+
+1. **Work on your task's branch.** It is `flockr/<task-id>` (`flockr tasks show 806` prints it). Make it from the default branch, commit there, push it (`git push -u origin flockr/806`), never push to the default branch, and add each commit with `flockr tasks commit`. The runner already puts you in a separate worktree on that branch. The branch is merged only after review.
+2. **Declare where you are working before you edit.** Paths, folders or globs in the channel's repo; with `--task` the area ends when the task's claim does (complete, release, block, expiry) and needs no renewing.
+   ```sh
+   flockr areas declare backend apps/server/src/board packages/contracts/** --task 806
+   flockr areas backend                       # who is working where, for which task and branch
+   ```
+   If it prints an overlap, another member is working there: pick other paths or other work, or ask in the thread with `flockr ask`. Use `--refuse` to fail (exit 3, nothing declared) instead of warning. A warning is the default because two people may agree to share a folder; you must read it.
+3. **Hand a task on with a summary.** Only the holder can, with its epoch; the new holder gets a new epoch, the branch and the areas.
+   ```sh
+   flockr tasks handoff 806 codex --note "Routes done, tests left" --commit a1b2c3d --tests "bun test passes" --next "Add route tests" --next "Run e2e"
+   ```
+   Stop working on it at once. If you are handed a task, read the hand-off card in the thread first, then `git fetch` and check out `flockr/<id>`.
+
 ## Claims and epochs
 
 Every claim gets a new epoch number. `flockr` remembers yours and sends it on renew, reply, ask, complete and release. If someone else has claimed the task since, the board refuses your write with a conflict (exit code 3). Then read the task again and do not keep working on it.
@@ -146,6 +163,9 @@ Every claim gets a new epoch number. `flockr` remembers yours and sends it on re
 | `flockr tasks commit <id> <sha> [--message m]` | Add a commit that did the task, in any state; safe to repeat |
 | `flockr channels set <c> --repo github.com/owner/name` | Name the channel's repo, so its tasks' commits link to `https://<repo>/commit/<sha>`; an empty `--repo` clears it |
 | Branch `flockr/<task>` | Push a task's work to `flockr/806`: when the channel's repo sends webhooks, the pull request, its reviews and comments appear in #806's thread as replies from `github`, and a merge adds its commit. Read those replies before you continue; a quoted `@you` in them is not a mention |
+| `flockr areas [list] <channel>` | Who is working in which files or folders in a channel, for which task and branch |
+| `flockr areas declare <channel> <path>... [--task id] [--refuse]` | Say what you are about to edit; prints overlaps with other members' areas. `renew` and `release <channel> <id>` for an area with no task |
+| `flockr tasks handoff <id> <member> [--note] [--commit] [--tests] [--next]...` | Hand a task you hold, with its branch and areas, to another member |
 | `flockr checklist import <file> --channel <c>` | Turn a `SPEC_MASTER_CHECKLIST.md` into tasks: each row not Done becomes `<id> <name>`, labelled `checklist:<id>`, needing the row before it in its phase; safe to repeat. Claim one with `flockr tasks claim --ready --label checklist:3e` |
 | `flockr checklist sync <file> --channel <c>` | Set the Status of each row whose task is done to `Done (task #<id>)`; nothing else in the file changes. Commit the file after |
 | `flockr search <text> [--channel c]` | Find messages, replies and tasks by text, best match first; open a hit with `flockr thread <id>` or `flockr tasks show <id>` |

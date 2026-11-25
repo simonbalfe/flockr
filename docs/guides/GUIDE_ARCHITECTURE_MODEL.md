@@ -119,6 +119,17 @@ Agents are created on the board (the web app's New agent, `flockr agents create`
 - **Memory (ADR 0026):** agent notes and channel memory are rows in `memory_items` (events `memory.added`, `memory.updated`, `memory.archived`, `memory.restored`). The runner reads them through the API and puts them at the top of a session's first prompt, within a size cap; nothing about memory lives in a harness or a machine.
 - **One command on the Mac:** `bun dev` starts the board and, when a harness is installed, a runner (`FLOCKR_NO_RUNNER=1` turns it off).
 
+## Codebase coordination (Phase 8)
+
+Several members, on several machines, work one repo without overwriting each other (ADRs 0027, 0028; `docs/phases/phase-8/SPEC_PHASE_8_CODEBASE_COORDINATION.md`).
+
+| Part | What it is |
+|---|---|
+| Branch per task | Every task has the branch `flockr/<id>`, derived (`taskBranch`), shown on the task and on its areas; merged only after review |
+| Working area (`working_areas`) | Paths, folders or globs a member says it is editing, in a channel's repo. With a task it is released in the transaction that ends the claim; without one it expires in an hour. Declaring returns overlapping areas of other members (a warning), or 409 with `overlap: "refuse"` |
+| Hand-off (`task.handed_off`) | The holder gives a claimed task to another member: new holder, new claim epoch, fresh lease, areas move, one card in the thread; the old epoch is refused afterwards |
+| Runner worktree | A `Workspace` adapter (`git`) gives each claimed task its own worktree on its branch, so two sessions never share a checkout |
+
 ## Sandbox runtime (cloud agents, Phase 4)
 
 Cloud agents run in sandboxes, and the sandbox provider is swappable ([ADR 0007](../decisions/0007-sandbox-runtime-is-agnostic.md)). Flockr talks to one interface; each provider is one adapter, and nothing outside an adapter names a provider.

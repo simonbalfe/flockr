@@ -1,5 +1,6 @@
 import { z } from "@hono/zod-openapi"
 import { ApprovalAction } from "./activity"
+import { AreaPolicySchema, areaLimits } from "./areas"
 import { Activity, Label, Labels, MemberKind, orNull, Task, TaskState, TextMessage } from "./board"
 import { checklistLimits, checklistSkipReasons } from "./checklist"
 import { commitMessageChars, Repo, Sha } from "./commits"
@@ -162,6 +163,36 @@ export const ChecklistImport = z
   })
   .openapi("ChecklistImport")
 
+export const AreaParams = z.object({
+  channel: z.string().openapi({ param: { name: "channel", in: "path" }, example: "backend" }),
+  id: z.coerce.number().int().openapi({ type: "integer", param: { name: "id", in: "path", required: true }, example: 12 }),
+})
+
+export const DeclareAreaBody = z
+  .object({
+    paths: z
+      .array(z.string().trim().min(1).max(areaLimits.pathChars))
+      .min(1)
+      .max(areaLimits.maxPaths)
+      .openapi({ example: ["apps/server/src/board", "packages/contracts/**"], description: "Files, folders or globs (* ? **) in the channel's repo, no .. and no leading /" }),
+    taskId: z.number().int().optional().openapi({ description: "The claimed task this work is for. The area then ends with the task's claim and is renewed with its lease. Omit for an area with its own expiry" }),
+    note: z.string().trim().max(areaLimits.noteChars).optional().openapi({ description: "Why, in a few words" }),
+    overlap: AreaPolicySchema.default("warn").openapi({ description: "warn (default) declares the area and returns what it overlaps; refuse declares nothing and answers 409 when it overlaps another member's live area" }),
+    epoch,
+  })
+  .openapi("DeclareAreaBody")
+
+export const HandoffBody = z
+  .object({
+    to: z.string().openapi({ example: "reviewer", description: "The member who takes the task" }),
+    note: z.string().trim().min(1).optional().openapi({ description: "The summary: what is done and what is left, posted in the thread" }),
+    lastCommit: Sha.optional().openapi({ description: "The last commit on the task's branch; added to the task's commits" }),
+    testState: z.string().trim().min(1).max(200).optional().openapi({ example: "bun test passes, e2e not run", description: "Where the tests stand" }),
+    nextSteps: z.array(z.string().trim().min(1)).max(10).default([]).openapi({ description: "What the next holder should do, in order" }),
+    epoch,
+  })
+  .openapi("HandoffBody")
+
 export const EventsQuery = z.object({
   since: z.coerce.number().int().min(0).default(0).openapi({ type: "integer", description: "Return events after this sequence number, default 0" }),
   limit: z.coerce.number().int().min(1).max(1000).default(500).openapi({ type: "integer", description: "At most this many events, default 500" }),
@@ -183,3 +214,5 @@ export type ListTasksQuery = z.infer<typeof ListTasksQuery>
 export type ReleaseBody = z.infer<typeof ReleaseBody>
 export type EditMessageBody = z.infer<typeof EditMessageBody>
 export type ListMessagesQuery = z.infer<typeof ListMessagesQuery>
+export type DeclareAreaBody = z.infer<typeof DeclareAreaBody>
+export type HandoffBody = z.infer<typeof HandoffBody>

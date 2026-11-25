@@ -64,7 +64,7 @@ export function followUpPrompt(options: { thread: string; who: string; text: str
   return `${options.who} replied in thread ${options.thread}:\n\n${clip(options.text)}`
 }
 
-export function workPrompt(options: { task: Task; thread: Thread; memory?: string }): string {
+export function workPrompt(options: { task: Task; thread: Thread; memory?: string; worktree?: boolean }): string {
   const { task, thread, memory } = options
   return [
     ...(memory ? [memory, ""] : []),
@@ -76,10 +76,22 @@ export function workPrompt(options: { task: Task; thread: Thread; memory?: strin
     "Thread so far:",
     threadLines(thread) || "(empty)",
     "",
+    ...branchLines(task, options.worktree ?? false),
+    "",
     `Post progress with flockr reply ${task.id} "...". Ask with flockr ask ${task.id} when you need a decision.`,
     `Finish with flockr tasks submit ${task.id} --note "<short proof>" to send it for review.`,
     `If you should not take this task, decline it with flockr tasks release ${task.id} and say why with flockr reply ${task.id}.`,
   ].join("\n")
+}
+
+function branchLines(task: Task, worktree: boolean): string[] {
+  const where = worktree ? `You are in a separate git worktree on branch ${task.branch}, made for this task, so no other session shares your checkout.` : `Your work for this task goes on branch ${task.branch}: create it (git switch -c ${task.branch}) unless it exists.`
+  return [
+    where,
+    `- Before you edit, say where: flockr areas declare ${task.channel} <path>... --task ${task.id}. If it prints an overlap, someone else is working there: pick other paths, or ask in the thread with flockr ask ${task.id}.`,
+    `- Commit on ${task.branch} and push it (git push -u origin ${task.branch}); never push to the default branch. Add each commit to the task with flockr tasks commit ${task.id} <sha>.`,
+    "- The branch is merged only after review.",
+  ]
 }
 
 export const resumeWorkPrompt = (task: Task) => `The runner restarted. Continue task #${task.id} (${task.title}); read flockr thread ${task.id} for anything new first.`

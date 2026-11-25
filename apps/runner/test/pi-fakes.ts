@@ -81,6 +81,7 @@ export class FakePiBoard implements PiBoard {
     this.created.push(task)
     return {
       id: 900 + this.created.length,
+      branch: `flockr/${900 + this.created.length}`,
       title: task.title,
       channel: task.channel,
       kind: "build",

@@ -19,7 +19,7 @@ export type Channel = {
 
 export type Error = {
     error: string;
-    kind: 'invalid' | 'unauthenticated' | 'not_member' | 'forbidden' | 'not_found' | 'already_exists' | 'wrong_state' | 'stale_claim' | 'not_holder' | 'lease_expired' | 'internal';
+    kind: 'invalid' | 'unauthenticated' | 'not_member' | 'forbidden' | 'not_found' | 'already_exists' | 'wrong_state' | 'stale_claim' | 'not_holder' | 'lease_expired' | 'area_overlap' | 'internal';
 };
 
 export type CreateChannelBody = {
@@ -515,6 +515,10 @@ export type Task = {
     claimEpoch: number;
     spec: string | null;
     /**
+     * Where this task's work goes: flockr/<id>. Merged only after review
+     */
+    branch: string;
+    /**
      * The commits that did this task, oldest first
      */
     commits: Array<TaskCommit>;
@@ -667,6 +671,101 @@ export type CreateTaskBody = {
 export type GiveBody = {
     to: string;
 };
+
+export type HandoffBody = {
+    /**
+     * The member who takes the task
+     */
+    to: string;
+    /**
+     * The summary: what is done and what is left, posted in the thread
+     */
+    note?: string;
+    /**
+     * The last commit on the task's branch; added to the task's commits
+     */
+    lastCommit?: string;
+    /**
+     * Where the tests stand
+     */
+    testState?: string;
+    /**
+     * What the next holder should do, in order
+     */
+    nextSteps?: Array<string>;
+    /**
+     * The claimEpoch from your claim. A stale value is refused with 409.
+     */
+    epoch?: number;
+};
+
+export type WorkingArea = {
+    id: number;
+    channel: string;
+    owner: string;
+    /**
+     * The task this area belongs to; it ends with the task's claim. Null for an area with its own expiry
+     */
+    taskId: number | null;
+    /**
+     * The task's branch; null for an area with no task
+     */
+    branch: string | null;
+    /**
+     * Files, folders or globs, relative to the channel's repo
+     */
+    paths: Array<string>;
+    note: string | null;
+    /**
+     * When an area with no task runs out unless renewed; null while a task holds it
+     */
+    expiresAt: string | null;
+    createdAt: string;
+};
+
+export type DeclareAreaResult = {
+    area: WorkingArea;
+    /**
+     * Other members' live areas that meet yours: who, which task, which paths. Empty when nothing meets. With overlap refuse, any overlap is a 409 instead
+     */
+    overlaps: Array<AreaOverlap>;
+};
+
+export type AreaOverlap = {
+    area: WorkingArea;
+    /**
+     * Which of your paths meets which of theirs
+     */
+    paths: Array<{
+        yours: string;
+        theirs: string;
+    }>;
+};
+
+export type DeclareAreaBody = {
+    /**
+     * Files, folders or globs (* ? **) in the channel's repo, no .. and no leading /
+     */
+    paths: Array<string>;
+    /**
+     * The claimed task this work is for. The area then ends with the task's claim and is renewed with its lease. Omit for an area with its own expiry
+     */
+    taskId?: number;
+    /**
+     * Why, in a few words
+     */
+    note?: string;
+    overlap?: AreaPolicy;
+    /**
+     * The claimEpoch from your claim. A stale value is refused with 409.
+     */
+    epoch?: number;
+};
+
+/**
+ * warn (default) declares the area and returns what it overlaps; refuse declares nothing and answers 409 when it overlaps another member's live area
+ */
+export type AreaPolicy = 'warn' | 'refuse';
 
 export type ChecklistImport = {
     /**
@@ -2813,6 +2912,223 @@ export type GiveTaskResponses = {
 };
 
 export type GiveTaskResponse = GiveTaskResponses[keyof GiveTaskResponses];
+
+export type HandOffTaskData = {
+    body: HandoffBody;
+    path: {
+        id: number;
+    };
+    query?: never;
+    url: '/api/tasks/{id}/handoff';
+};
+
+export type HandOffTaskErrors = {
+    /**
+     * The input is not valid
+     */
+    400: Error;
+    /**
+     * Sign-in is on and the request has no session or key
+     */
+    401: Error;
+    /**
+     * The acting member is not on this board, or may not do this
+     */
+    403: Error;
+    /**
+     * Not found
+     */
+    404: Error;
+    /**
+     * The task or message is in another state, or the claim epoch is stale
+     */
+    409: Error;
+};
+
+export type HandOffTaskError = HandOffTaskErrors[keyof HandOffTaskErrors];
+
+export type HandOffTaskResponses = {
+    /**
+     * OK
+     */
+    200: Task;
+};
+
+export type HandOffTaskResponse = HandOffTaskResponses[keyof HandOffTaskResponses];
+
+export type ListAreasData = {
+    body?: never;
+    path: {
+        channel: string;
+    };
+    query?: never;
+    url: '/api/channels/{channel}/areas';
+};
+
+export type ListAreasErrors = {
+    /**
+     * The input is not valid
+     */
+    400: Error;
+    /**
+     * Sign-in is on and the request has no session or key
+     */
+    401: Error;
+    /**
+     * The acting member is not on this board, or may not do this
+     */
+    403: Error;
+    /**
+     * Not found
+     */
+    404: Error;
+    /**
+     * The task or message is in another state, or the claim epoch is stale
+     */
+    409: Error;
+};
+
+export type ListAreasError = ListAreasErrors[keyof ListAreasErrors];
+
+export type ListAreasResponses = {
+    /**
+     * OK
+     */
+    200: Array<WorkingArea>;
+};
+
+export type ListAreasResponse = ListAreasResponses[keyof ListAreasResponses];
+
+export type DeclareAreaData = {
+    body: DeclareAreaBody;
+    path: {
+        channel: string;
+    };
+    query?: never;
+    url: '/api/channels/{channel}/areas';
+};
+
+export type DeclareAreaErrors = {
+    /**
+     * The input is not valid
+     */
+    400: Error;
+    /**
+     * Sign-in is on and the request has no session or key
+     */
+    401: Error;
+    /**
+     * The acting member is not on this board, or may not do this
+     */
+    403: Error;
+    /**
+     * Not found
+     */
+    404: Error;
+    /**
+     * The task or message is in another state, or the claim epoch is stale
+     */
+    409: Error;
+};
+
+export type DeclareAreaError = DeclareAreaErrors[keyof DeclareAreaErrors];
+
+export type DeclareAreaResponses = {
+    /**
+     * OK
+     */
+    200: DeclareAreaResult;
+};
+
+export type DeclareAreaResponse = DeclareAreaResponses[keyof DeclareAreaResponses];
+
+export type RenewAreaData = {
+    body?: never;
+    path: {
+        channel: string;
+        id: number;
+    };
+    query?: never;
+    url: '/api/channels/{channel}/areas/{id}/renew';
+};
+
+export type RenewAreaErrors = {
+    /**
+     * The input is not valid
+     */
+    400: Error;
+    /**
+     * Sign-in is on and the request has no session or key
+     */
+    401: Error;
+    /**
+     * The acting member is not on this board, or may not do this
+     */
+    403: Error;
+    /**
+     * Not found
+     */
+    404: Error;
+    /**
+     * The task or message is in another state, or the claim epoch is stale
+     */
+    409: Error;
+};
+
+export type RenewAreaError = RenewAreaErrors[keyof RenewAreaErrors];
+
+export type RenewAreaResponses = {
+    /**
+     * OK
+     */
+    200: WorkingArea;
+};
+
+export type RenewAreaResponse = RenewAreaResponses[keyof RenewAreaResponses];
+
+export type ReleaseAreaData = {
+    body?: never;
+    path: {
+        channel: string;
+        id: number;
+    };
+    query?: never;
+    url: '/api/channels/{channel}/areas/{id}/release';
+};
+
+export type ReleaseAreaErrors = {
+    /**
+     * The input is not valid
+     */
+    400: Error;
+    /**
+     * Sign-in is on and the request has no session or key
+     */
+    401: Error;
+    /**
+     * The acting member is not on this board, or may not do this
+     */
+    403: Error;
+    /**
+     * Not found
+     */
+    404: Error;
+    /**
+     * The task or message is in another state, or the claim epoch is stale
+     */
+    409: Error;
+};
+
+export type ReleaseAreaError = ReleaseAreaErrors[keyof ReleaseAreaErrors];
+
+export type ReleaseAreaResponses = {
+    /**
+     * OK
+     */
+    200: WorkingArea;
+};
+
+export type ReleaseAreaResponse = ReleaseAreaResponses[keyof ReleaseAreaResponses];
 
 export type ImportChecklistData = {
     body: ImportChecklistBody;

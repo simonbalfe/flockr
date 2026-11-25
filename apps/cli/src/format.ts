@@ -13,6 +13,8 @@ import type {
   Task,
   TaskCommit,
   Thread,
+  WorkingArea,
+  AreaOverlap,
   ThreadEntry,
   ThreadQuestion,
 } from "@flockr/client"
@@ -53,6 +55,7 @@ export function taskDetail(task: Task): string {
   if (task.assignee) lines.push(`  for       ${task.assignee}`)
   if (task.holder) lines.push(`  holder    ${task.holder}`)
   if (task.needs.length) lines.push(`  needs     ${task.needs.map((n) => `#${n}`).join(", ")}`)
+  lines.push(`  branch    ${task.branch}`)
   if (task.spec) lines.push(`  spec      ${task.spec}`)
   for (const c of task.commits) lines.push(`  commit    ${commitLine(c)}`)
   if (task.question) lines.push(`  question  ${task.question.text} (${task.question.options.join(" / ")})`)
@@ -156,3 +159,8 @@ export function searchLine(hit: SearchHit): string {
       return `#${String(hit.id).padEnd(5)} #${hit.channel}  ${hit.state.padEnd(7)}  ${snippetText(hit.snippet)}  (flockr tasks show ${hit.id})`
   }
 }
+
+export const areaLine = (a: WorkingArea) =>
+  `${String(a.id).padStart(3)}  ${a.owner.padEnd(10)} ${a.paths.join(", ")}  [${a.taskId === null ? `no task, runs out ${clock(a.expiresAt ?? a.createdAt)}` : `#${a.taskId} on ${a.branch}`}${a.note ? `, ${a.note}` : ""}]`
+
+export const overlapLine = (o: AreaOverlap) => `  overlaps ${o.area.owner} (${o.area.taskId === null ? "no task" : `#${o.area.taskId} on ${o.area.branch}`}): ${o.paths.map((p) => `${p.yours} meets ${p.theirs}`).join(", ")}`
