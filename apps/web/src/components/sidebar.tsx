@@ -1,5 +1,5 @@
-import { Link } from "@tanstack/react-router"
-import { Bookmark, KeyRound, ListChecks, LogOut, MessagesSquare, Repeat, Search, SendHorizontal, ShieldCheck, Target } from "lucide-react"
+import { Link, useRouterState } from "@tanstack/react-router"
+import { ArrowLeft, Bookmark, KeyRound, ListChecks, LogOut, MessagesSquare, Repeat, Search, SendHorizontal, Settings, ShieldCheck, Target } from "lucide-react"
 import type { ReactNode } from "react"
 import { useSignOut, useWhoami } from "@/api/auth"
 import { useNeedsYou } from "@/api/focus"
@@ -41,27 +41,77 @@ function AgentRow({ agent }: { agent: Agent }) {
   )
 }
 
-function SignedIn() {
+function SidebarFooter() {
   const me = useWhoami()
   const signOut = useSignOut()
-  if (me.data?.via !== "session") return null
+  const session = me.data?.via === "session"
+  const name = me.data?.name ?? currentUser
   return (
-    <div className="flex flex-none items-center gap-[9px] border-t px-[18px] py-2.5 text-[13.5px]">
-      <MemberAvatar name={me.data.name} size="xs" />
-      <span className="min-w-0 flex-1 truncate">{me.data.name}</span>
+    <div className="flex flex-none items-center gap-1 border-t py-2 pr-2.5 pl-[18px] text-[13.5px]">
+      <MemberAvatar name={name} size="xs" />
+      <span className="ml-[5px] min-w-0 flex-1 truncate">{name}</span>
       <Tooltip>
         <TooltipTrigger asChild>
-          <Button variant="ghost" size="icon-sm" aria-label="Sign out" disabled={signOut.isPending} onClick={() => signOut.mutate({})}>
-            <LogOut />
+          <Button variant="ghost" size="icon-sm" aria-label="Settings" asChild>
+            <Link to="/settings/routines" search={(prev) => prev}>
+              <Settings />
+            </Link>
           </Button>
         </TooltipTrigger>
-        <TooltipContent>Sign out</TooltipContent>
+        <TooltipContent>Settings</TooltipContent>
       </Tooltip>
+      {session && (
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button variant="ghost" size="icon-sm" aria-label="Sign out" disabled={signOut.isPending} onClick={() => signOut.mutate({})}>
+              <LogOut />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>Sign out</TooltipContent>
+        </Tooltip>
+      )}
     </div>
   )
 }
 
+const settingsLinks = [
+  { to: "/settings/routines", label: "Routines", icon: Repeat },
+  { to: "/settings/approvals", label: "Approval rules", icon: ShieldCheck },
+  { to: "/settings/keys", label: "Keys", icon: KeyRound },
+] as const
+
+function SettingsSidebar() {
+  return (
+    <>
+      <div className="flex h-[52px] flex-none items-center gap-1 pr-2.5 pl-2.5">
+        <Button variant="ghost" size="icon-sm" aria-label="Back to the board" asChild>
+          <Link to="/" search={(prev) => prev}>
+            <ArrowLeft />
+          </Link>
+        </Button>
+        <span className="text-[15px] font-semibold">Settings</span>
+      </div>
+      <ScrollArea className="min-h-0 flex-1">
+        <nav className="grid content-start px-2.5 pt-0.5 pb-4" aria-label="Settings">
+          {settingsLinks.map(({ to, label, icon: Icon }) => (
+            <Link key={to} to={to} search={(prev) => prev} className={rowClass} activeProps={{ className: activeClass }}>
+              <Icon className="size-4 w-[18px]" />
+              <span className="flex-1">{label}</span>
+            </Link>
+          ))}
+        </nav>
+      </ScrollArea>
+      <SidebarFooter />
+    </>
+  )
+}
+
 export function SidebarContent() {
+  const inSettings = useRouterState({ select: (state) => state.location.pathname.startsWith("/settings") })
+  return inSettings ? <SettingsSidebar /> : <BoardSidebar />
+}
+
+function BoardSidebar() {
   const channels = useChannels()
   const agents = useAgents()
   const needs = useNeedsYou()
@@ -111,18 +161,6 @@ export function SidebarContent() {
               <ListChecks className="size-4 w-[18px]" />
               <span className="flex-1">All tasks</span>
             </Link>
-            <Link to="/routines" search={(prev) => prev} className={rowClass} activeProps={{ className: activeClass }}>
-              <Repeat className="size-4 w-[18px]" />
-              <span className="flex-1">Routines</span>
-            </Link>
-            <Link to="/approvals" search={(prev) => prev} className={rowClass} activeProps={{ className: activeClass }}>
-              <ShieldCheck className="size-4 w-[18px]" />
-              <span className="flex-1">Approval rules</span>
-            </Link>
-            <Link to="/keys" search={(prev) => prev} className={rowClass} activeProps={{ className: activeClass }}>
-              <KeyRound className="size-4 w-[18px]" />
-              <span className="flex-1">Keys</span>
-            </Link>
           </div>
           <div>
             <div className="flex items-center justify-between pr-0.5 pb-1 pl-2">
@@ -165,7 +203,7 @@ export function SidebarContent() {
           </div>
         </nav>
       </ScrollArea>
-      <SignedIn />
+      <SidebarFooter />
     </>
   )
 }

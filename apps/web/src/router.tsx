@@ -45,12 +45,33 @@ const inboxRoute = createRoute({
     throw redirect({ to: "/", search })
   },
 })
-const routinesRoute = createRoute({ getParentRoute: () => rootRoute, path: "/routines", component: RoutinesView })
-const approvalsRoute = createRoute({ getParentRoute: () => rootRoute, path: "/approvals", component: ApprovalsView })
+const settingsPages = [
+  { from: "/routines", to: "/settings/routines" },
+  { from: "/approvals", to: "/settings/approvals" },
+  { from: "/keys", to: "/settings/keys" },
+] as const
+const movedRoutes = settingsPages.map(({ from, to }) =>
+  createRoute({
+    getParentRoute: () => rootRoute,
+    path: from,
+    beforeLoad: ({ search }) => {
+      throw redirect({ to, search })
+    },
+  }),
+)
+const settingsRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/settings",
+  beforeLoad: ({ search }) => {
+    throw redirect({ to: "/settings/routines", search })
+  },
+})
+const routinesRoute = createRoute({ getParentRoute: () => rootRoute, path: "/settings/routines", component: RoutinesView })
+const approvalsRoute = createRoute({ getParentRoute: () => rootRoute, path: "/settings/approvals", component: ApprovalsView })
 const threadsRoute = createRoute({ getParentRoute: () => rootRoute, path: "/threads", component: ThreadsView })
 const savedRoute = createRoute({ getParentRoute: () => rootRoute, path: "/saved", component: SavedView })
 const draftsRoute = createRoute({ getParentRoute: () => rootRoute, path: "/drafts", component: DraftsView })
-const keysRoute = createRoute({ getParentRoute: () => rootRoute, path: "/keys", component: KeysView })
+const keysRoute = createRoute({ getParentRoute: () => rootRoute, path: "/settings/keys", component: KeysView })
 
 const routeTree = rootRoute.addChildren([
   indexRoute,
@@ -60,9 +81,11 @@ const routeTree = rootRoute.addChildren([
   threadsRoute,
   savedRoute,
   draftsRoute,
+  settingsRoute,
   routinesRoute,
   approvalsRoute,
   keysRoute,
+  ...movedRoutes,
 ])
 
 export function createAppRouter(queryClient: QueryClient) {
