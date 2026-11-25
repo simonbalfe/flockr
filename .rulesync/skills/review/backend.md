@@ -103,3 +103,4 @@ Scope: `apps/server` (routes, board rules, the database, live events, the lease 
 ## Learned from reviews
 
 Each line is a class of mistake an earlier review caught, added by that review's run (step 5 of the skill), with the review file it came from. Check every line here as well as the checks above.
+- Any new listing that spans channels (search, inbox, activity, events, briefs) filters through `visibleTo`, so nobody sees another pair's direct messages (2g, ADR 0029).
