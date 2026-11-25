@@ -2,7 +2,7 @@ import { authBasePath, defaultMember, memberHeader } from "@flockr/contracts"
 import { swaggerUI } from "@hono/swagger-ui"
 import type { MiddlewareHandler } from "hono"
 import { createAuthenticator, headerIdentity, isPublicApiPath, signInNeeded } from "./auth/identity"
-import { requireInScope } from "./auth/scope"
+import { requireDirectAccess, requireInScope } from "./auth/scope"
 import { authOff, type AuthSettings } from "./auth/settings"
 import { BoardError, notFound, unauthenticated } from "./board/errors"
 import { hooksPath, receiveHook, type HookSettings } from "./board/hook-route"
@@ -25,6 +25,7 @@ import { machineRoutes } from "./routes/machines"
 import { memberRoutes } from "./routes/members"
 import { memoryRoutes } from "./routes/memory"
 import { messageRoutes } from "./routes/messages"
+import { navigationRoutes } from "./routes/navigation"
 import { questionRoutes } from "./routes/questions"
 import { reviewRoutes } from "./routes/review"
 import { routineRoutes } from "./routes/routines"
@@ -65,7 +66,9 @@ export function createApp(db: Database, options: AppOptions = {}) {
     c.set("via", identity.via)
     c.set("channels", identity.channels)
     const request = c.req.raw
-    await requireInScope(db, identity.channels, { method: request.method, pathname: c.req.path, query: new URL(request.url).searchParams, body: () => request.clone().json().catch(() => null) })
+    const scoped = { method: request.method, pathname: c.req.path, query: new URL(request.url).searchParams, body: () => request.clone().json().catch(() => null) }
+    await requireInScope(db, identity.channels, scoped)
+    await requireDirectAccess(db, identity.member, scoped)
     await next()
   }
 
@@ -100,6 +103,7 @@ export function createApp(db: Database, options: AppOptions = {}) {
     .route("/", routineRoutes)
     .route("/", approvalRoutes)
     .route("/", keyRoutes)
+    .route("/", navigationRoutes)
     .route("/", authRoutes)
 
   const document = () => api.getOpenAPI31Document({ openapi: "3.1.0", info })

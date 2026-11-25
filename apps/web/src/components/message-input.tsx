@@ -1,7 +1,44 @@
 import { ArrowUp } from "lucide-react"
-import { useState, type KeyboardEvent } from "react"
+import { useEffect, useRef, useState, type KeyboardEvent } from "react"
+import { useDrafts, useSaveDraft } from "@/api/hooks"
 import { InputGroup, InputGroupAddon, InputGroupButton, InputGroupTextarea } from "@/components/ui/input-group"
 import { cn } from "@/lib/utils"
+
+const draftDelayMs = 700
+
+export interface DraftPlace {
+  kind: "channel" | "thread"
+  target: string
+}
+
+function useDraft(place: DraftPlace | undefined, text: string, restore: (text: string) => void) {
+  const drafts = useDrafts()
+  const save = useSaveDraft()
+  const kept = place ? (drafts.data?.find((d) => d.kind === place.kind && d.target === place.target)?.text ?? "") : ""
+  const hydrated = useRef(place === undefined)
+  const latest = useRef({ text, kept })
+  latest.current = { text, kept }
+
+  useEffect(() => {
+    if (hydrated.current || !drafts.isSuccess) return
+    hydrated.current = true
+    if (kept !== "") restore(kept)
+  }, [drafts.isSuccess])
+
+  const flush = () => {
+    if (!place || !hydrated.current) return
+    const now = latest.current
+    if (now.text !== now.kept) save({ ...place, text: now.text })
+  }
+
+  useEffect(() => {
+    if (!place || !hydrated.current || text === kept) return
+    const timer = setTimeout(flush, draftDelayMs)
+    return () => clearTimeout(timer)
+  }, [text])
+
+  useEffect(() => flush, [])
+}
 
 interface MessageInputProps {
   label: string
@@ -10,10 +47,12 @@ interface MessageInputProps {
   initial?: string
   onCancel?: () => void
   autoFocus?: boolean
+  draft?: DraftPlace
 }
 
-export function MessageInput({ label, placeholder, onSend, initial = "", onCancel, autoFocus = false }: MessageInputProps) {
+export function MessageInput({ label, placeholder, onSend, initial = "", onCancel, autoFocus = false, draft }: MessageInputProps) {
   const [text, setText] = useState(initial)
+  useDraft(draft, text, setText)
   const empty = text.trim() === ""
 
   const send = () => {

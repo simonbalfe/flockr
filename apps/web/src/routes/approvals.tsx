@@ -2,7 +2,7 @@ import { approvalVerdictLabels, approvalVerdicts, effectiveVerdict, verdictAllow
 import { useState } from "react"
 import { toast } from "sonner"
 import { useClearApprovalRule, useApprovalRules, useMayManageApprovalRules, useSetApprovalRule } from "@/api/approvals"
-import { errorText, useChannels } from "@/api/hooks"
+import { errorText, useChannelList } from "@/api/hooks"
 import { PageHeader } from "@/components/page-header"
 import { Button } from "@/components/ui/button"
 import { ScrollArea } from "@/components/ui/scroll-area"
@@ -74,7 +74,7 @@ function KindRow({ info, channel, rules, mayManage }: { info: ActionKindInfo; ch
 
 export function ApprovalsView() {
   const rules = useApprovalRules()
-  const channels = useChannels()
+  const channels = useChannelList()
   const mayManage = useMayManageApprovalRules()
   const [scope, setScope] = useState(wholeBoard)
   const channel = scope === wholeBoard ? null : scope

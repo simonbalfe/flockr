@@ -8,10 +8,13 @@ import { ChannelAreas } from "@/routes/channel-areas"
 import { ChannelFrame } from "@/routes/channel-frame"
 import { ChannelMessages } from "@/routes/channel-messages"
 import { ChannelTasks } from "@/routes/channel-tasks"
+import { DraftsView } from "@/routes/drafts"
 import { InboxView } from "@/routes/inbox"
 import { ApprovalsView } from "@/routes/approvals"
 import { KeysView } from "@/routes/keys"
 import { RoutinesView } from "@/routes/routines"
+import { SavedView } from "@/routes/saved"
+import { ThreadsView } from "@/routes/threads"
 
 const rootRoute = createRootRouteWithContext<{ queryClient: QueryClient }>()({
   validateSearch: parsePanelSearch,
@@ -43,6 +46,9 @@ const allTasksRoute = createRoute({ getParentRoute: () => rootRoute, path: "/tas
 const inboxRoute = createRoute({ getParentRoute: () => rootRoute, path: "/inbox", component: InboxView })
 const routinesRoute = createRoute({ getParentRoute: () => rootRoute, path: "/routines", component: RoutinesView })
 const approvalsRoute = createRoute({ getParentRoute: () => rootRoute, path: "/approvals", component: ApprovalsView })
+const threadsRoute = createRoute({ getParentRoute: () => rootRoute, path: "/threads", component: ThreadsView })
+const savedRoute = createRoute({ getParentRoute: () => rootRoute, path: "/saved", component: SavedView })
+const draftsRoute = createRoute({ getParentRoute: () => rootRoute, path: "/drafts", component: DraftsView })
 const keysRoute = createRoute({ getParentRoute: () => rootRoute, path: "/keys", component: KeysView })
 
 const routeTree = rootRoute.addChildren([
@@ -50,6 +56,9 @@ const routeTree = rootRoute.addChildren([
   channelRoute.addChildren([channelMessagesRoute, channelTasksRoute, channelAreasRoute]),
   allTasksRoute,
   inboxRoute,
+  threadsRoute,
+  savedRoute,
+  draftsRoute,
   routinesRoute,
   approvalsRoute,
   keysRoute,

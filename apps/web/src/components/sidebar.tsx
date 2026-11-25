@@ -1,12 +1,13 @@
 import { Link } from "@tanstack/react-router"
-import { Inbox, KeyRound, ListChecks, LogOut, Repeat, Search, ShieldCheck } from "lucide-react"
+import { Bookmark, Inbox, KeyRound, ListChecks, LogOut, MessagesSquare, Repeat, Search, SendHorizontal, ShieldCheck } from "lucide-react"
 import type { ReactNode } from "react"
 import { useSignOut, useWhoami } from "@/api/auth"
-import { useAgents, useChannels, useInbox, useMembers } from "@/api/hooks"
+import { useAgents, useChannels, useDrafts, useInbox, useMembers, useMyThreads } from "@/api/hooks"
 import { currentUser } from "@/api/session"
 import type { Agent } from "@/api/types"
 import { AgentsHeading } from "@/components/agents/agents-heading"
 import { AgentStatusDot } from "@/components/agents/status-dot"
+import { DirectMessagesSection } from "@/components/direct-messages"
 import { MemberAvatar } from "@/components/member-avatar"
 import { useShell } from "@/components/shell-context"
 import { Badge } from "@/components/ui/badge"
@@ -63,6 +64,9 @@ export function SidebarContent() {
   const agents = useAgents()
   const inbox = useInbox()
   const members = useMembers()
+  const drafts = useDrafts()
+  const threads = useMyThreads()
+  const newReplies = (threads.data ?? []).filter((t) => t.unread > 0).length
   const { openPalette } = useShell()
   const waiting = (inbox.data?.questions.length ?? 0) + (inbox.data?.reviews.length ?? 0)
 
@@ -87,6 +91,20 @@ export function SidebarContent() {
               <span className="flex-1">Waiting for you</span>
               {waiting > 0 && <Badge className="h-[18px] min-w-[18px] rounded-full px-1.5 text-[11px] tabular-nums">{waiting}</Badge>}
             </Link>
+            <Link to="/threads" search={(prev) => prev} className={cn(rowClass, newReplies > 0 && "font-semibold")} activeProps={{ className: activeClass }}>
+              <MessagesSquare className="size-4 w-[18px]" />
+              <span className="flex-1">Threads</span>
+              {newReplies > 0 && <Badge className="h-[18px] min-w-[18px] rounded-full px-1.5 text-[11px] tabular-nums">{newReplies}</Badge>}
+            </Link>
+            <Link to="/saved" search={(prev) => prev} className={rowClass} activeProps={{ className: activeClass }}>
+              <Bookmark className="size-4 w-[18px]" />
+              <span className="flex-1">Saved items</span>
+            </Link>
+            <Link to="/drafts" search={(prev) => prev} className={rowClass} activeProps={{ className: activeClass }}>
+              <SendHorizontal className="size-4 w-[18px]" />
+              <span className="flex-1">Drafts & sent</span>
+              {(drafts.data?.length ?? 0) > 0 && <span className="text-xs text-faint tabular-nums">{drafts.data?.length}</span>}
+            </Link>
             <Link to="/tasks" search={(prev) => prev} className={rowClass} activeProps={{ className: activeClass }}>
               <ListChecks className="size-4 w-[18px]" />
               <span className="flex-1">All tasks</span>
@@ -106,7 +124,7 @@ export function SidebarContent() {
           </div>
           <div>
             <GroupHeading>Channels</GroupHeading>
-            {(channels.data ?? []).map((channel) => (
+            {(channels.data ?? []).filter((c) => c.kind === "channel").map((channel) => (
               <Link
                 key={channel.id}
                 to="/c/$channel"
@@ -121,6 +139,7 @@ export function SidebarContent() {
               </Link>
             ))}
           </div>
+          <DirectMessagesSection />
           <div>
             <AgentsHeading />
             {(agents.data ?? []).map((agent) => (

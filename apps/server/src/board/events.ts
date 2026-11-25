@@ -5,6 +5,7 @@ import type { Database, Executor, Tx } from "../db/client"
 import { boards, events } from "../db/schema"
 import { liveSignals } from "../platform"
 import { enqueueWatchers } from "./watchers"
+import { visibleTo } from "./visibility"
 
 export interface EventDraft {
   type: string
@@ -56,22 +57,25 @@ export async function headSeq(db: Executor): Promise<number> {
   return board?.lastSeq ?? 0
 }
 
-export async function eventsSince(db: Executor, since: number, limit: number): Promise<BoardEvent[]> {
+const routingFields = ["mentions", "direct", "member", "state"] as const
+
+export type EventViewer = { kind: "member"; name: string } | { kind: "live" }
+
+export async function eventsSince(db: Executor, since: number, limit: number, viewer: EventViewer): Promise<BoardEvent[]> {
+  const name = viewer.kind === "member" ? viewer.name : null
   const rows = await db
-    .select()
+    .select({
+      row: events,
+      direct: sql<boolean>`exists (select 1 from channels c where c.id = ${events.channel} and c.kind = 'dm')`,
+      allowed: sql<boolean>`${visibleTo(events.channel, name)}`,
+    })
     .from(events)
     .where(and(eq(events.boardId, boardId), gt(events.seq, since)))
     .orderBy(asc(events.seq))
     .limit(limit)
-  return rows.map((row) => ({
-    seq: row.seq,
-    type: row.type,
-    at: row.at.toISOString(),
-    actor: row.actor,
-    channel: row.channel,
-    taskId: row.taskId,
-    threadId: row.threadId,
-    messageId: row.messageId,
-    data: row.data,
-  }))
+  return rows.flatMap(({ row, direct, allowed }): BoardEvent[] => {
+    if (direct && !allowed && viewer.kind === "member") return []
+    const data = direct && viewer.kind === "live" ? Object.fromEntries(routingFields.flatMap((key) => (key in row.data ? [[key, row.data[key]]] : []))) : row.data
+    return [{ seq: row.seq, type: row.type, at: row.at.toISOString(), actor: row.actor, channel: row.channel, taskId: row.taskId, threadId: row.threadId, messageId: row.messageId, data }]
+  })
 }

@@ -8,7 +8,7 @@ import type { Harness, PermissionBridge, Session, SessionExit } from "./harness/
 import { memoryBlock, noMemory } from "./memory"
 import { ruleFor } from "./permissions"
 import { conversationPrompt, failedText, followUpPrompt, missingFolderText, resumeWorkPrompt, stoppedText, timeLimitText, workPrompt } from "./prompt"
-import { claimable, eventData, eventTypes, holds, isTaskEvent, routeReply, startsConversation, waitsFor } from "./routing"
+import { addressedDirectly, claimable, eventData, eventTypes, holds, isTaskEvent, routeReply, startsConversation, waitsFor } from "./routing"
 import type { Workspace } from "./workspace/types"
 import { sessionKey, type JsonStore, type SessionMap } from "./store"
 
@@ -388,7 +388,8 @@ export function createRunner(deps: RunnerDeps) {
       return
     }
     const task = history.taskId === null ? null : await board.task(history.taskId)
-    const route = routeReply({ member, thread: history, task })
+    const found = routeReply({ member, thread: history, task })
+    const route = found === "ignore" && addressedDirectly(event, member) ? "converse" : found
     switch (route) {
       case "work":
         if (task) await work(task)

@@ -21,5 +21,5 @@ export const activityRoutes = router()
   )
   .openapi(
     operation({ method: "get", path: "/api/activity", operationId: "listActivity", tags, summary: "Who is working in which thread right now", responses: ok(z.array(Activity)) }),
-    async (c) => c.json(await listActivity(c.var.db), 200),
+    async (c) => c.json(await listActivity(c.var.db, c.var.member), 200),
   )

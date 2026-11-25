@@ -15,6 +15,7 @@ export const claimable = { waiting: false, ready: true, claimed: false, blocked:
 
 const EventData = z.object({
   mentions: z.array(z.string()).catch([]),
+  direct: z.boolean().catch(false),
   state: z.enum(taskStates).optional().catch(undefined),
   option: z.string().optional().catch(undefined),
   member: z.string().optional().catch(undefined),
@@ -28,6 +29,11 @@ export const isTaskEvent = (event: BoardEvent) => event.taskId !== null && event
 
 export function startsConversation(event: BoardEvent, member: string): boolean {
   return event.type === eventTypes.posted && event.actor !== member && event.messageId !== null && eventData(event).mentions.includes(member)
+}
+
+export function addressedDirectly(event: BoardEvent, member: string): boolean {
+  const data = eventData(event)
+  return event.type === eventTypes.replied && event.actor !== member && data.direct && data.mentions.includes(member)
 }
 
 export const waitsFor = (task: Task, member: string) => claimable[task.state] && task.assignee === member

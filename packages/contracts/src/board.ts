@@ -1,7 +1,7 @@
 import { z } from "@hono/zod-openapi"
 import { ActivityEntry, ApprovalAction } from "./activity"
 import { AgentConfig, AgentStatusSchema, Machine } from "./agents"
-import { agentStates, errorKinds, memberKinds, messageLimits, taskStates } from "./constants"
+import { agentStates, channelKinds, errorKinds, memberKinds, messageLimits, taskStates } from "./constants"
 
 export const TaskState = z.enum(taskStates).openapi("TaskState")
 export const MemberKind = z.enum(memberKinds).openapi("MemberKind")
@@ -23,9 +23,13 @@ export const Labels = z.array(Label).max(messageLimits.labels)
 const editedAt = timestamp.nullable().openapi({ description: "When the text was last edited; null when never. Earlier versions: listMessageVersions" })
 const messageLabels = z.array(z.string()).openapi({ description: "Labels on the message, in the order they were added" })
 
+export const ChannelKind = z.enum(channelKinds).openapi("ChannelKind")
+
 export const Channel = z
   .object({
     id: z.string().openapi({ example: "backend" }),
+    kind: ChannelKind.openapi({ description: "channel is open to every member; dm is a private conversation between its two members" }),
+    members: z.array(z.string()).openapi({ description: "The two members of a dm; empty for a channel", example: ["simon", "claude"] }),
     topic: z.string(),
     repo: z.string().nullable().openapi({ example: "github.com/simonbalfe/flockr", description: "Where the channel's code lives; null when none is set" }),
     unread: z.number().int().openapi({ description: "Feed items since the acting member last read the channel" }),
@@ -260,6 +264,7 @@ export type TaskState = z.infer<typeof TaskState>
 export type MemberKind = z.infer<typeof MemberKind>
 export type AgentState = z.infer<typeof AgentState>
 export type Channel = z.infer<typeof Channel>
+export type ChannelKind = z.infer<typeof ChannelKind>
 export type Member = z.infer<typeof Member>
 export type Question = z.infer<typeof Question>
 export type Task = z.infer<typeof Task>

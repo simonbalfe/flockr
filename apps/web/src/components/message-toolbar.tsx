@@ -1,8 +1,8 @@
-import { CornerDownRight, MessageSquare, Pencil, Tag, Trash2 } from "lucide-react"
+import { Bookmark, CornerDownRight, MessageSquare, Pencil, Tag, Trash2 } from "lucide-react"
 import { useState } from "react"
 import { toast } from "sonner"
 import { mayDeleteMessage } from "@flockr/client"
-import { errorText, useDeleteMessage, useMembers } from "@/api/hooks"
+import { errorText, useDeleteMessage, useMembers, useSaved, useSaveMessage, useUnsaveMessage } from "@/api/hooks"
 import { currentUser } from "@/api/session"
 import { usePanel } from "@/lib/panel"
 import { cn } from "@/lib/utils"
@@ -20,13 +20,17 @@ export interface MessageActions {
 export function MessageToolbar({ id, who, replyThreadId, actions }: { id: string; who: string; replyThreadId: string | null; actions: MessageActions }) {
   const members = useMembers()
   const remove = useDeleteMessage()
+  const saved = useSaved()
+  const save = useSaveMessage()
+  const unsave = useUnsaveMessage()
+  const isSaved = (saved.data ?? []).some((s) => s.id === id)
+  const toggleSaved = () => (isSaved ? unsave : save).mutate(id, { onError: (error) => toast(errorText(error)) })
   const { openThread } = usePanel()
   const [confirming, setConfirming] = useState(false)
   const actor = members.data?.find((m) => m.name === currentUser)
   const author = members.data?.find((m) => m.name === who)
   const canDelete = actor !== undefined && mayDeleteMessage({ actor, author: who, authorOwner: author?.owner ?? null })
   const { onEdit, onLabel, onReply } = actions
-  if (!canDelete && replyThreadId === null && !onEdit && !onLabel && !onReply) return null
 
   const confirm = () =>
     remove.mutate(id, {
@@ -61,6 +65,12 @@ export function MessageToolbar({ id, who, replyThreadId, actions }: { id: string
         <button type="button" onClick={onLabel} className={control}>
           <Tag className="size-[13px]" />
           Label
+        </button>
+      )}
+      {!confirming && (
+        <button type="button" onClick={toggleSaved} className={control} aria-pressed={isSaved} aria-label={isSaved ? "Remove from saved" : "Save message"}>
+          <Bookmark className={cn("size-[13px]", isSaved && "fill-current")} />
+          {isSaved ? "Saved" : "Save"}
         </button>
       )}
       {canDelete && !confirming && (

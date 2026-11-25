@@ -23,11 +23,19 @@ import {
   listAgentsOptions,
   listChannelsOptions,
   listMembersOptions,
+  listMyThreadsOptions,
+  listSavedOptions,
+  listSentOptions,
+  listDraftsOptions,
   listMessagesOptions,
   listMessageVersionsOptions,
   listTasksOptions,
   makeTaskFromThreadMutation,
   markReadMutation,
+  openDirectMessageMutation,
+  saveDraftMutation,
+  saveMessageMutation,
+  unsaveMessageMutation,
   postMessageMutation,
   releaseAreaMutation,
   releaseTaskMutation,
@@ -57,10 +65,15 @@ export const queries = {
   task: (id: number) => getTaskOptions({ path: { id } }),
   inbox: () => getInboxOptions(),
   activity: () => listActivityOptions(),
+  myThreads: () => listMyThreadsOptions(),
+  saved: () => listSavedOptions(),
+  sent: () => listSentOptions(),
+  drafts: () => listDraftsOptions(),
   search: (q: string) => queryOptions({ ...searchBoardOptions({ query: { q } }), placeholderData: keepPreviousData, enabled: q.trim() !== "" }),
 }
 
 export const useChannels = () => useQuery(queries.channels())
+export const useChannelList = () => useQuery({ ...queries.channels(), select: (all) => all.filter((c) => c.kind === "channel") })
 export const useMembers = () => useQuery(queries.members())
 export const useAgents = () => useQuery(queries.agents())
 export const useAgent = (name: string) => useQuery(queries.agent(name))
@@ -73,6 +86,10 @@ export const useAreas = (channel: string) => useQuery(queries.areas(channel))
 export const useTask = (id: number) => useQuery(queries.task(id))
 export const useInbox = () => useQuery(queries.inbox())
 export const useActivity = () => useQuery(queries.activity())
+export const useMyThreads = () => useQuery(queries.myThreads())
+export const useSaved = () => useQuery(queries.saved())
+export const useSent = () => useQuery(queries.sent())
+export const useDrafts = () => useQuery(queries.drafts())
 export const useBoardSearch = (q: string) => useQuery(queries.search(q))
 
 export function errorText(error: unknown): string {
@@ -168,3 +185,16 @@ export const useDeclareArea = () =>
 export const useReleaseArea = () => useBoardMutation(releaseAreaMutation(), (a: { channel: string; id: number }) => ({ path: { channel: a.channel, id: a.id } }))
 export const useHandOffTask = () =>
   useBoardMutation(handOffTaskMutation(), (a: { id: number; to: string; note?: string; epoch: number }) => ({ ...onTask(a.id), body: { to: a.to, note: a.note, nextSteps: [], epoch: a.epoch } }))
+
+export const useSaveMessage = () => useBoardMutation(saveMessageMutation(), (id: string) => ({ path: { id } }))
+export const useUnsaveMessage = () => useBoardMutation(unsaveMessageMutation(), (id: string) => ({ path: { id } }))
+export const useOpenDirectMessage = () => useBoardMutation(openDirectMessageMutation(), (member: string) => ({ body: { with: member } }))
+
+export function useSaveDraft() {
+  const client = useQueryClient()
+  const mutation = useMutation({
+    ...saveDraftMutation(),
+    onSuccess: () => client.invalidateQueries({ queryKey: queries.drafts().queryKey }),
+  })
+  return (draft: { kind: "channel" | "thread"; target: string; text: string }) => mutation.mutate({ body: draft })
+}

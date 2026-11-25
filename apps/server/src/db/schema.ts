@@ -1,4 +1,4 @@
-import type { ActionKind, AreaEndReason, ActivityState, AgentDesired, AgentPermissions, AgentReport, ApprovalVerdict, HarnessInfo, JobKind, JobState, MemberKind, MemoryKind, MemoryScope, Question, RoutineTriggerKind, TaskState } from "@flockr/contracts"
+import type { ActionKind, ChannelKind, DraftKind, AreaEndReason, ActivityState, AgentDesired, AgentPermissions, AgentReport, ApprovalVerdict, HarnessInfo, JobKind, JobState, MemberKind, MemoryKind, MemoryScope, Question, RoutineTriggerKind, TaskState } from "@flockr/contracts"
 import { sql } from "drizzle-orm"
 import { bigint, boolean, check, index, integer, jsonb, pgTable, primaryKey, text, timestamp, unique, uniqueIndex, type AnyPgColumn } from "drizzle-orm/pg-core"
 
@@ -65,12 +65,61 @@ export const agents = pgTable(
   ],
 )
 
-export const channels = pgTable("channels", {
-  id: text("id").primaryKey(),
-  topic: text("topic").notNull().default(""),
-  repo: text("repo"),
-  createdAt: createdAt(),
-})
+export const channels = pgTable(
+  "channels",
+  {
+    id: text("id").primaryKey(),
+    kind: text("kind").$type<ChannelKind>().notNull().default("channel"),
+    topic: text("topic").notNull().default(""),
+    repo: text("repo"),
+    createdAt: createdAt(),
+  },
+  (t) => [check("channels_kind", sql`${t.kind} in ('channel', 'dm')`)],
+)
+
+export const directMembers = pgTable(
+  "direct_members",
+  {
+    channel: text("channel")
+      .notNull()
+      .references(() => channels.id),
+    member: text("member")
+      .notNull()
+      .references(() => members.name),
+  },
+  (t) => [primaryKey({ columns: [t.channel, t.member] }), index("direct_members_member").on(t.member)],
+)
+
+export const savedMessages = pgTable(
+  "saved_messages",
+  {
+    member: text("member")
+      .notNull()
+      .references(() => members.name),
+    messageId: integer("message_id")
+      .notNull()
+      .references(() => messages.id),
+    savedAt: timestamp("saved_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [primaryKey({ columns: [t.member, t.messageId] })],
+)
+
+export const drafts = pgTable(
+  "drafts",
+  {
+    member: text("member")
+      .notNull()
+      .references(() => members.name),
+    kind: text("kind").$type<DraftKind>().notNull(),
+    target: text("target").notNull(),
+    channel: text("channel")
+      .notNull()
+      .references(() => channels.id),
+    text: text("text").notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [primaryKey({ columns: [t.member, t.kind, t.target] }), check("drafts_kind", sql`${t.kind} in ('channel', 'thread')`)],
+)
 
 export const tasks = pgTable(
   "tasks",
@@ -179,6 +228,7 @@ export const messages = pgTable(
     check("messages_one_thread", sql`${t.parentId} is null or ${t.threadTaskId} is null`),
     index("messages_feed").on(t.channel, t.id),
     index("messages_parent").on(t.parentId),
+    index("messages_who").on(t.who, t.id),
     index("messages_thread_task").on(t.threadTaskId),
     index("messages_search")
       .using("gin", messageSearchVector(t.body))
@@ -468,6 +518,7 @@ export type JobRow = typeof jobs.$inferSelect
 export type ApprovalRuleRow = typeof approvalRules.$inferSelect
 export type JobApprovalRow = typeof jobApprovals.$inferSelect
 export type MemberKeyRow = typeof memberKeys.$inferSelect
+export type DraftRow = typeof drafts.$inferSelect
 
 // Each code host delivery handled once, however often the host retries it (5e).
 export const hookDeliveries = pgTable(

@@ -1,5 +1,6 @@
 import { eq } from "drizzle-orm"
 import { z } from "zod"
+import { requireChannelAccess } from "../board/direct"
 import { forbidden } from "../board/errors"
 import { parseThreadId, type ThreadRef } from "../board/read"
 import type { Database } from "../db/client"
@@ -75,6 +76,23 @@ export async function requireInScope(db: Database, limit: string[] | null, reque
       if (channel !== null && !limit.includes(channel)) throw refuse()
       return
     }
+    default: {
+      const unhandled: never = target
+      throw new Error(`Unhandled scope target ${JSON.stringify(unhandled)}`)
+    }
+  }
+}
+
+export async function requireDirectAccess(db: Database, member: string, request: ScopedRequest): Promise<void> {
+  const target = await targetOf(request)
+  switch (target.kind) {
+    case "channel":
+      return requireChannelAccess(db, member, target.channel)
+    case "thread":
+      return requireChannelAccess(db, member, await channelOfThread(db, target.ref))
+    case "open":
+    case "board":
+      return
     default: {
       const unhandled: never = target
       throw new Error(`Unhandled scope target ${JSON.stringify(unhandled)}`)

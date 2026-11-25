@@ -14,6 +14,20 @@
             "type": "string",
             "example": "backend"
           },
+          "kind": {
+            "$ref": "#/components/schemas/ChannelKind"
+          },
+          "members": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "The two members of a dm; empty for a channel",
+            "example": [
+              "simon",
+              "claude"
+            ]
+          },
           "topic": {
             "type": "string"
           },
@@ -32,10 +46,20 @@
         },
         "required": [
           "id",
+          "kind",
+          "members",
           "topic",
           "repo",
           "unread"
         ]
+      },
+      "ChannelKind": {
+        "type": "string",
+        "enum": [
+          "channel",
+          "dm"
+        ],
+        "description": "channel is open to every member; dm is a private conversation between its two members"
       },
       "Error": {
         "type": "object",
@@ -5018,6 +5042,276 @@
         },
         "required": [
           "member"
+        ]
+      },
+      "OpenDmBody": {
+        "type": "object",
+        "properties": {
+          "with": {
+            "type": "string",
+            "minLength": 1,
+            "description": "The member to talk to, a person or an agent",
+            "example": "claude"
+          }
+        },
+        "required": [
+          "with"
+        ]
+      },
+      "MyThread": {
+        "type": "object",
+        "properties": {
+          "threadId": {
+            "type": "string",
+            "description": "m12 for a message thread, 806 for a task thread",
+            "example": "m12"
+          },
+          "channel": {
+            "type": "string"
+          },
+          "taskId": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "title": {
+            "type": "string",
+            "description": "The thread's first message, or the task's title"
+          },
+          "startedBy": {
+            "type": "string"
+          },
+          "replies": {
+            "type": "integer"
+          },
+          "lastAt": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-11-24T10:40:02.000Z"
+          },
+          "lastWho": {
+            "type": "string"
+          },
+          "lastText": {
+            "type": "string"
+          },
+          "unread": {
+            "type": "integer",
+            "description": "Replies by others since the acting member last wrote in the thread"
+          }
+        },
+        "required": [
+          "threadId",
+          "channel",
+          "taskId",
+          "title",
+          "startedBy",
+          "replies",
+          "lastAt",
+          "lastWho",
+          "lastText",
+          "unread"
+        ]
+      },
+      "SentItem": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "m12"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "message",
+              "reply"
+            ]
+          },
+          "channel": {
+            "type": "string"
+          },
+          "threadId": {
+            "type": "string"
+          },
+          "taskId": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "at": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-11-24T10:40:02.000Z"
+          },
+          "text": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "channel",
+          "threadId",
+          "taskId",
+          "at",
+          "text"
+        ]
+      },
+      "SavedItem": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "m12"
+          },
+          "channel": {
+            "type": "string"
+          },
+          "threadId": {
+            "type": "string",
+            "description": "The thread to open: the message itself, its parent message or its task"
+          },
+          "taskId": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "who": {
+            "type": "string"
+          },
+          "at": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-11-24T10:40:02.000Z"
+          },
+          "text": {
+            "type": "string",
+            "description": "Empty once the message is deleted"
+          },
+          "deleted": {
+            "type": "boolean"
+          },
+          "savedAt": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-11-24T10:40:02.000Z"
+          }
+        },
+        "required": [
+          "id",
+          "channel",
+          "threadId",
+          "taskId",
+          "who",
+          "at",
+          "text",
+          "deleted",
+          "savedAt"
+        ]
+      },
+      "SavedState": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "m12"
+          },
+          "saved": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "saved"
+        ]
+      },
+      "Draft": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "$ref": "#/components/schemas/DraftKind"
+          },
+          "target": {
+            "type": "string",
+            "description": "The channel id, or the thread id (m12 or 806)",
+            "example": "backend"
+          },
+          "channel": {
+            "type": "string",
+            "description": "The channel the draft belongs to",
+            "example": "backend"
+          },
+          "text": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-11-24T10:40:02.000Z"
+          }
+        },
+        "required": [
+          "kind",
+          "target",
+          "channel",
+          "text",
+          "updatedAt"
+        ]
+      },
+      "DraftKind": {
+        "type": "string",
+        "enum": [
+          "channel",
+          "thread"
+        ],
+        "description": "channel: the message box of a channel or dm; thread: the reply box of a thread"
+      },
+      "SaveDraftResult": {
+        "type": "object",
+        "properties": {
+          "draft": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Draft"
+              },
+              {
+                "type": [
+                  "object",
+                  "null"
+                ],
+                "description": "null when the text was empty and the draft is cleared"
+              }
+            ]
+          }
+        },
+        "required": [
+          "draft"
+        ]
+      },
+      "SaveDraftBody": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "$ref": "#/components/schemas/DraftKind"
+          },
+          "target": {
+            "type": "string",
+            "minLength": 1,
+            "example": "backend"
+          },
+          "text": {
+            "type": "string",
+            "maxLength": 20000,
+            "description": "The unsent text; empty clears the draft"
+          }
+        },
+        "required": [
+          "kind",
+          "target",
+          "text"
         ]
       },
       "SignInResult": {
@@ -12828,6 +13122,628 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/MemberKey"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The input is not valid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sign-in is on and the request has no session or key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The acting member is not on this board, or may not do this",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The task or message is in another state, or the claim epoch is stale",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/dms": {
+      "post": {
+        "operationId": "openDirectMessage",
+        "tags": [
+          "navigation"
+        ],
+        "summary": "Open the private conversation between the acting member and another member (a person or an agent), or return the one that exists. Only the two can read or post in it, and every message in it is addressed to the other, so an agent answers without an @mention.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OpenDmBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Channel"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The input is not valid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sign-in is on and the request has no session or key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The acting member is not on this board, or may not do this",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The task or message is in another state, or the claim epoch is stale",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/me/threads": {
+      "get": {
+        "operationId": "listMyThreads",
+        "tags": [
+          "navigation"
+        ],
+        "summary": "Every thread the acting member started or replied in, newest activity first, with the replies by others since the member last wrote in it",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/MyThread"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The input is not valid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sign-in is on and the request has no session or key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The acting member is not on this board, or may not do this",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The task or message is in another state, or the claim epoch is stale",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/me/sent": {
+      "get": {
+        "operationId": "listSent",
+        "tags": [
+          "navigation"
+        ],
+        "summary": "The acting member's recent messages and replies, newest first. Deleted ones are left out.",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/SentItem"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The input is not valid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sign-in is on and the request has no session or key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The acting member is not on this board, or may not do this",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The task or message is in another state, or the claim epoch is stale",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/me/saved": {
+      "get": {
+        "operationId": "listSaved",
+        "tags": [
+          "navigation"
+        ],
+        "summary": "The messages and replies the acting member saved, most recently saved first",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/SavedItem"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The input is not valid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sign-in is on and the request has no session or key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The acting member is not on this board, or may not do this",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The task or message is in another state, or the claim epoch is stale",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/messages/{id}/saved": {
+      "put": {
+        "operationId": "saveMessage",
+        "tags": [
+          "navigation"
+        ],
+        "summary": "Save a message or reply for the acting member (a message.saved event). Saving it again changes nothing.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "description": "A message id such as m12",
+              "example": "m12"
+            },
+            "required": true,
+            "description": "A message id such as m12",
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SavedState"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The input is not valid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sign-in is on and the request has no session or key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The acting member is not on this board, or may not do this",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The task or message is in another state, or the claim epoch is stale",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "operationId": "unsaveMessage",
+        "tags": [
+          "navigation"
+        ],
+        "summary": "Remove a message or reply from the acting member's saved items (a message.unsaved event). Repeating it changes nothing.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "description": "A message id such as m12",
+              "example": "m12"
+            },
+            "required": true,
+            "description": "A message id such as m12",
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SavedState"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The input is not valid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sign-in is on and the request has no session or key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The acting member is not on this board, or may not do this",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The task or message is in another state, or the claim epoch is stale",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/me/drafts": {
+      "get": {
+        "operationId": "listDrafts",
+        "tags": [
+          "navigation"
+        ],
+        "summary": "The acting member's unsent drafts, newest first: one per channel message box or thread reply box",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Draft"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The input is not valid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sign-in is on and the request has no session or key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The acting member is not on this board, or may not do this",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The task or message is in another state, or the claim epoch is stale",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "operationId": "saveDraft",
+        "tags": [
+          "navigation"
+        ],
+        "summary": "Keep the text typed in a channel's message box or a thread's reply box, so it follows the member to another device. It replaces the earlier draft there; empty text clears it. Sending the message clears it too. A draft is current state, not an event.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaveDraftBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SaveDraftResult"
                 }
               }
             }

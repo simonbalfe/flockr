@@ -6,6 +6,11 @@ export type ClientOptions = {
 
 export type Channel = {
     id: string;
+    kind: ChannelKind;
+    /**
+     * The two members of a dm; empty for a channel
+     */
+    members: Array<string>;
     topic: string;
     /**
      * Where the channel's code lives; null when none is set
@@ -16,6 +21,11 @@ export type Channel = {
      */
     unread: number;
 };
+
+/**
+ * channel is open to every member; dm is a private conversation between its two members
+ */
+export type ChannelKind = 'channel' | 'dm';
 
 export type Error = {
     error: string;
@@ -1668,6 +1678,102 @@ export type CreateKeyBody = {
      * Limit the key to these channels; it is refused everywhere else
      */
     channels?: Array<string> | null;
+};
+
+export type OpenDmBody = {
+    /**
+     * The member to talk to, a person or an agent
+     */
+    with: string;
+};
+
+export type MyThread = {
+    /**
+     * m12 for a message thread, 806 for a task thread
+     */
+    threadId: string;
+    channel: string;
+    taskId: number | null;
+    /**
+     * The thread's first message, or the task's title
+     */
+    title: string;
+    startedBy: string;
+    replies: number;
+    lastAt: string;
+    lastWho: string;
+    lastText: string;
+    /**
+     * Replies by others since the acting member last wrote in the thread
+     */
+    unread: number;
+};
+
+export type SentItem = {
+    id: string;
+    kind: 'message' | 'reply';
+    channel: string;
+    threadId: string;
+    taskId: number | null;
+    at: string;
+    text: string;
+};
+
+export type SavedItem = {
+    id: string;
+    channel: string;
+    /**
+     * The thread to open: the message itself, its parent message or its task
+     */
+    threadId: string;
+    taskId: number | null;
+    who: string;
+    at: string;
+    /**
+     * Empty once the message is deleted
+     */
+    text: string;
+    deleted: boolean;
+    savedAt: string;
+};
+
+export type SavedState = {
+    id: string;
+    saved: boolean;
+};
+
+export type Draft = {
+    kind: DraftKind;
+    /**
+     * The channel id, or the thread id (m12 or 806)
+     */
+    target: string;
+    /**
+     * The channel the draft belongs to
+     */
+    channel: string;
+    text: string;
+    updatedAt: string;
+};
+
+/**
+ * channel: the message box of a channel or dm; thread: the reply box of a thread
+ */
+export type DraftKind = 'channel' | 'thread';
+
+export type SaveDraftResult = {
+    draft: Draft & ({
+        [key: string]: unknown;
+    } | null);
+};
+
+export type SaveDraftBody = {
+    kind: DraftKind;
+    target: string;
+    /**
+     * The unsent text; empty clears the draft
+     */
+    text: string;
 };
 
 export type SignInResult = {
@@ -5610,6 +5716,344 @@ export type RevokeKeyResponses = {
 };
 
 export type RevokeKeyResponse = RevokeKeyResponses[keyof RevokeKeyResponses];
+
+export type OpenDirectMessageData = {
+    body: OpenDmBody;
+    path?: never;
+    query?: never;
+    url: '/api/dms';
+};
+
+export type OpenDirectMessageErrors = {
+    /**
+     * The input is not valid
+     */
+    400: Error;
+    /**
+     * Sign-in is on and the request has no session or key
+     */
+    401: Error;
+    /**
+     * The acting member is not on this board, or may not do this
+     */
+    403: Error;
+    /**
+     * Not found
+     */
+    404: Error;
+    /**
+     * The task or message is in another state, or the claim epoch is stale
+     */
+    409: Error;
+};
+
+export type OpenDirectMessageError = OpenDirectMessageErrors[keyof OpenDirectMessageErrors];
+
+export type OpenDirectMessageResponses = {
+    /**
+     * OK
+     */
+    200: Channel;
+};
+
+export type OpenDirectMessageResponse = OpenDirectMessageResponses[keyof OpenDirectMessageResponses];
+
+export type ListMyThreadsData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/me/threads';
+};
+
+export type ListMyThreadsErrors = {
+    /**
+     * The input is not valid
+     */
+    400: Error;
+    /**
+     * Sign-in is on and the request has no session or key
+     */
+    401: Error;
+    /**
+     * The acting member is not on this board, or may not do this
+     */
+    403: Error;
+    /**
+     * Not found
+     */
+    404: Error;
+    /**
+     * The task or message is in another state, or the claim epoch is stale
+     */
+    409: Error;
+};
+
+export type ListMyThreadsError = ListMyThreadsErrors[keyof ListMyThreadsErrors];
+
+export type ListMyThreadsResponses = {
+    /**
+     * OK
+     */
+    200: Array<MyThread>;
+};
+
+export type ListMyThreadsResponse = ListMyThreadsResponses[keyof ListMyThreadsResponses];
+
+export type ListSentData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/me/sent';
+};
+
+export type ListSentErrors = {
+    /**
+     * The input is not valid
+     */
+    400: Error;
+    /**
+     * Sign-in is on and the request has no session or key
+     */
+    401: Error;
+    /**
+     * The acting member is not on this board, or may not do this
+     */
+    403: Error;
+    /**
+     * Not found
+     */
+    404: Error;
+    /**
+     * The task or message is in another state, or the claim epoch is stale
+     */
+    409: Error;
+};
+
+export type ListSentError = ListSentErrors[keyof ListSentErrors];
+
+export type ListSentResponses = {
+    /**
+     * OK
+     */
+    200: Array<SentItem>;
+};
+
+export type ListSentResponse = ListSentResponses[keyof ListSentResponses];
+
+export type ListSavedData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/me/saved';
+};
+
+export type ListSavedErrors = {
+    /**
+     * The input is not valid
+     */
+    400: Error;
+    /**
+     * Sign-in is on and the request has no session or key
+     */
+    401: Error;
+    /**
+     * The acting member is not on this board, or may not do this
+     */
+    403: Error;
+    /**
+     * Not found
+     */
+    404: Error;
+    /**
+     * The task or message is in another state, or the claim epoch is stale
+     */
+    409: Error;
+};
+
+export type ListSavedError = ListSavedErrors[keyof ListSavedErrors];
+
+export type ListSavedResponses = {
+    /**
+     * OK
+     */
+    200: Array<SavedItem>;
+};
+
+export type ListSavedResponse = ListSavedResponses[keyof ListSavedResponses];
+
+export type UnsaveMessageData = {
+    body?: never;
+    path: {
+        /**
+         * A message id such as m12
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/api/messages/{id}/saved';
+};
+
+export type UnsaveMessageErrors = {
+    /**
+     * The input is not valid
+     */
+    400: Error;
+    /**
+     * Sign-in is on and the request has no session or key
+     */
+    401: Error;
+    /**
+     * The acting member is not on this board, or may not do this
+     */
+    403: Error;
+    /**
+     * Not found
+     */
+    404: Error;
+    /**
+     * The task or message is in another state, or the claim epoch is stale
+     */
+    409: Error;
+};
+
+export type UnsaveMessageError = UnsaveMessageErrors[keyof UnsaveMessageErrors];
+
+export type UnsaveMessageResponses = {
+    /**
+     * OK
+     */
+    200: SavedState;
+};
+
+export type UnsaveMessageResponse = UnsaveMessageResponses[keyof UnsaveMessageResponses];
+
+export type SaveMessageData = {
+    body?: never;
+    path: {
+        /**
+         * A message id such as m12
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/api/messages/{id}/saved';
+};
+
+export type SaveMessageErrors = {
+    /**
+     * The input is not valid
+     */
+    400: Error;
+    /**
+     * Sign-in is on and the request has no session or key
+     */
+    401: Error;
+    /**
+     * The acting member is not on this board, or may not do this
+     */
+    403: Error;
+    /**
+     * Not found
+     */
+    404: Error;
+    /**
+     * The task or message is in another state, or the claim epoch is stale
+     */
+    409: Error;
+};
+
+export type SaveMessageError = SaveMessageErrors[keyof SaveMessageErrors];
+
+export type SaveMessageResponses = {
+    /**
+     * OK
+     */
+    200: SavedState;
+};
+
+export type SaveMessageResponse = SaveMessageResponses[keyof SaveMessageResponses];
+
+export type ListDraftsData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/me/drafts';
+};
+
+export type ListDraftsErrors = {
+    /**
+     * The input is not valid
+     */
+    400: Error;
+    /**
+     * Sign-in is on and the request has no session or key
+     */
+    401: Error;
+    /**
+     * The acting member is not on this board, or may not do this
+     */
+    403: Error;
+    /**
+     * Not found
+     */
+    404: Error;
+    /**
+     * The task or message is in another state, or the claim epoch is stale
+     */
+    409: Error;
+};
+
+export type ListDraftsError = ListDraftsErrors[keyof ListDraftsErrors];
+
+export type ListDraftsResponses = {
+    /**
+     * OK
+     */
+    200: Array<Draft>;
+};
+
+export type ListDraftsResponse = ListDraftsResponses[keyof ListDraftsResponses];
+
+export type SaveDraftData = {
+    body: SaveDraftBody;
+    path?: never;
+    query?: never;
+    url: '/api/me/drafts';
+};
+
+export type SaveDraftErrors = {
+    /**
+     * The input is not valid
+     */
+    400: Error;
+    /**
+     * Sign-in is on and the request has no session or key
+     */
+    401: Error;
+    /**
+     * The acting member is not on this board, or may not do this
+     */
+    403: Error;
+    /**
+     * Not found
+     */
+    404: Error;
+    /**
+     * The task or message is in another state, or the claim epoch is stale
+     */
+    409: Error;
+};
+
+export type SaveDraftError = SaveDraftErrors[keyof SaveDraftErrors];
+
+export type SaveDraftResponses = {
+    /**
+     * OK
+     */
+    200: SaveDraftResult;
+};
+
+export type SaveDraftResponse = SaveDraftResponses[keyof SaveDraftResponses];
 
 export type RequestSignInLinkData = {
     body: SignInBody;

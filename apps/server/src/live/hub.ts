@@ -61,7 +61,7 @@ export function createHub(db: Database, listener: LiveListener, sockets: SocketS
         state.dirty = false
         const seq = sockets.seqOf(socket)
         if (seq === undefined) return
-        const events = await eventsSince(db, seq, pageSize)
+        const events = await eventsSince(db, seq, pageSize, { kind: "live" })
         if (sockets.seqOf(socket) === undefined) return
         for (const event of events) send(socket, { kind: "event", event })
         const last = events[events.length - 1]

@@ -1,6 +1,6 @@
 {
-  "id": "759be626-8fa4-458a-bff4-c4451d601a9e",
-  "prevId": "ee487107-19da-4817-ae06-1dc11bd7994d",
+  "id": "f08a8382-9caa-42ce-8a79-87b73111e347",
+  "prevId": "7ed0fbcc-f0c8-4638-bb54-5b0d51bda5d8",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -721,6 +721,13 @@
           "primaryKey": true,
           "notNull": true
         },
+        "kind": {
+          "name": "kind",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'channel'"
+        },
         "topic": {
           "name": "topic",
           "type": "text",
@@ -747,7 +754,179 @@
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "policies": {},
+      "checkConstraints": {
+        "channels_kind": {
+          "name": "channels_kind",
+          "value": "\"channels\".\"kind\" in ('channel', 'dm')"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.direct_members": {
+      "name": "direct_members",
+      "schema": "",
+      "columns": {
+        "channel": {
+          "name": "channel",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "member": {
+          "name": "member",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {
+        "direct_members_member": {
+          "name": "direct_members_member",
+          "columns": [
+            {
+              "expression": "member",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "direct_members_channel_channels_id_fk": {
+          "name": "direct_members_channel_channels_id_fk",
+          "tableFrom": "direct_members",
+          "tableTo": "channels",
+          "columnsFrom": [
+            "channel"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "direct_members_member_members_name_fk": {
+          "name": "direct_members_member_members_name_fk",
+          "tableFrom": "direct_members",
+          "tableTo": "members",
+          "columnsFrom": [
+            "member"
+          ],
+          "columnsTo": [
+            "name"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "direct_members_channel_member_pk": {
+          "name": "direct_members_channel_member_pk",
+          "columns": [
+            "channel",
+            "member"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
       "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.drafts": {
+      "name": "drafts",
+      "schema": "",
+      "columns": {
+        "member": {
+          "name": "member",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "kind": {
+          "name": "kind",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "target": {
+          "name": "target",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "channel": {
+          "name": "channel",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "text": {
+          "name": "text",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "drafts_member_members_name_fk": {
+          "name": "drafts_member_members_name_fk",
+          "tableFrom": "drafts",
+          "tableTo": "members",
+          "columnsFrom": [
+            "member"
+          ],
+          "columnsTo": [
+            "name"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "drafts_channel_channels_id_fk": {
+          "name": "drafts_channel_channels_id_fk",
+          "tableFrom": "drafts",
+          "tableTo": "channels",
+          "columnsFrom": [
+            "channel"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "drafts_member_kind_target_pk": {
+          "name": "drafts_member_kind_target_pk",
+          "columns": [
+            "member",
+            "kind",
+            "target"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "drafts_kind": {
+          "name": "drafts_kind",
+          "value": "\"drafts\".\"kind\" in ('channel', 'thread')"
+        }
+      },
       "isRLSEnabled": false
     },
     "public.events": {
@@ -1908,6 +2087,27 @@
           "method": "btree",
           "with": {}
         },
+        "messages_who": {
+          "name": "messages_who",
+          "columns": [
+            {
+              "expression": "who",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
         "messages_thread_task": {
           "name": "messages_thread_task",
           "columns": [
@@ -2270,6 +2470,73 @@
       },
       "isRLSEnabled": false
     },
+    "public.saved_messages": {
+      "name": "saved_messages",
+      "schema": "",
+      "columns": {
+        "member": {
+          "name": "member",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "message_id": {
+          "name": "message_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "saved_at": {
+          "name": "saved_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "saved_messages_member_members_name_fk": {
+          "name": "saved_messages_member_members_name_fk",
+          "tableFrom": "saved_messages",
+          "tableTo": "members",
+          "columnsFrom": [
+            "member"
+          ],
+          "columnsTo": [
+            "name"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "saved_messages_message_id_messages_id_fk": {
+          "name": "saved_messages_message_id_messages_id_fk",
+          "tableFrom": "saved_messages",
+          "tableTo": "messages",
+          "columnsFrom": [
+            "message_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "saved_messages_member_message_id_pk": {
+          "name": "saved_messages_member_message_id_pk",
+          "columns": [
+            "member",
+            "message_id"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
     "public.task_commits": {
       "name": "task_commits",
       "schema": "",
@@ -2592,6 +2859,176 @@
         "tasks_state": {
           "name": "tasks_state",
           "value": "\"tasks\".\"state\" in ('waiting', 'ready', 'claimed', 'blocked', 'review', 'done')"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.working_areas": {
+      "name": "working_areas",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "identity": {
+            "type": "always",
+            "name": "working_areas_id_seq",
+            "schema": "public",
+            "increment": "1",
+            "startWith": "1",
+            "minValue": "1",
+            "maxValue": "2147483647",
+            "cache": "1",
+            "cycle": false
+          }
+        },
+        "channel": {
+          "name": "channel",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "owner": {
+          "name": "owner",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "task_id": {
+          "name": "task_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "paths": {
+          "name": "paths",
+          "type": "text[]",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "note": {
+          "name": "note",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "expires_at": {
+          "name": "expires_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "released_at": {
+          "name": "released_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "released_reason": {
+          "name": "released_reason",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "working_areas_live": {
+          "name": "working_areas_live",
+          "columns": [
+            {
+              "expression": "channel",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "where": "\"working_areas\".\"released_at\" is null",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "working_areas_one_per_task": {
+          "name": "working_areas_one_per_task",
+          "columns": [
+            {
+              "expression": "task_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "where": "\"working_areas\".\"released_at\" is null and \"working_areas\".\"task_id\" is not null",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "working_areas_channel_channels_id_fk": {
+          "name": "working_areas_channel_channels_id_fk",
+          "tableFrom": "working_areas",
+          "tableTo": "channels",
+          "columnsFrom": [
+            "channel"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "working_areas_owner_members_name_fk": {
+          "name": "working_areas_owner_members_name_fk",
+          "tableFrom": "working_areas",
+          "tableTo": "members",
+          "columnsFrom": [
+            "owner"
+          ],
+          "columnsTo": [
+            "name"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "working_areas_task_id_tasks_id_fk": {
+          "name": "working_areas_task_id_tasks_id_fk",
+          "tableFrom": "working_areas",
+          "tableTo": "tasks",
+          "columnsFrom": [
+            "task_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "working_areas_reason": {
+          "name": "working_areas_reason",
+          "value": "\"working_areas\".\"released_reason\" is null or \"working_areas\".\"released_reason\" in ('released', 'task_ended', 'expired')"
         }
       },
       "isRLSEnabled": false

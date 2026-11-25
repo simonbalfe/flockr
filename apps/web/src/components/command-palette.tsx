@@ -1,6 +1,6 @@
 import { useNavigate } from "@tanstack/react-router"
 import { useState } from "react"
-import { useAgents, useBoardSearch, useChannels, useTasks } from "@/api/hooks"
+import { useAgents, useBoardSearch, useChannelList, useTasks } from "@/api/hooks"
 import type { SearchHit, SnippetPart } from "@/api/types"
 import { Plus } from "lucide-react"
 import { openNewAgent } from "@/components/agents/new-agent-store"
@@ -40,7 +40,7 @@ function hitPanel(hit: SearchHit): { thread?: string; task?: number } {
 }
 
 export function CommandPalette({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) {
-  const channels = useChannels()
+  const channels = useChannelList()
   const tasks = useTasks()
   const agents = useAgents()
   const navigate = useNavigate()

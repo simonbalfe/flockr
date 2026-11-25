@@ -16,7 +16,7 @@ export const eventRoutes = router().openapi(
   }),
   async (c) => {
     const query = c.req.valid("query")
-    const [events, head] = await Promise.all([eventsSince(c.var.db, query.since, query.limit), headSeq(c.var.db)])
+    const [events, head] = await Promise.all([eventsSince(c.var.db, query.since, query.limit, { kind: "member", name: c.var.member }), headSeq(c.var.db)])
     return c.json({ events, head }, 200)
   },
 )

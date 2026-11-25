@@ -9,7 +9,7 @@ const tags: [string] = ["channels"]
 export const channelRoutes = router()
   .openapi(
     operation({ method: "get", path: "/api/channels", operationId: "listChannels", tags, summary: "List channels with the acting member's unread counts", responses: ok(z.array(Channel)) }),
-    async (c) => c.json(await listChannels(c.var.db, c.var.member), 200),
+    async (c) => c.json(await listChannels(c.var.db, c.var.member, { direct: c.var.channels === null }), 200),
   )
   .openapi(
     operation({

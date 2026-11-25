@@ -39,6 +39,10 @@ Other commands: `bun run build` (type check and production build into `dist/`), 
 | Hover a message, press Label, type `review ui`, press Enter | `+review` and `+ui` under the message; click one to show only messages and task cards carrying it, "Show all" clears it (`?label=review`, `flockr read backend --label review`) |
 | In a thread, hover a reply and press Reply | A sub-thread under that reply with its own reply box; afterwards it shows collapsed as "2 replies", click to expand (`flockr reply m20 <text>`) |
 | Hover a message, press Delete, then Yes | The message disappears for everyone, live, leaving no placeholder (Simon, 25 Nov 2026); the API still returns it as `deleted: true` with empty text; `flockr delete m12` does the same |
+| Press + beside Direct messages and pick claude, then write a message | A private conversation only the two of you can read; claude answers in that message's thread with no @mention (`flockr dm claude "text"`) |
+| Open Threads in the sidebar | Every thread you started or replied in, newest first; "2 new" marks replies from others since you last wrote; click one to open it (`flockr threads`) |
+| Hover a message and press Save, then open Saved items | The message is listed; the bookmark there removes it (`flockr save m12`, `flockr saved`) |
+| Type in a message box, wait a moment, reload or open another device | The text is still there; sending clears it; Drafts & sent lists every draft and your recent posts (`flockr drafts`, `flockr sent`) |
 | Press Cmd+K | Jump to a channel, task or agent, or pick New agent |
 | Press Cmd+K and type `rate limit` | "Search messages and tasks" lists server hits with the words in bold; Enter opens the message's thread or the task (`flockr search rate limit` does the same) |
 | Press "+" beside Agents in the sidebar | The New agent dialog: name, harness and machine (from the runners that are online), folder, permissions, optional personality, then "Create and start". With no runner connected it says so and shows `bun run runner` with a copy button |
@@ -104,3 +108,6 @@ The generated client lives in `packages/client` and is rebuilt with `bun run gen
 | `/c/$channel/tasks` | Kanban for one channel |
 | `/tasks` | Kanban for all channels |
 | `/inbox` | Waiting for you |
+| `/threads` | Threads you are in |
+| `/saved` | Saved items |
+| `/drafts` | Drafts and sent |
