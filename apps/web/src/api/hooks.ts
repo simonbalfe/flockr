@@ -27,6 +27,7 @@ import {
   replyToThreadMutation,
   stopRunMutation,
   requestChangesMutation,
+  searchBoardOptions,
   unblockTaskMutation,
 } from "@flockr/client/react-query"
 import { keepPreviousData, queryOptions, useMutation, useQuery, useQueryClient, type MutateOptions, type QueryClient, type UseMutationOptions } from "@tanstack/react-query"
@@ -47,6 +48,7 @@ export const queries = {
   task: (id: number) => getTaskOptions({ path: { id } }),
   inbox: () => getInboxOptions(),
   activity: () => listActivityOptions(),
+  search: (q: string) => queryOptions({ ...searchBoardOptions({ query: { q } }), placeholderData: keepPreviousData, enabled: q.trim() !== "" }),
 }
 
 export const useChannels = () => useQuery(queries.channels())
@@ -59,6 +61,7 @@ export const useTasks = () => useQuery(queries.tasks())
 export const useTask = (id: number) => useQuery(queries.task(id))
 export const useInbox = () => useQuery(queries.inbox())
 export const useActivity = () => useQuery(queries.activity())
+export const useBoardSearch = (q: string) => useQuery(queries.search(q))
 
 export function errorText(error: unknown): string {
   if (error instanceof Error) return error.message

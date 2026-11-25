@@ -19,6 +19,8 @@ export type {
   MemberKind,
   Question,
   Reply,
+  SearchHit,
+  SnippetPart,
   Task,
   TaskMessage,
   TaskState,

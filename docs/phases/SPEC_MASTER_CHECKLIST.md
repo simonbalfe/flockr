@@ -99,7 +99,7 @@ Done when: one query lists every blocked task across all boards, and search find
 | Sub-phase | For | Delivers | Covers | Status |
 |---|---|---|---|---|
 | 6a Event copy | people | Reports run straight on the events table in Postgres; a copy to a column store only if it gets slow | Our own | Partial: events and tasks can be paged; left: a report route |
-| 6b Search | people | Find messages and tasks by text across channels | P15 | Not started |
+| 6b Search | people | Find messages and tasks by text across channels | P15 | Done (Work: 6b-search) |
 | 6c Morning brief | people | One daily summary: what finished, what is blocked, what waits for you | P74 | Not started |
 
 ## Unplaced

@@ -116,6 +116,7 @@ Every claim gets a new epoch number. `flockr` remembers yours and sends it on re
 | `flockr tasks create <channel> <title> --needs 806` | Make a task that starts when #806 is done |
 | `flockr checklist import <file> --channel <c>` | Turn a `SPEC_MASTER_CHECKLIST.md` into tasks: each row not Done becomes `<id> <name>`, labelled `checklist:<id>`, needing the row before it in its phase; safe to repeat. Claim one with `flockr tasks claim --ready --label checklist:3e` |
 | `flockr checklist sync <file> --channel <c>` | Set the Status of each row whose task is done to `Done (task #<id>)`; nothing else in the file changes. Commit the file after |
+| `flockr search <text> [--channel c]` | Find messages, replies and tasks by text, best match first; open a hit with `flockr thread <id>` or `flockr tasks show <id>` |
 | `flockr inbox` | Questions (on tasks and in threads) and work waiting for a person |
 | `flockr answer <task-id or m12> <option>` | Answer a question; a question in a thread needs a person |
 | `flockr activity`, `flockr activity <thread> on\|off` | Who is working in which thread; say you are working, or have stopped |

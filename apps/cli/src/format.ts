@@ -1,5 +1,5 @@
 import { currentStep, partHeadline, type ActivityEntry } from "@flockr/client"
-import type { Activity, BoardEvent, Channel, FeedItem, Inbox, Member, Task, Thread, ThreadEntry, ThreadQuestion } from "@flockr/client"
+import type { Activity, BoardEvent, Channel, FeedItem, Inbox, Member, SearchHit, SnippetPart, Task, Thread, ThreadEntry, ThreadQuestion } from "@flockr/client"
 
 export const clock = (iso: string) => {
   const d = new Date(iso)
@@ -113,4 +113,15 @@ export function activityDetail(entry: ActivityEntry): string {
   const head = activityEntryLine(entry)
   const parts = entry.parts.map((part) => `  ${part.id.padEnd(12)} ${part.type.padEnd(10)} ${partHeadline(part)}`)
   return [head, ...parts].join("\n")
+}
+
+const snippetText = (parts: SnippetPart[]) => parts.map((p) => (p.match ? `*${p.text}*` : p.text)).join("").replace(/\s+/g, " ").trim()
+
+export function searchLine(hit: SearchHit): string {
+  switch (hit.kind) {
+    case "message":
+      return `${hit.id.padEnd(6)} #${hit.channel}  ${clock(hit.at)}  ${hit.who}: ${snippetText(hit.snippet)}  (fc thread ${hit.threadId})`
+    case "task":
+      return `#${String(hit.id).padEnd(5)} #${hit.channel}  ${hit.state.padEnd(7)}  ${snippetText(hit.snippet)}  (fc tasks show ${hit.id})`
+  }
 }

@@ -3224,6 +3224,171 @@
           "working",
           "error"
         ]
+      },
+      "SearchResult": {
+        "type": "object",
+        "properties": {
+          "query": {
+            "type": "string"
+          },
+          "hits": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SearchHit"
+            },
+            "description": "Best first: an exact phrase beats scattered words, then newer first"
+          }
+        },
+        "required": [
+          "query",
+          "hits"
+        ]
+      },
+      "SearchHit": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/MessageHit"
+          },
+          {
+            "$ref": "#/components/schemas/TaskHit"
+          }
+        ],
+        "discriminator": {
+          "propertyName": "kind",
+          "mapping": {
+            "message": "#/components/schemas/MessageHit",
+            "task": "#/components/schemas/TaskHit"
+          }
+        }
+      },
+      "MessageHit": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "message"
+            ]
+          },
+          "id": {
+            "type": "string",
+            "example": "m12"
+          },
+          "channel": {
+            "type": "string"
+          },
+          "threadId": {
+            "type": "string",
+            "description": "The thread to open: the message itself, its parent message (m12) or its task (806)"
+          },
+          "taskId": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "description": "The task whose thread holds this reply, if any"
+          },
+          "who": {
+            "type": "string"
+          },
+          "at": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-11-24T10:40:02.000Z"
+          },
+          "snippet": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SnippetPart"
+            }
+          },
+          "rank": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "kind",
+          "id",
+          "channel",
+          "threadId",
+          "taskId",
+          "who",
+          "at",
+          "snippet",
+          "rank"
+        ]
+      },
+      "SnippetPart": {
+        "type": "object",
+        "properties": {
+          "text": {
+            "type": "string"
+          },
+          "match": {
+            "type": "boolean",
+            "description": "true for a word that matched the query"
+          }
+        },
+        "required": [
+          "text",
+          "match"
+        ]
+      },
+      "TaskHit": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "task"
+            ]
+          },
+          "id": {
+            "type": "integer",
+            "example": 806
+          },
+          "channel": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "state": {
+            "$ref": "#/components/schemas/TaskState"
+          },
+          "who": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Who made the task"
+          },
+          "at": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-11-24T10:40:02.000Z"
+          },
+          "snippet": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SnippetPart"
+            }
+          },
+          "rank": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "kind",
+          "id",
+          "channel",
+          "title",
+          "state",
+          "who",
+          "at",
+          "snippet",
+          "rank"
+        ]
       }
     },
     "parameters": {}
@@ -7000,6 +7165,103 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/HeartbeatResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The input is not valid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The acting member is not on this board, or may not do this",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The task or message is in another state, or the claim epoch is stale",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/search": {
+      "get": {
+        "operationId": "searchBoard",
+        "tags": [
+          "search"
+        ],
+        "summary": "Find messages, replies and tasks by text across channels, best match first, with a highlighted snippet. Deleted messages are never found.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 200,
+              "description": "Words to find; the last word also matches as a prefix",
+              "example": "rate limit"
+            },
+            "required": true,
+            "description": "Words to find; the last word also matches as a prefix",
+            "name": "q",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "description": "Only hits in this channel",
+              "example": "backend"
+            },
+            "required": false,
+            "description": "Only hits in this channel",
+            "name": "channel",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "description": "At most this many hits, default 20"
+            },
+            "required": false,
+            "description": "At most this many hits, default 20",
+            "name": "limit",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SearchResult"
                 }
               }
             }

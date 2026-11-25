@@ -1057,6 +1057,61 @@ export type AgentReportEntry = {
 
 export type AgentReport = 'serving' | 'working' | 'error';
 
+export type SearchResult = {
+    query: string;
+    /**
+     * Best first: an exact phrase beats scattered words, then newer first
+     */
+    hits: Array<SearchHit>;
+};
+
+export type SearchHit = ({
+    kind: 'message';
+} & MessageHit) | ({
+    kind: 'task';
+} & TaskHit);
+
+export type MessageHit = {
+    kind: 'message';
+    id: string;
+    channel: string;
+    /**
+     * The thread to open: the message itself, its parent message (m12) or its task (806)
+     */
+    threadId: string;
+    /**
+     * The task whose thread holds this reply, if any
+     */
+    taskId: number | null;
+    who: string;
+    at: string;
+    snippet: Array<SnippetPart>;
+    rank: number;
+};
+
+export type SnippetPart = {
+    text: string;
+    /**
+     * true for a word that matched the query
+     */
+    match: boolean;
+};
+
+export type TaskHit = {
+    kind: 'task';
+    id: number;
+    channel: string;
+    title: string;
+    state: TaskState;
+    /**
+     * Who made the task
+     */
+    who: string | null;
+    at: string;
+    snippet: Array<SnippetPart>;
+    rank: number;
+};
+
 export type ListChannelsData = {
     body?: never;
     path?: never;
@@ -3031,3 +3086,53 @@ export type MachineHeartbeatResponses = {
 };
 
 export type MachineHeartbeatResponse = MachineHeartbeatResponses[keyof MachineHeartbeatResponses];
+
+export type SearchBoardData = {
+    body?: never;
+    path?: never;
+    query: {
+        /**
+         * Words to find; the last word also matches as a prefix
+         */
+        q: string;
+        /**
+         * Only hits in this channel
+         */
+        channel?: string;
+        /**
+         * At most this many hits, default 20
+         */
+        limit?: number;
+    };
+    url: '/api/search';
+};
+
+export type SearchBoardErrors = {
+    /**
+     * The input is not valid
+     */
+    400: Error;
+    /**
+     * The acting member is not on this board, or may not do this
+     */
+    403: Error;
+    /**
+     * Not found
+     */
+    404: Error;
+    /**
+     * The task or message is in another state, or the claim epoch is stale
+     */
+    409: Error;
+};
+
+export type SearchBoardError = SearchBoardErrors[keyof SearchBoardErrors];
+
+export type SearchBoardResponses = {
+    /**
+     * OK
+     */
+    200: SearchResult;
+};
+
+export type SearchBoardResponse = SearchBoardResponses[keyof SearchBoardResponses];

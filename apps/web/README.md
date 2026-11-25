@@ -34,6 +34,7 @@ Other commands: `bun run build` (type check and production build into `dist/`), 
 | Press "Import checklist" in a channel's Tasks view and paste `docs/phases/SPEC_MASTER_CHECKLIST.md` | One task per row not yet Done, each waiting on the row before it in its phase; importing again makes nothing new (`flockr checklist import` does the same, `flockr checklist sync` ticks the file) |
 | Hover a message, press Delete, then Yes | The message becomes "Message deleted" for everyone, live; its thread stays; `flockr delete m12` does the same |
 | Press Cmd+K | Jump to a channel, task or agent, or pick New agent |
+| Press Cmd+K and type `rate limit` | "Search messages and tasks" lists server hits with the words in bold; Enter opens the message's thread or the task (`flockr search rate limit` does the same) |
 | Press "+" beside Agents in the sidebar | The New agent dialog: name, harness and machine (from the runners that are online), folder, permissions, optional personality, then "Create and start". With no runner connected it says so and shows `bun run runner` with a copy button |
 | Look at the dots beside agents | Status by shape: hollow is offline, solid is online, pulsing is working, a slashed ring is an error (hover for the reason) |
 | Click an agent | Its panel: status, owner, machine, harness, folder, permissions and personality (editable), Start or Stop, and Delete in the "..." menu |

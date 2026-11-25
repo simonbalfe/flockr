@@ -4,6 +4,10 @@ import { bigint, boolean, check, index, integer, jsonb, pgTable, primaryKey, tex
 
 const createdAt = () => timestamp("created_at", { withTimezone: true }).notNull().defaultNow()
 
+export const messageSearchVector = (body: AnyPgColumn) => sql`to_tsvector('english', ${body})`
+export const taskSearchVector = (title: AnyPgColumn, spec: AnyPgColumn) =>
+  sql`(setweight(to_tsvector('english', ${title}), 'A') || setweight(to_tsvector('english', coalesce(${spec}, '')), 'B'))`
+
 export const boards = pgTable("boards", {
   id: text("id").primaryKey(),
   lastSeq: bigint("last_seq", { mode: "number" }).notNull().default(0),
@@ -94,6 +98,7 @@ export const tasks = pgTable(
     check("tasks_state", sql`${t.state} in ('waiting', 'ready', 'claimed', 'blocked', 'review', 'done')`),
     index("tasks_ready").on(t.state, t.createdAt, t.id),
     index("tasks_channel").on(t.channel),
+    index("tasks_search").using("gin", taskSearchVector(t.title, t.spec)),
   ],
 )
 
@@ -129,6 +134,9 @@ export const messages = pgTable(
     index("messages_feed").on(t.channel, t.id),
     index("messages_parent").on(t.parentId),
     index("messages_thread_task").on(t.threadTaskId),
+    index("messages_search")
+      .using("gin", messageSearchVector(t.body))
+      .where(sql`${t.kind} = 'text' and ${t.deletedAt} is null`),
   ],
 )
 

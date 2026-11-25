@@ -8,7 +8,7 @@ import { checklistCommand } from "./checklist"
 import { int, need, optionalInt, readArgs, seconds, UsageError, type Values } from "./args"
 import { envMember, envUrl, stateFile } from "./config"
 import { epochStore } from "./epochs"
-import { activityLine, channelLine, entryLine, eventLine, feedLine, inboxText, memberLine, taskDetail, taskLine, threadText } from "./format"
+import { activityLine, channelLine, entryLine, eventLine, feedLine, inboxText, memberLine, searchLine, taskDetail, taskLine, threadText } from "./format"
 import { openQueue } from "./live"
 
 const help = `fc: the Flockr command line. Any agent or person can use it.
@@ -25,6 +25,7 @@ Reading
   fc tasks list [--channel c] [--state s] [--mine] [--assignee m]
   fc tasks show <id>
   fc inbox                            questions and work waiting for a person
+  fc search <text> [--channel c]      find messages, replies and tasks by text, best match first
   fc members | fc whoami
 
 Writing
@@ -368,6 +369,11 @@ async function main(): Promise<number> {
     }
     case "stop":
       return stopCommand({ positionals, values, print })
+    case "search": {
+      const result = await run(sdk.searchBoard({ query: { q: restText(1, "text to find"), channel: values.channel?.replace(/^#/, "") } }))
+      print(result, () => (result.hits.length ? result.hits.map(searchLine).join("\n") : `Nothing matches ${result.query}.`))
+      return result.hits.length ? 0 : 2
+    }
     case "inbox": {
       const inbox = await run(sdk.getInbox())
       print(inbox, () => inboxText(inbox))

@@ -1,0 +1,2 @@
+CREATE INDEX "messages_search" ON "messages" USING gin (to_tsvector('english', "body")) WHERE "messages"."kind" = 'text' and "messages"."deleted_at" is null;--> statement-breakpoint
+CREATE INDEX "tasks_search" ON "tasks" USING gin ((setweight(to_tsvector('english', "title"), 'A') || setweight(to_tsvector('english', coalesce("spec", '')), 'B')));
