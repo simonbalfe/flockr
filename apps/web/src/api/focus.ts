@@ -1,4 +1,4 @@
-import type { Agent, Focus, FocusRun, Plan, PlanDetail, PlanState, RunStep } from "@flockr/client"
+import { type Agent, type Focus, type FocusRun, leadPreset, type Plan, type PlanDetail, type PlanState, presetOf, type RunStep } from "@flockr/client"
 import {
   closePlanMutation,
   createPlanMutation,
@@ -105,5 +105,5 @@ export function useNeedsYou(): { items: NeedItem[]; loaded: boolean } {
 }
 
 export function leadOf(agents: Agent[]): Agent | null {
-  return agents.find((agent) => agent.name === "lead") ?? null
+  return agents.find((agent) => agent.name === leadPreset.id) ?? agents.find((agent) => presetOf(agent.config?.personality ?? null)?.id === leadPreset.id) ?? null
 }
