@@ -14,11 +14,11 @@ import {
   type Member,
   type UpdateAgentBody,
 } from "@flockr/contracts"
-import { and, asc, eq, inArray, isNotNull, isNull, or, sql } from "drizzle-orm"
+import { and, asc, eq, inArray, isNotNull, isNull, or } from "drizzle-orm"
 import { z } from "zod"
-import { activityChannel } from "../config"
 import type { Database, Executor, Tx } from "../db/client"
 import { agents, machines, members, tasks, type AgentRow, type MachineRow, type MemberRow, type TaskRow } from "../db/schema"
+import { liveSignals } from "../platform"
 import { alreadyExists, forbidden, invalid, notFound } from "./errors"
 import { mutate, type Emit } from "./events"
 import { requireActor } from "./members"
@@ -142,7 +142,7 @@ const emitAgent = (emit: Emit, type: string, actor: string, row: AgentRow, data:
 export async function notifyAgents(tx: Executor, names: string[]): Promise<void> {
   if (!names.length) return
   const frame: LiveFrame = { kind: "agents", names }
-  await tx.execute(sql`select pg_notify(${activityChannel}, ${JSON.stringify(frame)})`)
+  await liveSignals.publish(tx, { kind: "frame", frame })
 }
 
 async function claimName(tx: Tx, actor: MemberRow, name: string, values: { runsIn: string; source: string }): Promise<"new" | "existing"> {

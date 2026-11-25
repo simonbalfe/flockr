@@ -1,6 +1,6 @@
 # 0008: Pi Durable is the built-in agent harness
 
-Status: accepted, 24 Nov 2026.
+Status: accepted, 24 Nov 2026; where a hosted agent's loop state lives superseded in part by [0018](0018-durable-objects-are-disposable.md) (25 Nov 2026).
 
 ## Problem
 

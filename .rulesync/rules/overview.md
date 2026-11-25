@@ -13,7 +13,7 @@ Flockr is Slack where AI agents are members too: people and coding agents share 
 
 1. `docs/phases/SPEC_MASTER_CHECKLIST.md`, only the phase you are working in. This is where we are.
 2. The newest file in `docs/handoffs/`, if it is about your work.
-3. The spec for your sub-phase, `docs/phases/phase-N/SPEC_PHASE_<N><X>_<NAME>.md`, if it has one.
+3. The spec for your sub-phase, `docs/phases/phase-N/SPEC_PHASE_<N><X>_<NAME>.md` (a Platform item's is `docs/phases/platform/SPEC_PLATFORM_PL<N>_<NAME>.md`), if it has one.
 
 Then read the one router row that matches your task, and stop reading. Code wins when a doc disagrees; fix the doc in the same change.
 
@@ -22,6 +22,7 @@ Then read the one router row that matches your task, and stop reading. Code wins
 | Your task | Read first (stop there if it answers you) |
 |---|---|
 | What is open, what to build next | `docs/phases/SPEC_MASTER_CHECKLIST.md`, only your phase |
+| A Platform item (`PL1`, `PL2`, ...): hosting, deploys, adapters, backups, checks | `docs/phases/platform/README.md`, its row, then its spec there if it has one |
 | Which competitor features a sub-phase must match | `docs/phases/SPEC_COMPETITOR_PARITY.md`, the rows naming that sub-phase |
 | The whole design: parts, rules, where a change goes | `docs/guides/GUIDE_ARCHITECTURE_MODEL.md` |
 | Why a design is the way it is | `docs/decisions/README.md`, then the one ADR |
@@ -41,14 +42,15 @@ Then read the one router row that matches your task, and stop reading. Code wins
 
 - **Building Phase 1 (headless core) and Phase 2 (web app).** The master checklist holds each sub-phase's status.
 - **No sign-in yet** (ADR 0010): the acting member is the `x-flockr-member` header and the server listens on `127.0.0.1` only. Nothing is exposed beyond the Mac until auth ships.
-- **Not its own git repository yet.** Flockr sits in an ignored folder of the workspace, so commits, the pre-push hook and worktrees apply once Simon runs `git init` here.
+- **Its own public git repository** (`github.com/simonbalfe/flockr`), in an ignored folder of the workspace. Nothing private goes in it.
+- **Moving to Cloudflare through platform adapters** (ADRs 0017, 0018): the Platform track in `docs/phases/platform/README.md` holds the move. Local development and self-hosting stay on Bun and Docker Compose.
 - **Speed first.** `bun run check` is the only gate. No pull requests and no review gate. Never add a check, hook, CI step or process on your own if it slows agents down; ship the fast version and tell Simon the heavier option exists.
 
 ## Tech stack
 
 - **Runtime and repo:** TypeScript strict, Bun as runtime and package manager, a Bun workspace (`apps/*`, `packages/*`) (ADR 0005).
 - **Server:** Hono with `@hono/zod-openapi`; Zod is the one schema language. One OpenAPI document generates the typed client, and the MCP server is built from it at startup (ADR 0010).
-- **Data:** Postgres 17 in Docker through Drizzle; claims use `FOR UPDATE SKIP LOCKED`, live events use `LISTEN/NOTIFY` (ADR 0006).
+- **Data:** Postgres 17 through Drizzle: Docker locally, hosted through Hyperdrive on Cloudflare; claims use `FOR UPDATE SKIP LOCKED`; live events go through the `LiveSignals` interface in `apps/server/src/platform/`, Postgres `LISTEN/NOTIFY` on Bun (ADRs 0006, 0017). Files go to R2 through the S3 API.
 - **Web app:** React 19 with Vite, TanStack Router and Query, shadcn/ui on Tailwind v4, zinc and monochrome, Geist font.
 - **Surfaces:** the web app, `flockr` (CLI over the generated client), MCP at `/mcp`, the board skill in `skills/flockr/`.
 - **Agnostic:** no harness, model, sandbox or outside service is named outside its adapter (ADRs 0007, 0009).
@@ -112,6 +114,7 @@ A rule stays here only if breaking it is irreversible (data, secrets, what leave
 | What you have | Where |
 |---|---|
 | Where we are: phases and sub-phases with a status | A row in `docs/phases/SPEC_MASTER_CHECKLIST.md`; a wait is that row's status, `Blocked: <what is needed>` |
+| Testing, ops or infrastructure work: hosting, deploys, adapters, backups, checks | A Platform item: a row in `docs/phases/platform/README.md` (`PL<N>`), and `docs/phases/platform/SPEC_PLATFORM_PL<N>_<NAME>.md` when it needs a spec |
 | One sub-phase's scope and exit checklist | `docs/phases/phase-N/SPEC_PHASE_<N><X>_<NAME>.md`, about a page, ending with `## Notes from the build` |
 | A competitor feature | A row in `docs/phases/SPEC_COMPETITOR_PARITY.md` |
 | A major decision: a tech choice, a boundary, a tradeoff, a reversal | An ADR, `docs/decisions/NNNN-<slug>.md`, plus its row in `docs/decisions/README.md`: problem, options, choice, why, costs |
@@ -124,7 +127,7 @@ A rule stays here only if breaking it is irreversible (data, secrets, what leave
 | Any other file that is not Markdown (HTML, images, diagrams) | `docs/reference/` |
 
 - **ADRs:** record every major decision in the same change that acts on it, including one Simon makes in chat. Never rewrite an accepted ADR: add a new one that supersedes it and change only the old one's status line.
-- A phase holds only work that can be Done; a rule, an audit, debt or a refactor is a checklist line, never a phase row.
+- Phases hold product features: work that can be Done and that people or agents see. Testing, ops and infrastructure work is a Platform item. A rule, an audit or debt is a checklist line.
 
 ## Workflow
 

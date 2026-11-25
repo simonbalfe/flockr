@@ -1,8 +1,9 @@
 import type { BoardEvent } from "@flockr/contracts"
 import { and, asc, eq, gt, sql } from "drizzle-orm"
-import { boardId, eventChannel } from "../config"
+import { boardId } from "../config"
 import type { Database, Executor, Tx } from "../db/client"
 import { boards, events } from "../db/schema"
+import { liveSignals } from "../platform"
 
 export interface EventDraft {
   type: string
@@ -46,7 +47,7 @@ async function writeEvents(tx: Tx, drafts: EventDraft[]): Promise<void> {
       data: draft.data ?? {},
     })),
   )
-  await tx.execute(sql`select pg_notify(${eventChannel}, ${JSON.stringify({ board: boardId, head: board.lastSeq })})`)
+  await liveSignals.publish(tx, { kind: "head", board: boardId, head: board.lastSeq })
 }
 
 export async function headSeq(db: Executor): Promise<number> {

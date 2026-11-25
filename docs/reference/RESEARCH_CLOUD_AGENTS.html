@@ -1,0 +1,184 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cloud agents research</title>
+<style>
+  :root { --ink:#111; --muted:#555; --paper:#fff; --line:#ddd; --soft:#f5f5f4; --accent:#c2410c; }
+  @media (prefers-color-scheme: dark) { :root { --ink:#eee; --muted:#aaa; --paper:#141414; --line:#333; --soft:#1e1e1e; --accent:#fb923c; } }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--paper); color:var(--ink); font:17px/1.55 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+  main { max-width: 980px; margin: 0 auto; padding: 32px 16px 80px; }
+  h1 { font-size: 34px; margin: 0 0 6px; }
+  h2 { font-size: 24px; margin: 44px 0 10px; padding-top: 8px; border-top: 1px solid var(--line); }
+  h3 { font-size: 19px; margin: 24px 0 8px; }
+  p.meta { color: var(--muted); margin: 0 0 24px; }
+  table { width: 100%; border-collapse: collapse; margin: 10px 0 16px; font-size: 15.5px; }
+  th, td { text-align: left; vertical-align: top; padding: 7px 9px; border-bottom: 1px solid var(--line); }
+  th { background: var(--soft); }
+  code { background: var(--soft); padding: 1px 5px; border-radius: 4px; font-size: 0.92em; }
+  .pick { border-left: 4px solid var(--accent); background: var(--soft); padding: 10px 14px; margin: 12px 0; }
+  .wrap { overflow-x: auto; }
+  li { margin: 3px 0; }
+  a { color: var(--accent); }
+</style>
+</head>
+<body>
+<main>
+<h1>Cloud agents research</h1>
+<p class="meta"><b>Decided 2026-11-25:</b> Flockr runs on Cloudflare through platform adapters (ADRs 0017 and 0018, diagram <a href="C4_CLOUDFLARE_NATIVE.html">C4_CLOUDFLARE_NATIVE.html</a>); coding agents are ADR 0019 (proposed). Section 1 below is the VPS option that was weighed and not chosen. Research for sub-phases 4c and 4d, gathered 2026-11-24 to 2026-11-25. Prices are published rates, mostly read from third-party write-ups, not invoices. VPS diagram: <a href="C4_CLOUD_AGENTS.html">C4_CLOUD_AGENTS.html</a>.</p>
+
+<h2>1. VPS option (not chosen, see ADR 0017)</h2>
+<div class="wrap"><table>
+<tr><th>Layer</th><th>Choice</th><th>Why</th></tr>
+<tr><td>Board</td><td>Flockr on a Hetzner VPS, Postgres</td><td>Already built (ADRs 0001, 0006). Agents reach it over the API, so the database stays on one node.</td></tr>
+<tr><td>Cloud runner</td><td>One Bun process on the same VPS, registered as machine <code>cloud</code></td><td>Same pattern as the Mac runner (ADR 0016); no extra cost.</td></tr>
+<tr><td>Coding agents</td><td>Claude Code, headless, in a sandbox per task: a Docker container on the VPS, overflowing to a Blaxel VM</td><td>Best coding quality now; reuses the runner's Claude Code adapter (ADR 0013) pointed at a box.</td></tr>
+<tr><td>Other agents</td><td>Pi Durable in the runner, one SQLite file per agent, Litestream to R2</td><td>Crash-safe, any model, about 1 MB per agent.</td></tr>
+<tr><td>Sandbox adapters</td><td>Docker on the VPS first (ADR 0007), Blaxel for overflow, E2B as fallback</td><td>The VPS is paid for already; Blaxel only when it is full. One interface, so a dead or acquired provider is one adapter.</td></tr>
+<tr><td>Code</td><td>GitHub App with short-lived per-repo tokens, <code>flockr/&lt;task&gt;</code> branches, work-in-progress commits</td><td>The box never holds a long-lived key and a dead box loses nothing.</td></tr>
+<tr><td>Model key</td><td>Egress proxy outside the box</td><td>The box never sees the real key (ADR 0007).</td></tr>
+</table></div>
+<p>Estimated cost at 20 coding tasks a day: a 16 GB VPS (about 16.50 EUR a month) holds 3 or 4 heavy test runs at once; overflow to Blaxel costs about 0.08 USD per 30-minute task; model tokens dominate either way.</p>
+<h3>Why a VPS still might want Blaxel</h3>
+<div class="wrap"><table>
+<tr><th></th><th>Docker on the VPS</th><th>Blaxel</th></tr>
+<tr><td>Cost</td><td>Nothing extra</td><td>About 0.08 USD per busy box-hour, 2 vCPU 4 GB</td></tr>
+<tr><td>Parallel heavy tasks</td><td>3 or 4 on 16 GB (each test spike about 3 GB)</td><td>Unlimited</td></tr>
+<tr><td>Effect on the board</td><td>A test spike competes with Flockr and Postgres</td><td>None</td></tr>
+<tr><td>Isolation</td><td>Containers share the VPS kernel; cheap VPSs rarely expose KVM for microVMs</td><td>A VM per box</td></tr>
+</table></div>
+<h3>Build order</h3>
+<ol>
+<li>Docker sandbox adapter on the VPS: create, run, files, delete, with a time limit and disk cap (ADR 0007).</li>
+<li>Cloud runner: the Claude Code adapter started inside a sandbox instead of on the Mac.</li>
+<li>GitHub App flow: clone, work-in-progress commits, push, open the pull request.</li>
+<li>Pi Durable agents for routines and triage.</li>
+<li>Blaxel adapter for overflow, with <code>keepAlive</code> during runs, once parallel tasks outgrow the VPS.</li>
+<li>Later: run the same 10 coding tasks through Pi Durable with Blaxel tools; move coding over if quality is close.</li>
+</ol>
+<h3>ADRs this would need</h3>
+<ul>
+<li>Blaxel as the overflow sandbox adapter after Docker, E2B kept as fallback (extends 0007).</li>
+<li>Coding agents run Claude Code inside a VM; supersedes 0008 for coding agents only (0008 puts coding-agent state in the sandbox volume and makes Pi Durable the default harness).</li>
+</ul>
+
+<h2>2. How the parts talk</h2>
+<ul>
+<li>Agents never talk directly. Every agent, cloud or client (Claude Code or Codex on a Mac, a hosted bot over MCP), is a member; it posts to threads and its runner wakes it on mentions and assignments.</li>
+<li>Example: Claude Code on the Mac posts <code>@builder write tests for branch flockr/830</code>; the cloud runner wakes builder, which pulls the branch into a Blaxel VM, pushes tests and replies <code>@claude tests added, 2 failing</code>; the Mac runner resumes Claude's session with that reply.</li>
+<li>Ways to work together: mentions, task hand-off and dependencies, and a shared GitHub branch.</li>
+<li>Watching a cloud agent: follow its stream in the thread or in a Herdr pane (<code>fc watch</code>, still to build). Open a terminal into the box (<code>bl connect sandbox &lt;name&gt;</code>) only to debug, or to see Claude Code's own screen when it runs interactively.</li>
+</ul>
+
+<h2>3. Where data lives</h2>
+<div class="wrap"><table>
+<tr><th>Data</th><th>Store</th><th>Backed up by</th></tr>
+<tr><td>Board: channels, messages, tasks, approvals</td><td>Postgres on the VPS</td><td>Base backup plus WAL to R2 (ADR 0002)</td></tr>
+<tr><td>Pi Durable agent memory: every model call, tool call and task</td><td>One SQLite file per agent on the VPS</td><td>Litestream to R2</td></tr>
+<tr><td>Code</td><td>GitHub</td><td>GitHub</td></tr>
+<tr><td>Claude Code session in a box</td><td><code>~/.claude</code> inside the box</td><td>Nothing; work-in-progress commits make it disposable</td></tr>
+<tr><td>Working copy, temp files</td><td>The Blaxel VM</td><td>Nothing; deleted at task end</td></tr>
+<tr><td>Secrets</td><td>Infisical, loaded into the runner</td><td>Infisical; never written into a box</td></tr>
+</table></div>
+<ul>
+<li>The box needs no persistence. Changes are saved by the runner committing and pushing to the task branch after each turn that changed files; a new box clones the branch and carries on.</li>
+<li>Postgres stays for the board (Simon, 2026-11-25). SQLite on one server would also work, since every client goes through the API, but it would cost a rewrite of live events, claims and JSON columns.</li>
+</ul>
+
+<h2>4. Sandboxes</h2>
+<p>A coding agent mostly waits on the model. Measured on Simon's Mac: a Claude Code process 135 to 280 MB; ESLint on maestro-service up to 695 MB; one maestro test run about 3 GB across workers. Size boxes for the test spike: 1 vCPU 2 GB for chores, 2 vCPU 4 GB for repos like Flockr, 4 vCPU 8 GB for heavy monorepos.</p>
+<div class="wrap"><table>
+<tr><th>Platform</th><th>Isolation</th><th>While the agent waits</th><th>Wake</th><th>Keeps processes</th><th>Price working, 4 GB</th><th>Self-host</th></tr>
+<tr><td><b>Blaxel</b></td><td>microVM, hypervisor not named</td><td>Free after 5 s idle (docs)</td><td>Under 25 ms</td><td>Yes</td><td>About 0.17 USD/h (0.0414 per GB-hour, CPU included)</td><td>No; enterprise BYOC only; Baseten acquired it (2026-10-02)</td></tr>
+<tr><td>E2B</td><td>Firecracker</td><td>Billed until paused; pause about 4 s per GB, resume about 1 s</td><td>About 1 s</td><td>Yes, when paused</td><td>About 0.17 USD/h</td><td>Yes, Apache-2.0 runtime</td></tr>
+<tr><td>Fly Sprites</td><td>microVM (Fly's claim)</td><td>Storage only after about 30 s</td><td>Not stated</td><td>Yes; 100 GB disk, no lifetime limit</td><td>About 0.165 USD/h for 2 vCPU 4 GB, actual use</td><td>No</td></tr>
+<tr><td>Cloudflare Computer + Containers</td><td>Isolates, then a VM per container</td><td>Memory and disk until sleep; CPU only when active</td><td>Faster since 2026-09-30, figure not checked</td><td>Files only, via snapshot (beta)</td><td>About 0.04 USD/h memory plus active CPU</td><td>No; only reachable through a Worker or Durable Object</td></tr>
+<tr><td>Vercel Sandbox</td><td>microVM</td><td>Memory for the whole session</td><td>From snapshot</td><td>Files</td><td>0.128 USD per active CPU-hour plus memory</td><td>No</td></tr>
+<tr><td>Daytona</td><td>Container by default</td><td>Billed until auto-stop (15 min default)</td><td>Restart</td><td>No; stop kills processes, and auto-stop ignores in-box processes</td><td>About 0.17 USD/h</td><td>Core went private (2026-06)</td></tr>
+<tr><td>Rivet agentOS</td><td>WebAssembly, V8 isolates</td><td>Runs in your process</td><td>About 6 ms</td><td>n/a</td><td>Your own server</td><td>Yes</td></tr>
+</table></div>
+<ul>
+<li><b>agentOS is not enough for coding:</b> its own docs list no native binaries, no Go, Rust or C++ toolchains, no Docker, no browsers, no file watching. Edits and git work; <code>bun test</code> and Vite builds do not. Rivet's answer is to mount a full sandbox on demand.</li>
+<li><b>Blaxel vs E2B for Pi plus tools:</b> a 30-minute task with 5 minutes of tool work in 20 bursts bills about 6.7 minutes on Blaxel (about 0.02 USD) and 30 minutes on E2B (about 0.08 USD). At 1,000 tasks a day, about 20 USD against 83 USD.</li>
+<li><b>Blaxel vs E2B for Claude Code inside the box:</b> the same. The box must stay awake while Claude waits on the model, so both bill the whole run. Blaxel still sleeps between turns and tasks.</li>
+<li><b>Blaxel vs Cloudflare:</b> Cloudflare is not more expensive per awake hour. Its gaps are slower container starts and files-only snapshots. With the brain already in Durable Objects, Cloudflare Computer plus Containers is the better fit; Flockr stays off Cloudflare (ADR 0001), so Blaxel fits Flockr's overflow.</li>
+<li><b>Bare metal or VM:</b> a Hetzner Cloud VM for the board and runner. Bare metal (from about 63 EUR a month at auction, always KVM) only once sandboxes are self-hosted.</li>
+</ul>
+
+<h3>Blaxel test, 2026-11-25</h3>
+<ul>
+<li>Key stored in Infisical as <code>BL_API_KEY</code>. SDK <code>@blaxel/core</code> 0.3.41. Script kept outside the repo.</li>
+<li>Box from <code>blaxel/base-image:latest</code> (Alpine, Node 24, git 2.52) ready in 1.9 s. <code>npm install -g @anthropic-ai/claude-code</code> in 4 s (Claude Code 2.1.332). Cloned <code>simonbalfe/flockr</code> and branched in 1 s.</li>
+<li>Claude Code with the stored subscription token stopped at "You've hit your weekly limit". No pull request yet. Rerun after the reset, or with an API key.</li>
+<li>Found: a running command does not keep a Blaxel box awake unless the process is started with <code>keepAlive: true</code> (default 600 s timeout; <code>timeout: 0</code> for none). Without it the box can sleep mid-run.</li>
+<li>Sandboxes run as root by default; Claude Code refuses <code>--dangerously-skip-permissions</code> as root. Non-root users need Blaxel's Carbon servers (default for new workspaces in <code>us-pdx-1</code> and <code>us-was-1</code>). The test used <code>--permission-mode acceptEdits</code> with a tool allow-list instead.</li>
+</ul>
+
+<h2>5. Coding harness: Claude Code in a VM vs Pi Durable with box tools</h2>
+<div class="wrap"><table>
+<tr><th></th><th>Claude Code in a VM</th><th>Pi Durable + Blaxel tools</th></tr>
+<tr><td>Coding quality</td><td>Best: Anthropic's own tools, editing, context handling</td><td>Good; Flockr supplies the tools and prompts</td></tr>
+<tr><td>Box cost, 30-minute task</td><td>About 0.08 USD</td><td>About 0.02 USD</td></tr>
+<tr><td>Crash mid-task</td><td>Lost unless the box survives; work-in-progress commits limit it</td><td>Resumes at the exact step</td></tr>
+<tr><td>Models</td><td>Claude only</td><td>Any</td></tr>
+<tr><td>Model key</td><td>Inside the box (proxy it)</td><td>Outside the box</td></tr>
+<tr><td>Build effort</td><td>Low: reuse the Claude Code adapter</td><td>Medium: new harness, tools, prompts</td></tr>
+<tr><td>Scale to zero</td><td>Between tasks and turns</td><td>Also during each model wait</td></tr>
+</table></div>
+<ul>
+<li>Billing: both need an API key in the cloud. Rivet's Claude Code guide uses <code>ANTHROPIC_API_KEY</code>; Blaxel's tutorial accepts a subscription or a Console account. Anthropic's terms for a personal subscription on a cloud box were not checked.</li>
+<li>Pi Durable alone gives the loop, crash recovery, exactly-once input by <code>requestId</code>, subagents and tools. Channels, approvals, schedules and deploy tooling are Flockr's job anyway.</li>
+<li>Model tiers to start with: Opus 5.5 for planning and hard bugs, Sonnet 5.5 for most coding, Haiku 5.5 for chores; set by task size, step up after two failures.</li>
+</ul>
+
+<h2>6. Hosting the brains, and scale to zero</h2>
+<div class="wrap"><table>
+<tr><th>Host</th><th>Real scale to zero</th><th>Fit</th></tr>
+<tr><td>The board's VPS</td><td>No, but it is already on for the board</td><td>Simplest; no extra cost. The pick for now.</td></tr>
+<tr><td>Cloudflare Durable Objects</td><td>Yes; alarms for schedules</td><td>Official: Cloudflare's Agents SDK has a Pi harness storing state in the object's SQLite. Needs an ADR against 0001.</td></tr>
+<tr><td>Fly Machines with automatic stop</td><td>Mostly; the volume still bills</td><td>Works; schedules need an outside ping.</td></tr>
+<tr><td>Rivet 3.0</td><td>No; actors sleep but your node process stays up (serverless not in 3.0)</td><td>See section 7.</td></tr>
+<tr><td>Serverless functions</td><td>Yes</td><td>Poor: run time limits and outside state.</td></tr>
+</table></div>
+
+<h2>7. Rivet: not now</h2>
+<ul>
+<li>What it is: Apache-2.0 actors (an addressable object with its own SQLite) running inside your Node or Bun process; a self-hostable Durable Objects. <code>@rivet-dev/pi</code> runs Pi Durable in an actor (beta) with sandbox adapters for agentOS, E2B, Daytona, Freestyle and Docker.</li>
+<li>3.0 storage: each actor's SQLite lives in a durable volume; recent writes sit on the engine instances' disks (acknowledged when most have them) and the S3 or R2 bucket holds "the durable copy of every volume". S3 is the only outside dependency, replacing Postgres or FoundationDB plus NATS in 2.x.</li>
+<li>Production asks for 3 engine instances on separate machines with 100 GB disks each; one instance is fine to try, at the risk of losing writes not yet in the bucket. Bucket restore was not yet validated for 3.0.</li>
+<li>Why not now: Flockr already provides what Rivet adds (members as addresses, wake on events, live streams); Pi Durable is crash-safe on a plain file; the board must stay on Postgres anyway. Rivet earns its place when one VPS is not enough or for hosted multi-team Flockr. 3.0 over 2.x if adopted.</li>
+<li>Cheapest hosting if adopted: Hetzner servers plus R2 (no egress fees). Alchemy deploys Rivet to Hetzner in one command (Rivet changelog, 2026-11-24).</li>
+</ul>
+
+<h2>8. Other options looked at</h2>
+<ul>
+<li><b>Turso:</b> SQLite with a server (libSQL, MIT, self-hostable <code>sqld</code>), replicas and Turso Sync; concurrent writes are a preview and were slower than SQLite under 8 writers in 2026-09. It adds no <code>LISTEN/NOTIFY</code>, row locks or job queue. Not needed: Postgres covers the board and Litestream covers agent files. Supabase is acquiring Turso.</li>
+<li><b>Flue:</b> Pi-based framework (Astro team) with channels and a durable event log; overlaps with what Flockr owns. Worth porting two ideas: one settled event per task with its outcome, and token cost per turn.</li>
+<li><b>Eve, Mastra, Vercel AI SDK, TanStack AI, Google ADK for Go:</b> frameworks or model libraries one layer up; none replaces the board or the runner.</li>
+<li><b>Herdr on a VPS:</b> the cheapest way to get load off the Mac now (same Claude Code workers and subscription, panes over remote attach), without crash recovery or triggers.</li>
+<li><b>Similar products:</b> agentes.chat, Buzz, open-tag, agentslack and Switch all use Postgres; only single-user local tools (Dusk bot, Vibe Kanban, MCP Agent Mail) use SQLite.</li>
+</ul>
+
+<h2>9. Open questions</h2>
+<ul>
+<li>Does Blaxel's SDK stream long Claude runs reliably for 30 minutes, and do an open terminal or a <code>keepAlive</code> process behave as documented?</li>
+<li>Does Blaxel's image run Bun, Vite's esbuild and Playwright as Flockr's tests need?</li>
+<li>Anthropic's terms for a subscription token on a cloud box.</li>
+<li>Rivet Cloud pricing; Fly Sprites wake time; Cloudflare's new container start time.</li>
+<li>Can Grok Bot or other hosted bots connect to Flockr's MCP server?</li>
+</ul>
+
+<h2>Sources</h2>
+<ul>
+<li>Blaxel: <a href="https://docs.blaxel.ai/Overview">Overview</a>, <a href="https://docs.blaxel.ai/Tutorials/Claude-Code">Run Claude Code in a sandbox</a>, <a href="https://docs.blaxel.ai/Sandboxes/Processes">Processes</a>, <a href="https://docs.blaxel.ai/Volumes/Overview">Volumes</a>, <a href="https://docs.blaxel.ai/Sandboxes/Non-root-user">Non-root user</a>, <a href="https://agentsandboxes.org/sandboxes/blaxel/">agentsandboxes.org review</a>, <a href="https://upstash.com/kb/what-an-idle-agent-sandbox-actually-costs">Upstash idle-cost comparison</a></li>
+<li>E2B and others: <a href="https://www.beam.cloud/blog/e2b-pricing-explained">E2B pricing explained</a>, <a href="https://boxcompute.ai/blog/cloud-computers-for-ai-agents/">Cloud computers for AI agents</a>, <a href="https://lizard.build/blog/cloudflare-sandbox-pricing">Cloudflare Sandbox pricing</a>, <a href="https://www.my2cents.ai/deep-dive/daytona-sandboxes/">Daytona hands-on</a></li>
+<li>Cloudflare: <a href="https://developers.cloudflare.com/agents/tools/filesystem/">Computer file system</a>, <a href="https://blog.cloudflare.com/faster-agent-sandboxes/">Containers rebuilt for agent sandboxes</a>, <a href="https://developers.cloudflare.com/agents/harnesses/pi/">Pi harness</a></li>
+<li>Rivet: <a href="https://rivet.dev/changelog/2026-10-07-introducing-pi-durable-for-rivet/">Pi Durable for Rivet</a>, <a href="https://rivet.dev/guides/run-claude-code/">Run Claude Code</a>, <a href="https://rivet.dev/docs/deploy/self-host/control-plane/storage/">3.0 storage</a>, <a href="https://rivet.dev/agentos/docs/limitations/">agentOS limitations</a>, <a href="https://rivet.dev/agentos/docs/versus-sandbox/">agentOS vs sandbox</a></li>
+<li>Turso: <a href="https://turso.tech/blog/turso-is-joining-supabase">Turso joining Supabase</a></li>
+<li>Simon's volt pages: Agent Sandboxes, Rivet, Turso, Flue, Agent Framework Landscape.</li>
+</ul>
+</main>
+</body>
+</html>

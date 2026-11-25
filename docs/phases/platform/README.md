@@ -1,0 +1,27 @@
+# Platform
+
+Testing, ops and infrastructure work: hosting, deploys, adapters, backups, checks. Product features live in the phases of the [master checklist](../SPEC_MASTER_CHECKLIST.md); a phase row that needs one of these names it. An item with a spec has `SPEC_PLATFORM_PL<N>_<NAME>.md` in this folder.
+
+**Where Flockr runs:** Cloudflare through platform adapters, with Postgres and R2 as the portable data layer ([ADR 0017](../../decisions/0017-flockr-runs-on-cloudflare-through-platform-adapters.md)); Durable Objects are disposable ([ADR 0018](../../decisions/0018-durable-objects-are-disposable.md)). Local development and self-hosting stay on Bun and Docker Compose. Diagram: `docs/reference/C4_CLOUDFLARE_NATIVE.html`; research: `docs/reference/RESEARCH_CLOUD_AGENTS.html`.
+
+**Status values:** `Not started` · `In progress` · `Blocked` · `Done (Work: <slug>)`.
+
+## Items
+
+| Item | Delivers | Needs | Status |
+|---|---|---|---|
+| PL1 Live signals | The live hub and every `pg_notify` go through a `LiveSignals` and `LiveListener` interface, with Postgres `LISTEN/NOTIFY` as the first implementation; no behaviour change ([spec](SPEC_PLATFORM_PL1_LIVE_SIGNALS.md)) | | Done (Work: pl1-live-signals) |
+| PL2 Worker entry | The same Hono app runs as a Cloudflare Worker (`wrangler dev`), reaching Postgres through Hyperdrive; claims (`FOR UPDATE SKIP LOCKED`) and the event counter pass the server tests against it; the Bun entry keeps working | PL1 | Not started |
+| PL3 Board room object | One Durable Object per board fans live events out over hibernating WebSockets, catching up from Postgres by `since=N`; implements `LiveSignals` on Cloudflare, published after commit | PL2 | Not started |
+| PL4 Hosted Postgres and R2 | A hosted Postgres (Neon or Supabase) behind Hyperdrive, migrations run on deploy, nightly backups to R2 through the S3 API (ADR 0002), one practised restore | PL2 | Not started |
+| PL5 Agent object and step copy | One Durable Object per cloud agent hosting Pi Durable on its SQLite; new `pi_` rows copied to Postgres in the background with a retry alarm; a drill that wipes the object and restores the agent from Postgres (ADR 0018) | PL2, PL4 | Not started |
+| PL6 Sandbox adapters | The sandbox interface (ADR 0007) with Cloudflare Computer and Containers, and Docker locally: create, run, files, delete; a time limit, disk cap and clean-up; Blaxel or E2B only if Containers fall short | PL2 | Not started |
+| PL7 GitHub App | A GitHub App that issues a token per repo expiring within the hour; boxes push only `flockr/<task>` branches; the token never outlives the task | | Not started |
+| PL8 Model key proxy | The model key stays outside every sandbox: boxes call the model through an egress proxy that adds it (ADR 0007) | PL6 | Not started |
+| PL9 Platform import guard | Nothing outside `apps/server/src/platform/` and the entry files imports `cloudflare:workers` or Bun APIs; a fast script, then a lint rule | PL1 | Not started |
+| PL10 Deploy on push | Pushing `main` runs `bun run check` and deploys the Worker with migrations; a staging environment; rollback by redeploying the last good version | PL2, PL4 | Not started |
+| PL11 Self-host path | `docker compose up` still runs the whole board and runner with the Bun entry; both entries pass the server tests | PL2 | Not started |
+
+## Order
+
+PL1 first: it changes no behaviour and every later item needs its seam. Then PL2, which unblocks PL3, PL4, PL6 and PL11 in parallel. PL5 waits for PL4. PL7 can start any time. PL8 waits for PL6. PL10 comes once there is something to deploy.

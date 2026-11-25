@@ -1,6 +1,6 @@
 # Master checklist
 
-Every phase and sub-phase with its status: "where are we". The design every phase builds: [GUIDE_ARCHITECTURE_MODEL](../guides/GUIDE_ARCHITECTURE_MODEL.md). Competitor features, by id: [SPEC_COMPETITOR_PARITY](SPEC_COMPETITOR_PARITY.md). A sub-phase's **Covers** column names the parity rows it builds; when it ships, those rows are marked `Done (<sub-phase>)`.
+Every phase and sub-phase with its status: "where are we". Phases are product features; testing, ops and infrastructure work is the [Platform track](platform/README.md). The design every phase builds: [GUIDE_ARCHITECTURE_MODEL](../guides/GUIDE_ARCHITECTURE_MODEL.md). Competitor features, by id: [SPEC_COMPETITOR_PARITY](SPEC_COMPETITOR_PARITY.md). A sub-phase's **Covers** column names the parity rows it builds; when it ships, those rows are marked `Done (<sub-phase>)`.
 
 **Status values:** `Not started` · `In progress` · `Blocked` · `Done (Work: <slug>)`.
 
@@ -29,6 +29,8 @@ Every phase and sub-phase with its status: "where are we". The design every phas
 |---|---|---|
 | Now | 1a | Waiting on Simon's yes to this checklist |
 | Decide before 1d | Sign-in for people | Email code (reuse flarebot's `src/worker/auth.ts`) or an OIDC proxy in front of the web app |
+| Now | PL1 Live signals | Platform track (`docs/phases/platform/README.md`): Flockr moves to Cloudflare through platform adapters (ADRs 0017, 0018) |
+| Decide before 4d | Coding agents | ADR 0019 is proposed: Claude Code in a disposable sandbox per task |
 | Decide any time | Name and folder | Named Flockr; folder is `playground/flockr` until something ships |
 
 ## Phase 1: Headless core
@@ -37,7 +39,7 @@ Done when: two agents work the example chain through `flockr`, each task startin
 
 | Sub-phase | For | Delivers | Covers | Status |
 |---|---|---|---|---|
-| 1a Skeleton | both | pnpm and Turborepo workspace; the Flockr server on Hono `OpenAPIHono` running on Bun; Postgres for events, tasks, people, keys and boards; Docker Compose with a local Postgres and with Caddy on the VPS; Infisical `local` and `prod`; deploy on push by SSH to the VPS; `pnpm check`; `docker compose up` as the local board; Vitest against a real Postgres | P62, P63, P65 | Not started |
+| 1a Skeleton | both | pnpm and Turborepo workspace; the Flockr server on Hono `OpenAPIHono` running on Bun; Postgres for events, tasks, people, keys and boards; Docker Compose with a local Postgres; Infisical `local` and `prod`; hosting and deploys moved to the Platform track (ADR 0017); `pnpm check`; `docker compose up` as the local board; Vitest against a real Postgres | P62, P63, P65 | Not started |
 | 1b Event log and messages | both | Every change is an event with a sequence number; channels; post, reply, read; labels; messages never edited in place (an edit is a new event) | P1, P6, P7, P71 | Not started |
 | 1c Tasks | agents | States waiting, ready, claimed, blocked, review, done; create; claim the oldest ready task matching labels; 15-minute lease, renewed while working, released on expiry by a timer in the server; a new fence number per claim, so a stale holder's write is refused; complete, fail, release; needs, with waiting tasks turning ready by themselves; block with a reason; assign to one agent | P16, P17, P18, P19, P20, P21, P22, P68 | Not started |
 | 1d Keys and identity | both | People sign in (choice above); one API key per person; an agent names itself with `--as` or `BOARD_PROFILE` and shows as "claude via simon" | P34, P60 | Not started |
@@ -76,7 +78,8 @@ Done when: a task turning ready opens a Herdr pane with its agent by itself, and
 |---|---|---|---|---|
 | 4a Mac helper | both | The runner (`apps/runner`, `bun run runner`, also started by `bun dev`; ADRs 0013, 0016): one Bun program per machine that registers the machine and the harnesses it can run, heartbeats every 15 seconds and serves every agent assigned to it, starting headless harness sessions through a harness adapter (`claude-code` first). Agents are created, started, stopped, changed and deleted on the board (web New agent dialog and agent panel, `flockr agents`, `createAgent` and friends, MCP), each with its own folder, permissions and personality, and a derived status (offline, online, working, error). A mention starts a conversation in the agent's folder and later replies resume the same session; a ready task assigned to the agent is claimed, renewed every 5 minutes, submitted for review on exit and blocked on a crash; shell commands become question cards a person answers. Herdr panes (`hc run`, `hc send --if idle`) are not built | P27, P38, P43 | Runner and agents from the app built (Work: 4a-agents-from-the-app); Herdr panes not started |
 | 4b Agent activity | people | Per-agent view: current task, recent steps, questions waiting; pause or stop from the web app, carried out by the launcher | P30, P72 | In progress: activity entries, live work blocks, permission cards, Steer and `stopRun` built (ADR 0015, `docs/guides/GUIDE_AGENT_ACTIVITY.md`); the agent panel shows status, machine, harness, folder, permissions and personality with Start, Stop and Delete (ADR 0016); left: the runner maps its harness stream to entries, recent steps and questions in the agent panel, pause |
-| 4c Cloud runner | both | A sandbox runtime interface with one adapter per provider, Docker on the VPS first; Claude Code in a sandbox claims tasks marked for the cloud; plug-in models; adding an agent as a member of a channel (ADR 0007) | P39, P40 | Not started |
+| 4c Cloud agents | both | An agent created in the app can live on the machine `cloud`: it wakes on mentions and on tasks assigned to it, takes a steer mid-run, keeps its memory between conversations and runs with the laptop shut; plug-in models; adding an agent as a member of a channel (ADRs 0017, 0018; needs PL3, PL5) | P39, P40 | Not started |
+| 4d Cloud coding agents | both | A coding task given to a cloud agent runs in its own sandbox: it clones the channel's repo, pushes progress to `flockr/<task>`, and opens a pull request when it submits for review; merging waits for a person (ADR 0019, proposed; needs PL6, PL7, PL8) | P25, P39 | Not started |
 
 ## Phase 5: Watchers, routines and sync
 

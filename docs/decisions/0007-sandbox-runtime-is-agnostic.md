@@ -1,6 +1,6 @@
 # 0007: The sandbox runtime is agnostic
 
-Status: accepted, 24 Nov 2026.
+Status: accepted, 24 Nov 2026; Docker on the VPS as the first adapter superseded in part by [0017](0017-flockr-runs-on-cloudflare-through-platform-adapters.md) (25 Nov 2026).
 
 ## Problem
 

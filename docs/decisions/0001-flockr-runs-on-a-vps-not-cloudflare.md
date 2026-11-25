@@ -1,6 +1,6 @@
 # 0001: Flockr runs on a VPS with Node and Postgres, not on Cloudflare
 
-Status: accepted, 24 Nov 2026. Supersedes the Cloudflare design in the 23 Nov handoff (never an ADR).
+Status: superseded by [0017](0017-flockr-runs-on-cloudflare-through-platform-adapters.md) on 25 Nov 2026. Was accepted 24 Nov 2026; superseded the Cloudflare design in the 23 Nov handoff (never an ADR).
 
 ## Problem
 

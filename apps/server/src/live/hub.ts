@@ -1,7 +1,7 @@
-import { LiveFrame } from "@flockr/contracts"
-import { activityChannel, eventChannel } from "../config"
-import type { Connection } from "../db/client"
+import type { LiveFrame } from "@flockr/contracts"
+import type { Database } from "../db/client"
 import { eventsSince, headSeq } from "../board/events"
+import type { LiveListener, LiveSignal } from "../platform"
 
 export interface LiveSocket {
   send: (text: string) => void
@@ -22,7 +22,7 @@ export function parseSince(url: URL): number | null {
   return Number.isInteger(since) && since >= 0 ? since : null
 }
 
-export function createHub(connection: Connection) {
+export function createHub(db: Database, listener: LiveListener) {
   const sockets = new Map<LiveSocket, Cursor>()
 
   const send = (socket: LiveSocket, frame: LiveFrame) => socket.send(JSON.stringify(frame))
@@ -38,7 +38,7 @@ export function createHub(connection: Connection) {
     try {
       for (;;) {
         cursor.dirty = false
-        const events = await eventsSince(connection.db, cursor.seq, pageSize)
+        const events = await eventsSince(db, cursor.seq, pageSize)
         if (!sockets.has(socket)) return
         for (const event of events) send(socket, { kind: "event", event })
         const last = events[events.length - 1]
@@ -54,19 +54,31 @@ export function createHub(connection: Connection) {
     for (const socket of sockets.keys()) void pump(socket).catch((error: unknown) => console.error("live pump failed", error))
   }
 
-  const broadcast = (payload: string) => {
-    const parsed = LiveFrame.safeParse(JSON.parse(payload))
-    if (!parsed.success) return
-    for (const socket of sockets.keys()) send(socket, parsed.data)
+  const broadcast = (frame: LiveFrame) => {
+    for (const socket of sockets.keys()) send(socket, frame)
   }
 
-  const listening = connection.sql.listen(eventChannel, pumpAll, pumpAll)
-  const hearingActivity = connection.sql.listen(activityChannel, broadcast)
+  const onSignal = (signal: LiveSignal) => {
+    switch (signal.kind) {
+      case "head":
+        pumpAll()
+        return
+      case "frame":
+        broadcast(signal.frame)
+        return
+      default: {
+        const unknownSignal: never = signal
+        throw new Error(`Unknown live signal ${JSON.stringify(unknownSignal)}`)
+      }
+    }
+  }
+
+  const listening = listener.listen({ onSignal, onResync: pumpAll })
 
   return {
-    ready: Promise.all([listening, hearingActivity]).then(() => undefined),
+    ready: listening.then(() => undefined),
     async attach(socket: LiveSocket, since: number | null): Promise<void> {
-      const head = await headSeq(connection.db)
+      const head = await headSeq(db)
       sockets.set(socket, { seq: since === null ? head : Math.min(since, head), pumping: false, dirty: false })
       send(socket, { kind: "hello", head })
       await pump(socket)
@@ -79,8 +91,8 @@ export function createHub(connection: Connection) {
     },
     async close(): Promise<void> {
       sockets.clear()
-      await (await listening).unlisten()
-      await (await hearingActivity).unlisten()
+      const stop = await listening
+      await stop()
     },
   }
 }

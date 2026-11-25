@@ -1,8 +1,8 @@
 import { activitySeconds, type Activity, type LiveFrame } from "@flockr/contracts"
-import { and, asc, eq, gt, sql } from "drizzle-orm"
-import { activityChannel } from "../config"
+import { and, asc, eq, gt } from "drizzle-orm"
 import type { Database, Executor } from "../db/client"
 import { activity, type ActivityRow } from "../db/schema"
+import { liveSignals } from "../platform"
 import { requireActor } from "./members"
 import { findMessage, parseThreadId, findTask, messageKey } from "./read"
 
@@ -36,7 +36,7 @@ export async function setActivity(db: Database, actor: string, threadId: string,
       : await tx.delete(activity).where(where).returning()
     const current = row ? present(row) : { member: actor, threadId: place.key, channel: place.channel, since: now.toISOString(), expiresAt: now.toISOString() }
     const frame: LiveFrame = { kind: "activity", activity: current, working }
-    await tx.execute(sql`select pg_notify(${activityChannel}, ${JSON.stringify(frame)})`)
+    await liveSignals.publish(tx, { kind: "frame", frame })
     return working && row ? current : null
   })
 }

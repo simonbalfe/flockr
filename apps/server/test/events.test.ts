@@ -1,6 +1,8 @@
 import { describe, expect, test } from "bun:test"
 import { EventPage, LiveFrame } from "@flockr/contracts"
 import { createHub } from "../src/live/hub"
+import { postgresListener } from "../src/platform"
+import { notifyAgents } from "../src/board/agents"
 import { freshBoard } from "./harness"
 
 describe("event log", () => {
@@ -26,7 +28,7 @@ describe("event log", () => {
   test("the live hub replays from since and then streams new events", async () => {
     const { call, connection } = await freshBoard()
     for (let i = 0; i < 3; i++) await call("simon", "POST", "/api/channels/errors/messages", { text: `ping ${i}` })
-    const hub = createHub(connection)
+    const hub = createHub(connection.db, postgresListener(connection.sql))
     await hub.ready
     const frames: LiveFrame[] = []
     const socket = { send: (text: string) => void frames.push(LiveFrame.parse(JSON.parse(text))) }
@@ -38,5 +40,18 @@ describe("event log", () => {
     await hub.close()
     expect(frames[0]).toEqual({ kind: "hello", head: 4 })
     expect(seqs()).toEqual([3, 4, 5])
+  })
+
+  test("a frame published inside a transaction reaches an attached socket", async () => {
+    const { connection } = await freshBoard()
+    const hub = createHub(connection.db, postgresListener(connection.sql))
+    await hub.ready
+    const frames: LiveFrame[] = []
+    await hub.attach({ send: (text: string) => void frames.push(LiveFrame.parse(JSON.parse(text))) }, null)
+    await connection.db.transaction((tx) => notifyAgents(tx, ["claude"]))
+    const deadline = Date.now() + 5000
+    while (!frames.some((f) => f.kind === "agents") && Date.now() < deadline) await Bun.sleep(25)
+    await hub.close()
+    expect(frames.find((f) => f.kind === "agents")).toEqual({ kind: "agents", names: ["claude"] })
   })
 })

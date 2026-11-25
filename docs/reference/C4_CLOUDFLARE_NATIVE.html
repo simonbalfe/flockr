@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Flockr C4: Cloudflare native</title>
+<style>
+  :root {
+    --ink: #0b0b0b;
+    --paper: #ffffff;
+    --line: #111111;
+    --client: #1d4ed8;
+    --client-bg: #dbeafe;
+    --engine: #6d28d9;
+    --engine-bg: #ede9fe;
+    --worker: #047857;
+    --worker-bg: #d1fae5;
+    --actor: #c2410c;
+    --actor-bg: #ffedd5;
+    --hot: #b91c1c;
+    --hot-bg: #fee2e2;
+    --cold: #0e7490;
+    --cold-bg: #cffafe;
+    --ext: #334155;
+    --ext-bg: #e2e8f0;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; padding: 32px 24px 64px; background: var(--paper); color: var(--ink); font: 18px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+  main { max-width: 1320px; margin: 0 auto; }
+  h1 { font-size: 40px; line-height: 1.15; margin: 0 0 28px; }
+  .diagram { overflow-x: auto; }
+  svg { width: 100%; min-width: 1100px; height: auto; display: block; }
+  svg text { fill: var(--ink); font-family: inherit; }
+  .msg { fill: none; stroke: var(--line); stroke-width: 2.5; }
+  .hd { fill: #ffffff !important; font-weight: 700; font-size: 21px; text-anchor: middle; }
+  .t { font-weight: 700; font-size: 20px; }
+  .d { font-size: 17px; fill: #27272a; }
+  .arrow-t { font-size: 18px; font-weight: 500; text-anchor: middle; paint-order: stroke; stroke: var(--paper); stroke-width: 5px; stroke-linejoin: round; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Flockr on Cloudflare (proposed)</h1>
+  <div class="diagram">
+<svg viewBox="0 0 1300 730" role="img" aria-label="Flockr on Cloudflare, container level">
+<defs><marker id="ah" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#111111"/></marker></defs>
+
+<rect x="300" y="60" width="740" height="650" rx="16" fill="none" stroke="var(--ext)" stroke-width="2.5" stroke-dasharray="10 8"/>
+<text class="t" x="320" y="92">Cloudflare</text>
+
+<rect x="20" y="120" width="220" height="250" rx="12" fill="var(--client-bg)" stroke="var(--client)" stroke-width="3"/>
+<path d="M20 132 a12 12 0 0 1 12 -12 h196 a12 12 0 0 1 12 12 V172 H20 z" fill="var(--client)"/>
+<text class="hd" x="130" y="154">People</text>
+<rect x="36" y="186" width="188" height="80" rx="8" fill="#fff" stroke="var(--client)" stroke-width="2"/>
+<text class="t" x="50" y="219">Slack channel</text>
+<text class="d" x="50" y="246">One per agent</text>
+<rect x="36" y="278" width="188" height="80" rx="8" fill="#fff" stroke="var(--client)" stroke-width="2"/>
+<text class="t" x="50" y="311">Flockr app</text>
+<text class="d" x="50" y="338">Web and phone</text>
+
+<rect x="20" y="520" width="220" height="158" rx="12" fill="var(--worker-bg)" stroke="var(--worker)" stroke-width="3"/>
+<path d="M20 532 a12 12 0 0 1 12 -12 h196 a12 12 0 0 1 12 12 V572 H20 z" fill="var(--worker)"/>
+<text class="hd" x="130" y="554">Mac runner</text>
+<rect x="36" y="586" width="188" height="80" rx="8" fill="#fff" stroke="var(--worker)" stroke-width="2"/>
+<text class="t" x="50" y="619">Your agents</text>
+<text class="d" x="50" y="646">Claude Code, Codex</text>
+
+<rect x="320" y="110" width="290" height="342" rx="12" fill="var(--engine-bg)" stroke="var(--engine)" stroke-width="3"/>
+<path d="M320 122 a12 12 0 0 1 12 -12 h266 a12 12 0 0 1 12 12 V162 H320 z" fill="var(--engine)"/>
+<text class="hd" x="465" y="144">Flockr Worker</text>
+<rect x="336" y="176" width="258" height="80" rx="8" fill="#fff" stroke="var(--engine)" stroke-width="2"/>
+<text class="t" x="350" y="209">Board API</text>
+<text class="d" x="350" y="236">Same Hono app as today</text>
+<rect x="336" y="268" width="258" height="80" rx="8" fill="#fff" stroke="var(--engine)" stroke-width="2"/>
+<text class="t" x="350" y="301">Channel adapters</text>
+<text class="d" x="350" y="328">Slack, web, email</text>
+<rect x="336" y="360" width="258" height="80" rx="8" fill="#fff" stroke="var(--engine)" stroke-width="2"/>
+<text class="t" x="350" y="393">Routines</text>
+<text class="d" x="350" y="420">Cron Triggers</text>
+
+<rect x="700" y="110" width="290" height="250" rx="12" fill="var(--actor-bg)" stroke="var(--actor)" stroke-width="3"/>
+<path d="M700 122 a12 12 0 0 1 12 -12 h266 a12 12 0 0 1 12 12 V162 H700 z" fill="var(--actor)"/>
+<text class="hd" x="845" y="144">Durable Objects</text>
+<rect x="716" y="176" width="258" height="80" rx="8" fill="#fff" stroke="var(--actor)" stroke-width="2"/>
+<text class="t" x="730" y="209">Board room</text>
+<text class="d" x="730" y="236">Live events, one per board</text>
+<rect x="716" y="268" width="258" height="80" rx="8" fill="#fff" stroke="var(--actor)" stroke-width="2"/>
+<text class="t" x="730" y="301">Agent</text>
+<text class="d" x="730" y="328">Pi, local SQLite</text>
+
+<rect x="700" y="420" width="290" height="250" rx="12" fill="var(--worker-bg)" stroke="var(--worker)" stroke-width="3"/>
+<path d="M700 432 a12 12 0 0 1 12 -12 h266 a12 12 0 0 1 12 12 V472 H700 z" fill="var(--worker)"/>
+<text class="hd" x="845" y="454">Sandboxes</text>
+<rect x="716" y="486" width="258" height="80" rx="8" fill="#fff" stroke="var(--worker)" stroke-width="2"/>
+<text class="t" x="730" y="519">Computer</text>
+<text class="d" x="730" y="546">Files, light scripts</text>
+<rect x="716" y="578" width="258" height="80" rx="8" fill="#fff" stroke="var(--worker)" stroke-width="2"/>
+<text class="t" x="730" y="611">Container</text>
+<text class="d" x="730" y="638">Tests and builds</text>
+
+<rect x="320" y="530" width="290" height="158" rx="12" fill="var(--cold-bg)" stroke="var(--cold)" stroke-width="3"/>
+<path d="M320 542 a12 12 0 0 1 12 -12 h266 a12 12 0 0 1 12 12 V582 H320 z" fill="var(--cold)"/>
+<text class="hd" x="465" y="564">R2 bucket</text>
+<rect x="336" y="596" width="258" height="80" rx="8" fill="#fff" stroke="var(--cold)" stroke-width="2"/>
+<text class="t" x="350" y="629">Files and backups</text>
+<text class="d" x="350" y="656">Reached through S3 API</text>
+
+<rect x="1090" y="110" width="190" height="158" rx="12" fill="var(--hot-bg)" stroke="var(--hot)" stroke-width="3"/>
+<path d="M1090 122 a12 12 0 0 1 12 -12 h166 a12 12 0 0 1 12 12 V162 H1090 z" fill="var(--hot)"/>
+<text class="hd" x="1185" y="144">Postgres</text>
+<rect x="1106" y="176" width="158" height="80" rx="8" fill="#fff" stroke="var(--hot)" stroke-width="2"/>
+<text class="t" x="1120" y="209">Board data</text>
+<text class="d" x="1120" y="236">Plus agent steps</text>
+
+<rect x="1090" y="300" width="190" height="158" rx="12" fill="var(--ext-bg)" stroke="var(--ext)" stroke-width="3"/>
+<path d="M1090 312 a12 12 0 0 1 12 -12 h166 a12 12 0 0 1 12 12 V352 H1090 z" fill="var(--ext)"/>
+<text class="hd" x="1185" y="334">Outside services</text>
+<rect x="1106" y="366" width="158" height="80" rx="8" fill="#fff" stroke="var(--ext)" stroke-width="2"/>
+<text class="t" x="1120" y="399">Model, GitHub</text>
+<text class="d" x="1120" y="426">AI and code</text>
+
+<path class="msg" d="M240 226 H320" marker-end="url(#ah)"/>
+<text class="arrow-t" x="280" y="214">messages</text>
+
+<path class="msg" d="M130 520 V420 H320" marker-start="url(#ah)" marker-end="url(#ah)"/>
+<text class="arrow-t" x="225" y="408">serves agents</text>
+
+<path class="msg" d="M610 216 H700" marker-start="url(#ah)" marker-end="url(#ah)"/>
+<text class="arrow-t" x="655" y="204">wake</text>
+
+<path class="msg" d="M480 110 V88 H1185 V110" marker-end="url(#ah)"/>
+<text class="arrow-t" x="850" y="80">board data</text>
+
+<path class="msg" d="M465 452 V530" marker-end="url(#ah)"/>
+<text class="arrow-t" x="515" y="496">files</text>
+
+<path class="msg" d="M845 360 V420" marker-end="url(#ah)"/>
+<text class="arrow-t" x="785" y="394">run task</text>
+
+<path class="msg" d="M990 330 H1090" marker-end="url(#ah)"/>
+<path class="msg" d="M990 300 H1050 V220 H1090" marker-end="url(#ah)"/>
+<text class="arrow-t" x="1070" y="208">copy</text>
+<text class="arrow-t" x="1040" y="354">AI calls</text>
+
+<path class="msg" d="M990 620 H1185 V458" marker-end="url(#ah)"/>
+<text class="arrow-t" x="1110" y="608">git</text>
+</svg>
+  </div>
+</main>
+</body>
+</html>
