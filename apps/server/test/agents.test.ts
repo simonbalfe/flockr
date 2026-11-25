@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test"
 import { Agent, AgentDetail, agentPermissions, DeletedAgent, ErrorBody, EventPage, FeedItem, HeartbeatResult, Machine, Member } from "@flockr/contracts"
 import { z } from "zod"
+import { createActivityEntry, getActivityEntry } from "../src/board/activity-entries"
 import { listAgents } from "../src/board/agents"
 import { heartbeat, registerMachine, sweepMachines } from "../src/board/machines"
 import { freshBoard } from "./harness"
@@ -217,5 +218,23 @@ describe("start, stop, update and delete", () => {
     expect(types).toEqual(["agent.created", "agent.deleted"])
     const revived = AgentDetail.parse((await call("simon", "POST", "/api/agents", scout)).json)
     expect(revived.config?.desired).toBe("running")
+  })
+})
+
+describe("runs left behind", () => {
+  test("a machine going offline or its runner registering again ends its agents' running runs", async () => {
+    const { db, call } = await boardWithMachine()
+    await call("simon", "POST", "/api/agents", scout)
+    const posted = z.object({ message: z.object({ id: z.string() }).loose() }).parse((await call("simon", "POST", "/api/channels/backend/messages", { text: "@scout look" })).json).message
+    const t0 = new Date()
+    const at = (seconds: number) => new Date(t0.getTime() + seconds * 1000)
+    await registerMachine(db, "simon", machineBody, t0)
+    const first = await createActivityEntry(db, "scout", posted.id, { title: "Looking", parts: [] }, at(1))
+    expect(first.entry.status).toBe("running")
+    expect(await sweepMachines(db, at(60))).toEqual(["danas-laptop"])
+    expect((await getActivityEntry(db, first.entry.id)).status).toBe("stopped")
+    const second = await createActivityEntry(db, "scout", posted.id, { title: "Looking again", parts: [] }, at(61))
+    await registerMachine(db, "simon", machineBody, at(62))
+    expect((await getActivityEntry(db, second.entry.id)).status).toBe("stopped")
   })
 })

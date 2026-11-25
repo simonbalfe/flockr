@@ -9,7 +9,7 @@ import {
   type StopRunBody,
   type UpdateActivityBody,
 } from "@flockr/contracts"
-import { and, asc, eq, sql } from "drizzle-orm"
+import { and, asc, eq, inArray, sql } from "drizzle-orm"
 import type { Database, Tx } from "../db/client"
 import { activity, members, messages, type MessageRow } from "../db/schema"
 import { setActivity } from "./activity"
@@ -108,6 +108,25 @@ export async function updateActivityEntry(db: Database, actor: string, id: strin
   const entry = present(result.row)
   if (result.applied) await showWorking(db, entry, now)
   return { entry, applied: result.applied }
+}
+
+export async function endRunsOf(db: Database, members: string[], now = new Date()): Promise<string[]> {
+  if (!members.length) return []
+  const rows = await db
+    .select({ id: messages.id, who: messages.who })
+    .from(messages)
+    .where(and(eq(messages.kind, "activity"), inArray(messages.who, members), sql`${messages.activity}->>'status' = 'running'`))
+  const ended: string[] = []
+  for (const row of rows) {
+    const id = messageKey(row.id)
+    try {
+      const result = await updateActivityEntry(db, row.who, id, { updates: [{ type: "run.finished", status: "stopped" }] }, now)
+      if (result.applied) ended.push(id)
+    } catch (error: unknown) {
+      console.error(`could not end run ${id} of ${row.who}`, error)
+    }
+  }
+  return ended
 }
 
 export async function getActivityEntry(db: Database, id: string): Promise<ActivityEntry> {

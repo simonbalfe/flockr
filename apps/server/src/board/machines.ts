@@ -2,6 +2,7 @@ import { machineLimits, type HeartbeatBody, type HeartbeatResult, type Machine, 
 import { and, asc, eq, lt } from "drizzle-orm"
 import type { Database, Executor, Tx } from "../db/client"
 import { agents, machines, type MachineRow } from "../db/schema"
+import { endRunsOf } from "./activity-entries"
 import { harnessesOf, isOnline, listAgents, notifyAgents, statusOf } from "./agents"
 import { notFound } from "./errors"
 import { requireActor } from "./members"
@@ -31,8 +32,13 @@ async function changedOn(tx: Tx, id: string, before: Map<string, string>, now: D
   return [...after].filter(([name, status]) => before.get(name) !== status).map(([name]) => name)
 }
 
+async function agentsOn(db: Executor, id: string): Promise<string[]> {
+  const rows = await db.select({ name: agents.name }).from(agents).where(eq(agents.machine, id))
+  return rows.map((r) => r.name)
+}
+
 export async function registerMachine(db: Database, actor: string, body: RegisterMachineBody, now = new Date()): Promise<Machine> {
-  return db.transaction(async (tx) => {
+  const machine = await db.transaction(async (tx) => {
     await requireActor(tx, actor)
     const before = await statusesOn(tx, body.id, now)
     const values = { name: body.name, harnesses: body.harnesses, lastSeenAt: now, announcedOnline: true }
@@ -45,6 +51,8 @@ export async function registerMachine(db: Database, actor: string, body: Registe
     await notifyAgents(tx, await changedOn(tx, body.id, before, now))
     return present(row, now)
   })
+  await endRunsOf(db, await agentsOn(db, body.id), now)
+  return machine
 }
 
 export async function heartbeat(db: Database, actor: string, id: string, body: HeartbeatBody, now = new Date()): Promise<HeartbeatResult> {
@@ -78,7 +86,7 @@ export async function heartbeat(db: Database, actor: string, id: string, body: H
 
 export async function sweepMachines(db: Database, now = new Date()): Promise<string[]> {
   const cutoff = new Date(now.getTime() - machineLimits.onlineSeconds * 1000)
-  return db.transaction(async (tx) => {
+  const swept = await db.transaction(async (tx) => {
     const gone = await tx
       .update(machines)
       .set({ announcedOnline: false })
@@ -90,6 +98,8 @@ export async function sweepMachines(db: Database, now = new Date()): Promise<str
       names.push(...rows.map((r) => r.name))
     }
     await notifyAgents(tx, names)
-    return gone.map((m) => m.id)
+    return { machines: gone.map((m) => m.id), names }
   })
+  await endRunsOf(db, swept.names, now)
+  return swept.machines
 }
