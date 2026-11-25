@@ -17,6 +17,14 @@
           "topic": {
             "type": "string"
           },
+          "repo": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "example": "github.com/simonbalfe/flockr",
+            "description": "Where the channel's code lives; null when none is set"
+          },
           "unread": {
             "type": "integer",
             "description": "Feed items since the acting member last read the channel"
@@ -25,6 +33,7 @@
         "required": [
           "id",
           "topic",
+          "repo",
           "unread"
         ]
       },
@@ -66,11 +75,47 @@
           "topic": {
             "type": "string",
             "default": ""
+          },
+          "repo": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^[a-z0-9-]+(\\.[a-z0-9-]+)+(\\/[A-Za-z0-9_.-]+)+$",
+                "example": "github.com/simonbalfe/flockr",
+                "description": "Where the channel's code lives; commits link to https://<repo>/commit/<sha>"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
           }
         },
         "required": [
           "id"
         ]
+      },
+      "UpdateChannelBody": {
+        "type": "object",
+        "properties": {
+          "topic": {
+            "type": "string"
+          },
+          "repo": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^[a-z0-9-]+(\\.[a-z0-9-]+)+(\\/[A-Za-z0-9_.-]+)+$",
+                "example": "github.com/simonbalfe/flockr",
+                "description": "Where the channel's code lives; commits link to https://<repo>/commit/<sha>"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Set the channel's repo, or null to clear it"
+          }
+        }
       },
       "FeedItem": {
         "oneOf": [
@@ -1368,11 +1413,12 @@
               "null"
             ]
           },
-          "commit": {
-            "type": [
-              "string",
-              "null"
-            ]
+          "commits": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TaskCommit"
+            },
+            "description": "The commits that did this task, oldest first"
           },
           "reason": {
             "type": [
@@ -1412,7 +1458,7 @@
           "leaseExpiresAt",
           "claimEpoch",
           "spec",
-          "commit",
+          "commits",
           "reason",
           "question",
           "replyCount",
@@ -1428,6 +1474,49 @@
           "blocked",
           "review",
           "done"
+        ]
+      },
+      "TaskCommit": {
+        "type": "object",
+        "properties": {
+          "sha": {
+            "type": "string",
+            "example": "a1b2c3d4e5f60718293a4b5c6d7e8f9012345678"
+          },
+          "short": {
+            "type": "string",
+            "example": "a1b2c3d"
+          },
+          "message": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "url": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "example": "https://github.com/simonbalfe/flockr/commit/a1b2c3d",
+            "description": "Built from the channel's repo; null when the channel has none"
+          },
+          "addedBy": {
+            "type": "string"
+          },
+          "addedAt": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-11-24T10:40:02.000Z"
+          }
+        },
+        "required": [
+          "sha",
+          "short",
+          "message",
+          "url",
+          "addedBy",
+          "addedAt"
         ]
       },
       "Member": {
@@ -1875,6 +1964,29 @@
           "markdown"
         ]
       },
+      "AddCommitBody": {
+        "type": "object",
+        "properties": {
+          "sha": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{7,64}$",
+            "example": "a1b2c3d"
+          },
+          "message": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 500,
+            "description": "The commit's subject line"
+          },
+          "epoch": {
+            "type": "integer",
+            "description": "The claimEpoch from your claim. A stale value is refused with 409."
+          }
+        },
+        "required": [
+          "sha"
+        ]
+      },
       "CompleteBody": {
         "type": "object",
         "properties": {
@@ -1883,7 +1995,10 @@
             "description": "The claimEpoch from your claim. A stale value is refused with 409."
           },
           "commit": {
-            "type": "string"
+            "type": "string",
+            "pattern": "^[0-9a-f]{7,64}$",
+            "example": "a1b2c3d",
+            "description": "A commit that did the work; added to the task's commits"
           },
           "note": {
             "type": "string",
@@ -3462,13 +3577,95 @@
         "tags": [
           "channels"
         ],
-        "summary": "Create a channel",
+        "summary": "Create a channel, optionally naming the repo its commits link to",
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/CreateChannelBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Channel"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The input is not valid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The acting member is not on this board, or may not do this",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The task or message is in another state, or the claim epoch is stale",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/channels/{channel}": {
+      "patch": {
+        "operationId": "updateChannel",
+        "tags": [
+          "channels"
+        ],
+        "summary": "Change a channel's topic or repo. The repo (github.com/owner/name) turns its tasks' commits into links; null clears it.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "example": "backend"
+            },
+            "required": true,
+            "name": "channel",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateChannelBody"
               }
             }
           }
@@ -5301,6 +5498,88 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ChecklistImport"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The input is not valid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The acting member is not on this board, or may not do this",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The task or message is in another state, or the claim epoch is stale",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/tasks/{id}/commits": {
+      "post": {
+        "operationId": "addTaskCommit",
+        "tags": [
+          "tasks"
+        ],
+        "summary": "Add a commit that did this task, in any state. Adding a sha the task already has changes nothing.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "integer",
+              "example": 806
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddCommitBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Task"
                 }
               }
             }

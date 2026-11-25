@@ -15,6 +15,7 @@ export const Channel = z
   .object({
     id: z.string().openapi({ example: "backend" }),
     topic: z.string(),
+    repo: z.string().nullable().openapi({ example: "github.com/simonbalfe/flockr", description: "Where the channel's code lives; null when none is set" }),
     unread: z.number().int().openapi({ description: "Feed items since the acting member last read the channel" }),
   })
   .openapi("Channel")
@@ -38,6 +39,17 @@ export const Question = z
   })
   .openapi("Question")
 
+export const TaskCommit = z
+  .object({
+    sha: z.string().openapi({ example: "a1b2c3d4e5f60718293a4b5c6d7e8f9012345678" }),
+    short: z.string().openapi({ example: "a1b2c3d" }),
+    message: z.string().nullable(),
+    url: z.string().nullable().openapi({ example: "https://github.com/simonbalfe/flockr/commit/a1b2c3d", description: "Built from the channel's repo; null when the channel has none" }),
+    addedBy: z.string(),
+    addedAt: timestamp,
+  })
+  .openapi("TaskCommit")
+
 export const Task = z
   .object({
     id: z.number().int().openapi({ example: 806 }),
@@ -52,7 +64,7 @@ export const Task = z
     leaseExpiresAt: timestamp.nullable(),
     claimEpoch: z.number().int().openapi({ description: "Fence number, raised by every claim. Send it back on renew, complete and reply." }),
     spec: z.string().nullable(),
-    commit: z.string().nullable(),
+    commits: z.array(TaskCommit).openapi({ description: "The commits that did this task, oldest first" }),
     reason: z.string().nullable(),
     question: orNull(Question),
     replyCount: z.number().int(),
@@ -201,6 +213,7 @@ export type Channel = z.infer<typeof Channel>
 export type Member = z.infer<typeof Member>
 export type Question = z.infer<typeof Question>
 export type Task = z.infer<typeof Task>
+export type TaskCommit = z.infer<typeof TaskCommit>
 export type Agent = z.infer<typeof Agent>
 export type AgentDetail = z.infer<typeof AgentDetail>
 export type HeartbeatResult = z.infer<typeof HeartbeatResult>

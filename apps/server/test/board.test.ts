@@ -43,7 +43,8 @@ describe("board reads and writes", () => {
     expect(changed).toMatchObject({ state: "claimed", holder: "claude" })
     await call("claude", "POST", "/api/tasks/816/submit", { commit: "e4f5a6b" })
     const approved = Task.parse((await call("simon", "POST", "/api/tasks/816/approve")).json)
-    expect(approved).toMatchObject({ state: "done", commit: "e4f5a6b" })
+    expect(approved).toMatchObject({ state: "done" })
+    expect(approved.commits.map((c) => c.sha)).toEqual(["a1b2c3d", "e4f5a6b"])
   })
 
   test("block, unblock, fail and unknown members", async () => {

@@ -1,7 +1,8 @@
-import type { AskBody, CompleteBody, Task } from "@flockr/contracts"
+import { shortSha, type AskBody, type CompleteBody, type Task } from "@flockr/contracts"
 import { and, arrayContains, asc, eq, inArray } from "drizzle-orm"
 import type { Database, Tx } from "../db/client"
 import { tasks, type TaskRow } from "../db/schema"
+import { latestCommit, recordCommit } from "./commits"
 import { invalid } from "./errors"
 import { leaseFromNow } from "./claims"
 import { mutate, type Emit } from "./events"
@@ -26,10 +27,11 @@ async function startReadyTasks(tx: Tx, emit: Emit, finished: TaskRow, actor: str
 }
 
 async function finish(tx: Tx, emit: Emit, task: TaskRow, actor: string, type: string, threadText: string, channelText: string, commit?: string): Promise<void> {
-  const row = await updateTask(tx, task.id, { state: "done", leaseExpiresAt: null, question: null, reason: null, ...(commit ? { commit } : {}) })
+  if (commit) await recordCommit(tx, emit, task, actor, { sha: commit })
+  const row = await updateTask(tx, task.id, { state: "done", leaseExpiresAt: null, question: null, reason: null })
   await threadEvent(tx, row, actor, threadText)
   await channelEvent(tx, row.channel, actor, channelText)
-  emitTask(emit, type, row, actor, { commit: row.commit })
+  emitTask(emit, type, row, actor, { commit: commit ?? (await latestCommit(tx, row.id)) })
   await startReadyTasks(tx, emit, row, actor)
 }
 
@@ -51,10 +53,11 @@ export async function submitForReview(db: Database, actor: string, id: number, b
     const task = await lockTask(tx, id)
     requireState(task, "claimed")
     requireHolder(task, member, body.epoch)
-    const commit = body.commit ?? task.commit
-    const note = body.note?.trim() || (commit ? `Done in \`${commit}\`. Ready for review.` : "Done. Ready for review.")
+    if (body.commit) await recordCommit(tx, emit, task, actor, { sha: body.commit })
+    const commit = body.commit ?? (await latestCommit(tx, id))
+    const note = body.note?.trim() || (commit ? `Done in \`${shortSha(commit)}\`. Ready for review.` : "Done. Ready for review.")
     await taskReply(tx, task, actor, note)
-    const row = await updateTask(tx, id, { state: "review", leaseExpiresAt: null, question: null, commit })
+    const row = await updateTask(tx, id, { state: "review", leaseExpiresAt: null, question: null })
     await feedText(tx, row.channel, actor, `Finished #${id}, ready for review.`, id)
     emitTask(emit, "task.submitted", row, actor, { commit })
   })

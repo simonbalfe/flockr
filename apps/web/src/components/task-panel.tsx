@@ -1,4 +1,6 @@
 import { useTask, useTasks, useThread } from "@/api/hooks"
+import { AddCommitDialog } from "@/components/add-commit-dialog"
+import { CommitLinksProvider, CommitSha } from "@/components/commit-link"
 import { Feed } from "@/components/feed"
 import { MemberAvatar } from "@/components/member-avatar"
 import { KeyValueList, PanelFrame, PanelHeading } from "@/components/panel-frame"
@@ -56,7 +58,9 @@ export function TaskPanel({ id }: { id: number }) {
   }
   if (current.reason) rows.push({ label: "Reason", value: <span className="text-destructive">{current.reason}</span> })
   if (current.spec) rows.push({ label: "Spec", value: <span className="font-mono text-[12.5px]">{current.spec}</span> })
-  if (current.commit) rows.push({ label: "Commit", value: <span className="font-mono text-[12.5px]">{current.commit}</span> })
+  if (current.commits.length) {
+    rows.push({ label: current.commits.length === 1 ? "Commit" : "Commits", value: current.commits.map((c) => <CommitSha key={c.sha} commit={c} />) })
+  }
   rows.push({ label: "Kind", value: current.kind })
 
   const showStatus = (current.state === "claimed" || current.state === "waiting" || current.state === "ready") && status.text !== stateLabel[current.state]
@@ -91,13 +95,16 @@ export function TaskPanel({ id }: { id: number }) {
         {current.question && current.state === "claimed" && <QuestionCard task={current} showDetails={false} />}
         <div className="flex flex-wrap items-center gap-2">
           <TaskActions task={current} />
+          <AddCommitDialog taskId={id} />
         </div>
       </ChatItem>
       <ChatItem>
         <PanelHeading>Replies</PanelHeading>
       </ChatItem>
       <ChatItem className="px-5 pb-2">
-        {thread.data?.entries.length ? <Feed entries={thread.data.entries} inThread /> : <div className="px-1 py-2 text-[13px] text-faint">No replies yet.</div>}
+        <CommitLinksProvider commits={current.commits}>
+          {thread.data?.entries.length ? <Feed entries={thread.data.entries} inThread /> : <div className="px-1 py-2 text-[13px] text-faint">No replies yet.</div>}
+        </CommitLinksProvider>
         {working.map((a) => (
           <div key={a.member} className="px-1 py-1.5">
             <AgentWorkingLine activity={a} />

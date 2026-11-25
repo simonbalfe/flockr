@@ -35,7 +35,7 @@ export function ReviewCard({ task }: { task: Task }) {
       <div className="font-semibold">{task.title}</div>
       <div className="mt-[3px] mb-3 text-[13px] text-muted-foreground">
         #{task.id}
-        {task.commit ? ` · ${task.commit}` : ""}
+        {task.commits.length ? ` · ${task.commits.map((c) => c.short).join(", ")}` : ""}
       </div>
       <div className="flex flex-wrap items-center gap-2">
         <Button size="sm" onClick={() => actions.approve(task.id)}>

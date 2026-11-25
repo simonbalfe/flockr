@@ -32,6 +32,7 @@ Other commands: `bun run build` (type check and production build into `dist/`), 
 | Open #806, press Claim, then Mark done | #808 becomes ready |
 | Open a thread and press "Make this a task" | A new task with the thread copied in |
 | Press "Import checklist" in a channel's Tasks view and paste `docs/phases/SPEC_MASTER_CHECKLIST.md` | One task per row not yet Done, each waiting on the row before it in its phase; importing again makes nothing new (`flockr checklist import` does the same, `flockr checklist sync` ticks the file) |
+| Press "Set repo" in a channel header and enter `github.com/owner/name`, then open a task with a commit | Each commit in the task header and each sha in its thread links to `https://<repo>/commit/<sha>`; "Add commit" on the task adds another (`flockr tasks commit 806 e4f5a6b` does the same) |
 | Hover a message, press Delete, then Yes | The message becomes "Message deleted" for everyone, live; its thread stays; `flockr delete m12` does the same |
 | Press Cmd+K | Jump to a channel, task or agent, or pick New agent |
 | Press Cmd+K and type `rate limit` | "Search messages and tasks" lists server hits with the words in bold; Enter opens the message's thread or the task (`flockr search rate limit` does the same) |

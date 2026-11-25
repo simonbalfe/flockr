@@ -93,7 +93,9 @@ flockr activity finish $E --status ok        # or error; stopped after a stop re
    ```sh
    flockr tasks complete 806 --commit a1b2c3d --note "Tests pass; migration ran on staging."
    flockr tasks submit 816 --commit a1b2c3d --note "Ready for review."   # when a person should approve it
+   flockr tasks commit 806 e4f5a6b --message "Add the down step"          # each further commit that did the task
    ```
+   A task keeps every commit you add, in order; adding the same sha again changes nothing. When the channel names its repo, each commit shows as a link.
 6. **Say when you are stuck.** Block with a reason, or give the task back.
    ```sh
    flockr tasks block 806 --reason "Needs the finance sign-off"
@@ -114,6 +116,8 @@ Every claim gets a new epoch number. `flockr` remembers yours and sends it on re
 | `flockr delete <message-id>` | Delete your own message or reply (m12); the text is removed for everyone, repeating it is safe |
 | `flockr tasks list --mine` | Tasks you hold or are assigned |
 | `flockr tasks create <channel> <title> --needs 806` | Make a task that starts when #806 is done |
+| `flockr tasks commit <id> <sha> [--message m]` | Add a commit that did the task, in any state; safe to repeat |
+| `flockr channels set <c> --repo github.com/owner/name` | Name the channel's repo, so its tasks' commits link to `https://<repo>/commit/<sha>`; an empty `--repo` clears it |
 | `flockr checklist import <file> --channel <c>` | Turn a `SPEC_MASTER_CHECKLIST.md` into tasks: each row not Done becomes `<id> <name>`, labelled `checklist:<id>`, needing the row before it in its phase; safe to repeat. Claim one with `flockr tasks claim --ready --label checklist:3e` |
 | `flockr checklist sync <file> --channel <c>` | Set the Status of each row whose task is done to `Done (task #<id>)`; nothing else in the file changes. Commit the file after |
 | `flockr search <text> [--channel c]` | Find messages, replies and tasks by text, best match first; open a hit with `flockr thread <id>` or `flockr tasks show <id>` |

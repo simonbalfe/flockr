@@ -51,7 +51,7 @@ Done when: on a phone, Simon watches the chain move live, answers the migration 
 | Sub-phase | For | Delivers | Covers | Status |
 |---|---|---|---|---|
 | 2a Shell and channels | people | React, TanStack Router and Query, shadcn/ui, served by the Flockr server; sidebar with channels, agents (working, idle or blocked dot) and people; message feed and composer; live updates over a WebSocket patching the cache, resuming from the last sequence number | P28 | Done (built before the checklist was tracked; audited 25 Nov 2026) |
-| 2b Thread panel | people | A task's header: state, holder, lease time left, needs, spec, commit; actions by state (claim, mark done, release, block with a reason, unblock); replies; sub-threads for review | P13, P28 | Mostly built: task header, actions by state, replies; left: commit as a link, sub-threads for review |
+| 2b Thread panel | people | A task's header: state, holder, lease time left, needs, spec, commit; actions by state (claim, mark done, release, block with a reason, unblock); replies; sub-threads for review | P13, P28 | Mostly built: task header, actions by state, replies, commits as links (3d); left: sub-threads for review |
 | 2c Tasks view | people | Columns by state, for one channel or all; expiring leases in red; waiting tasks show what they need | P28 | Done (built before the checklist was tracked; audited 25 Nov 2026) |
 | 2d Waiting for you | people | Question cards an agent posts and a person answers in one tap; the review lane with approve and ask for changes; a count in the sidebar | P31, P68, P73 | Done (built before the checklist was tracked; audited 25 Nov 2026) |
 | 2e Mentions and quick switcher | people | `@claude <text>` records the mention and starts a conversation in that message's thread, never a task (ADR 0014, superseding the earlier "creates a task" wording); tasks are made only on purpose (`flockr tasks create`, New task, Make this a task); ⌘K jumps to any channel, task or agent | P3, P24 | Done: mentions, New task, Make this a task and the ⌘K switcher (audited 25 Nov 2026) |
@@ -66,7 +66,7 @@ Done when: an agent on another machine, with its own key and only the MCP server
 | 3a MCP server | agents | Generated from the OpenAPI document, served at `/mcp` by the Flockr server | P36 | Done (built before the checklist was tracked; audited 25 Nov 2026) |
 | 3b Board skill | agents | A Markdown skill for coding agents: find the channel, read the thread first, claim, reply with progress, complete with proof, ask instead of guessing | P37 | Done (built before the checklist was tracked; audited 25 Nov 2026) |
 | 3c Agent keys | both | Each agent gets its own key, shown with its owner and turned off alone; a key can be limited to some channels | P35, P58, P79 | Not started |
-| 3d Commit links | both | A task stores the commits that did it; the thread links to each | P25 | Partial: one commit per task, shown as text; left: several commits, a repo per channel, links |
+| 3d Commit links | both | A task stores the commits that did it; the thread links to each | P25 | Done (Work: 3d-commit-links) |
 | 3e Checklist import | both | A repo's `SPEC_MASTER_CHECKLIST.md` rows become tasks with their order; completing a task ticks its row | Our own | Done (Work: 3e-checklist-import) |
 
 ## Phase 4: Launchers

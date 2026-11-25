@@ -2,7 +2,7 @@
 
 import type { Client, ClientMeta, Options as Options2, RequestResult, TDataShape } from './client';
 import { client } from './client.gen';
-import type { AnswerInThreadData, AnswerInThreadErrors, AnswerInThreadResponses, AnswerQuestionData, AnswerQuestionErrors, AnswerQuestionResponses, ApproveTaskData, ApproveTaskErrors, ApproveTaskResponses, AskInThreadData, AskInThreadErrors, AskInThreadResponses, AskQuestionData, AskQuestionErrors, AskQuestionResponses, BlockTaskData, BlockTaskErrors, BlockTaskResponses, ClaimNextTaskData, ClaimNextTaskErrors, ClaimNextTaskResponses, ClaimTaskData, ClaimTaskErrors, ClaimTaskResponses, CompleteTaskData, CompleteTaskErrors, CompleteTaskResponses, CreateActivityEntryData, CreateActivityEntryErrors, CreateActivityEntryResponses, CreateAgentData, CreateAgentErrors, CreateAgentResponses, CreateChannelData, CreateChannelErrors, CreateChannelResponses, CreateMemberData, CreateMemberErrors, CreateMemberResponses, CreateTaskData, CreateTaskErrors, CreateTaskResponses, DeleteAgentData, DeleteAgentErrors, DeleteAgentResponses, DeleteMessageData, DeleteMessageErrors, DeleteMessageResponses, FailTaskData, FailTaskErrors, FailTaskResponses, GetActivityEntryData, GetActivityEntryErrors, GetActivityEntryResponses, GetAgentData, GetAgentErrors, GetAgentResponses, GetInboxData, GetInboxErrors, GetInboxResponses, GetTaskData, GetTaskErrors, GetTaskResponses, GetThreadData, GetThreadErrors, GetThreadResponses, GiveTaskData, GiveTaskErrors, GiveTaskResponses, ImportChecklistData, ImportChecklistErrors, ImportChecklistResponses, ListActivityData, ListActivityErrors, ListActivityResponses, ListAgentActivityData, ListAgentActivityErrors, ListAgentActivityResponses, ListAgentsData, ListAgentsErrors, ListAgentsResponses, ListChannelsData, ListChannelsErrors, ListChannelsResponses, ListEventsData, ListEventsErrors, ListEventsResponses, ListMachinesData, ListMachinesErrors, ListMachinesResponses, ListMembersData, ListMembersErrors, ListMembersResponses, ListMessagesData, ListMessagesErrors, ListMessagesResponses, ListTasksData, ListTasksErrors, ListTasksResponses, MachineHeartbeatData, MachineHeartbeatErrors, MachineHeartbeatResponses, MakeTaskFromThreadData, MakeTaskFromThreadErrors, MakeTaskFromThreadResponses, MarkReadData, MarkReadErrors, MarkReadResponses, PostMessageData, PostMessageErrors, PostMessageResponses, RegisterMachineData, RegisterMachineErrors, RegisterMachineResponses, ReleaseTaskData, ReleaseTaskErrors, ReleaseTaskResponses, RenewTaskData, RenewTaskErrors, RenewTaskResponses, ReplyToThreadData, ReplyToThreadErrors, ReplyToThreadResponses, RequestChangesData, RequestChangesErrors, RequestChangesResponses, SearchBoardData, SearchBoardErrors, SearchBoardResponses, SetActivityData, SetActivityErrors, SetActivityResponses, StartAgentData, StartAgentErrors, StartAgentResponses, StopAgentData, StopAgentErrors, StopAgentResponses, StopRunData, StopRunErrors, StopRunResponses, SubmitForReviewData, SubmitForReviewErrors, SubmitForReviewResponses, UnblockTaskData, UnblockTaskErrors, UnblockTaskResponses, UpdateActivityEntryData, UpdateActivityEntryErrors, UpdateActivityEntryResponses, UpdateAgentData, UpdateAgentErrors, UpdateAgentResponses, WhoamiData, WhoamiErrors, WhoamiResponses } from './types.gen';
+import type { AddTaskCommitData, AddTaskCommitErrors, AddTaskCommitResponses, AnswerInThreadData, AnswerInThreadErrors, AnswerInThreadResponses, AnswerQuestionData, AnswerQuestionErrors, AnswerQuestionResponses, ApproveTaskData, ApproveTaskErrors, ApproveTaskResponses, AskInThreadData, AskInThreadErrors, AskInThreadResponses, AskQuestionData, AskQuestionErrors, AskQuestionResponses, BlockTaskData, BlockTaskErrors, BlockTaskResponses, ClaimNextTaskData, ClaimNextTaskErrors, ClaimNextTaskResponses, ClaimTaskData, ClaimTaskErrors, ClaimTaskResponses, CompleteTaskData, CompleteTaskErrors, CompleteTaskResponses, CreateActivityEntryData, CreateActivityEntryErrors, CreateActivityEntryResponses, CreateAgentData, CreateAgentErrors, CreateAgentResponses, CreateChannelData, CreateChannelErrors, CreateChannelResponses, CreateMemberData, CreateMemberErrors, CreateMemberResponses, CreateTaskData, CreateTaskErrors, CreateTaskResponses, DeleteAgentData, DeleteAgentErrors, DeleteAgentResponses, DeleteMessageData, DeleteMessageErrors, DeleteMessageResponses, FailTaskData, FailTaskErrors, FailTaskResponses, GetActivityEntryData, GetActivityEntryErrors, GetActivityEntryResponses, GetAgentData, GetAgentErrors, GetAgentResponses, GetInboxData, GetInboxErrors, GetInboxResponses, GetTaskData, GetTaskErrors, GetTaskResponses, GetThreadData, GetThreadErrors, GetThreadResponses, GiveTaskData, GiveTaskErrors, GiveTaskResponses, ImportChecklistData, ImportChecklistErrors, ImportChecklistResponses, ListActivityData, ListActivityErrors, ListActivityResponses, ListAgentActivityData, ListAgentActivityErrors, ListAgentActivityResponses, ListAgentsData, ListAgentsErrors, ListAgentsResponses, ListChannelsData, ListChannelsErrors, ListChannelsResponses, ListEventsData, ListEventsErrors, ListEventsResponses, ListMachinesData, ListMachinesErrors, ListMachinesResponses, ListMembersData, ListMembersErrors, ListMembersResponses, ListMessagesData, ListMessagesErrors, ListMessagesResponses, ListTasksData, ListTasksErrors, ListTasksResponses, MachineHeartbeatData, MachineHeartbeatErrors, MachineHeartbeatResponses, MakeTaskFromThreadData, MakeTaskFromThreadErrors, MakeTaskFromThreadResponses, MarkReadData, MarkReadErrors, MarkReadResponses, PostMessageData, PostMessageErrors, PostMessageResponses, RegisterMachineData, RegisterMachineErrors, RegisterMachineResponses, ReleaseTaskData, ReleaseTaskErrors, ReleaseTaskResponses, RenewTaskData, RenewTaskErrors, RenewTaskResponses, ReplyToThreadData, ReplyToThreadErrors, ReplyToThreadResponses, RequestChangesData, RequestChangesErrors, RequestChangesResponses, SearchBoardData, SearchBoardErrors, SearchBoardResponses, SetActivityData, SetActivityErrors, SetActivityResponses, StartAgentData, StartAgentErrors, StartAgentResponses, StopAgentData, StopAgentErrors, StopAgentResponses, StopRunData, StopRunErrors, StopRunResponses, SubmitForReviewData, SubmitForReviewErrors, SubmitForReviewResponses, UnblockTaskData, UnblockTaskErrors, UnblockTaskResponses, UpdateActivityEntryData, UpdateActivityEntryErrors, UpdateActivityEntryResponses, UpdateAgentData, UpdateAgentErrors, UpdateAgentResponses, UpdateChannelData, UpdateChannelErrors, UpdateChannelResponses, WhoamiData, WhoamiErrors, WhoamiResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -24,10 +24,22 @@ export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends 
 export const listChannels = <ThrowOnError extends boolean = false>(options?: Options<ListChannelsData, ThrowOnError>): RequestResult<ListChannelsResponses, ListChannelsErrors, ThrowOnError> => (options?.client ?? client).get<ListChannelsResponses, ListChannelsErrors, ThrowOnError>({ url: '/api/channels', ...options });
 
 /**
- * Create a channel
+ * Create a channel, optionally naming the repo its commits link to
  */
 export const createChannel = <ThrowOnError extends boolean = false>(options: Options<CreateChannelData, ThrowOnError>): RequestResult<CreateChannelResponses, CreateChannelErrors, ThrowOnError> => (options.client ?? client).post<CreateChannelResponses, CreateChannelErrors, ThrowOnError>({
     url: '/api/channels',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Change a channel's topic or repo. The repo (github.com/owner/name) turns its tasks' commits into links; null clears it.
+ */
+export const updateChannel = <ThrowOnError extends boolean = false>(options: Options<UpdateChannelData, ThrowOnError>): RequestResult<UpdateChannelResponses, UpdateChannelErrors, ThrowOnError> => (options.client ?? client).patch<UpdateChannelResponses, UpdateChannelErrors, ThrowOnError>({
+    url: '/api/channels/{channel}',
     ...options,
     headers: {
         'Content-Type': 'application/json',
@@ -225,6 +237,18 @@ export const giveTask = <ThrowOnError extends boolean = false>(options: Options<
  */
 export const importChecklist = <ThrowOnError extends boolean = false>(options: Options<ImportChecklistData, ThrowOnError>): RequestResult<ImportChecklistResponses, ImportChecklistErrors, ThrowOnError> => (options.client ?? client).post<ImportChecklistResponses, ImportChecklistErrors, ThrowOnError>({
     url: '/api/channels/{channel}/checklist',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Add a commit that did this task, in any state. Adding a sha the task already has changes nothing.
+ */
+export const addTaskCommit = <ThrowOnError extends boolean = false>(options: Options<AddTaskCommitData, ThrowOnError>): RequestResult<AddTaskCommitResponses, AddTaskCommitErrors, ThrowOnError> => (options.client ?? client).post<AddTaskCommitResponses, AddTaskCommitErrors, ThrowOnError>({
+    url: '/api/tasks/{id}/commits',
     ...options,
     headers: {
         'Content-Type': 'application/json',

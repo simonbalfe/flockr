@@ -8,6 +8,10 @@ export type Channel = {
     id: string;
     topic: string;
     /**
+     * Where the channel's code lives; null when none is set
+     */
+    repo: string | null;
+    /**
      * Feed items since the acting member last read the channel
      */
     unread: number;
@@ -21,6 +25,15 @@ export type Error = {
 export type CreateChannelBody = {
     id: string;
     topic?: string;
+    repo?: string | null;
+};
+
+export type UpdateChannelBody = {
+    topic?: string;
+    /**
+     * Set the channel's repo, or null to clear it
+     */
+    repo?: string | null;
 };
 
 export type FeedItem = ({
@@ -413,7 +426,10 @@ export type Task = {
      */
     claimEpoch: number;
     spec: string | null;
-    commit: string | null;
+    /**
+     * The commits that did this task, oldest first
+     */
+    commits: Array<TaskCommit>;
     reason: string | null;
     question: Question | null;
     replyCount: number;
@@ -421,6 +437,18 @@ export type Task = {
 };
 
 export type TaskState = 'waiting' | 'ready' | 'claimed' | 'blocked' | 'review' | 'done';
+
+export type TaskCommit = {
+    sha: string;
+    short: string;
+    message: string | null;
+    /**
+     * Built from the channel's repo; null when the channel has none
+     */
+    url: string | null;
+    addedBy: string;
+    addedAt: string;
+};
 
 export type Member = {
     name: string;
@@ -573,11 +601,26 @@ export type ImportChecklistBody = {
     markdown: string;
 };
 
+export type AddCommitBody = {
+    sha: string;
+    /**
+     * The commit's subject line
+     */
+    message?: string;
+    /**
+     * The claimEpoch from your claim. A stale value is refused with 409.
+     */
+    epoch?: number;
+};
+
 export type CompleteBody = {
     /**
      * The claimEpoch from your claim. A stale value is refused with 409.
      */
     epoch?: number;
+    /**
+     * A commit that did the work; added to the task's commits
+     */
     commit?: string;
     /**
      * Proof of the work, posted in the thread
@@ -1185,6 +1228,45 @@ export type CreateChannelResponses = {
 };
 
 export type CreateChannelResponse = CreateChannelResponses[keyof CreateChannelResponses];
+
+export type UpdateChannelData = {
+    body: UpdateChannelBody;
+    path: {
+        channel: string;
+    };
+    query?: never;
+    url: '/api/channels/{channel}';
+};
+
+export type UpdateChannelErrors = {
+    /**
+     * The input is not valid
+     */
+    400: Error;
+    /**
+     * The acting member is not on this board, or may not do this
+     */
+    403: Error;
+    /**
+     * Not found
+     */
+    404: Error;
+    /**
+     * The task or message is in another state, or the claim epoch is stale
+     */
+    409: Error;
+};
+
+export type UpdateChannelError = UpdateChannelErrors[keyof UpdateChannelErrors];
+
+export type UpdateChannelResponses = {
+    /**
+     * OK
+     */
+    200: Channel;
+};
+
+export type UpdateChannelResponse = UpdateChannelResponses[keyof UpdateChannelResponses];
 
 export type MarkReadData = {
     body?: never;
@@ -2130,6 +2212,45 @@ export type ImportChecklistResponses = {
 };
 
 export type ImportChecklistResponse = ImportChecklistResponses[keyof ImportChecklistResponses];
+
+export type AddTaskCommitData = {
+    body: AddCommitBody;
+    path: {
+        id: number;
+    };
+    query?: never;
+    url: '/api/tasks/{id}/commits';
+};
+
+export type AddTaskCommitErrors = {
+    /**
+     * The input is not valid
+     */
+    400: Error;
+    /**
+     * The acting member is not on this board, or may not do this
+     */
+    403: Error;
+    /**
+     * Not found
+     */
+    404: Error;
+    /**
+     * The task or message is in another state, or the claim epoch is stale
+     */
+    409: Error;
+};
+
+export type AddTaskCommitError = AddTaskCommitErrors[keyof AddTaskCommitErrors];
+
+export type AddTaskCommitResponses = {
+    /**
+     * OK
+     */
+    200: Task;
+};
+
+export type AddTaskCommitResponse = AddTaskCommitResponses[keyof AddTaskCommitResponses];
 
 export type CompleteTaskData = {
     body: CompleteBody;

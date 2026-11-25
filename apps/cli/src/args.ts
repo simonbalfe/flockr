@@ -20,6 +20,8 @@ export const flags = {
   timeout: { type: "string" },
   reason: { type: "string" },
   commit: { type: "string" },
+  message: { type: "string" },
+  repo: { type: "string" },
   note: { type: "string" },
   epoch: { type: "string" },
   option: { type: "string", multiple: true },

@@ -2,6 +2,7 @@ import { Children, type ReactNode } from "react"
 import ReactMarkdown, { type Components } from "react-markdown"
 import remarkGfm from "remark-gfm"
 import remend from "remend"
+import { InlineCode } from "@/components/commit-link"
 import { RichText } from "@/components/rich-text"
 import { CodeBlock, CodeBlockActions, CodeBlockContent, CodeBlockCopyButton, CodeBlockHeader, CodeBlockTitle } from "@/components/ui/code-block"
 import { cn } from "@/lib/utils"
@@ -41,7 +42,7 @@ const components: Components = {
   code: ({ className, children }) => {
     const language = /language-(\S+)/.exec(className ?? "")?.[1]
     const text = textOf(children)
-    if (!language && !text.includes("\n")) return <code className="rounded bg-muted px-1 py-px font-mono text-[12.5px]">{children}</code>
+    if (!language && !text.includes("\n")) return <InlineCode text={text}>{children}</InlineCode>
     return (
       <CodeBlock size="sm" className="my-2">
         {language && (

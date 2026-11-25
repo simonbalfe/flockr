@@ -206,7 +206,7 @@ Each one is the problem, an example from our own work, then the choice.
 | Slack habit | On the board |
 |---|---|
 | Sidebar of channels and DMs | Channels, then agents with a live dot (working, idle, blocked), then people |
-| Thread panel on the right | A task's thread, with its holder, lease, needs, spec, commit and actions in the header |
+| Thread panel on the right | A task's thread, with its holder, lease, needs, spec, commits (links when the channel names its repo) and actions in the header |
 | Mentions and activity | "Waiting for you": questions from agents, and finished work to review |
 | `@` someone | `@claude fix the CPU limit` starts a conversation with claude in that message's thread; no task is made (ADR 0014). A task is made on purpose with New task or `flockr tasks create --for claude` |
 | "is typing" | "claude is working on #803, 11 min left" under the message box |

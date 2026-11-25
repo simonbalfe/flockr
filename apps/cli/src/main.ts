@@ -38,6 +38,7 @@ Writing
   fc tasks release <id> [--keep]      give it back; if it is assigned to you this also declines it (--keep stays assigned)
   fc tasks complete <id> [--commit sha] [--note proof]
   fc tasks submit <id> [--commit sha] [--note proof]     send for review
+  fc tasks commit <id> <sha> [--message subject]   add a commit that did the task; the same sha twice changes nothing
   fc tasks fail|block <id> --reason <text>
   fc tasks changes <id> [--note text]
   fc tasks give <id> <member>
@@ -77,7 +78,8 @@ Agents served by a machine (a runner on that machine starts their sessions; a pe
   fc agents start|stop|delete <name>  stop ends its sessions and releases its claims; delete keeps its messages
   fc agents activity <name> [--limit n]   its recent runs across threads, newest first, with the thread each is in
   fc machines                         machines with a runner, online or not, and the harnesses each can run
-  fc channels create <id> [--topic text]
+  fc channels create <id> [--topic text] [--repo github.com/owner/name]
+  fc channels set <id> [--topic text] [--repo github.com/owner/name]   an empty --repo clears it; with a repo, commits print as links
 
 Live
   fc tail [--since seq]               stream board events, resuming after drops
@@ -268,6 +270,12 @@ async function tasks(v: Values): Promise<number> {
     case "changes":
       printTask(await run(sdk.requestChanges({ path: { id: idArg() }, body: { note: v.note } })))
       return 0
+    case "commit": {
+      const id = idArg()
+      const body = { sha: need(positionals[3], "commit sha"), message: v.message, epoch: optionalInt(v.epoch, "--epoch") }
+      printTask(await run(sdk.addTaskCommit({ path: { id }, body })))
+      return 0
+    }
     case "give":
       printTask(await run(sdk.giveTask({ path: { id: idArg() }, body: { to: need(positionals[3], "member") } })))
       return 0
@@ -285,7 +293,15 @@ async function main(): Promise<number> {
   switch (command) {
     case "channels": {
       if (positionals[1] === "create") {
-        const channel = await run(sdk.createChannel({ body: { id: need(positionals[2], "channel id"), topic: values.topic ?? "" } }))
+        const body = { id: need(positionals[2], "channel id").replace(/^#/, ""), topic: values.topic ?? "", repo: values.repo || null }
+        const channel = await run(sdk.createChannel({ body }))
+        print(channel, () => channelLine(channel))
+        return 0
+      }
+      if (positionals[1] === "set") {
+        const body = { topic: values.topic, repo: values.repo === undefined ? undefined : values.repo || null }
+        if (body.topic === undefined && body.repo === undefined) throw new UsageError("Give --topic or --repo")
+        const channel = await run(sdk.updateChannel({ path: { channel: need(positionals[2], "channel id").replace(/^#/, "") }, body }))
         print(channel, () => channelLine(channel))
         return 0
       }

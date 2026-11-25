@@ -1,10 +1,23 @@
-import { CompleteBody, ReasonBody, Task, TaskParams } from "@flockr/contracts"
+import { AddCommitBody, CompleteBody, ReasonBody, Task, TaskParams } from "@flockr/contracts"
+import { addTaskCommit } from "../board/commits"
 import { blockTask, completeTask, failTask, submitForReview, unblockTask } from "../board/flow"
 import { jsonBody, ok, operation, router } from "./shared"
 
 const tags: [string] = ["tasks"]
 
 export const flowRoutes = router()
+  .openapi(
+    operation({
+      method: "post",
+      path: "/api/tasks/{id}/commits",
+      operationId: "addTaskCommit",
+      tags,
+      summary: "Add a commit that did this task, in any state. Adding a sha the task already has changes nothing.",
+      request: { params: TaskParams, body: jsonBody(AddCommitBody) },
+      responses: ok(Task),
+    }),
+    async (c) => c.json(await addTaskCommit(c.var.db, c.var.member, c.req.valid("param").id, c.req.valid("json")), 200),
+  )
   .openapi(
     operation({
       method: "post",

@@ -2,6 +2,7 @@ import { z } from "@hono/zod-openapi"
 import { ApprovalAction } from "./activity"
 import { Activity, MemberKind, orNull, Task, TaskState, TextMessage } from "./board"
 import { checklistLimits, checklistSkipReasons } from "./checklist"
+import { commitMessageChars, Repo, Sha } from "./commits"
 
 const text = z.string().trim().min(1)
 const epoch = z.number().int().optional().openapi({ description: "The claimEpoch from your claim. A stale value is refused with 409." })
@@ -17,8 +18,15 @@ export const MessageParams = z.object({
 export const MemberParams = z.object({ name: z.string().openapi({ param: { name: "name", in: "path" }, example: "reviewer" }) })
 
 export const CreateChannelBody = z
-  .object({ id: z.string().regex(/^[a-z0-9][a-z0-9-]*$/).openapi({ example: "frontend" }), topic: z.string().default("") })
+  .object({ id: z.string().regex(/^[a-z0-9][a-z0-9-]*$/).openapi({ example: "frontend" }), topic: z.string().default(""), repo: orNull(Repo).default(null) })
   .openapi("CreateChannelBody")
+
+export const UpdateChannelBody = z
+  .object({
+    topic: z.string().optional(),
+    repo: orNull(Repo).optional().openapi({ description: "Set the channel's repo, or null to clear it" }),
+  })
+  .openapi("UpdateChannelBody")
 
 export const CreateMemberBody = z
   .object({
@@ -75,8 +83,19 @@ export const ReleaseBody = z
   .openapi("ReleaseBody")
 export const GiveBody = z.object({ to: z.string() }).openapi("GiveBody")
 export const CompleteBody = z
-  .object({ epoch, commit: z.string().optional(), note: z.string().optional().openapi({ description: "Proof of the work, posted in the thread" }) })
+  .object({
+    epoch,
+    commit: Sha.optional().openapi({ description: "A commit that did the work; added to the task's commits" }),
+    note: z.string().optional().openapi({ description: "Proof of the work, posted in the thread" }),
+  })
   .openapi("CompleteBody")
+export const AddCommitBody = z
+  .object({
+    sha: Sha,
+    message: z.string().trim().min(1).max(commitMessageChars).optional().openapi({ description: "The commit's subject line" }),
+    epoch,
+  })
+  .openapi("AddCommitBody")
 export const ReasonBody = z.object({ reason: text, epoch }).openapi("ReasonBody")
 export const ChangesBody = z.object({ note: z.string().optional() }).openapi("ChangesBody")
 export const AskBody = z
@@ -139,6 +158,9 @@ export type CreateTaskBody = z.infer<typeof CreateTaskBody>
 export type CreateMemberBody = z.infer<typeof CreateMemberBody>
 export type AskBody = z.infer<typeof AskBody>
 export type CompleteBody = z.infer<typeof CompleteBody>
+export type AddCommitBody = z.infer<typeof AddCommitBody>
+export type CreateChannelBody = z.infer<typeof CreateChannelBody>
+export type UpdateChannelBody = z.infer<typeof UpdateChannelBody>
 export type ThreadAskBody = z.infer<typeof ThreadAskBody>
 export type ImportChecklistBody = z.infer<typeof ImportChecklistBody>
 export type ChecklistImport = z.infer<typeof ChecklistImport>

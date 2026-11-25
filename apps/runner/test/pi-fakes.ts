@@ -92,7 +92,7 @@ export class FakePiBoard implements PiBoard {
       leaseExpiresAt: null,
       claimEpoch: 0,
       spec: task.spec,
-      commit: null,
+      commits: [],
       reason: null,
       question: null,
       replyCount: 0,

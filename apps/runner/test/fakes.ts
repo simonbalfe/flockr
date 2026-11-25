@@ -77,7 +77,7 @@ export function task(values: Partial<Task> & { id: number }): Task {
     leaseExpiresAt: null,
     claimEpoch: 0,
     spec: null,
-    commit: null,
+    commits: [],
     reason: null,
     question: null,
     replyCount: 0,

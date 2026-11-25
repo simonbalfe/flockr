@@ -1,7 +1,7 @@
-import { ActivityState, type ActivityEntry, type Channel, Event, FeedItem, Inbox, ListTasksQuery, Member, Reply, Task, TextMessage, Thread, ThreadEntry, ThreadQuestion, ThreadSummary } from "@flockr/contracts"
+import { ActivityState, commitUrl, shortSha, type ActivityEntry, type Channel, type TaskCommit, Event, FeedItem, Inbox, ListTasksQuery, Member, Reply, Task, TextMessage, Thread, ThreadEntry, ThreadQuestion, ThreadSummary } from "@flockr/contracts"
 import { and, asc, eq, inArray, isNotNull, isNull, or, sql, type SQL } from "drizzle-orm"
 import type { Executor } from "../db/client"
-import { channels, members, messages, tasks, type MemberRow, type MessageRow, type TaskRow } from "../db/schema"
+import { channels, members, messages, taskCommits, tasks, type MemberRow, type MessageRow, type TaskRow } from "../db/schema"
 import { notFound } from "./errors"
 
 export const messageKey = (id: number) => `m${id}`
@@ -30,7 +30,32 @@ async function replyCounts(db: Executor, ids: number[]): Promise<Map<number, num
   return new Map(rows.map((r) => [r.id ?? 0, r.count]))
 }
 
-function presentTaskRow(row: TaskRow, replyCount: number): Task {
+async function commitsByTask(db: Executor, ids: number[]): Promise<Map<number, TaskCommit[]>> {
+  const grouped = new Map<number, TaskCommit[]>()
+  if (!ids.length) return grouped
+  const rows = await db
+    .select({ commit: taskCommits, repo: channels.repo })
+    .from(taskCommits)
+    .innerJoin(tasks, eq(tasks.id, taskCommits.taskId))
+    .innerJoin(channels, eq(channels.id, tasks.channel))
+    .where(inArray(taskCommits.taskId, ids))
+    .orderBy(asc(taskCommits.id))
+  for (const { commit, repo } of rows) {
+    const list = grouped.get(commit.taskId) ?? []
+    list.push({
+      sha: commit.sha,
+      short: shortSha(commit.sha),
+      message: commit.message,
+      url: commitUrl(repo, commit.sha),
+      addedBy: commit.addedBy,
+      addedAt: commit.addedAt.toISOString(),
+    })
+    grouped.set(commit.taskId, list)
+  }
+  return grouped
+}
+
+function presentTaskRow(row: TaskRow, replyCount: number, commits: TaskCommit[]): Task {
   return {
     id: row.id,
     title: row.title,
@@ -44,7 +69,7 @@ function presentTaskRow(row: TaskRow, replyCount: number): Task {
     leaseExpiresAt: row.leaseExpiresAt?.toISOString() ?? null,
     claimEpoch: row.claimEpoch,
     spec: row.spec,
-    commit: row.commit,
+    commits,
     reason: row.reason,
     question: row.question,
     replyCount,
@@ -53,11 +78,9 @@ function presentTaskRow(row: TaskRow, replyCount: number): Task {
 }
 
 export async function presentTasks(db: Executor, rows: TaskRow[]): Promise<Task[]> {
-  const counts = await replyCounts(
-    db,
-    rows.map((r) => r.id),
-  )
-  return rows.map((row) => presentTaskRow(row, counts.get(row.id) ?? 0))
+  const ids = rows.map((r) => r.id)
+  const [counts, commits] = await Promise.all([replyCounts(db, ids), commitsByTask(db, ids)])
+  return rows.map((row) => presentTaskRow(row, counts.get(row.id) ?? 0, commits.get(row.id) ?? []))
 }
 
 export async function findTask(db: Executor, id: number): Promise<TaskRow> {
@@ -112,6 +135,7 @@ export async function listChannels(db: Executor, member: string): Promise<Channe
     .select({
       id: channels.id,
       topic: channels.topic,
+      repo: channels.repo,
       unread: sql<number>`(
         select count(*)::int from messages m
         where m.channel = "channels"."id" and m.parent_id is null and m.thread_task_id is null and m.who <> ${member}

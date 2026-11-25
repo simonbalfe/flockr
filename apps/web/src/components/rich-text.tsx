@@ -1,5 +1,6 @@
 import type { ReactNode } from "react"
 import { useMembers, useTasks } from "@/api/hooks"
+import { InlineCode } from "@/components/commit-link"
 import { usePanel } from "@/lib/panel"
 
 const token = /`([^`]+)`|@([a-z][a-z-]*)|#(\d{3})\b/g
@@ -17,11 +18,7 @@ export function RichText({ text }: { text: string }) {
     if (start > last) parts.push(text.slice(last, start))
     const [whole, code, mention, taskId] = match
     if (code) {
-      parts.push(
-        <code key={start} className="rounded bg-muted px-1 py-px font-mono text-[12.5px]">
-          {code}
-        </code>,
-      )
+      parts.push(<InlineCode key={start} text={code} />)
     } else if (mention && memberNames.has(mention)) {
       parts.push(
         <span key={start} className="rounded bg-muted px-[3px] font-medium text-foreground">

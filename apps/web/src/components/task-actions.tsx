@@ -83,6 +83,6 @@ export function TaskActions({ task }: { task: Task }) {
     case "waiting":
       return hint(`Starts by itself when ${task.needs.map((n) => `#${n}`).join(", ")} ${task.needs.length > 1 ? "are" : "is"} done.`)
     case "done":
-      return hint(`Completed${task.commit ? ` in ${task.commit}` : ""}.`)
+      return hint(`Completed${task.commits.length ? ` in ${task.commits.map((c) => c.short).join(", ")}` : ""}.`)
   }
 }

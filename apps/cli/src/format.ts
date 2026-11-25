@@ -1,10 +1,14 @@
 import { currentStep, partHeadline, type ActivityEntry } from "@flockr/client"
-import type { Activity, BoardEvent, Channel, FeedItem, Inbox, Member, SearchHit, SnippetPart, Task, Thread, ThreadEntry, ThreadQuestion } from "@flockr/client"
+import type { Activity, BoardEvent, Channel, FeedItem, Inbox, Member, SearchHit, SnippetPart, Task, TaskCommit, Thread, ThreadEntry, ThreadQuestion } from "@flockr/client"
 
 export const clock = (iso: string) => {
   const d = new Date(iso)
   return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`
 }
+
+const lastCommit = (task: Task) => task.commits[task.commits.length - 1]?.short
+
+export const commitLine = (c: TaskCommit) => [c.short, c.url, c.message].filter(Boolean).join("  ")
 
 const minutesLeft = (iso: string | null) => (iso ? Math.max(0, Math.ceil((Date.parse(iso) - Date.now()) / 60_000)) : 0)
 
@@ -19,9 +23,9 @@ export function taskStatus(task: Task): string {
     case "blocked":
       return `blocked: ${task.reason ?? "no reason"}`
     case "review":
-      return `in review${task.commit ? ` (${task.commit})` : ""}`
+      return `in review${lastCommit(task) ? ` (${lastCommit(task)})` : ""}`
     case "done":
-      return `done${task.commit ? ` in ${task.commit}` : ""}`
+      return `done${lastCommit(task) ? ` in ${lastCommit(task)}` : ""}`
   }
 }
 
@@ -34,13 +38,13 @@ export function taskDetail(task: Task): string {
   if (task.holder) lines.push(`  holder    ${task.holder}`)
   if (task.needs.length) lines.push(`  needs     ${task.needs.map((n) => `#${n}`).join(", ")}`)
   if (task.spec) lines.push(`  spec      ${task.spec}`)
-  if (task.commit) lines.push(`  commit    ${task.commit}`)
+  for (const c of task.commits) lines.push(`  commit    ${commitLine(c)}`)
   if (task.question) lines.push(`  question  ${task.question.text} (${task.question.options.join(" / ")})`)
   lines.push(`  epoch     ${task.claimEpoch}`, `  replies   ${task.replyCount} (fc thread ${task.id})`)
   return lines.join("\n")
 }
 
-export const channelLine = (c: Channel) => `#${c.id.padEnd(12)} ${c.unread ? `${c.unread} unread  ` : ""}${c.topic}`
+export const channelLine = (c: Channel) => `#${c.id.padEnd(12)} ${c.unread ? `${c.unread} unread  ` : ""}${c.topic}${c.repo ? `  (${c.repo})` : ""}`
 
 export const memberLine = (m: Member) =>
   `${m.name.padEnd(14)} ${m.kind.padEnd(8)} ${m.owner ? `via ${m.owner}` : ""}${m.runsIn ? `  ${m.runsIn}` : ""}${m.source ? `  from ${m.source}` : ""}`
@@ -95,7 +99,7 @@ export function inboxText(inbox: Inbox): string {
     ...inbox.questions.map((t) => `  #${t.id} ${t.holder}: ${t.question?.text} [${t.question?.options.join(" / ")}]`),
     ...inbox.threadQuestions.map((q) => `  ${q.threadId} ${q.who} in #${q.channel}: ${questionText(q)}`),
   ]
-  const reviews = inbox.reviews.map((t) => `  #${t.id} ${t.title}${t.commit ? ` (${t.commit})` : ""} by ${t.holder}`)
+  const reviews = inbox.reviews.map((t) => `  #${t.id} ${t.title}${lastCommit(t) ? ` (${lastCommit(t)})` : ""} by ${t.holder}`)
   return ["Questions", ...(questions.length ? questions : ["  none"]), "To review", ...(reviews.length ? reviews : ["  none"])].join("\n")
 }
 

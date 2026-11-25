@@ -1,7 +1,7 @@
 import { mentionsIn } from "@flockr/contracts"
 import { sql } from "drizzle-orm"
 import type { Database, Tx } from "../db/client"
-import { channels, members, messages, reads, tasks } from "../db/schema"
+import { channels, members, messages, reads, taskCommits, tasks } from "../db/schema"
 import { mutate } from "../board/events"
 import { seedChannels, seedClock, seedFeeds, seedMembers, seedTasks, unreadForSimon, type SeedReply } from "./data"
 
@@ -11,7 +11,7 @@ const minutesOf = (clock: string) => {
 }
 
 export async function resetBoard(db: Database): Promise<void> {
-  await db.execute(sql`truncate events, activity, reads, messages, tasks, channels, agents, machines, members, boards restart identity cascade`)
+  await db.execute(sql`truncate events, activity, reads, messages, task_commits, tasks, channels, agents, machines, members, boards restart identity cascade`)
 }
 
 export async function seedBoard(db: Database, now = new Date()): Promise<boolean> {
@@ -39,12 +39,12 @@ export async function seedBoard(db: Database, now = new Date()): Promise<boolean
         leaseExpiresAt: t.leaseMinutes ? new Date(now.getTime() + t.leaseMinutes * 60_000) : null,
         claimEpoch: t.claimEpoch ?? 0,
         spec: t.spec ?? null,
-        commit: t.commit ?? null,
         reason: t.reason ?? null,
         question: t.question ?? null,
         createdAt: at(t.at),
         updatedAt: at(t.at),
       })
+      if (t.commit) await tx.insert(taskCommits).values({ taskId: t.id, sha: t.commit, addedBy: t.holder ?? "simon", addedAt: at(t.at) })
     }
 
     const names = new Set(seedMembers.map((m) => m.name))

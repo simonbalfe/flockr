@@ -22,6 +22,7 @@ export type {
   SearchHit,
   SnippetPart,
   Task,
+  TaskCommit,
   TaskMessage,
   TaskState,
   TextMessage,

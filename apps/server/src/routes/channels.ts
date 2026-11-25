@@ -1,6 +1,6 @@
-import { Channel, ChannelParams, CreateChannelBody } from "@flockr/contracts"
+import { Channel, ChannelParams, CreateChannelBody, UpdateChannelBody } from "@flockr/contracts"
 import { z } from "@hono/zod-openapi"
-import { createChannel, markRead } from "../board/channels"
+import { createChannel, markRead, updateChannel } from "../board/channels"
 import { listChannels } from "../board/read"
 import { jsonBody, ok, operation, router } from "./shared"
 
@@ -17,14 +17,23 @@ export const channelRoutes = router()
       path: "/api/channels",
       operationId: "createChannel",
       tags,
-      summary: "Create a channel",
+      summary: "Create a channel, optionally naming the repo its commits link to",
       request: { body: jsonBody(CreateChannelBody) },
       responses: ok(Channel),
     }),
-    async (c) => {
-      const body = c.req.valid("json")
-      return c.json(await createChannel(c.var.db, c.var.member, body.id, body.topic), 200)
-    },
+    async (c) => c.json(await createChannel(c.var.db, c.var.member, c.req.valid("json")), 200),
+  )
+  .openapi(
+    operation({
+      method: "patch",
+      path: "/api/channels/{channel}",
+      operationId: "updateChannel",
+      tags,
+      summary: "Change a channel's topic or repo. The repo (github.com/owner/name) turns its tasks' commits into links; null clears it.",
+      request: { params: ChannelParams, body: jsonBody(UpdateChannelBody) },
+      responses: ok(Channel),
+    }),
+    async (c) => c.json(await updateChannel(c.var.db, c.var.member, c.req.valid("param").channel, c.req.valid("json")), 200),
   )
   .openapi(
     operation({

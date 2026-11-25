@@ -1,6 +1,6 @@
 import type { ActivityState, AgentDesired, AgentPermissions, AgentReport, HarnessInfo, MemberKind, Question, TaskState } from "@flockr/contracts"
 import { sql } from "drizzle-orm"
-import { bigint, boolean, check, index, integer, jsonb, pgTable, primaryKey, text, timestamp, type AnyPgColumn } from "drizzle-orm/pg-core"
+import { bigint, boolean, check, index, integer, jsonb, pgTable, primaryKey, text, timestamp, uniqueIndex, type AnyPgColumn } from "drizzle-orm/pg-core"
 
 const createdAt = () => timestamp("created_at", { withTimezone: true }).notNull().defaultNow()
 
@@ -68,6 +68,7 @@ export const agents = pgTable(
 export const channels = pgTable("channels", {
   id: text("id").primaryKey(),
   topic: text("topic").notNull().default(""),
+  repo: text("repo"),
   createdAt: createdAt(),
 })
 
@@ -88,7 +89,6 @@ export const tasks = pgTable(
     leaseExpiresAt: timestamp("lease_expires_at", { withTimezone: true }),
     claimEpoch: integer("claim_epoch").notNull().default(0),
     spec: text("spec"),
-    commit: text("commit"),
     reason: text("reason"),
     question: jsonb("question").$type<Question>(),
     createdAt: createdAt(),
@@ -100,6 +100,21 @@ export const tasks = pgTable(
     index("tasks_channel").on(t.channel),
     index("tasks_search").using("gin", taskSearchVector(t.title, t.spec)),
   ],
+)
+
+export const taskCommits = pgTable(
+  "task_commits",
+  {
+    id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+    taskId: integer("task_id")
+      .notNull()
+      .references(() => tasks.id),
+    sha: text("sha").notNull(),
+    message: text("message"),
+    addedBy: text("added_by").notNull(),
+    addedAt: timestamp("added_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [uniqueIndex("task_commits_task_sha").on(t.taskId, t.sha)],
 )
 
 export const messages = pgTable(
@@ -190,6 +205,8 @@ export const events = pgTable(
 )
 
 export type TaskRow = typeof tasks.$inferSelect
+export type TaskCommitRow = typeof taskCommits.$inferSelect
+export type ChannelRow = typeof channels.$inferSelect
 export type MessageRow = typeof messages.$inferSelect
 export type MemberRow = typeof members.$inferSelect
 export type ActivityRow = typeof activity.$inferSelect

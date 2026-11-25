@@ -1,5 +1,6 @@
 import { configureClient, connectLive, type BoardEvent } from "@flockr/client"
 import {
+  addTaskCommitMutation,
   answerInThreadMutation,
   answerQuestionMutation,
   approveTaskMutation,
@@ -29,6 +30,7 @@ import {
   requestChangesMutation,
   searchBoardOptions,
   unblockTaskMutation,
+  updateChannelMutation,
 } from "@flockr/client/react-query"
 import { keepPreviousData, queryOptions, useMutation, useQuery, useQueryClient, type MutateOptions, type QueryClient, type UseMutationOptions } from "@tanstack/react-query"
 import { useEffect } from "react"
@@ -144,3 +146,7 @@ export const useCreateTask = () =>
   }))
 export const useImportChecklist = () =>
   useBoardMutation(importChecklistMutation(), (a: { channel: string; markdown: string }) => ({ path: { channel: a.channel }, body: { markdown: a.markdown } }))
+export const useUpdateChannel = () =>
+  useBoardMutation(updateChannelMutation(), (a: { channel: string; repo: string | null }) => ({ path: { channel: a.channel }, body: { repo: a.repo } }))
+export const useAddCommit = () =>
+  useBoardMutation(addTaskCommitMutation(), (a: { id: number; sha: string; message?: string }) => ({ ...onTask(a.id), body: { sha: a.sha, message: a.message } }))

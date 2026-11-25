@@ -48,7 +48,7 @@ export const seedMembers: SeedMember[] = [
 
 export const seedChannels = [
   { id: "backend", topic: "Users table, migration and API" },
-  { id: "platform", topic: "Cold starts, test bots, end-to-end tests" },
+  { id: "platform", topic: "Cold starts, test bots, end-to-end tests", repo: "github.com/example-org/platform" },
   { id: "reviews", topic: "Review threads for finished work" },
   { id: "errors", topic: "API errors from prod, posted by errors-watch" },
 ]
