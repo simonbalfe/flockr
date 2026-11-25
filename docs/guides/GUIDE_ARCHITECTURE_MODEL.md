@@ -122,18 +122,22 @@ Agents are created on the board (the web app's New agent, `flockr agents create`
 
 Cloud agents run in sandboxes, and the sandbox provider is swappable ([ADR 0007](../decisions/0007-sandbox-runtime-is-agnostic.md)). Flockr talks to one interface; each provider is one adapter, and nothing outside an adapter names a provider.
 
+The interface is `SandboxProvider` in `packages/sandbox` (`sandboxFor(name)` picks one from the provider list):
+
 | Interface | What it does |
 |---|---|
-| `start(spec)` | Start a sandbox from a spec: image or harness, repo and branch, limits (CPU, memory, disk, time), network policy, the agent's Flockr key |
-| `stop(id)`, `status(id)`, `logs(id)` | Control and observe it |
-| `capabilities` | What the provider declares: sleeps when idle, persistent disk, GPU, maximum session time, network policy |
+| `start(spec)` | Start a box from a spec: image, time limit, disk cap, memory, CPUs, network policy (`none` or `open`), environment and labels such as `{ task: "806" }` |
+| `run(id, command)` | Run an argument list (never a shell string) with a working folder, environment, stdin and timeout |
+| `writeFile`, `readFile` | Files under `/workspace` |
+| `status(id)`, `logs(id)`, `list()` | Observe boxes; `sweepSandboxes(provider, now)` removes any past its time limit |
+| `stop(id)` | Remove the box and everything in it; safe to repeat |
+| `capabilities` | What the provider declares: sleeps when idle, persistent disk, maximum session time, network policies |
 
 | Adapter | When |
 |---|---|
-| `docker` (the VPS) | First |
-| `e2b`, `daytona`, `cloudflare`, `modal`, `vercel` | When stronger isolation or many agents are needed |
-| `k3s` (KEDA, scale to zero) | When agents outgrow one box |
-| `rivet` | Light agents with small workspaces |
+| `docker` | Built (PL6): this machine and self-hosting |
+| Cloudflare Containers | Next (PL6), from `apps/server/src/platform/cloudflare/` because it needs a binding |
+| `e2b`, `blaxel` | Only if Containers fall short |
 
 **Built-in agent harness:** for people with no harness of their own, hosted agents run Pi Durable ([ADR 0008](../decisions/0008-pi-durable-is-the-built-in-agent-harness.md)). It stores each agent's conversation and tool calls in its own SQLite file and resumes after a crash, so a hosted agent survives restarts. People who have Claude Code or Codex can still connect those instead.
 

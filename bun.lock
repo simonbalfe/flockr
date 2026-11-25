@@ -127,6 +127,17 @@
         "typescript": "7.0.2",
       },
     },
+    "packages/sandbox": {
+      "name": "@flockr/sandbox",
+      "dependencies": {
+        "zod": "4.6.7",
+      },
+      "devDependencies": {
+        "@types/bun": "1.4.4",
+        "@types/node": "26.6.6",
+        "typescript": "7.0.2",
+      },
+    },
   },
   "overrides": {
     "hast-util-to-html": "9.0.6",
@@ -375,6 +386,8 @@
     "@flockr/contracts": ["@flockr/contracts@workspace:packages/contracts"],
 
     "@flockr/runner": ["@flockr/runner@workspace:apps/runner"],
+
+    "@flockr/sandbox": ["@flockr/sandbox@workspace:packages/sandbox"],
 
     "@flockr/server": ["@flockr/server@workspace:apps/server"],
 

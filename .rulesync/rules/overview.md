@@ -86,6 +86,7 @@ apps/
 packages/
   contracts/     # browser-safe Zod schemas and fixed lists, shared by server, web and CLI
   client/        # generated from the OpenAPI document; never hand-edited
+  sandbox/       # the sandbox interface, provider list and the Docker adapter (ADRs 0007, 0019)
 skills/flockr/   # the board skill any agent loads
 docs/            # Markdown only, by kind: phases/, guides/, decisions/, handoffs/, reviews/; everything else in reference/
 .rulesync/       # source of AGENTS.md, CLAUDE.md and the skills (generated files are gitignored)

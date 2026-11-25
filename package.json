@@ -16,7 +16,7 @@
     "db:backup": "bun run --cwd apps/server db:backup",
     "db:restore": "bun run --cwd apps/server db:restore",
     "seed": "bun run --cwd apps/server seed",
-    "test": "bun run --cwd apps/server test && bun run --cwd apps/runner test && bun run --cwd apps/web test",
+    "test": "bun run --cwd apps/server test && bun run --cwd apps/runner test && bun run --cwd apps/web test && bun run --cwd packages/sandbox test",
     "typecheck": "bun run --filter '*' typecheck",
     "fc": "bun apps/cli/src/main.ts",
     "check": "bun run typecheck && bun run test",
