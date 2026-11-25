@@ -23,14 +23,14 @@ Other commands: `bun run build` (type check and production build into `dist/`), 
 | Do this | See this |
 |---|---|
 | Write `@claude add rate limiting` in a channel | A message that mentions claude; no task is made, claude can answer in the thread |
-| Press "New task" in a Tasks view or a thread | A dialog (title, channel, assignee); an assigned task is bound to that member, an unassigned one is open for anyone |
+| Press "New task" in a Tasks view | A dialog (title, channel, assignee); an assigned task is bound to that member, an unassigned one is open for anyone |
 | An agent asks a question in a thread | A question card in the thread and in "Waiting for you"; once answered it becomes "Answered X by Y" |
 | An agent starts working in a thread | "claude is working..." under the thread and in the composer line, until it stops or expires |
 | In a terminal, `FC_AS=claude bun flockr tasks claim --ready` | #806 shows claude holding it, live, with no reload |
 | `FC_AS=claude bun flockr ask 806 "Use uuid keys?" --option Yes --option No` | A question card in "Waiting for you" and a toast |
 | Tap an answer | The answer lands in the task thread; `flockr wait --thread 806` returns it |
 | Open #806, press Claim, then Mark done | #808 becomes ready |
-| Open a thread and press "Make this a task" | A new task with the thread copied in |
+| Open a thread and press the small task icon in its header ("Make this thread a task") | A new task with the thread copied in; threads no longer show task buttons under the conversation (Simon, 25 Nov 2026) |
 | Press "Import checklist" in a channel's Tasks view and paste `docs/phases/SPEC_MASTER_CHECKLIST.md` | One task per row not yet Done, each waiting on the row before it in its phase; importing again makes nothing new (`flockr checklist import` does the same, `flockr checklist sync` ticks the file) |
 | Press "Set repo" in a channel header and enter `github.com/owner/name`, then open a task with a commit | Each commit in the task header and each sha in its thread links to `https://<repo>/commit/<sha>`; "Add commit" on the task adds another (`flockr tasks commit 806 e4f5a6b` does the same) |
 | Open a channel's Areas tab, press Declare area and enter `apps/web packages/contracts/**` | A row with you, the paths and Release; agents' areas show with their task and branch `flockr/806` (`flockr areas declare backend apps/web`, `flockr areas backend`) |

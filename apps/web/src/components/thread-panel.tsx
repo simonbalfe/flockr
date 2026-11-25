@@ -1,13 +1,14 @@
 import { splitSubThreads } from "@flockr/client"
 import { useLiveActivity } from "@/lib/activity"
 import { useMakeTaskFromThread, useThread } from "@/api/hooks"
-import { NewTaskDialog } from "@/components/new-task-dialog"
 import { ChatItem } from "@/components/agent/chat-scroll"
 import { AgentWorkingLine, ThreadWorking } from "@/components/agent/working-line"
 import { Feed } from "@/components/feed"
 import { PanelFrame } from "@/components/panel-frame"
 import { ReplyBox } from "@/components/reply-box"
 import { Button } from "@/components/ui/button"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
+import { ListPlus } from "lucide-react"
 import { Separator } from "@/components/ui/separator"
 import type { Thread } from "@/api/types"
 import { usePanel } from "@/lib/panel"
@@ -43,6 +44,16 @@ export function ThreadPanel({ id }: { id: string }) {
           <span className="ml-auto min-w-0 self-center">
             <ThreadWorking threadId={id} compact />
           </span>
+          {current?.root && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button variant="ghost" size="icon-sm" aria-label="Make this thread a task" className="text-faint hover:text-foreground" onClick={makeTask} disabled={make.isPending}>
+                  <ListPlus />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Make this thread a task</TooltipContent>
+            </Tooltip>
+          )}
         </>
       }
       footer={<ReplyBox threadId={id} />}
@@ -61,14 +72,6 @@ export function ThreadPanel({ id }: { id: string }) {
               <AgentWorkingLine activity={a} />
             </div>
           ))}
-          {current.root && (
-            <div className="mt-3 flex flex-wrap items-center gap-2">
-              <Button variant="secondary" onClick={makeTask} disabled={make.isPending}>
-                Make this a task
-              </Button>
-              <NewTaskDialog channel={current.channel} variant="secondary" />
-            </div>
-          )}
         </ChatItem>
       )}
     </PanelFrame>
