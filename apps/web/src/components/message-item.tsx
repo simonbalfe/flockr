@@ -7,6 +7,7 @@ import { currentUser } from "@/api/session"
 import type { Reply, Task, TextMessage } from "@/api/types"
 import { Markdown } from "@/components/agent/markdown"
 import { Feed, type Entry } from "@/components/feed"
+import { MessageStatusChips } from "@/components/feed/status"
 import { MemberAvatar } from "@/components/member-avatar"
 import { MessageInput } from "@/components/message-input"
 import { MessageToolbar } from "@/components/message-toolbar"
@@ -142,7 +143,7 @@ export function MessageItem({ item, inThread, attached, subReplies }: { item: Te
   const done = { onSuccess: () => setMode("read"), onError: (error: unknown) => toast(errorText(error)) }
 
   return (
-    <div className="group/msg relative">
+    <div className="group/msg relative" data-entry={item.id}>
       {item.deleted ? (
         <p className="mt-0.5 text-muted-foreground">Message deleted</p>
       ) : mode === "edit" ? (
@@ -161,6 +162,7 @@ export function MessageItem({ item, inThread, attached, subReplies }: { item: Te
           )}
           {mode === "label" && <LabelEditor labels={item.labels} onCancel={() => setMode("read")} onSave={(labels) => edit.mutate({ id: item.id, labels }, done)} />}
           {attached && <TaskList tasks={[attached]} />}
+          {item.kind === "text" && !inThread && <MessageStatusChips message={item} />}
           <MessageToolbar
             id={item.id}
             who={item.who}

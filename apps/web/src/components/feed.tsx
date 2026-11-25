@@ -52,7 +52,7 @@ function subLabel(member: Member | undefined): string {
 
 function EventRow({ event }: { event: Event }) {
   return (
-    <div className="py-2 text-center text-[12.5px] text-muted-foreground">
+    <div className="py-2 text-center text-[12.5px] text-muted-foreground" data-entry={event.id}>
       {!event.system && <b className="font-medium text-foreground">{event.who} </b>}
       <RichText text={event.text} /> <span className="text-faint tabular-nums">· {clock(event.at)}</span>
     </div>
@@ -107,7 +107,7 @@ export function Feed({ entries, inThread = false, subThreads = null }: { entries
         const { group } = block
         const sub = subLabel(members.data?.find((m) => m.name === group.who))
         return (
-          <div key={group.items[0]?.id} className={`group grid grid-cols-[30px_minmax(0,1fr)] gap-3 py-[7px] ${inThread ? "" : "hover:bg-sidebar"}`}>
+          <div key={group.items[0]?.id} data-entry={group.items[0]?.id} className={`group grid grid-cols-[30px_minmax(0,1fr)] gap-3 py-[7px] ${inThread ? "" : "hover:bg-sidebar"}`}>
             <MemberAvatar name={group.who} />
             <div className="min-w-0">
               <div className="flex flex-wrap items-baseline gap-[7px]">
