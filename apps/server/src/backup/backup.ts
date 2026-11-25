@@ -2,8 +2,6 @@ import type postgres from "postgres"
 import { z } from "zod"
 import type { ObjectStore } from "../storage/store"
 
-// A logical copy of every table in the public schema, gzipped JSON in the object store
-// (ADR 0023). Restoring needs an empty database migrated at least as far as the backup.
 
 export const backupPrefix = "backups/"
 export const backupsKept = 30
@@ -27,7 +25,6 @@ async function tableNames(sql: Sql): Promise<string[]> {
   return rows.map((row) => row.name)
 }
 
-// Parents before children, so foreign keys hold while rows go back in.
 async function loadOrder(sql: Sql, tables: string[]): Promise<string[]> {
   const edges = await sql<{ child: string; parent: string }[]>`
     select child.relname as child, parent.relname as parent
@@ -142,7 +139,6 @@ export interface BackupResult {
   removed: string[]
 }
 
-// Takes a backup, then keeps only the newest `keep`.
 export async function backUp(sql: postgres.Sql, store: ObjectStore, now: Date, keep = backupsKept): Promise<BackupResult> {
   const backup = await dumpDatabase(sql, now)
   const key = backupKey(now)

@@ -2,7 +2,6 @@ import { describe, expect, test } from "bun:test"
 import { spawnSync } from "node:child_process"
 import { sandboxFor, sweepSandboxes } from "../src"
 
-// The contract every sandbox adapter holds, run against Docker. Skipped when Docker is not running.
 const dockerUp = spawnSync("docker", ["info"], { stdio: "ignore" }).status === 0
 const image = "alpine:3.20"
 const sandbox = sandboxFor("docker")

@@ -376,7 +376,6 @@ export function createRunner(deps: RunnerDeps) {
     )
   }
 
-  // Agents answering agents stop after agentChainLimit messages until a person speaks.
   async function chainTooLong(event: BoardEvent, thread: Thread): Promise<boolean> {
     const people = await board.people()
     if (people.has(event.actor)) return false

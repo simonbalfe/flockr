@@ -8,9 +8,6 @@ import { mutate, type Emit } from "./events"
 import { findAnyMember } from "./read"
 import { emitMessage, emitTask, insertMessage } from "./write"
 
-// Code host events into task threads (5e). A pull request belongs to a task by its branch,
-// flockr/<task> (ADR 0019), or by an earlier event for the same pull request. Replies carry no
-// mentions, so a comment on GitHub never wakes an agent on the board.
 
 export type HookOutcome = { outcome: "posted"; task: number } | { outcome: "duplicate" } | { outcome: "ignored"; reason: string }
 

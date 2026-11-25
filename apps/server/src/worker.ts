@@ -18,7 +18,6 @@ export { BoardRoom } from "./platform/cloudflare/board-room"
 
 useLiveSignals(cloudflareSignals)
 
-// Matches the second cron in wrangler.jsonc: the nightly backup (PL4, ADR 0023).
 const backupCron = "0 3 * * *"
 
 async function nightlyBackup(env: WorkerEnv): Promise<void> {

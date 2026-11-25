@@ -520,7 +520,6 @@ export type JobApprovalRow = typeof jobApprovals.$inferSelect
 export type MemberKeyRow = typeof memberKeys.$inferSelect
 export type DraftRow = typeof drafts.$inferSelect
 
-// Each code host delivery handled once, however often the host retries it (5e).
 export const hookDeliveries = pgTable(
   "hook_deliveries",
   {

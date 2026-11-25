@@ -40,7 +40,6 @@ function toBlocks(entries: Entry[]): Block[] {
   return blocks
 }
 
-// A deleted message or reply leaves no trace in the feed or a thread.
 const shownGone = (entry: Entry): boolean => (entry.kind === "text" || entry.kind === "reply") && entry.deleted
 
 function subLabel(member: Member | undefined): string {

@@ -48,7 +48,6 @@ describe("GitHub sync (5e)", () => {
     const { deliver, texts, db, call } = await board()
     expect((await deliver("pull_request", { action: "opened", pull_request: pr(), repository: repo, sender: { login: "claude-bot" } })).json).toEqual({ outcome: "posted", task: 806 })
     await deliver("pull_request_review", { action: "submitted", review: { state: "changes_requested", body: "Index the email column", html_url: "https://github.com/example-org/api/pull/12#r1", user: { login: "simon" } }, pull_request: pr(), repository: repo })
-    // An issue comment carries no branch: the earlier event links it to #806.
     await deliver("issue_comment", { action: "created", issue: { number: 12, title: "Add the users table", html_url: "x", pull_request: {} }, comment: { body: "@claude done, please look", html_url: "https://github.com/example-org/api/pull/12#c2", user: { login: "claude-bot" } }, repository: repo })
 
     const all = (await texts()).join("\n")
@@ -59,7 +58,6 @@ describe("GitHub sync (5e)", () => {
 
     const [bridge] = await db.select().from(members).where(eq(members.name, "github"))
     expect(bridge?.kind).toBe("bridge")
-    // The quoted @claude is not a mention: nothing on the board wakes for it.
     const mentioned = await db.select().from(events).where(and(eq(events.type, "mention.created")))
     expect(mentioned).toHaveLength(0)
 

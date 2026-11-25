@@ -2,9 +2,6 @@ import { spawn } from "node:child_process"
 import path from "node:path"
 import { SandboxSpec, type RunOptions, type RunResult, type SandboxInfo, type SandboxProvider, type SandboxState } from "./sandbox"
 
-// Docker on this machine (ADR 0017: the local adapter). The box runs `sleep <time limit>` as
-// its only process with --rm, so it deletes itself when time runs out. The root filesystem is
-// read-only and every writable path is one tmpfs, so the disk cap is real.
 
 const owner = "flockr.sandbox"
 const expiresLabel = "flockr.expires"
@@ -78,7 +75,6 @@ export function dockerSandbox(): SandboxProvider {
         "--workdir", workspace,
         "--env", `HOME=${workspace}`,
         ...Object.entries(spec.env).flatMap(([key, value]) => ["--env", `${key}=${value}`]),
-        // tmpfs pages count against the memory limit, so the disk is added to it.
         "--memory", `${spec.memoryMb + spec.diskMb}m`,
         "--cpus", String(spec.cpus),
         "--pids-limit", "512",

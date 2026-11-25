@@ -107,6 +107,7 @@ A rule stays here only if breaking it is irreversible (data, secrets, what leave
 - Secrets are never printed or committed; they live in Infisical (`local` and `prod`). Tests, seeds and screenshots use invented people and tasks.
 - Nothing acts unless asked: watchers and routines are off until someone turns them on, and anything that spends money or changes prod becomes a question a person answers.
 - Dependencies are pinned exactly, and a new version is at least 14 days old.
+- Never write a code comment (Simon, 25 Nov 2026): names, types and tests carry the meaning; only lint and type directives are allowed. Builders and reviewers strip any they find.
 - Docs move in the same change as the code: the spec, the area README, any guide, the board skill when agents see it.
 - Test, check or review any web UI with the Chrome DevTools MCP (`chrome-devtools`), never Claude in Chrome and never Puppeteer. If it is not available to you, say so instead of substituting another driver.
 - Full-stack local testing (`do-verify`) and reviews (`review`) run only when Simon asks.

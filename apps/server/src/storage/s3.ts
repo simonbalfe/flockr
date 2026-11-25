@@ -2,7 +2,6 @@ import { AwsClient } from "aws4fetch"
 import { z } from "zod"
 import type { ObjectStore } from "./store"
 
-// Any S3-compatible bucket: R2 through its S3 API (ADR 0002), MinIO locally, or AWS.
 export const S3Settings = z.object({
   endpoint: z.url(),
   bucket: z.string().min(1),
@@ -14,7 +13,6 @@ export type S3Settings = z.infer<typeof S3Settings>
 
 type Env = Record<string, unknown>
 
-// Reads FLOCKR_S3_* from the environment; null when no bucket is set up.
 export function s3SettingsFrom(env: Env): S3Settings | null {
   const value = (name: string) => (typeof env[name] === "string" && env[name] !== "" ? env[name] : undefined)
   if (!value("FLOCKR_S3_BUCKET")) return null

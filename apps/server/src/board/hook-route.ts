@@ -2,7 +2,6 @@ import { codeHostFor } from "../code-hosts"
 import type { Database } from "../db/client"
 import { receiveCodeHostEvent } from "./hooks"
 
-// Not an OpenAPI operation: code hosts call it, not members, so it has no MCP tool or command.
 export const hooksPath = "/api/hooks"
 
 export interface HookSettings {

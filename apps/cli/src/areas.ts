@@ -12,7 +12,6 @@ const channelOf = (raw: string | undefined) => need(raw, "channel").replace(/^#/
 
 export async function areasCommand(context: AreasContext): Promise<number> {
   const { positionals, values, print } = context
-  // "flockr areas general" is "flockr areas list general", as the help shows.
   const named = ["list", "declare", "renew", "release"].includes(positionals[1] ?? "list")
   const sub = named ? (positionals[1] ?? "list") : "list"
   switch (sub) {

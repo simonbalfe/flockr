@@ -5,7 +5,6 @@ import { agentPermissions } from "@flockr/contracts/agents"
 import { defaultClaimsFile } from "@flockr/cli/epochs"
 import { z } from "zod"
 
-// FLOCKR_HOME keeps a second runner (another board) from sharing this one's state.
 export const runnerHome = process.env.FLOCKR_HOME ?? path.join(homedir(), ".flockr")
 export const configFile = process.env.FLOCKR_RUNNER_CONFIG ?? path.join(runnerHome, "runner.json")
 export const stateFile = path.join(runnerHome, "runner-state.json")

@@ -1,9 +1,6 @@
 import { z } from "zod"
 import { hmacSha256Hex, sameText, type CodeHost, type CodeHostEvent } from "./host"
 
-// GitHub webhooks: pull requests, their reviews and comments. Point a repository or
-// organisation webhook (content type application/json) at /api/hooks/github with the board's
-// FLOCKR_HOOK_SECRET.
 
 const User = z.object({ login: z.string() })
 const Repository = z.object({ full_name: z.string() })

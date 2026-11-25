@@ -54,8 +54,6 @@ export function routeReply(options: { member: string; thread: Thread; task: Task
   return joined(options) ? "converse" : "ignore"
 }
 
-// Agents may answer each other, but not forever: after this many agent messages in a row in a
-// thread, with no person in between, an agent's reply wakes nobody until a person speaks.
 export const agentChainLimit = 4
 
 export function agentChain(thread: Thread, people: ReadonlySet<string>): number {

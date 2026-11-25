@@ -3,8 +3,6 @@ import type { SandboxProvider } from "./sandbox"
 
 export * from "./sandbox"
 
-// The provider list: adding one is an adapter plus one entry here. Cloud adapters that need a
-// platform binding (Cloudflare Containers) register from that platform's folder instead.
 export const providers: Record<string, () => SandboxProvider> = {
   docker: dockerSandbox,
 }
