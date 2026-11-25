@@ -9,6 +9,7 @@ import { currentUser } from "@/api/session"
 import { useMayManageKeys } from "@/api/auth"
 import { WorkBlock } from "@/components/agent/work-block"
 import { KeyList, NewKeyDialog } from "@/components/keys/keys"
+import { AgentNotes } from "@/components/memory/agent-notes"
 import { MemberAvatar } from "@/components/member-avatar"
 import { KeyValueList, PanelFrame } from "@/components/panel-frame"
 import { QuestionCard, ThreadQuestionCard } from "@/components/question-card"
@@ -283,6 +284,7 @@ export function AgentProfile({ name }: { name: string }) {
           <Waiting name={name} />
           <RecentWork name={name} />
           {current.config && <Settings key={JSON.stringify(current.config)} name={name} config={current.config} editable={editable} />}
+          <AgentNotes name={name} />
           <Keys name={name} />
           <div className={sectionClass}>Tasks</div>
           <div className="overflow-hidden rounded-[10px] bg-muted">

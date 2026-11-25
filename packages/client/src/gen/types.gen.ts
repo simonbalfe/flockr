@@ -1131,6 +1131,53 @@ export type DeletedAgent = {
     removedAt: string;
 };
 
+export type MemoryItem = {
+    id: number;
+    scope: 'agent' | 'channel';
+    /**
+     * The agent's name for an agent note, the channel id for channel memory
+     */
+    owner: string;
+    kind: MemoryKind;
+    text: string;
+    tags: Array<string>;
+    /**
+     * The thread it came from: a message id such as m12 or a task id such as 806
+     */
+    sourceThread: string | null;
+    createdBy: string;
+    updatedBy: string;
+    createdAt: string;
+    updatedAt: string;
+    /**
+     * Set when archived; an archived item is left out of lists and prompts until restored
+     */
+    archivedAt: string | null;
+};
+
+/**
+ * dead-end, decision, preference, fact or todo
+ */
+export type MemoryKind = 'dead-end' | 'decision' | 'preference' | 'fact' | 'todo';
+
+export type AddMemoryBody = {
+    text: string;
+    kind?: MemoryKind;
+    tags?: Array<string>;
+    sourceThread?: string | null;
+    /**
+     * Makes a retry safe: adding with a key that was used before returns that item and changes nothing
+     */
+    key?: string;
+};
+
+export type UpdateMemoryBody = {
+    text?: string;
+    kind?: MemoryKind;
+    tags?: Array<string>;
+    sourceThread?: string | null;
+};
+
 export type Machine = {
     id: string;
     name: string;
@@ -3913,6 +3960,468 @@ export type ListAgentActivityResponses = {
 };
 
 export type ListAgentActivityResponse = ListAgentActivityResponses[keyof ListAgentActivityResponses];
+
+export type ListAgentNotesData = {
+    body?: never;
+    path: {
+        name: string;
+    };
+    query?: {
+        /**
+         * active (default) or archived
+         */
+        state?: 'active' | 'archived';
+        /**
+         * At most this many, newest first; default and most 200
+         */
+        limit?: number;
+        /**
+         * Only items with a smaller id than this, for the next page
+         */
+        before?: number;
+    };
+    url: '/api/agents/{name}/notes';
+};
+
+export type ListAgentNotesErrors = {
+    /**
+     * The input is not valid
+     */
+    400: Error;
+    /**
+     * Sign-in is on and the request has no session or key
+     */
+    401: Error;
+    /**
+     * The acting member is not on this board, or may not do this
+     */
+    403: Error;
+    /**
+     * Not found
+     */
+    404: Error;
+    /**
+     * The task or message is in another state, or the claim epoch is stale
+     */
+    409: Error;
+};
+
+export type ListAgentNotesError = ListAgentNotesErrors[keyof ListAgentNotesErrors];
+
+export type ListAgentNotesResponses = {
+    /**
+     * OK
+     */
+    200: Array<MemoryItem>;
+};
+
+export type ListAgentNotesResponse = ListAgentNotesResponses[keyof ListAgentNotesResponses];
+
+export type AddAgentNoteData = {
+    body: AddMemoryBody;
+    path: {
+        name: string;
+    };
+    query?: never;
+    url: '/api/agents/{name}/notes';
+};
+
+export type AddAgentNoteErrors = {
+    /**
+     * The input is not valid
+     */
+    400: Error;
+    /**
+     * Sign-in is on and the request has no session or key
+     */
+    401: Error;
+    /**
+     * The acting member is not on this board, or may not do this
+     */
+    403: Error;
+    /**
+     * Not found
+     */
+    404: Error;
+    /**
+     * The task or message is in another state, or the claim epoch is stale
+     */
+    409: Error;
+};
+
+export type AddAgentNoteError = AddAgentNoteErrors[keyof AddAgentNoteErrors];
+
+export type AddAgentNoteResponses = {
+    /**
+     * OK
+     */
+    200: MemoryItem;
+};
+
+export type AddAgentNoteResponse = AddAgentNoteResponses[keyof AddAgentNoteResponses];
+
+export type UpdateAgentNoteData = {
+    body: UpdateMemoryBody;
+    path: {
+        name: string;
+        id: number;
+    };
+    query?: never;
+    url: '/api/agents/{name}/notes/{id}';
+};
+
+export type UpdateAgentNoteErrors = {
+    /**
+     * The input is not valid
+     */
+    400: Error;
+    /**
+     * Sign-in is on and the request has no session or key
+     */
+    401: Error;
+    /**
+     * The acting member is not on this board, or may not do this
+     */
+    403: Error;
+    /**
+     * Not found
+     */
+    404: Error;
+    /**
+     * The task or message is in another state, or the claim epoch is stale
+     */
+    409: Error;
+};
+
+export type UpdateAgentNoteError = UpdateAgentNoteErrors[keyof UpdateAgentNoteErrors];
+
+export type UpdateAgentNoteResponses = {
+    /**
+     * OK
+     */
+    200: MemoryItem;
+};
+
+export type UpdateAgentNoteResponse = UpdateAgentNoteResponses[keyof UpdateAgentNoteResponses];
+
+export type ArchiveAgentNoteData = {
+    body?: never;
+    path: {
+        name: string;
+        id: number;
+    };
+    query?: never;
+    url: '/api/agents/{name}/notes/{id}/archive';
+};
+
+export type ArchiveAgentNoteErrors = {
+    /**
+     * The input is not valid
+     */
+    400: Error;
+    /**
+     * Sign-in is on and the request has no session or key
+     */
+    401: Error;
+    /**
+     * The acting member is not on this board, or may not do this
+     */
+    403: Error;
+    /**
+     * Not found
+     */
+    404: Error;
+    /**
+     * The task or message is in another state, or the claim epoch is stale
+     */
+    409: Error;
+};
+
+export type ArchiveAgentNoteError = ArchiveAgentNoteErrors[keyof ArchiveAgentNoteErrors];
+
+export type ArchiveAgentNoteResponses = {
+    /**
+     * OK
+     */
+    200: MemoryItem;
+};
+
+export type ArchiveAgentNoteResponse = ArchiveAgentNoteResponses[keyof ArchiveAgentNoteResponses];
+
+export type RestoreAgentNoteData = {
+    body?: never;
+    path: {
+        name: string;
+        id: number;
+    };
+    query?: never;
+    url: '/api/agents/{name}/notes/{id}/restore';
+};
+
+export type RestoreAgentNoteErrors = {
+    /**
+     * The input is not valid
+     */
+    400: Error;
+    /**
+     * Sign-in is on and the request has no session or key
+     */
+    401: Error;
+    /**
+     * The acting member is not on this board, or may not do this
+     */
+    403: Error;
+    /**
+     * Not found
+     */
+    404: Error;
+    /**
+     * The task or message is in another state, or the claim epoch is stale
+     */
+    409: Error;
+};
+
+export type RestoreAgentNoteError = RestoreAgentNoteErrors[keyof RestoreAgentNoteErrors];
+
+export type RestoreAgentNoteResponses = {
+    /**
+     * OK
+     */
+    200: MemoryItem;
+};
+
+export type RestoreAgentNoteResponse = RestoreAgentNoteResponses[keyof RestoreAgentNoteResponses];
+
+export type ListChannelMemoryData = {
+    body?: never;
+    path: {
+        channel: string;
+    };
+    query?: {
+        /**
+         * active (default) or archived
+         */
+        state?: 'active' | 'archived';
+        /**
+         * At most this many, newest first; default and most 200
+         */
+        limit?: number;
+        /**
+         * Only items with a smaller id than this, for the next page
+         */
+        before?: number;
+    };
+    url: '/api/channels/{channel}/memory';
+};
+
+export type ListChannelMemoryErrors = {
+    /**
+     * The input is not valid
+     */
+    400: Error;
+    /**
+     * Sign-in is on and the request has no session or key
+     */
+    401: Error;
+    /**
+     * The acting member is not on this board, or may not do this
+     */
+    403: Error;
+    /**
+     * Not found
+     */
+    404: Error;
+    /**
+     * The task or message is in another state, or the claim epoch is stale
+     */
+    409: Error;
+};
+
+export type ListChannelMemoryError = ListChannelMemoryErrors[keyof ListChannelMemoryErrors];
+
+export type ListChannelMemoryResponses = {
+    /**
+     * OK
+     */
+    200: Array<MemoryItem>;
+};
+
+export type ListChannelMemoryResponse = ListChannelMemoryResponses[keyof ListChannelMemoryResponses];
+
+export type AddChannelMemoryData = {
+    body: AddMemoryBody;
+    path: {
+        channel: string;
+    };
+    query?: never;
+    url: '/api/channels/{channel}/memory';
+};
+
+export type AddChannelMemoryErrors = {
+    /**
+     * The input is not valid
+     */
+    400: Error;
+    /**
+     * Sign-in is on and the request has no session or key
+     */
+    401: Error;
+    /**
+     * The acting member is not on this board, or may not do this
+     */
+    403: Error;
+    /**
+     * Not found
+     */
+    404: Error;
+    /**
+     * The task or message is in another state, or the claim epoch is stale
+     */
+    409: Error;
+};
+
+export type AddChannelMemoryError = AddChannelMemoryErrors[keyof AddChannelMemoryErrors];
+
+export type AddChannelMemoryResponses = {
+    /**
+     * OK
+     */
+    200: MemoryItem;
+};
+
+export type AddChannelMemoryResponse = AddChannelMemoryResponses[keyof AddChannelMemoryResponses];
+
+export type UpdateChannelMemoryData = {
+    body: UpdateMemoryBody;
+    path: {
+        channel: string;
+        id: number;
+    };
+    query?: never;
+    url: '/api/channels/{channel}/memory/{id}';
+};
+
+export type UpdateChannelMemoryErrors = {
+    /**
+     * The input is not valid
+     */
+    400: Error;
+    /**
+     * Sign-in is on and the request has no session or key
+     */
+    401: Error;
+    /**
+     * The acting member is not on this board, or may not do this
+     */
+    403: Error;
+    /**
+     * Not found
+     */
+    404: Error;
+    /**
+     * The task or message is in another state, or the claim epoch is stale
+     */
+    409: Error;
+};
+
+export type UpdateChannelMemoryError = UpdateChannelMemoryErrors[keyof UpdateChannelMemoryErrors];
+
+export type UpdateChannelMemoryResponses = {
+    /**
+     * OK
+     */
+    200: MemoryItem;
+};
+
+export type UpdateChannelMemoryResponse = UpdateChannelMemoryResponses[keyof UpdateChannelMemoryResponses];
+
+export type ArchiveChannelMemoryData = {
+    body?: never;
+    path: {
+        channel: string;
+        id: number;
+    };
+    query?: never;
+    url: '/api/channels/{channel}/memory/{id}/archive';
+};
+
+export type ArchiveChannelMemoryErrors = {
+    /**
+     * The input is not valid
+     */
+    400: Error;
+    /**
+     * Sign-in is on and the request has no session or key
+     */
+    401: Error;
+    /**
+     * The acting member is not on this board, or may not do this
+     */
+    403: Error;
+    /**
+     * Not found
+     */
+    404: Error;
+    /**
+     * The task or message is in another state, or the claim epoch is stale
+     */
+    409: Error;
+};
+
+export type ArchiveChannelMemoryError = ArchiveChannelMemoryErrors[keyof ArchiveChannelMemoryErrors];
+
+export type ArchiveChannelMemoryResponses = {
+    /**
+     * OK
+     */
+    200: MemoryItem;
+};
+
+export type ArchiveChannelMemoryResponse = ArchiveChannelMemoryResponses[keyof ArchiveChannelMemoryResponses];
+
+export type RestoreChannelMemoryData = {
+    body?: never;
+    path: {
+        channel: string;
+        id: number;
+    };
+    query?: never;
+    url: '/api/channels/{channel}/memory/{id}/restore';
+};
+
+export type RestoreChannelMemoryErrors = {
+    /**
+     * The input is not valid
+     */
+    400: Error;
+    /**
+     * Sign-in is on and the request has no session or key
+     */
+    401: Error;
+    /**
+     * The acting member is not on this board, or may not do this
+     */
+    403: Error;
+    /**
+     * Not found
+     */
+    404: Error;
+    /**
+     * The task or message is in another state, or the claim epoch is stale
+     */
+    409: Error;
+};
+
+export type RestoreChannelMemoryError = RestoreChannelMemoryErrors[keyof RestoreChannelMemoryErrors];
+
+export type RestoreChannelMemoryResponses = {
+    /**
+     * OK
+     */
+    200: MemoryItem;
+};
+
+export type RestoreChannelMemoryResponse = RestoreChannelMemoryResponses[keyof RestoreChannelMemoryResponses];
 
 export type ListMachinesData = {
     body?: never;

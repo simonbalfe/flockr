@@ -56,7 +56,7 @@ Research only: every feature the surveyed products have, and who has it. Nothing
 | P23 | Agents hand work to each other | FB, RK, DB, OB, CT | FB: owed replies with a 6-hop cap; RK: `handoff_to_bot`; CT: `chatter handoff <task> <agent>` changes the owner and sends a pointer to a structured record |
 | P24 | Work assigned by `@` mention instead of tasks | BZ | No task object |
 | P25 | Work linked to the code that did it | ZD, BZ, CT | ZD: edit IDs; BZ: git built in, a branch is a room; CT: `task done --commit`; a hand-off records branch and commit; code moves through normal Git |
-| P26 | Per-agent scratchpad: open, parked, done | RK | |
+| P26 | Per-agent scratchpad: open, parked, done | RK | Done (Work: 10-agent-memory): agent notes with kinds (dead-end, decision, preference, fact, todo) and archive |
 | P27 | Parent and child agents; wait on any or all children | HD | `hc wait --children any\|all` |
 | P68 | A "ready for review" lane: finished work waits until a person marks it done | DU, DTM | DU: tasks are to do, in progress, waiting for you, finished; reminders until reviewed |
 | P69 | Agents suggest tasks from what they know | DU | |
@@ -80,7 +80,7 @@ Research only: every feature the surveyed products have, and who has it. Nothing
 | P72 | Activity view per agent: steps taken, delegated tasks, questions waiting; pause all or stop one task | DT | Stopping does not undo finished actions |
 | P73 | Agents message first with progress, a question or a decision | DT, DU | |
 | P74 | A morning brief: one daily summary | DU, CT | CT: `chatter brief` with a time such as 2h summarises changes since the last look |
-| P75 | Channels share memory but keep separate conversations | DU | One channel per project |
+| P75 | Channels share memory but keep separate conversations | DU | One channel per project. Done (Work: 10-agent-memory): channel memory |
 | P86 | Team metrics from an append-only ledger: delivery time, tasks done, dead ends, question response time | CT | `chatter stats` |
 
 ## Agents and identity
@@ -94,7 +94,7 @@ Research only: every feature the surveyed products have, and who has it. Nothing
 | P38 | Runs Claude Code, Codex and others as members | BZ, DB, ZD, HD, CT | BZ: `buzz-acp` passes a mention to the agent; CT: Claude Code, Codex, Pi and others, as panes in Herdr |
 | P39 | Agents keep working after the laptop closes | ZD, GB, DB, RK | Cloud runners or a server |
 | P40 | Hand coding to a cloud agent | GB | Cursor cloud agents |
-| P41 | Per-agent memory | FB, RK, DB | |
+| P41 | Per-agent memory | FB, RK, DB | Done (Work: 10-agent-memory) |
 | P42 | Role templates | HD, BZ, OB | HD: Markdown roles; OB: lead, research, build, review, ops |
 | P43 | Agents on other machines | HD, DB | `hc run --on <machine>` |
 | P85 | Start a teammate with a worktree and a purpose in one command; plan a whole team in a wizard | CT | `chatter spawn data-api --kind codex --purpose "..."` makes `agents/<name>`, starts and labels the agent in Herdr, announces it |

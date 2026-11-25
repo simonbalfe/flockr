@@ -1,5 +1,7 @@
 import { getRouteApi, Outlet, useNavigate, useRouterState } from "@tanstack/react-router"
 import { useEffect } from "react"
+import { usePanel } from "@/lib/panel"
+import { Button } from "@/components/ui/button"
 import { useChannels, useMarkRead, useTasks } from "@/api/hooks"
 import { ChannelRepoDialog } from "@/components/channel-repo-dialog"
 import { Composer } from "@/components/composer"
@@ -16,6 +18,7 @@ export function ChannelFrame() {
   const tasks = useTasks()
   const markRead = useMarkRead()
   const navigate = useNavigate()
+  const { openMemory } = usePanel()
   const onTasks = useRouterState({ select: (s) => s.location.pathname.endsWith("/tasks") })
   const current = channels.data?.find((c) => c.id === channel)
   const unread = current?.unread ?? 0
@@ -55,6 +58,9 @@ export function ChannelFrame() {
             </TabsTrigger>
           </TabsList>
         </Tabs>
+        <Button variant="ghost" size="sm" onClick={() => openMemory(channel)}>
+          Memory
+        </Button>
         {current && <ChannelRepoDialog channel={channel} repo={current.repo} />}
         {onTasks && <ImportChecklistDialog channel={channel} />}
         {onTasks && <NewTaskDialog channel={channel} />}

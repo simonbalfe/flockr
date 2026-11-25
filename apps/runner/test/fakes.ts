@@ -1,4 +1,4 @@
-import type { BoardEvent, Task, Thread, ThreadEntry } from "@flockr/client"
+import type { BoardEvent, MemoryItem, Task, Thread, ThreadEntry } from "@flockr/client"
 import type { EpochStore } from "@flockr/cli/epochs"
 import type { BoardPort, Claim } from "../src/board"
 import type { Harness, Session, SessionExit, SessionSpec } from "../src/harness/types"
@@ -102,6 +102,7 @@ export function fakeBoard() {
   const tasks = new Map<number, Task>()
   const threads = new Map<string, Thread>()
   const calls: string[] = []
+  const memory: { notes: MemoryItem[]; channel: MemoryItem[] } = { notes: [], channel: [] }
   let renewWorks = true
   let replyCount = 0
   const record = (line: string) => void calls.push(line)
@@ -171,8 +172,10 @@ export function fakeBoard() {
     },
     ask: async () => ({ kind: "refused", reason: "not in this fake" }),
     approval: async () => "ask",
+    memory: async () => ({ notes: memory.notes, channel: memory.channel }),
   }
   return {
+    memory,
     port,
     tasks,
     threads,
@@ -180,6 +183,22 @@ export function fakeBoard() {
     failRenew: () => void (renewWorks = false),
   }
 }
+
+export const memoryItem = (id: number, text: string, values: Partial<MemoryItem> = {}): MemoryItem => ({
+  id,
+  scope: "channel",
+  owner: "general",
+  kind: "fact",
+  text,
+  tags: [],
+  sourceThread: null,
+  createdBy: "simon",
+  updatedBy: "simon",
+  createdAt: "2026-11-18T10:00:00.000Z",
+  updatedAt: "2026-11-18T10:00:00.000Z",
+  archivedAt: null,
+  ...values,
+})
 
 export function manualTimers() {
   const pending: { ms: number; run: () => void; repeat: boolean; live: boolean }[] = []

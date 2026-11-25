@@ -69,6 +69,8 @@ The board derives each agent's status from this: `offline` (stopped, machine off
 | The agent is stopped or deleted on the board | Stops its sessions, releases its claims (keeping the assignment) and ignores it until it is started again |
 | A settings change (folder, permissions, personality) | The next session uses it; running sessions keep going |
 
+**Memory (Phase 10, ADR 0026):** when a conversation or a task run starts, the runner reads the channel's memory and the agent's notes through the API and puts them at the top of the first prompt, channel memory first. Each block holds whole items, dead ends and decisions first, then the newest, up to 3000 characters, then "N more" with the command to read the rest. A resumed session is not given them again, and a board that cannot answer does not stop the run (the log says so). The instructions tell the agent to save decisions, preferences, facts and failed approaches with `flockr notes add` and `flockr memory add --channel`.
+
 It will not: create a task by itself, claim a task that is not assigned to its agent, answer replies in threads the agent never joined, act on anything from before its first start, serve an agent assigned to another machine, or pass any API key or secret to the session.
 
 ## Panes

@@ -1,4 +1,4 @@
-import type { ActionKind, ActivityState, AgentDesired, AgentPermissions, AgentReport, ApprovalVerdict, HarnessInfo, JobKind, JobState, MemberKind, Question, RoutineTriggerKind, TaskState } from "@flockr/contracts"
+import type { ActionKind, ActivityState, AgentDesired, AgentPermissions, AgentReport, ApprovalVerdict, HarnessInfo, JobKind, JobState, MemberKind, MemoryKind, MemoryScope, Question, RoutineTriggerKind, TaskState } from "@flockr/contracts"
 import { sql } from "drizzle-orm"
 import { bigint, boolean, check, index, integer, jsonb, pgTable, primaryKey, text, timestamp, unique, uniqueIndex, type AnyPgColumn } from "drizzle-orm/pg-core"
 
@@ -249,6 +249,33 @@ export const routines = pgTable(
   ],
 )
 
+// Agent notes and channel memory: short items an agent or a channel keeps (ADR 0026). `owner` is the
+// agent's name or the channel id by `scope`, checked when written, so one table holds both.
+export const memoryItems = pgTable(
+  "memory_items",
+  {
+    id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+    scope: text("scope").$type<MemoryScope>().notNull(),
+    owner: text("owner").notNull(),
+    kind: text("kind").$type<MemoryKind>().notNull(),
+    text: text("text").notNull(),
+    tags: text("tags").array().notNull().default(sql`'{}'::text[]`),
+    sourceThread: text("source_thread"),
+    key: text("key"),
+    createdBy: text("created_by").notNull(),
+    updatedBy: text("updated_by").notNull(),
+    createdAt: createdAt(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+    archivedAt: timestamp("archived_at", { withTimezone: true }),
+  },
+  (t) => [
+    check("memory_items_scope", sql`${t.scope} in ('agent', 'channel')`),
+    check("memory_items_kind", sql`${t.kind} in ('dead-end', 'decision', 'preference', 'fact', 'todo')`),
+    uniqueIndex("memory_items_key").on(t.scope, t.owner, t.key).where(sql`${t.key} is not null`),
+    index("memory_items_owner").on(t.scope, t.owner, t.id),
+  ],
+)
+
 export const jobs = pgTable(
   "jobs",
   {
@@ -407,6 +434,7 @@ export type ActivityRow = typeof activity.$inferSelect
 export type AgentRow = typeof agents.$inferSelect
 export type MachineRow = typeof machines.$inferSelect
 export type RoutineRow = typeof routines.$inferSelect
+export type MemoryItemRow = typeof memoryItems.$inferSelect
 export type JobRow = typeof jobs.$inferSelect
 export type ApprovalRuleRow = typeof approvalRules.$inferSelect
 export type JobApprovalRow = typeof jobApprovals.$inferSelect

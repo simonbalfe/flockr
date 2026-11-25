@@ -1,4 +1,5 @@
 import { useEffect } from "react"
+import { ChannelMemoryPanel } from "@/components/memory/channel-memory-panel"
 import { AgentProfile } from "@/components/agents/agent-profile"
 import { TaskPanel } from "@/components/task-panel"
 import { ThreadPanel } from "@/components/thread-panel"
@@ -6,7 +7,7 @@ import { usePanel } from "@/lib/panel"
 
 export function RightPanel() {
   const { search, close } = usePanel()
-  const open = search.task !== undefined || search.thread !== undefined || search.agent !== undefined
+  const open = search.task !== undefined || search.thread !== undefined || search.agent !== undefined || search.memory !== undefined
 
   useEffect(() => {
     if (!open) return
@@ -30,6 +31,8 @@ export function RightPanel() {
         <ThreadPanel key={`thread-${search.thread}`} id={search.thread} />
       ) : search.agent !== undefined ? (
         <AgentProfile key={`agent-${search.agent}`} name={search.agent} />
+      ) : search.memory !== undefined ? (
+        <ChannelMemoryPanel key={`memory-${search.memory}`} channel={search.memory} />
       ) : null}
     </aside>
   )

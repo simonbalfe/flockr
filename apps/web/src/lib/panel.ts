@@ -4,6 +4,7 @@ export interface PanelSearch {
   thread?: string
   task?: number
   agent?: string
+  memory?: string
   label?: string
 }
 
@@ -14,6 +15,7 @@ export function parsePanelSearch(raw: Record<string, unknown>): PanelSearch {
     thread: thread || undefined,
     task: Number.isInteger(task) && task > 0 ? task : undefined,
     agent: typeof raw.agent === "string" && raw.agent ? raw.agent : undefined,
+    memory: typeof raw.memory === "string" && raw.memory ? raw.memory : undefined,
     label: typeof raw.label === "string" && raw.label ? raw.label : undefined,
   }
 }
@@ -21,13 +23,14 @@ export function parsePanelSearch(raw: Record<string, unknown>): PanelSearch {
 export function usePanel() {
   const navigate = useNavigate()
   const search = useSearch({ strict: false }) as PanelSearch
-  const go = (next: PanelSearch) => void navigate({ to: ".", search: (prev) => ({ ...prev, thread: undefined, task: undefined, agent: undefined, ...next }) })
+  const go = (next: PanelSearch) => void navigate({ to: ".", search: (prev) => ({ ...prev, thread: undefined, task: undefined, agent: undefined, memory: undefined, ...next }) })
   return {
     search,
     openTask: (id: number) => go({ task: id }),
     openThread: (id: string) => go({ thread: id }),
     openById: (id: string) => (/^\d+$/.test(id) ? go({ task: Number(id) }) : go({ thread: id })),
     openAgent: (name: string) => go({ agent: name }),
+    openMemory: (channel: string) => go({ memory: channel }),
     close: () => go({}),
     filterLabel: (label: string | undefined) => void navigate({ to: ".", search: (prev) => ({ ...prev, label }) }),
   }

@@ -27,3 +27,4 @@
 | [0023](0023-backups-are-nightly-logical-copies-in-the-bucket.md) | Backups are nightly logical copies of every table in the S3 bucket | Accepted |
 | [0024](0024-the-board-is-the-model-key-proxy.md) | The board is the model key proxy, reached with signed box tokens | Accepted |
 | [0025](0025-agents-make-tasks-only-when-a-person-asks.md) | Agents make tasks only when a person asks | Accepted |
+| [0026](0026-agent-notes-and-channel-memory-are-postgres-items-the-runner-injects.md) | Agent notes and channel memory are Postgres items the runner puts in the prompt | Accepted |

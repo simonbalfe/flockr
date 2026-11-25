@@ -22,6 +22,7 @@ import { flowRoutes } from "./routes/flow"
 import { keyRoutes } from "./routes/keys"
 import { machineRoutes } from "./routes/machines"
 import { memberRoutes } from "./routes/members"
+import { memoryRoutes } from "./routes/memory"
 import { messageRoutes } from "./routes/messages"
 import { questionRoutes } from "./routes/questions"
 import { reviewRoutes } from "./routes/review"
@@ -91,6 +92,7 @@ export function createApp(db: Database, options: AppOptions = {}) {
     .route("/", activityRoutes)
     .route("/", activityEntryRoutes)
     .route("/", agentRoutes)
+    .route("/", memoryRoutes)
     .route("/", machineRoutes)
     .route("/", searchRoutes)
     .route("/", routineRoutes)

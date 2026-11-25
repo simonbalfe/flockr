@@ -2,7 +2,7 @@
 
 import type { Client, ClientMeta, Options as Options2, RequestResult, TDataShape } from './client';
 import { client } from './client.gen';
-import type { AddTaskCommitData, AddTaskCommitErrors, AddTaskCommitResponses, AnswerInThreadData, AnswerInThreadErrors, AnswerInThreadResponses, AnswerQuestionData, AnswerQuestionErrors, AnswerQuestionResponses, ApproveTaskData, ApproveTaskErrors, ApproveTaskResponses, AskInThreadData, AskInThreadErrors, AskInThreadResponses, AskQuestionData, AskQuestionErrors, AskQuestionResponses, BlockTaskData, BlockTaskErrors, BlockTaskResponses, CheckApprovalData, CheckApprovalErrors, CheckApprovalResponses, ClaimNextTaskData, ClaimNextTaskErrors, ClaimNextTaskResponses, ClaimTaskData, ClaimTaskErrors, ClaimTaskResponses, ClearApprovalRuleData, ClearApprovalRuleErrors, ClearApprovalRuleResponses, CompleteTaskData, CompleteTaskErrors, CompleteTaskResponses, CreateActivityEntryData, CreateActivityEntryErrors, CreateActivityEntryResponses, CreateAgentData, CreateAgentErrors, CreateAgentResponses, CreateChannelData, CreateChannelErrors, CreateChannelResponses, CreateKeyData, CreateKeyErrors, CreateKeyResponses, CreateMemberData, CreateMemberErrors, CreateMemberResponses, CreateRoutineData, CreateRoutineErrors, CreateRoutineResponses, CreateTaskData, CreateTaskErrors, CreateTaskResponses, DeleteAgentData, DeleteAgentErrors, DeleteAgentResponses, DeleteMessageData, DeleteMessageErrors, DeleteMessageResponses, DeleteRoutineData, DeleteRoutineErrors, DeleteRoutineResponses, DisableRoutineData, DisableRoutineErrors, DisableRoutineResponses, EditMessageData, EditMessageErrors, EditMessageResponses, EnableRoutineData, EnableRoutineErrors, EnableRoutineResponses, FailTaskData, FailTaskErrors, FailTaskResponses, GetActivityEntryData, GetActivityEntryErrors, GetActivityEntryResponses, GetAgentData, GetAgentErrors, GetAgentResponses, GetBriefData, GetBriefErrors, GetBriefResponses, GetInboxData, GetInboxErrors, GetInboxResponses, GetRoutineData, GetRoutineErrors, GetRoutineResponses, GetTaskData, GetTaskErrors, GetTaskResponses, GetThreadData, GetThreadErrors, GetThreadResponses, GiveTaskData, GiveTaskErrors, GiveTaskResponses, ImportChecklistData, ImportChecklistErrors, ImportChecklistResponses, ListActivityData, ListActivityErrors, ListActivityResponses, ListAgentActivityData, ListAgentActivityErrors, ListAgentActivityResponses, ListAgentsData, ListAgentsErrors, ListAgentsResponses, ListApprovalRulesData, ListApprovalRulesErrors, ListApprovalRulesResponses, ListChannelsData, ListChannelsErrors, ListChannelsResponses, ListEventsData, ListEventsErrors, ListEventsResponses, ListKeysData, ListKeysErrors, ListKeysResponses, ListMachinesData, ListMachinesErrors, ListMachinesResponses, ListMembersData, ListMembersErrors, ListMembersResponses, ListMessagesData, ListMessagesErrors, ListMessagesResponses, ListMessageVersionsData, ListMessageVersionsErrors, ListMessageVersionsResponses, ListRoutineJobsData, ListRoutineJobsErrors, ListRoutineJobsResponses, ListRoutinesData, ListRoutinesErrors, ListRoutinesResponses, ListTasksData, ListTasksErrors, ListTasksResponses, MachineHeartbeatData, MachineHeartbeatErrors, MachineHeartbeatResponses, MakeTaskFromThreadData, MakeTaskFromThreadErrors, MakeTaskFromThreadResponses, MarkReadData, MarkReadErrors, MarkReadResponses, PauseAgentData, PauseAgentErrors, PauseAgentResponses, PostMessageData, PostMessageErrors, PostMessageResponses, RegisterMachineData, RegisterMachineErrors, RegisterMachineResponses, ReleaseTaskData, ReleaseTaskErrors, ReleaseTaskResponses, RenewTaskData, RenewTaskErrors, RenewTaskResponses, ReplyToThreadData, ReplyToThreadErrors, ReplyToThreadResponses, RequestChangesData, RequestChangesErrors, RequestChangesResponses, RequestSignInLinkData, RequestSignInLinkErrors, RequestSignInLinkResponses, ResumeAgentData, ResumeAgentErrors, ResumeAgentResponses, RevokeKeyData, RevokeKeyErrors, RevokeKeyResponses, SearchBoardData, SearchBoardErrors, SearchBoardResponses, SetActivityData, SetActivityErrors, SetActivityResponses, SetApprovalRuleData, SetApprovalRuleErrors, SetApprovalRuleResponses, SignOutData, SignOutErrors, SignOutResponses, StartAgentData, StartAgentErrors, StartAgentResponses, StopAgentData, StopAgentErrors, StopAgentResponses, StopRunData, StopRunErrors, StopRunResponses, SubmitForReviewData, SubmitForReviewErrors, SubmitForReviewResponses, UnblockTaskData, UnblockTaskErrors, UnblockTaskResponses, UpdateActivityEntryData, UpdateActivityEntryErrors, UpdateActivityEntryResponses, UpdateAgentData, UpdateAgentErrors, UpdateAgentResponses, UpdateChannelData, UpdateChannelErrors, UpdateChannelResponses, UpdateRoutineData, UpdateRoutineErrors, UpdateRoutineResponses, WhoamiData, WhoamiErrors, WhoamiResponses } from './types.gen';
+import type { AddAgentNoteData, AddAgentNoteErrors, AddAgentNoteResponses, AddChannelMemoryData, AddChannelMemoryErrors, AddChannelMemoryResponses, AddTaskCommitData, AddTaskCommitErrors, AddTaskCommitResponses, AnswerInThreadData, AnswerInThreadErrors, AnswerInThreadResponses, AnswerQuestionData, AnswerQuestionErrors, AnswerQuestionResponses, ApproveTaskData, ApproveTaskErrors, ApproveTaskResponses, ArchiveAgentNoteData, ArchiveAgentNoteErrors, ArchiveAgentNoteResponses, ArchiveChannelMemoryData, ArchiveChannelMemoryErrors, ArchiveChannelMemoryResponses, AskInThreadData, AskInThreadErrors, AskInThreadResponses, AskQuestionData, AskQuestionErrors, AskQuestionResponses, BlockTaskData, BlockTaskErrors, BlockTaskResponses, CheckApprovalData, CheckApprovalErrors, CheckApprovalResponses, ClaimNextTaskData, ClaimNextTaskErrors, ClaimNextTaskResponses, ClaimTaskData, ClaimTaskErrors, ClaimTaskResponses, ClearApprovalRuleData, ClearApprovalRuleErrors, ClearApprovalRuleResponses, CompleteTaskData, CompleteTaskErrors, CompleteTaskResponses, CreateActivityEntryData, CreateActivityEntryErrors, CreateActivityEntryResponses, CreateAgentData, CreateAgentErrors, CreateAgentResponses, CreateChannelData, CreateChannelErrors, CreateChannelResponses, CreateKeyData, CreateKeyErrors, CreateKeyResponses, CreateMemberData, CreateMemberErrors, CreateMemberResponses, CreateRoutineData, CreateRoutineErrors, CreateRoutineResponses, CreateTaskData, CreateTaskErrors, CreateTaskResponses, DeleteAgentData, DeleteAgentErrors, DeleteAgentResponses, DeleteMessageData, DeleteMessageErrors, DeleteMessageResponses, DeleteRoutineData, DeleteRoutineErrors, DeleteRoutineResponses, DisableRoutineData, DisableRoutineErrors, DisableRoutineResponses, EditMessageData, EditMessageErrors, EditMessageResponses, EnableRoutineData, EnableRoutineErrors, EnableRoutineResponses, FailTaskData, FailTaskErrors, FailTaskResponses, GetActivityEntryData, GetActivityEntryErrors, GetActivityEntryResponses, GetAgentData, GetAgentErrors, GetAgentResponses, GetBriefData, GetBriefErrors, GetBriefResponses, GetInboxData, GetInboxErrors, GetInboxResponses, GetRoutineData, GetRoutineErrors, GetRoutineResponses, GetTaskData, GetTaskErrors, GetTaskResponses, GetThreadData, GetThreadErrors, GetThreadResponses, GiveTaskData, GiveTaskErrors, GiveTaskResponses, ImportChecklistData, ImportChecklistErrors, ImportChecklistResponses, ListActivityData, ListActivityErrors, ListActivityResponses, ListAgentActivityData, ListAgentActivityErrors, ListAgentActivityResponses, ListAgentNotesData, ListAgentNotesErrors, ListAgentNotesResponses, ListAgentsData, ListAgentsErrors, ListAgentsResponses, ListApprovalRulesData, ListApprovalRulesErrors, ListApprovalRulesResponses, ListChannelMemoryData, ListChannelMemoryErrors, ListChannelMemoryResponses, ListChannelsData, ListChannelsErrors, ListChannelsResponses, ListEventsData, ListEventsErrors, ListEventsResponses, ListKeysData, ListKeysErrors, ListKeysResponses, ListMachinesData, ListMachinesErrors, ListMachinesResponses, ListMembersData, ListMembersErrors, ListMembersResponses, ListMessagesData, ListMessagesErrors, ListMessagesResponses, ListMessageVersionsData, ListMessageVersionsErrors, ListMessageVersionsResponses, ListRoutineJobsData, ListRoutineJobsErrors, ListRoutineJobsResponses, ListRoutinesData, ListRoutinesErrors, ListRoutinesResponses, ListTasksData, ListTasksErrors, ListTasksResponses, MachineHeartbeatData, MachineHeartbeatErrors, MachineHeartbeatResponses, MakeTaskFromThreadData, MakeTaskFromThreadErrors, MakeTaskFromThreadResponses, MarkReadData, MarkReadErrors, MarkReadResponses, PauseAgentData, PauseAgentErrors, PauseAgentResponses, PostMessageData, PostMessageErrors, PostMessageResponses, RegisterMachineData, RegisterMachineErrors, RegisterMachineResponses, ReleaseTaskData, ReleaseTaskErrors, ReleaseTaskResponses, RenewTaskData, RenewTaskErrors, RenewTaskResponses, ReplyToThreadData, ReplyToThreadErrors, ReplyToThreadResponses, RequestChangesData, RequestChangesErrors, RequestChangesResponses, RequestSignInLinkData, RequestSignInLinkErrors, RequestSignInLinkResponses, RestoreAgentNoteData, RestoreAgentNoteErrors, RestoreAgentNoteResponses, RestoreChannelMemoryData, RestoreChannelMemoryErrors, RestoreChannelMemoryResponses, ResumeAgentData, ResumeAgentErrors, ResumeAgentResponses, RevokeKeyData, RevokeKeyErrors, RevokeKeyResponses, SearchBoardData, SearchBoardErrors, SearchBoardResponses, SetActivityData, SetActivityErrors, SetActivityResponses, SetApprovalRuleData, SetApprovalRuleErrors, SetApprovalRuleResponses, SignOutData, SignOutErrors, SignOutResponses, StartAgentData, StartAgentErrors, StartAgentResponses, StopAgentData, StopAgentErrors, StopAgentResponses, StopRunData, StopRunErrors, StopRunResponses, SubmitForReviewData, SubmitForReviewErrors, SubmitForReviewResponses, UnblockTaskData, UnblockTaskErrors, UnblockTaskResponses, UpdateActivityEntryData, UpdateActivityEntryErrors, UpdateActivityEntryResponses, UpdateAgentData, UpdateAgentErrors, UpdateAgentNoteData, UpdateAgentNoteErrors, UpdateAgentNoteResponses, UpdateAgentResponses, UpdateChannelData, UpdateChannelErrors, UpdateChannelMemoryData, UpdateChannelMemoryErrors, UpdateChannelMemoryResponses, UpdateChannelResponses, UpdateRoutineData, UpdateRoutineErrors, UpdateRoutineResponses, WhoamiData, WhoamiErrors, WhoamiResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -483,6 +483,84 @@ export const resumeAgent = <ThrowOnError extends boolean = false>(options: Optio
  * An agent's recent runs across all its threads, newest first: each activity entry at its latest state with its steps, thread and channel
  */
 export const listAgentActivity = <ThrowOnError extends boolean = false>(options: Options<ListAgentActivityData, ThrowOnError>): RequestResult<ListAgentActivityResponses, ListAgentActivityErrors, ThrowOnError> => (options.client ?? client).get<ListAgentActivityResponses, ListAgentActivityErrors, ThrowOnError>({ url: '/api/agents/{name}/activity', ...options });
+
+/**
+ * An agent's notes, newest first. Only that agent and people may read them; page with before. state=archived lists the archived ones
+ */
+export const listAgentNotes = <ThrowOnError extends boolean = false>(options: Options<ListAgentNotesData, ThrowOnError>): RequestResult<ListAgentNotesResponses, ListAgentNotesErrors, ThrowOnError> => (options.client ?? client).get<ListAgentNotesResponses, ListAgentNotesErrors, ThrowOnError>({ url: '/api/agents/{name}/notes', ...options });
+
+/**
+ * Save a short note an agent keeps across conversations (a decision, preference, fact or to do), optionally linked to the thread it came from. Send a key so a retry changes nothing twice; an agent keeps at most 100 live notes
+ */
+export const addAgentNote = <ThrowOnError extends boolean = false>(options: Options<AddAgentNoteData, ThrowOnError>): RequestResult<AddAgentNoteResponses, AddAgentNoteErrors, ThrowOnError> => (options.client ?? client).post<AddAgentNoteResponses, AddAgentNoteErrors, ThrowOnError>({
+    url: '/api/agents/{name}/notes',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Edit a note's text, kind, tags or source thread; the edit is a new event and an unchanged note writes nothing
+ */
+export const updateAgentNote = <ThrowOnError extends boolean = false>(options: Options<UpdateAgentNoteData, ThrowOnError>): RequestResult<UpdateAgentNoteResponses, UpdateAgentNoteErrors, ThrowOnError> => (options.client ?? client).patch<UpdateAgentNoteResponses, UpdateAgentNoteErrors, ThrowOnError>({
+    url: '/api/agents/{name}/notes/{id}',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Archive a note: it leaves the agent's lists and prompts but stays readable and can be restored; safe to repeat
+ */
+export const archiveAgentNote = <ThrowOnError extends boolean = false>(options: Options<ArchiveAgentNoteData, ThrowOnError>): RequestResult<ArchiveAgentNoteResponses, ArchiveAgentNoteErrors, ThrowOnError> => (options.client ?? client).post<ArchiveAgentNoteResponses, ArchiveAgentNoteErrors, ThrowOnError>({ url: '/api/agents/{name}/notes/{id}/archive', ...options });
+
+/**
+ * Bring an archived note back; safe to repeat
+ */
+export const restoreAgentNote = <ThrowOnError extends boolean = false>(options: Options<RestoreAgentNoteData, ThrowOnError>): RequestResult<RestoreAgentNoteResponses, RestoreAgentNoteErrors, ThrowOnError> => (options.client ?? client).post<RestoreAgentNoteResponses, RestoreAgentNoteErrors, ThrowOnError>({ url: '/api/agents/{name}/notes/{id}/restore', ...options });
+
+/**
+ * The decisions and facts a channel keeps, newest first; every agent working in the channel reads them first. state=archived lists the archived ones
+ */
+export const listChannelMemory = <ThrowOnError extends boolean = false>(options: Options<ListChannelMemoryData, ThrowOnError>): RequestResult<ListChannelMemoryResponses, ListChannelMemoryErrors, ThrowOnError> => (options.client ?? client).get<ListChannelMemoryResponses, ListChannelMemoryErrors, ThrowOnError>({ url: '/api/channels/{channel}/memory', ...options });
+
+/**
+ * Add a decision, fact or preference to a channel's memory, optionally linked to its thread. Any member may add; send a key so a retry changes nothing twice; a channel keeps at most 100 live items
+ */
+export const addChannelMemory = <ThrowOnError extends boolean = false>(options: Options<AddChannelMemoryData, ThrowOnError>): RequestResult<AddChannelMemoryResponses, AddChannelMemoryErrors, ThrowOnError> => (options.client ?? client).post<AddChannelMemoryResponses, AddChannelMemoryErrors, ThrowOnError>({
+    url: '/api/channels/{channel}/memory',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Edit a channel memory item. A person may edit any; an agent only the ones it added. The edit is a new event
+ */
+export const updateChannelMemory = <ThrowOnError extends boolean = false>(options: Options<UpdateChannelMemoryData, ThrowOnError>): RequestResult<UpdateChannelMemoryResponses, UpdateChannelMemoryErrors, ThrowOnError> => (options.client ?? client).patch<UpdateChannelMemoryResponses, UpdateChannelMemoryErrors, ThrowOnError>({
+    url: '/api/channels/{channel}/memory/{id}',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Remove an item from a channel's memory (it stays readable and can be restored). A person may archive any; an agent only its own; safe to repeat
+ */
+export const archiveChannelMemory = <ThrowOnError extends boolean = false>(options: Options<ArchiveChannelMemoryData, ThrowOnError>): RequestResult<ArchiveChannelMemoryResponses, ArchiveChannelMemoryErrors, ThrowOnError> => (options.client ?? client).post<ArchiveChannelMemoryResponses, ArchiveChannelMemoryErrors, ThrowOnError>({ url: '/api/channels/{channel}/memory/{id}/archive', ...options });
+
+/**
+ * Bring an archived channel memory item back; safe to repeat
+ */
+export const restoreChannelMemory = <ThrowOnError extends boolean = false>(options: Options<RestoreChannelMemoryData, ThrowOnError>): RequestResult<RestoreChannelMemoryResponses, RestoreChannelMemoryErrors, ThrowOnError> => (options.client ?? client).post<RestoreChannelMemoryResponses, RestoreChannelMemoryErrors, ThrowOnError>({ url: '/api/channels/{channel}/memory/{id}/restore', ...options });
 
 /**
  * List machines whose runners serve agents, with the harnesses each can run and whether it is online
