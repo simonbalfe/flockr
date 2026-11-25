@@ -8,6 +8,7 @@ import { MemberAvatar } from "@/components/member-avatar"
 import { ChannelRepoDialog } from "@/components/channel-repo-dialog"
 import { Composer } from "@/components/composer"
 import { DeclareAreaDialog } from "@/components/declare-area-dialog"
+import { FeedModeMenu } from "@/components/feed/feed-mode-menu"
 import { ImportChecklistDialog } from "@/components/import-checklist-dialog"
 import { NewTaskDialog } from "@/components/new-task-dialog"
 import { PageHeader } from "@/components/page-header"
@@ -87,6 +88,7 @@ export function ChannelFrame() {
             </TabsTrigger>
           </TabsList>
         </Tabs>
+        {!onTasks && !onAreas && <FeedModeMenu />}
         <Button variant="ghost" size="sm" onClick={() => openMemory(channel)}>
           Memory
         </Button>
