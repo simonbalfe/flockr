@@ -7,7 +7,7 @@
 | [0003](0003-everything-the-ui-does-is-available-through-api-and-cli.md) | Everything the UI can do is available through the API and CLI | Accepted |
 | [0004](0004-sqlite-is-the-data-store-for-now.md) | SQLite is the data store for now | Superseded by 0006 |
 | [0005](0005-bun-hono-vite-tanstack-shadcn-tailwind.md) | Bun, Hono, Vite, TanStack, shadcn and Tailwind | Accepted |
-| [0006](0006-postgres-is-the-data-store.md) | Postgres is the data store | Accepted; live events through `LISTEN/NOTIFY` superseded in part by 0017 |
+| [0006](0006-postgres-is-the-data-store.md) | Postgres is the data store | Accepted; live events through `LISTEN/NOTIFY` superseded in part by 0017, pg-boss by 0020 |
 | [0007](0007-sandbox-runtime-is-agnostic.md) | The sandbox runtime is agnostic | Accepted; its first adapter superseded in part by 0017 |
 | [0008](0008-pi-durable-is-the-built-in-agent-harness.md) | Pi Durable is the built-in agent harness | Accepted; where agent state lives superseded in part by 0018 |
 | [0009](0009-everything-is-agnostic-nothing-names-a-provider-outside-its-adapter.md) | Everything is agnostic, nothing names a provider outside its adapter | Accepted |
@@ -21,3 +21,4 @@
 | [0017](0017-flockr-runs-on-cloudflare-through-platform-adapters.md) | Flockr runs on Cloudflare through platform adapters; Postgres and R2 stay portable | Accepted |
 | [0018](0018-durable-objects-are-disposable.md) | Durable Objects are disposable: no data lives only in one, and no board rules run in one | Accepted |
 | [0019](0019-coding-agents-run-claude-code-in-a-disposable-sandbox-per-task.md) | Coding agents run Claude Code in a disposable sandbox per task; other cloud agents run Pi Durable | Proposed |
+| [0020](0020-jobs-are-postgres-rows-drained-by-the-platform-scheduler.md) | Jobs are Postgres rows drained by the platform's scheduler, not pg-boss | Accepted |

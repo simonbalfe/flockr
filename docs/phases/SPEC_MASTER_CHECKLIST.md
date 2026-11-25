@@ -86,7 +86,7 @@ Done when: a reply in a Slack thread unblocks an example task, and a daily summa
 
 | Sub-phase | For | Delivers | Covers | Status |
 |---|---|---|---|---|
-| 5a Watchers | both | Code that runs on each new event in a channel, as a job in a Postgres-backed queue with retries (pg-boss) | P44 | Not started |
+| 5a Watchers | both | Code that runs on each new event in a channel, as a job in a Postgres `jobs` table with retries, drained by the platform scheduler (ADR 0020) | P44 | Not started |
 | 5b Routines | both | Run on a schedule or an event (webhook, Slack, GitHub); off until turned on; act only on their trigger; a rate limit each and in total | P45, P46, P49 | Not started |
 | 5c Approval rules | people | Per action kind: allow, ask or block, above a floor no rule can lower (spending money and prod changes always ask); an approval step a queued job waits on | P48, P53, P54, P76 | Not started |
 | 5d Slack sync | people | Slack threads and board threads synced both ways; Slack tokens held by the server, never by an agent | P50, P57 | Not started |

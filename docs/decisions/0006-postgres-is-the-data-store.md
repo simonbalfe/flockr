@@ -1,6 +1,6 @@
 # 0006: Postgres is the data store
 
-Status: accepted, 24 Nov 2026; live events through `LISTEN/NOTIFY` superseded in part by [0017](0017-flockr-runs-on-cloudflare-through-platform-adapters.md) (25 Nov 2026). Supersedes [0004](0004-sqlite-is-the-data-store-for-now.md). Restores the Postgres choice in [0001](0001-flockr-runs-on-a-vps-not-cloudflare.md) and the backups in [0002](0002-r2-holds-files-and-postgres-backups.md).
+Status: accepted, 24 Nov 2026; live events through `LISTEN/NOTIFY` superseded in part by [0017](0017-flockr-runs-on-cloudflare-through-platform-adapters.md) (25 Nov 2026); pg-boss superseded by [0020](0020-jobs-are-postgres-rows-drained-by-the-platform-scheduler.md). Supersedes [0004](0004-sqlite-is-the-data-store-for-now.md). Restores the Postgres choice in [0001](0001-flockr-runs-on-a-vps-not-cloudflare.md) and the backups in [0002](0002-r2-holds-files-and-postgres-backups.md).
 
 ## Problem
 
