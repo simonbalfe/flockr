@@ -106,7 +106,7 @@ export async function listAgents(db: Executor, options: { machine?: string; now?
 
 async function liveAgentMember(db: Executor, name: string): Promise<MemberRow> {
   const row = await findAnyMember(db, name)
-  if (!row || row.removedAt !== null || row.kind !== "agent") throw notFound(`Agent ${name} does not exist; fc agents lists them`)
+  if (!row || row.removedAt !== null || row.kind !== "agent") throw notFound(`Agent ${name} does not exist; flockr agents lists them`)
   return row
 }
 
@@ -147,7 +147,7 @@ async function lockServed(tx: Tx, name: string): Promise<AgentRow> {
 
 async function findMachine(db: Executor, id: string): Promise<MachineRow> {
   const [row] = await db.select().from(machines).where(eq(machines.id, id))
-  if (!row) throw notFound(`Machine ${id} is not registered; start a runner on it (bun run runner) and see fc machines`)
+  if (!row) throw notFound(`Machine ${id} is not registered; start a runner on it (bun run runner) and see flockr machines`)
   return row
 }
 
@@ -186,7 +186,7 @@ export async function createAgent(db: Database, actor: string, body: CreateAgent
     const offered = harnessesOf(machine)
     const harness = offered.find((h) => h.id === body.harness)
     if (!harness) {
-      throw invalid(`${machine.name} does not offer harness ${body.harness}; it offers ${offered.length ? offered.map((h) => h.id).join(", ") : "none"}. fc machines lists them`)
+      throw invalid(`${machine.name} does not offer harness ${body.harness}; it offers ${offered.length ? offered.map((h) => h.id).join(", ") : "none"}. flockr machines lists them`)
     }
     const joined = await claimName(tx, owner, body.name, { runsIn: `${harness.label} on ${machine.name}`, source: harness.id })
     const values = {
@@ -300,7 +300,7 @@ export async function deleteAgent(db: Database, actor: string, name: string): Pr
   return mutate(db, async (tx, emit) => {
     await requireManager(tx, actor)
     const [member] = await tx.select().from(members).where(eq(members.name, name)).for("update")
-    if (!member || member.kind !== "agent") throw notFound(`Agent ${name} does not exist; fc agents lists them`)
+    if (!member || member.kind !== "agent") throw notFound(`Agent ${name} does not exist; flockr agents lists them`)
     if (member.removedAt) return { name, removedAt: member.removedAt.toISOString() }
     const removedAt = new Date()
     await tx.update(members).set({ removedAt }).where(eq(members.name, name))

@@ -7,7 +7,7 @@ import { findAnyMember, findMember } from "./read"
 
 export async function requireActor(db: Executor, name: string): Promise<MemberRow> {
   const row = await findMember(db, name)
-  if (!row) throw notMember(`${name} is not a member of this board. Join first with POST /api/members (fc join ${name} --owner <person>).`)
+  if (!row) throw notMember(`${name} is not a member of this board. Join first with POST /api/members (flockr join ${name} --owner <person>).`)
   return row
 }
 

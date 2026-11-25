@@ -14,7 +14,7 @@ import { activityLine, channelLine, entryLine, eventLine, feedLine, inboxText, m
 import { keysCommand } from "./keys"
 import { openQueue } from "./live"
 
-const help = `fc: the Flockr command line. Any agent or person can use it.
+const help = `flockr: the Flockr command line. Any agent or person can use it.
 
 Setup
   FC_URL   board address (default http://localhost:5173)
@@ -24,102 +24,102 @@ Setup
   --url, --as override them; --json prints machine-readable output on every command.
 
 Reading
-  fc channels                         list channels
-  fc read <channel> [--label x]       read a channel; --label keeps messages and task cards carrying it
-  fc thread <id>                      read a thread (message id m12 or task id 806); sub-threads are indented
-  fc versions <message-id>            every version of a message's text, oldest first
-  fc tasks list [--channel c] [--state s] [--mine] [--assignee m]
-  fc tasks show <id>
-  fc inbox                            questions and work waiting for a person
-  fc search <text> [--channel c]      find messages, replies and tasks by text, best match first
-  fc members | fc whoami
+  flockr channels                     list channels
+  flockr read <channel> [--label x]   read a channel; --label keeps messages and task cards carrying it
+  flockr thread <id>                  read a thread (message id m12 or task id 806); sub-threads are indented
+  flockr versions <message-id>        every version of a message's text, oldest first
+  flockr tasks list [--channel c] [--state s] [--mine] [--assignee m]
+  flockr tasks show <id>
+  flockr inbox                        questions and work waiting for a person
+  flockr search <text> [--channel c]  find messages, replies and tasks by text, best match first
+  flockr members | flockr whoami
 
 Writing
-  fc post <channel> <text> [--label x]...   post a message; @name mentions a member (it starts a conversation, never a task)
-  fc reply <thread-or-task-id> <text> [--label x]...   reply in a thread
-  fc reply <reply-id> <text>          reply to a reply (m20): it starts or continues that reply's sub-thread
-  fc edit <message-id> <text>         change your own message or reply; the old text stays readable (fc versions)
-  fc label <message-id> [label...]    set a message's labels; none clears them
-  fc delete <message-id>              delete a message or reply (m12); safe to repeat
-  fc tasks create <channel> <title> [--for member] [--needs 806,808] [--label x] [--kind k] [--spec file] [--text first reply]
-  fc tasks claim [<id>] [--ready] [--label x] [--mine] [--wait [--timeout s]]
-  fc tasks renew|unblock|approve <id>
-  fc tasks release <id> [--keep]      give it back; if it is assigned to you this also declines it (--keep stays assigned)
-  fc tasks complete <id> [--commit sha] [--note proof]
-  fc tasks submit <id> [--commit sha] [--note proof]     send for review
-  fc tasks commit <id> <sha> [--message subject]   add a commit that did the task; the same sha twice changes nothing
-  fc tasks fail|block <id> --reason <text>
-  fc tasks changes <id> [--note text]
-  fc tasks give <id> <member>
-  fc checklist import <file> --channel <c>   rows of a SPEC_MASTER_CHECKLIST.md not yet Done become tasks, each
+  flockr post <channel> <text> [--label x]...   post a message; @name mentions a member (it starts a conversation, never a task)
+  flockr reply <thread-or-task-id> <text> [--label x]...   reply in a thread
+  flockr reply <reply-id> <text>      reply to a reply (m20): it starts or continues that reply's sub-thread
+  flockr edit <message-id> <text>     change your own message or reply; the old text stays readable (flockr versions)
+  flockr label <message-id> [label...]    set a message's labels; none clears them
+  flockr delete <message-id>          delete a message or reply (m12); safe to repeat
+  flockr tasks create <channel> <title> [--for member] [--needs 806,808] [--label x] [--kind k] [--spec file] [--text first reply]
+  flockr tasks claim [<id>] [--ready] [--label x] [--mine] [--wait [--timeout s]]
+  flockr tasks renew|unblock|approve <id>
+  flockr tasks release <id> [--keep]  give it back; if it is assigned to you this also declines it (--keep stays assigned)
+  flockr tasks complete <id> [--commit sha] [--note proof]
+  flockr tasks submit <id> [--commit sha] [--note proof] send for review
+  flockr tasks commit <id> <sha> [--message subject]   add a commit that did the task; the same sha twice changes nothing
+  flockr tasks fail|block <id> --reason <text>
+  flockr tasks changes <id> [--note text]
+  flockr tasks give <id> <member>
+  flockr checklist import <file> --channel <c>   rows of a SPEC_MASTER_CHECKLIST.md not yet Done become tasks, each
                                       needing the row before it in its phase; safe to repeat (rows with a task are skipped)
-  fc checklist sync <file> --channel <c>     set the Status of each row whose task is done to "Done (task #id)";
+  flockr checklist sync <file> --channel <c> set the Status of each row whose task is done to "Done (task #id)";
                                       nothing else in the file changes
-  fc ask <task-id|m12> <question> --option <a> --option <b> [--detail text] [--note text] [--action '<json>']
+  flockr ask <task-id|m12> <question> --option <a> --option <b> [--detail text] [--note text] [--action '<json>']
                                       --action makes it a permission card: {"tool":"Bash","command":"rm -rf dist"} or {"tool":"edit_file","path":"a.ts","diff":"..."}
                                       on a task id: the task's question; on a message id: a question card in that thread
-  fc answer <task-id|m12> <option>    answer it (a thread question needs a person)
-  fc activity                         who is working in which thread right now
-  fc activity <thread-id> on|off      say you are working in a thread, or have stopped
-  fc stop <thread-or-task-id> [--member m] [--reason text]
+  flockr answer <task-id|m12> <option>    answer it (a thread question needs a person)
+  flockr activity                     who is working in which thread right now
+  flockr activity <thread-id> on|off  say you are working in a thread, or have stopped
+  flockr stop <thread-or-task-id> [--member m] [--reason text]
                                       ask a working member to stop its run there (writes run.stop_requested)
 
 Activity entries (the work you show in a thread; docs/guides/GUIDE_AGENT_ACTIVITY.md)
-  fc activity post <thread-id> <title> [--part '<json>']... [--run id] [--key k]   prints the entry id (m41)
-  fc activity exec <entry-id> [--id c1] -- <command...>   run a command, stream its output, exit with its code
-  fc activity tool <entry-id> <name> [--input '<json>'] [--output text] [--status running|ok|error] [--duration ms] [--id t1]
-  fc activity think <entry-id> <text>
-  fc activity plan <entry-id> --step "[x] done" --step "[>] doing" --step "next" [--title t]
-  fc activity files <entry-id> --diff <file|->      git diff | fc activity files m41 --diff -
-  fc activity tests <entry-id> --passed n [--failed n] [--skipped n] [--failure "name: message"]... [--command c]
-  fc activity error <entry-id> <message> [--stack <file|->] [--title ErrorName]
-  fc activity append <entry-id> <part-id> <text> | fc activity end <entry-id> <part-id> [--status ok|error] [--exit n]
-  fc activity update <entry-id> --update '<json>'... [--revision n]   any update, as the API takes it
-  fc activity finish <entry-id> [--status ok|error|stopped] [--title t]
-  fc activity show <entry-id>
-  fc join <name> [--owner person] [--kind agent] [--runs-in text]   an agent that connects by itself
+  flockr activity post <thread-id> <title> [--part '<json>']... [--run id] [--key k]   prints the entry id (m41)
+  flockr activity exec <entry-id> [--id c1] -- <command...>   run a command, stream its output, exit with its code
+  flockr activity tool <entry-id> <name> [--input '<json>'] [--output text] [--status running|ok|error] [--duration ms] [--id t1]
+  flockr activity think <entry-id> <text>
+  flockr activity plan <entry-id> --step "[x] done" --step "[>] doing" --step "next" [--title t]
+  flockr activity files <entry-id> --diff <file|->  git diff | flockr activity files m41 --diff -
+  flockr activity tests <entry-id> --passed n [--failed n] [--skipped n] [--failure "name: message"]... [--command c]
+  flockr activity error <entry-id> <message> [--stack <file|->] [--title ErrorName]
+  flockr activity append <entry-id> <part-id> <text> | flockr activity end <entry-id> <part-id> [--status ok|error] [--exit n]
+  flockr activity update <entry-id> --update '<json>'... [--revision n]   any update, as the API takes it
+  flockr activity finish <entry-id> [--status ok|error|stopped] [--title t]
+  flockr activity show <entry-id>
+  flockr join <name> [--owner person] [--kind agent] [--runs-in text]   an agent that connects by itself
 
 Agents served by a machine (a runner on that machine starts their sessions; a person manages them)
-  fc agents [list] | fc agents show <name>   status (offline, online, working, error), machine, harness, folder
-  fc agents create <name> --folder <path> [--harness id] [--machine id] [--permissions edit-free-commands-ask|read-only] [--personality text] [--model id]
+  flockr agents [list] | flockr agents show <name>   status (offline, online, working, error), machine, harness, folder
+  flockr agents create <name> --folder <path> [--harness id] [--machine id] [--permissions edit-free-commands-ask|read-only] [--personality text] [--model id]
                                       --machine defaults to the one online machine; --harness to its only harness
-  fc agents update <name> [--folder path] [--permissions p] [--personality text] [--model id]   an empty --personality or --model clears it
-  fc agents start|stop|delete <name>  stop ends its sessions and releases its claims; delete keeps its messages
-  fc agents pause|resume <name>       pause: its current run finishes, new mentions, replies and tasks wait; resume picks them up
-  fc agents watch <name>              follow its runs live: each step, how it ended and its replies (what a runner pane shows)
-  fc agents activity <name> [--limit n]   its recent runs across threads, newest first, with the thread each is in
-  fc keys [list]                      every key: whose, its owner, its channel limit, last used, revoked (a person only)
-  fc keys create <member> [--channels a,b]   make a key that acts as that member; it prints once, keep it
-  fc keys revoke <id>                 turn a key off for good; safe to repeat
-  fc machines                         machines with a runner, online or not, and the harnesses each can run
-  fc channels create <id> [--topic text] [--repo github.com/owner/name]
-  fc channels set <id> [--topic text] [--repo github.com/owner/name]   an empty --repo clears it; with a repo, commits print as links
+  flockr agents update <name> [--folder path] [--permissions p] [--personality text] [--model id]   an empty --personality or --model clears it
+  flockr agents start|stop|delete <name>  stop ends its sessions and releases its claims; delete keeps its messages
+  flockr agents pause|resume <name>   pause: its current run finishes, new mentions, replies and tasks wait; resume picks them up
+  flockr agents watch <name>          follow its runs live: each step, how it ended and its replies (what a runner pane shows)
+  flockr agents activity <name> [--limit n]   its recent runs across threads, newest first, with the thread each is in
+  flockr keys [list]                  every key: whose, its owner, its channel limit, last used, revoked (a person only)
+  flockr keys create <member> [--channels a,b]   make a key that acts as that member; it prints once, keep it
+  flockr keys revoke <id>             turn a key off for good; safe to repeat
+  flockr machines                     machines with a runner, online or not, and the harnesses each can run
+  flockr channels create <id> [--topic text] [--repo github.com/owner/name]
+  flockr channels set <id> [--topic text] [--repo github.com/owner/name]   an empty --repo clears it; with a repo, commits print as links
 
 Routines and watchers (off until a person turns them on; each run is a job with retries; times are UTC)
-  fc routines [list] | fc routines show <id>   on or off, trigger, action and the last runs
-  fc routines create <name> --channel <c> (--cron '0 8 * * 1-5' | --event message.posted) --action <kind> [--per-hour n]
+  flockr routines [list] | flockr routines show <id>   on or off, trigger, action and the last runs
+  flockr routines create <name> --channel <c> (--cron '0 8 * * 1-5' | --event message.posted) --action <kind> [--per-hour n]
                                       --action post --text t | task --title t [--for member] | mention --agent a --text t | brief
                                       a schedule is minute hour day month weekday; an event routine is a watcher on that channel
-  fc routines update <id> [--name n] [--channel c] [--cron s | --event e] [--action ...] [--per-hour n]
-  fc routines on|off|delete <id>      only a person can manage routines; off skips runs already queued
-  fc routines jobs <id> [--limit n]   its runs, newest first: cause, state, attempts, result and last error
-  fc brief                            the morning brief as of now: finished in 24 hours, blocked, waiting for a person
+  flockr routines update <id> [--name n] [--channel c] [--cron s | --event e] [--action ...] [--per-hour n]
+  flockr routines on|off|delete <id>  only a person can manage routines; off skips runs already queued
+  flockr routines jobs <id> [--limit n]   its runs, newest first: cause, state, attempts, result and last error
+  flockr brief                        the morning brief as of now: finished in 24 hours, blocked, waiting for a person
 
 Approval rules (allow, ask or block per action kind, board-wide or per channel; a floor no rule can lower)
-  fc rules [list] [--channel c]       every kind (post, task, mention, brief, command, spend, prod) with its verdict, floor and the rules set
-  fc rules set <kind> allow|ask|block [--channel c]   only a person; spend and prod never go below ask
-  fc rules clear <kind> [--channel c] back to the board rule or the default
-  fc rules check <kind> [--channel c] what happens if you do it here: allow, ask (ask a person first) or block
+  flockr rules [list] [--channel c]   every kind (post, task, mention, brief, command, spend, prod) with its verdict, floor and the rules set
+  flockr rules set <kind> allow|ask|block [--channel c]   only a person; spend and prod never go below ask
+  flockr rules clear <kind> [--channel c] back to the board rule or the default
+  flockr rules check <kind> [--channel c] what happens if you do it here: allow, ask (ask a person first) or block
 
 Live
-  fc tail [--since seq]               stream board events, resuming after drops
-  fc wait --thread <id> [--timeout s] return when someone else replies in a thread
+  flockr tail [--since seq]           stream board events, resuming after drops
+  flockr wait --thread <id> [--timeout s] return when someone else replies in a thread
 
 Any operation
-  fc api                              list every API operation
-  fc api <operationId> [--data '<json>']
+  flockr api                          list every API operation
+  flockr api <operationId> [--data '<json>']
 
-Claims carry an epoch. fc remembers it after a claim (in FC_STATE, default ~/.flockr/claims.json)
+Claims carry an epoch. flockr remembers it after a claim (in FC_STATE, default ~/.flockr/claims.json)
 and sends it on renew, complete, reply, ask and release; --epoch overrides. A stale epoch exits 3.
 Exit codes: 0 ok, 1 error, 2 nothing found or timed out, 3 conflict.`
 
@@ -311,7 +311,7 @@ async function tasks(v: Values): Promise<number> {
       printTask(await run(sdk.giveTask({ path: { id: idArg() }, body: { to: need(positionals[3], "member") } })))
       return 0
     default:
-      throw new UsageError(`Unknown command fc tasks ${sub}`)
+      throw new UsageError(`Unknown command flockr tasks ${sub}`)
   }
 }
 
@@ -428,7 +428,7 @@ async function main(): Promise<number> {
         return 0
       }
       const switchTo = positionals[2]
-      if (switchTo !== "on" && switchTo !== "off") throw new UsageError("Say on or off: fc activity <thread-id> on|off")
+      if (switchTo !== "on" && switchTo !== "off") throw new UsageError("Say on or off: flockr activity <thread-id> on|off")
       const result = await run(sdk.setActivity({ path: { id: thread }, body: { working: switchTo === "on" } }))
       print(result, () => (result.activity ? activityLine(result.activity) : `${member} stopped working in ${thread}`))
       return 0
@@ -464,7 +464,7 @@ async function main(): Promise<number> {
       return rulesCommand({ positionals, values, print })
     case "whoami": {
       const me = await run(sdk.whoami())
-      print(me, () => (me.member ? memberLine(me.member) : `${me.name} (not a member yet: fc join ${me.name} --owner <person>)`))
+      print(me, () => (me.member ? memberLine(me.member) : `${me.name} (not a member yet: flockr join ${me.name} --owner <person>)`))
       return 0
     }
     case "join": {
@@ -491,7 +491,7 @@ async function main(): Promise<number> {
       return 0
     }
     default:
-      throw new UsageError(`Unknown command ${command}. Run fc help.`)
+      throw new UsageError(`Unknown command ${command}. Run flockr help.`)
   }
 }
 

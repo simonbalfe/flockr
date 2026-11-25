@@ -21,7 +21,7 @@ export async function keysCommand(context: CommandContext): Promise<number> {
   switch (sub) {
     case "list": {
       const list = await run(sdk.listKeys())
-      print(list, () => (list.length ? list.map(keyLine).join("\n") : "No keys yet. fc keys create <member> makes one."))
+      print(list, () => (list.length ? list.map(keyLine).join("\n") : "No keys yet. flockr keys create <member> makes one."))
       return 0
     }
     case "create": {
@@ -37,6 +37,6 @@ export async function keysCommand(context: CommandContext): Promise<number> {
       return 0
     }
     default:
-      throw new UsageError(`Unknown keys command ${sub}. Use fc keys [list|create <member> [--channels a,b]|revoke <id>]`)
+      throw new UsageError(`Unknown keys command ${sub}. Use flockr keys [list|create <member> [--channels a,b]|revoke <id>]`)
   }
 }

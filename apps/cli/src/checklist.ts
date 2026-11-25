@@ -42,6 +42,6 @@ export async function checklistCommand(context: CommandContext): Promise<number>
       return 0
     }
     default:
-      throw new UsageError("Use fc checklist import <file> --channel <c> or fc checklist sync <file> --channel <c>")
+      throw new UsageError("Use flockr checklist import <file> --channel <c> or flockr checklist sync <file> --channel <c>")
   }
 }

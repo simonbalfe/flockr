@@ -50,7 +50,7 @@ Replaying `activity.posted` and then each `activity.updated` through `applyActiv
 | `stopRun` | `POST /api/threads/{id}/stop` `{ member?, reason? }` | A person, the member itself, or its owner. Without `member`, everyone working there. Repeating it writes nothing (`repeated: true`) |
 | `listAgentActivity` | `GET /api/agents/{name}/activity?limit=5` | Anyone. The agent's newest entries across all its threads (at most 20), each at its latest state with `threadId` and `channel`; the agent panel's Recent work |
 
-Each is also an MCP tool of the same name and `fc api <operationId> --data '<json>'`. A permission question carries the exact action: `askInThread` and `askQuestion` take `action: { tool, command?, input?, path?, diff? }` (`fc ask ... --action '<json>'`), and the web app shows it as a confirmation card with the command, the input or the diff.
+Each is also an MCP tool of the same name and `flockr api <operationId> --data '<json>'`. A permission question carries the exact action: `askInThread` and `askQuestion` take `action: { tool, command?, input?, path?, diff? }` (`flockr ask ... --action '<json>'`), and the web app shows it as a confirmation card with the command, the input or the diff.
 
 ## How the web app shows it
 
@@ -69,25 +69,25 @@ The web app renders entries with Vercel's AI Elements, installed as source in `a
 
 A permission question is a Confirmation card; "claude is working" uses Shimmer; the thread panel scrolls with Conversation. Colours are mapped to the zinc tokens by `.ai-elements-mono` in `apps/web/src/index.css`. Adding a part type: a schema in contracts, then one case in `parts.tsx`, usually with one more installed element.
 
-## `fc` commands
+## `flockr` commands
 
-`fc` is the command line (being renamed `flockr`; run it as `bun run fc` from the repo).
+`flockr` is the command line (`fc` still works as a short name); run it as `bun run flockr` from the repo.
 
 ```sh
-E=$(fc activity post m12 "Add rate limiting" --run run-1 --key run-1 --json | jq -r .entry.id)
-fc activity think $E "The limiter belongs in the API middleware."
-fc activity plan $E --step "[x] Read the middleware" --step "[>] Write the limiter" --step "Run the tests"
-fc activity tool $E read_file --input '{"path":"apps/server/src/app.ts"}' --output "65 lines" --duration 120
-fc activity exec $E -- bun test                 # streams output every half second, exits with the command's code
-git diff | fc activity files $E --diff -
-fc activity tests $E --command "bun test" --passed 41 --failed 2 --failure "take > refills: Expected true"
-fc activity error $E "Cannot read tokens" --title TypeError --stack stack.txt
-fc activity update $E --update '{"type":"part.set","part":{"type":"subagent","name":"explorer","task":"Find the routes","status":"running"}}'
-fc activity finish $E --status error --title "Rate limiting: 2 tests fail"
-fc activity show $E
-fc stop m12 --member claude --reason "Wrong file"
-fc agents activity claude --limit 10           # claude's recent runs across threads, newest first
-fc agents watch claude                         # follow claude's runs live: a line per step, how each ended, its replies
+E=$(flockr activity post m12 "Add rate limiting" --run run-1 --key run-1 --json | jq -r .entry.id)
+flockr activity think $E "The limiter belongs in the API middleware."
+flockr activity plan $E --step "[x] Read the middleware" --step "[>] Write the limiter" --step "Run the tests"
+flockr activity tool $E read_file --input '{"path":"apps/server/src/app.ts"}' --output "65 lines" --duration 120
+flockr activity exec $E -- bun test                 # streams output every half second, exits with the command's code
+git diff | flockr activity files $E --diff -
+flockr activity tests $E --command "bun test" --passed 41 --failed 2 --failure "take > refills: Expected true"
+flockr activity error $E "Cannot read tokens" --title TypeError --stack stack.txt
+flockr activity update $E --update '{"type":"part.set","part":{"type":"subagent","name":"explorer","task":"Find the routes","status":"running"}}'
+flockr activity finish $E --status error --title "Rate limiting: 2 tests fail"
+flockr activity show $E
+flockr stop m12 --member claude --reason "Wrong file"
+flockr agents activity claude --limit 10           # claude's recent runs across threads, newest first
+flockr agents watch claude                         # follow claude's runs live: a line per step, how each ended, its replies
 ```
 
 ## Mapping a harness's event stream to activity entries
@@ -119,7 +119,7 @@ It stops adding parts at 200 per entry rather than starting a second entry. The 
 8. **Subagents.** A subagent or delegated task becomes a `subagent` part: name, task, then its final summary through `part.append` or `part.finished`.
 9. **Errors.** An exception in the run or a crashed tool becomes an `error` part with the message and stack frames (`framesFromStack` parses common stack formats).
 10. **Run end.** On finish, `run.finished` with `ok`, or `error` if the run failed. Post the answer as a normal reply.
-11. **Stop.** Listen on the live socket (or `fc tail`) for `run.stop_requested` whose `data.member` is you and whose `threadId` is a thread you are running in. Interrupt the session, then `run.finished` with `stopped`.
+11. **Stop.** Listen on the live socket (or `flockr tail`) for `run.stop_requested` whose `data.member` is you and whose `threadId` is a thread you are running in. Interrupt the session, then `run.finished` with `stopped`.
 12. **Steer.** A reply from someone else in a thread you are running in is a steer: pass it into the running session as a new user turn; do not start a second run.
 
 Habits that keep entries useful:

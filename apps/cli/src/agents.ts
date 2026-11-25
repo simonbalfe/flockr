@@ -41,13 +41,13 @@ function permissionsOf(value: string | undefined): AgentPermissions | undefined 
 
 const absolute = (folder: string) => path.resolve(folder)
 
-const noRunner = `No runner is connected, so nothing can serve the agent. Start one on the machine that should run it: ${runnerCommand}. Then fc machines lists it.`
+const noRunner = `No runner is connected, so nothing can serve the agent. Start one on the machine that should run it: ${runnerCommand}. Then flockr machines lists it.`
 
 async function pickMachine(values: Values): Promise<Machine> {
   const machines = await run(sdk.listMachines())
   if (values.machine) {
     const named = machines.find((m) => m.id === values.machine)
-    if (!named) throw new UsageError(`No machine ${values.machine}. fc machines lists them.`)
+    if (!named) throw new UsageError(`No machine ${values.machine}. flockr machines lists them.`)
     return named
   }
   const online = machines.filter((m) => m.online)
@@ -72,7 +72,7 @@ export async function agentsCommand(context: CommandContext & { baseUrl: string 
   switch (sub) {
     case "list": {
       const list = await run(sdk.listAgents())
-      print(list, () => (list.length ? list.map(agentLine).join("\n") : "No agents yet. fc agents create <name> --folder <path> makes one."))
+      print(list, () => (list.length ? list.map(agentLine).join("\n") : "No agents yet. flockr agents create <name> --folder <path> makes one."))
       return 0
     }
     case "show":
@@ -132,7 +132,7 @@ export async function agentsCommand(context: CommandContext & { baseUrl: string 
       return 0
     }
     default:
-      throw new UsageError(`Unknown command fc agents ${sub}`)
+      throw new UsageError(`Unknown command flockr agents ${sub}`)
   }
 }
 

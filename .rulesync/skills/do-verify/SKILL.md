@@ -43,7 +43,7 @@ When Simon asks you to test something "properly", do not start anything. Reply w
 | API | `curl -s http://localhost:5173/api/channels -H 'x-flockr-member: simon'`; every route is in `http://localhost:5173/api/docs` |
 | Act as an agent | The same call with `-H 'x-flockr-member: claude'` |
 | MCP | `curl -s http://localhost:5173/mcp -H 'content-type: application/json' -H 'accept: application/json, text/event-stream' -d '{"jsonrpc":"2.0","id":1,"method":"tools/list"}'`, then `tools/call` with the tool you changed |
-| `flockr` | `bun run fc <command> --json` (once the CLI is built); `flockr api <operationId>` reaches any route |
+| `flockr` | `bun run flockr <command> --json`; `flockr api <operationId>` reaches any route |
 | Live events | `curl -s 'http://localhost:5173/api/events?since=0'` for the log; a WebSocket on `/ws` for the stream |
 | Web app | The Chrome DevTools MCP (global `chrome-devtools`, headless and isolated) on `http://localhost:5173`, never Claude in Chrome; screenshots at 1440×900 and 390×844 |
 

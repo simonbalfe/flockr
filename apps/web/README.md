@@ -26,8 +26,8 @@ Other commands: `bun run build` (type check and production build into `dist/`), 
 | Press "New task" in a Tasks view or a thread | A dialog (title, channel, assignee); an assigned task is bound to that member, an unassigned one is open for anyone |
 | An agent asks a question in a thread | A question card in the thread and in "Waiting for you"; once answered it becomes "Answered X by Y" |
 | An agent starts working in a thread | "claude is working..." under the thread and in the composer line, until it stops or expires |
-| In a terminal, `FC_AS=claude bun fc tasks claim --ready` | #806 shows claude holding it, live, with no reload |
-| `FC_AS=claude bun fc ask 806 "Use uuid keys?" --option Yes --option No` | A question card in "Waiting for you" and a toast |
+| In a terminal, `FC_AS=claude bun flockr tasks claim --ready` | #806 shows claude holding it, live, with no reload |
+| `FC_AS=claude bun flockr ask 806 "Use uuid keys?" --option Yes --option No` | A question card in "Waiting for you" and a toast |
 | Tap an answer | The answer lands in the task thread; `flockr wait --thread 806` returns it |
 | Open #806, press Claim, then Mark done | #808 becomes ready |
 | Open a thread and press "Make this a task" | A new task with the thread copied in |
@@ -45,12 +45,12 @@ Other commands: `bun run build` (type check and production build into `dist/`), 
 | Mention a stopped agent | A quiet line under the message box: "scout is offline. Start it." |
 | Mention a paused agent | "scout is paused; it answers when resumed. Resume it." The mention waits and is answered on resume |
 | Open Keys in the sidebar, press New key, pick claude and #backend | The key, shown once with a copy button; the list shows "claude via simon" and #backend; Revoke turns it off (`flockr keys create claude --channels backend`). An agent's panel has the same Keys section |
-| `FC_AS=claude bun fc activity post m12 "Add rate limiting"`, then `bun fc activity exec m41 -- bun test` | One collapsed work block in the thread; the command's output streams in live; "claude is working on Add rate limiting · Running bun test" under the reply box and a Stop button in the thread header |
+| `FC_AS=claude bun flockr activity post m12 "Add rate limiting"`, then `bun flockr activity exec m41 -- bun test` | One collapsed work block in the thread; the command's output streams in live; "claude is working on Add rate limiting · Running bun test" under the reply box and a Stop button in the thread header |
 | Press Stop in the thread header | A `run.stop_requested` event for claude; the block says "stop requested" until the run finishes (`flockr stop m12` does the same) |
 | Reply in a thread while claude works | The reply box says "Steer claude"; the reply is a normal reply the runner passes into the running session |
 | Open Routines in the sidebar, press New routine, pick "On an event", `message.posted`, "Post a message", then turn its switch on and post in that channel | Within about 10 seconds `flockr` posts the routine's text, and the row shows "Done: posted m32 · just now"; the seeded Morning brief stays off until you turn it on (`flockr routines` does the same) |
 | Open Approval rules in the sidebar, pick #backend, set Post a message to Ask, then make a watcher on `message.posted` in #backend, turn it on and post there | Within about 10 seconds `flockr` posts "Routine ... wants to post a message" with a question card in its thread and in Waiting for you; Allow once runs it, Deny skips it ("Denied by simon" on the Routines row). Allow is disabled for Spend money and Change prod (`flockr rules set post ask --channel backend` does the same) |
-| `fc ask m12 "Edit a.ts?" --option "Allow once" --option Deny --action '{"tool":"edit_file","path":"a.ts","diff":"..."}'` | A permission card showing the tool, command or input and the diff, answered in one tap |
+| `flockr ask m12 "Edit a.ts?" --option "Allow once" --option Deny --action '{"tool":"edit_file","path":"a.ts","diff":"..."}'` | A permission card showing the tool, command or input and the diff, answered in one tap |
 
 Nothing moves by itself: tasks move only when a person here or an agent (through `flockr`, MCP or the API) acts, when a lease runs out (the server returns it to ready), or when a routine a person turned on fires.
 

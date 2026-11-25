@@ -41,7 +41,7 @@ export async function migrateLegacy(m: Migration): Promise<boolean> {
   if (!existing?.config) {
     const folder = m.config.channels.general ?? Object.values(m.config.channels)[0]
     if (!folder) {
-      log(`runner: ${m.file} names ${legacy.member} but no channel folder; create it with fc agents create; the file is left as it is`)
+      log(`runner: ${m.file} names ${legacy.member} but no channel folder; create it with flockr agents create; the file is left as it is`)
       return false
     }
     await m.port.createAgent(existing?.owner ?? defaultMember, { name: legacy.member, harness: harness.name, folder, machine: m.machine.id })

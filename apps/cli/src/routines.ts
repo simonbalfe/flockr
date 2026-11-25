@@ -87,7 +87,7 @@ export async function routinesCommand(context: CommandContext): Promise<number> 
   switch (sub) {
     case "list": {
       const list = await run(sdk.listRoutines())
-      print(list, () => (list.length ? list.map(routineLine).join("\n") : "No routines yet. fc routines create <name> --channel <c> --cron '0 8 * * 1-5' --action brief makes one."))
+      print(list, () => (list.length ? list.map(routineLine).join("\n") : "No routines yet. flockr routines create <name> --channel <c> --cron '0 8 * * 1-5' --action brief makes one."))
       return 0
     }
     case "show":
@@ -106,7 +106,7 @@ export async function routinesCommand(context: CommandContext): Promise<number> 
       if (!action) throw new UsageError(`Give --action ${routineActionKinds.join("|")}`)
       const body = { name: positionals.slice(2).join(" ").trim() || need(undefined, "routine name"), channel: need(values.channel, "--channel"), trigger, action, perHour: perHourOf(values) }
       const routine = await run(sdk.createRoutine({ body }))
-      print(routine, () => `${routineDetail(routine)}\nIt is off. fc routines on ${routine.id} turns it on.`)
+      print(routine, () => `${routineDetail(routine)}\nIt is off. flockr routines on ${routine.id} turns it on.`)
       return 0
     }
     case "update": {
@@ -127,7 +127,7 @@ export async function routinesCommand(context: CommandContext): Promise<number> 
       return 0
     }
     default:
-      throw new UsageError(`Unknown command fc routines ${sub}`)
+      throw new UsageError(`Unknown command flockr routines ${sub}`)
   }
 }
 

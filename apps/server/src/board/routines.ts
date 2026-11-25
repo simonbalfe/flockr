@@ -86,7 +86,7 @@ async function findRoutine(db: Executor, id: number): Promise<RoutineRow> {
     .select()
     .from(routines)
     .where(and(eq(routines.id, id), isNull(routines.deletedAt)))
-  if (!row) throw notFound(`Routine ${id} does not exist; fc routines lists them`)
+  if (!row) throw notFound(`Routine ${id} does not exist; flockr routines lists them`)
   return row
 }
 
@@ -108,7 +108,7 @@ async function requireManager(tx: Tx, actor: string): Promise<MemberRow> {
 
 async function lockRoutine(tx: Tx, id: number): Promise<RoutineRow> {
   const [row] = await tx.select().from(routines).where(eq(routines.id, id)).for("update")
-  if (!row || row.deletedAt) throw notFound(`Routine ${id} does not exist; fc routines lists them`)
+  if (!row || row.deletedAt) throw notFound(`Routine ${id} does not exist; flockr routines lists them`)
   return row
 }
 
@@ -122,7 +122,7 @@ async function checkAction(tx: Tx, action: RoutineAction): Promise<void> {
       return
     case "mention": {
       const agent = await findMember(tx, action.agent)
-      if (!agent || agent.kind !== "agent") throw invalid(`${action.agent} is not an agent on this board; fc agents lists them`)
+      if (!agent || agent.kind !== "agent") throw invalid(`${action.agent} is not an agent on this board; flockr agents lists them`)
       return
     }
     default: {
@@ -208,7 +208,7 @@ export async function deleteRoutine(db: Database, actor: string, id: number): Pr
   return mutate(db, async (tx, emit) => {
     await requireManager(tx, actor)
     const [current] = await tx.select().from(routines).where(eq(routines.id, id)).for("update")
-    if (!current) throw notFound(`Routine ${id} does not exist; fc routines lists them`)
+    if (!current) throw notFound(`Routine ${id} does not exist; flockr routines lists them`)
     if (current.deletedAt) return { id, deletedAt: current.deletedAt.toISOString() }
     const deletedAt = new Date()
     const [row] = await tx.update(routines).set({ deletedAt, enabled: false, nextRunAt: null, updatedAt: deletedAt }).where(eq(routines.id, id)).returning()

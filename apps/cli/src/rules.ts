@@ -80,6 +80,6 @@ export async function rulesCommand(context: CommandContext): Promise<number> {
       return 0
     }
     default:
-      throw new UsageError(`Unknown command fc rules ${sub}`)
+      throw new UsageError(`Unknown command flockr rules ${sub}`)
   }
 }

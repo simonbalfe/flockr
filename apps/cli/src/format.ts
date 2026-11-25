@@ -56,7 +56,7 @@ export function taskDetail(task: Task): string {
   if (task.spec) lines.push(`  spec      ${task.spec}`)
   for (const c of task.commits) lines.push(`  commit    ${commitLine(c)}`)
   if (task.question) lines.push(`  question  ${task.question.text} (${task.question.options.join(" / ")})`)
-  lines.push(`  epoch     ${task.claimEpoch}`, `  replies   ${task.replyCount} (fc thread ${task.id})`)
+  lines.push(`  epoch     ${task.claimEpoch}`, `  replies   ${task.replyCount} (flockr thread ${task.id})`)
   return lines.join("\n")
 }
 
@@ -76,7 +76,7 @@ export function entryLine(entry: ThreadEntry): string {
     case "event":
       return `${clock(entry.at)}  · ${entry.system ? "" : `${entry.who} `}${entry.text}`
     case "question": {
-      const state = entry.answer === null ? `open: fc answer ${entry.threadId} <option>` : `answered ${entry.answer} by ${entry.answeredBy ?? "someone"}`
+      const state = entry.answer === null ? `open: flockr answer ${entry.threadId} <option>` : `answered ${entry.answer} by ${entry.answeredBy ?? "someone"}`
       return `${clock(entry.at)}  ${entry.who} asks: ${questionText(entry)}  (${state})`
     }
     case "reply":
@@ -100,7 +100,7 @@ export function feedLine(item: FeedItem, tasks: Map<number, Task>): string {
       return `${clock(item.at)}  ${item.who} asks on #${item.taskId}: ${q ? `${q.text} [${q.options.join(" / ")}]` : "(answered)"}`
     }
     case "text": {
-      const thread = item.thread ? `  [${item.thread.count} ${item.thread.count === 1 ? "reply" : "replies"}: fc thread ${item.threadId}]` : item.threadId ? `  (${item.threadId})` : ""
+      const thread = item.thread ? `  [${item.thread.count} ${item.thread.count === 1 ? "reply" : "replies"}: flockr thread ${item.threadId}]` : item.threadId ? `  (${item.threadId})` : ""
       const task = item.taskId ? `  (about #${item.taskId})` : ""
       return `${clock(item.at)}  ${item.who}: ${item.deleted ? deletedText : `${item.text}${marks(item)}`}${task}${thread}`
     }
@@ -151,8 +151,8 @@ const snippetText = (parts: SnippetPart[]) => parts.map((p) => (p.match ? `*${p.
 export function searchLine(hit: SearchHit): string {
   switch (hit.kind) {
     case "message":
-      return `${hit.id.padEnd(6)} #${hit.channel}  ${clock(hit.at)}  ${hit.who}: ${snippetText(hit.snippet)}  (fc thread ${hit.threadId})`
+      return `${hit.id.padEnd(6)} #${hit.channel}  ${clock(hit.at)}  ${hit.who}: ${snippetText(hit.snippet)}  (flockr thread ${hit.threadId})`
     case "task":
-      return `#${String(hit.id).padEnd(5)} #${hit.channel}  ${hit.state.padEnd(7)}  ${snippetText(hit.snippet)}  (fc tasks show ${hit.id})`
+      return `#${String(hit.id).padEnd(5)} #${hit.channel}  ${hit.state.padEnd(7)}  ${snippetText(hit.snippet)}  (flockr tasks show ${hit.id})`
   }
 }

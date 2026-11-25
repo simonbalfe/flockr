@@ -54,7 +54,7 @@ export async function loadOperations(baseUrl: string): Promise<Operation[]> {
 export async function callOperation(baseUrl: string, operationId: string, raw: string | undefined): Promise<unknown> {
   const operations = await loadOperations(baseUrl)
   const op = operations.find((o) => o.operationId === operationId)
-  if (!op) throw new UsageError(`No operation ${operationId}. Run fc api to list them.`)
+  if (!op) throw new UsageError(`No operation ${operationId}. Run flockr api to list them.`)
   const parsed: unknown = raw ? JSON.parse(raw) : {}
   if (!isRecord(parsed)) throw new UsageError("--data must be a JSON object")
   const path: Record<string, unknown> = {}

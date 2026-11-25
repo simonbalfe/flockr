@@ -72,7 +72,7 @@ const setPart = (part: ActivityPartInput): ActivityUpdate => ({ type: "part.set"
 async function exec(ctx: CommandContext): Promise<number> {
   const id = entryId(ctx)
   const argv = ctx.positionals.slice(3)
-  if (!argv.length) throw new UsageError("Give the command after --: fc activity exec m41 -- bun test")
+  if (!argv.length) throw new UsageError("Give the command after --: flockr activity exec m41 -- bun test")
   const partId = ctx.values.id ?? freshId("c")
   const command = argv.join(" ")
   const update = (updates: ActivityUpdate[]) => run(sdk.updateActivityEntry({ path: { id }, body: { updates } }))
@@ -106,7 +106,7 @@ async function exec(ctx: CommandContext): Promise<number> {
 
 export async function activityCommand(ctx: CommandContext): Promise<number> {
   const word = ctx.positionals[1]
-  if (!isActivityWord(word)) throw new UsageError(`Unknown command fc activity ${word ?? ""}`)
+  if (!isActivityWord(word)) throw new UsageError(`Unknown command flockr activity ${word ?? ""}`)
   const v = ctx.values
   switch (word) {
     case "post": {

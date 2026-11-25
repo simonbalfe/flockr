@@ -65,7 +65,7 @@ Then read the one router row that matches your task, and stop reading. Code wins
 | `bun run db:generate` | Write the migration for a schema edit; commit it and never edit an applied one |
 | `bun dev` | Web app, API (`/api`), API docs (`/api/docs`) and MCP (`/mcp`) on one port, `http://localhost:5173`, plus a runner when a harness is installed (lines prefixed `runner │`; `FLOCKR_NO_RUNNER=1` turns it off) |
 | `bun run generate` | Rewrite the OpenAPI document and the generated client after a route change |
-| `bun run fc <command>` | The `flockr` CLI (being built) |
+| `bun run flockr <command>` | The `flockr` CLI (`fc` is a short alias) |
 | `bun run test` / `bun run typecheck` | Server tests against Postgres and the runner's unit tests / typecheck every package |
 | `bun run runner` | The runner alone: registers this machine and serves every agent assigned to it, starting a harness session for mentions, replies and tasks addressed to each; agents are made with New agent or `flockr agents create`, machine settings in `~/.flockr/runner.json` (`apps/runner/README.md`, ADR 0016) |
 | `bun run build` / `bun run start` | Build the web app / serve it with the API |

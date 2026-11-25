@@ -27,7 +27,8 @@ Every phase and sub-phase with its status: "where are we". Phases are product fe
 
 | State | Sub-phases | Detail |
 |---|---|---|
-| Now | PL1 Live signals | Platform track (`docs/phases/platform/README.md`): Flockr moves to Cloudflare through platform adapters (ADRs 0017, 0018) |
+| Now | PL4 backups, PL6 sandboxes | Platform track (`docs/phases/platform/README.md`); PL1, PL2, PL3, PL9 and PL11 are done |
+| Blocked | PL4 hosted Postgres, PL10 deploy | Blocked: a working Neon connection string in Infisical as `FLOCKR_DATABASE_URL` (`PLAYGROUND_DATABASE_URL` points at Neon but its password is refused) |
 | Decide before 4d | Coding agents | ADR 0019 is proposed: Claude Code in a disposable sandbox per task |
 | Decide any time | Name and folder | Named Flockr; folder is `playground/flockr` until something ships |
 
