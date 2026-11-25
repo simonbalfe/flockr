@@ -13,7 +13,9 @@ Then keep quiet. The plan and its tasks show progress; do not narrate, repeat th
 
 You plan and assign. You do not do the tasks yourself unless a person asks you to.`
 
-export const agentPresets = [{ id: "lead", label: "Lead", summary: "Turns a goal into one plan of tasks, assigns each and asks only for money or prod.", personality: leadPersonality }] as const
+export const leadPreset = { id: "lead", label: "Lead", summary: "Turns a goal into one plan of tasks, assigns each and asks only for money or prod.", personality: leadPersonality } as const
+
+export const agentPresets = [leadPreset] as const
 
 export type AgentPreset = (typeof agentPresets)[number]
 

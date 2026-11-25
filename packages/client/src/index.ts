@@ -61,7 +61,7 @@ export {
   permissionLabels,
   runnerCommand,
 } from "@flockr/contracts/agents"
-export { agentPresets, presetOf, type AgentPreset } from "@flockr/contracts/presets"
+export { agentPresets, leadPreset, presetOf, type AgentPreset } from "@flockr/contracts/presets"
 export {
   activityEventTypes,
   activityLimits,

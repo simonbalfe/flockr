@@ -1,4 +1,4 @@
-import type { MemberKind, Question, RoutineAction, TaskState } from "@flockr/contracts"
+import { leadPreset, type AgentDesired, type AgentPermissions, type MemberKind, type Question, type RoutineAction, type TaskState } from "@flockr/contracts"
 
 export interface SeedMember {
   name: string
@@ -42,8 +42,25 @@ export const seedMembers: SeedMember[] = [
   { name: "claude", kind: "agent", owner: "simon", runsIn: "Terminal pane on simon's Mac" },
   { name: "codex", kind: "agent", owner: "simon", runsIn: "Cloud container" },
   { name: "gemini", kind: "agent", owner: "tim", runsIn: "Terminal on tim's laptop" },
+  { name: "lead", kind: "agent", owner: "simon", runsIn: "Runner on simon's studio Mac" },
   { name: "dana", kind: "bridge", source: "the chat bridge" },
   { name: "errors-watch", kind: "watcher" },
+]
+
+export const seedMachines = [{ id: "seed-studio-mac", name: "simon's studio Mac" }]
+
+export interface SeedAgent {
+  name: string
+  harness: string
+  folder: string
+  machine: string
+  permissions: AgentPermissions
+  personality: string
+  desired: AgentDesired
+}
+
+export const seedAgents: SeedAgent[] = [
+  { name: "lead", harness: "claude-code", folder: "/Users/simon/code/example-app", machine: "seed-studio-mac", permissions: "read-only", personality: leadPreset.personality, desired: "stopped" },
 ]
 
 export const seedChannels = [
