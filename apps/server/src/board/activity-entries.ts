@@ -88,9 +88,21 @@ export async function createActivityEntry(db: Database, actor: string, threadId:
   return { entry, applied: result.applied }
 }
 
-export async function updateActivityEntry(db: Database, actor: string, id: string, body: UpdateActivityBody, now = new Date()): Promise<ActivityWrite> {
+export function updateActivityEntry(db: Database, actor: string, id: string, body: UpdateActivityBody, now = new Date()): Promise<ActivityWrite> {
+  return writeUpdate(db, { actor, id, body, now, mustBeMember: true })
+}
+
+interface EntryUpdate {
+  actor: string
+  id: string
+  body: UpdateActivityBody
+  now: Date
+  mustBeMember: boolean
+}
+
+async function writeUpdate(db: Database, { actor, id, body, now, mustBeMember }: EntryUpdate): Promise<ActivityWrite> {
   const result = await mutate(db, async (tx, emit) => {
-    await requireActor(tx, actor)
+    if (mustBeMember) await requireActor(tx, actor)
     const row = await lockEntry(tx, id)
     if (row.who !== actor) throw forbidden(`${actor} may not update ${id}: only its author ${row.who} can`)
     const state = present(row)
@@ -120,7 +132,7 @@ export async function endRunsOf(db: Database, members: string[], now = new Date(
   for (const row of rows) {
     const id = messageKey(row.id)
     try {
-      const result = await updateActivityEntry(db, row.who, id, { updates: [{ type: "run.finished", status: "stopped" }] }, now)
+      const result = await writeUpdate(db, { actor: row.who, id, body: { updates: [{ type: "run.finished", status: "stopped" }] }, now, mustBeMember: false })
       if (result.applied) ended.push(id)
     } catch (error: unknown) {
       console.error(`could not end run ${id} of ${row.who}`, error)

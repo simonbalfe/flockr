@@ -250,4 +250,16 @@ describe("runs left behind", () => {
     expect(await sweepMachines(db, at(62))).toEqual([])
     expect((await getActivityEntry(db, orphan.entry.id)).status).toBe("stopped")
   })
+
+  test("deleting an agent ends its running runs", async () => {
+    const { db, call } = await boardWithMachine()
+    await call("simon", "POST", "/api/agents", scout)
+    const posted = z.object({ message: z.object({ id: z.string() }).loose() }).parse((await call("simon", "POST", "/api/channels/backend/messages", { text: "@scout look" })).json).message
+    const t0 = new Date()
+    const at = (seconds: number) => new Date(t0.getTime() + seconds * 1000)
+    await registerMachine(db, "simon", machineBody, t0)
+    const run = await createActivityEntry(db, "scout", posted.id, { title: "Looking", parts: [] }, at(1))
+    expect((await call("simon", "DELETE", "/api/agents/scout")).status).toBe(200)
+    expect((await getActivityEntry(db, run.entry.id)).status).toBe("stopped")
+  })
 })

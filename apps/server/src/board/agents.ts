@@ -17,6 +17,7 @@ import {
   type Member,
   type UpdateAgentBody,
 } from "@flockr/contracts"
+import { endRunsOf } from "./activity-entries"
 import { and, asc, desc, eq, inArray, isNotNull, isNull, or } from "drizzle-orm"
 import { z } from "zod"
 import type { Database, Executor, Tx } from "../db/client"
@@ -298,7 +299,7 @@ export const pauseAgent = (db: Database, actor: string, name: string) => act(db,
 export const resumeAgent = (db: Database, actor: string, name: string) => act(db, actor, name, "resume")
 
 export async function deleteAgent(db: Database, actor: string, name: string): Promise<DeletedAgent> {
-  return mutate(db, async (tx, emit) => {
+  const deleted = await mutate(db, async (tx, emit) => {
     await requireManager(tx, actor)
     const [member] = await tx.select().from(members).where(eq(members.name, name)).for("update")
     if (!member || member.kind !== "agent") throw notFound(`Agent ${name} does not exist; flockr agents lists them`)
@@ -313,4 +314,6 @@ export async function deleteAgent(db: Database, actor: string, name: string): Pr
     emit({ type: agentEventTypes.deleted, actor, data: { name, machine: row?.machine ?? null } })
     return { name, removedAt: removedAt.toISOString() }
   })
+  await endRunsOf(db, [name])
+  return deleted
 }
