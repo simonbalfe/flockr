@@ -8,7 +8,7 @@ import { checklistCommand } from "./checklist"
 import { int, need, optionalInt, readArgs, seconds, UsageError, type Values } from "./args"
 import { envMember, envUrl, stateFile } from "./config"
 import { epochStore } from "./epochs"
-import { activityLine, channelLine, entryLine, eventLine, feedLine, inboxText, memberLine, searchLine, taskDetail, taskLine, threadText } from "./format"
+import { activityLine, channelLine, entryLine, eventLine, feedLine, inboxText, memberLine, messageStateLine, searchLine, taskDetail, taskLine, threadText, versionsText } from "./format"
 import { openQueue } from "./live"
 
 const help = `fc: the Flockr command line. Any agent or person can use it.
@@ -20,8 +20,9 @@ Setup
 
 Reading
   fc channels                         list channels
-  fc read <channel>                   read a channel
-  fc thread <id>                      read a thread (message id m12 or task id 806)
+  fc read <channel> [--label x]       read a channel; --label keeps messages and task cards carrying it
+  fc thread <id>                      read a thread (message id m12 or task id 806); sub-threads are indented
+  fc versions <message-id>            every version of a message's text, oldest first
   fc tasks list [--channel c] [--state s] [--mine] [--assignee m]
   fc tasks show <id>
   fc inbox                            questions and work waiting for a person
@@ -29,8 +30,11 @@ Reading
   fc members | fc whoami
 
 Writing
-  fc post <channel> <text>            post a message; @name mentions a member (it starts a conversation, never a task)
-  fc reply <thread-or-task-id> <text> reply in a thread
+  fc post <channel> <text> [--label x]...   post a message; @name mentions a member (it starts a conversation, never a task)
+  fc reply <thread-or-task-id> <text> [--label x]...   reply in a thread
+  fc reply <reply-id> <text>          reply to a reply (m20): it starts or continues that reply's sub-thread
+  fc edit <message-id> <text>         change your own message or reply; the old text stays readable (fc versions)
+  fc label <message-id> [label...]    set a message's labels; none clears them
   fc delete <message-id>              delete a message or reply (m12); safe to repeat
   fc tasks create <channel> <title> [--for member] [--needs 806,808] [--label x] [--kind k] [--spec file] [--text first reply]
   fc tasks claim [<id>] [--ready] [--label x] [--mine] [--wait [--timeout s]]
@@ -313,7 +317,8 @@ async function main(): Promise<number> {
     }
     case "read": {
       const channel = need(positionals[1], "channel").replace(/^#/, "")
-      const [feed, all] = await Promise.all([run(sdk.listMessages({ path: { channel } })), run(sdk.listTasks({ query: { channel } }))])
+      const label = values.label?.[0]
+      const [feed, all] = await Promise.all([run(sdk.listMessages({ path: { channel }, query: { label } })), run(sdk.listTasks({ query: { channel } }))])
       const byId = new Map(all.map((t) => [t.id, t]))
       print(feed, () => (feed.length ? feed.map((item) => feedLine(item, byId)).join("\n") : "Nothing here yet."))
       return 0
@@ -324,15 +329,32 @@ async function main(): Promise<number> {
       return 0
     }
     case "post": {
-      const result = await run(sdk.postMessage({ path: { channel: need(positionals[1], "channel").replace(/^#/, "") }, body: { text: restText(2, "text") } }))
+      const result = await run(sdk.postMessage({ path: { channel: need(positionals[1], "channel").replace(/^#/, "") }, body: { text: restText(2, "text"), labels: values.label ?? [] } }))
       print(result, () => `Posted ${result.message.id}${result.message.mentions.length ? `, mentioning ${result.message.mentions.join(", ")}` : ""}`)
       return 0
     }
     case "reply": {
       const id = need(positionals[1], "thread or task id").replace(/^#/, "")
       const epoch = /^\d+$/.test(id) ? epochFor(Number(id), values) : undefined
-      const reply = await run(sdk.replyToThread({ path: { id }, body: { text: restText(2, "text"), epoch } }))
-      print(reply, () => `Replied ${reply.id} in ${id}`)
+      const reply = await run(sdk.replyToThread({ path: { id }, body: { text: restText(2, "text"), epoch, labels: values.label ?? [] } }))
+      print(reply, () => `Replied ${reply.id} in ${id}${reply.replyTo ? `, in the sub-thread of ${reply.replyTo}` : ""}`)
+      return 0
+    }
+    case "edit": {
+      const id = need(positionals[1], "message id").replace(/^#/, "")
+      const state = await run(sdk.editMessage({ path: { id }, body: { text: restText(2, "new text") } }))
+      print(state, () => messageStateLine(state))
+      return 0
+    }
+    case "label": {
+      const id = need(positionals[1], "message id").replace(/^#/, "")
+      const state = await run(sdk.editMessage({ path: { id }, body: { labels: positionals.slice(2) } }))
+      print(state, () => messageStateLine(state))
+      return 0
+    }
+    case "versions": {
+      const history = await run(sdk.listMessageVersions({ path: { id: need(positionals[1], "message id").replace(/^#/, "") } }))
+      print(history, () => versionsText(history))
       return 0
     }
     case "delete": {

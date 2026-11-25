@@ -9,6 +9,7 @@ import {
   completeTaskMutation,
   createTaskMutation,
   deleteMessageMutation,
+  editMessageMutation,
   getAgentOptions,
   getInboxOptions,
   getTaskOptions,
@@ -20,6 +21,7 @@ import {
   listChannelsOptions,
   listMembersOptions,
   listMessagesOptions,
+  listMessageVersionsOptions,
   listTasksOptions,
   makeTaskFromThreadMutation,
   markReadMutation,
@@ -45,7 +47,8 @@ export const queries = {
   agents: () => listAgentsOptions(),
   agent: (name: string) => getAgentOptions({ path: { name } }),
   agentActivity: agentActivityQuery,
-  messages: (channel: string) => queryOptions({ ...listMessagesOptions({ path: { channel } }), placeholderData: keepPreviousData }),
+  messages: (channel: string, label?: string) => queryOptions({ ...listMessagesOptions({ path: { channel }, query: { label } }), placeholderData: keepPreviousData }),
+  versions: (id: string) => listMessageVersionsOptions({ path: { id } }),
   thread: (id: string) => getThreadOptions({ path: { id } }),
   tasks: () => listTasksOptions(),
   task: (id: number) => getTaskOptions({ path: { id } }),
@@ -59,7 +62,8 @@ export const useMembers = () => useQuery(queries.members())
 export const useAgents = () => useQuery(queries.agents())
 export const useAgent = (name: string) => useQuery(queries.agent(name))
 export const useAgentActivity = (name: string) => useQuery(queries.agentActivity(name))
-export const useMessages = (channel: string) => useQuery(queries.messages(channel))
+export const useMessages = (channel: string, label?: string) => useQuery(queries.messages(channel, label))
+export const useMessageVersions = (id: string, enabled: boolean) => useQuery({ ...queries.versions(id), enabled })
 export const useThread = (id: string) => useQuery(queries.thread(id))
 export const useTasks = () => useQuery(queries.tasks())
 export const useTask = (id: number) => useQuery(queries.task(id))
@@ -126,6 +130,8 @@ export const usePostMessage = () =>
 export const useReply = () => useBoardMutation(replyToThreadMutation(), (a: { threadId: string; text: string }) => ({ path: { id: a.threadId }, body: { text: a.text } }))
 export const useStopRun = () =>
   useBoardMutation(stopRunMutation(), (a: { threadId: string; member?: string }) => ({ path: { id: a.threadId }, body: { member: a.member } }))
+export const useEditMessage = () =>
+  useBoardMutation(editMessageMutation(), (a: { id: string; text?: string; labels?: string[] }) => ({ path: { id: a.id }, body: { text: a.text, labels: a.labels } }))
 export const useDeleteMessage = () => useBoardMutation(deleteMessageMutation(), (id: string) => ({ path: { id } }))
 export const useMarkRead = () => useBoardMutation(markReadMutation(), (channel: string) => ({ path: { channel } }))
 export const useMakeTaskFromThread = () => useBoardMutation(makeTaskFromThreadMutation(), (id: string) => ({ path: { id } }))

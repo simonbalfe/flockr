@@ -1,7 +1,7 @@
 import { z } from "@hono/zod-openapi"
 import { ActivityEntry, ApprovalAction } from "./activity"
 import { AgentConfig, AgentStatusSchema, Machine } from "./agents"
-import { agentStates, errorKinds, memberKinds, taskStates } from "./constants"
+import { agentStates, errorKinds, memberKinds, messageLimits, taskStates } from "./constants"
 
 export const TaskState = z.enum(taskStates).openapi("TaskState")
 export const MemberKind = z.enum(memberKinds).openapi("MemberKind")
@@ -10,6 +10,18 @@ export const AgentState = z.enum(agentStates).openapi("AgentState")
 export const orNull = <T extends z.ZodType>(schema: T) => z.union([schema, z.null()])
 
 const timestamp = z.string().openapi({ format: "date-time", example: "2026-11-24T10:40:02.000Z" })
+
+export const Label = z
+  .string()
+  .trim()
+  .min(1)
+  .max(messageLimits.labelChars)
+  .regex(/^[^\s,]+$/, "A label has no spaces or commas")
+  .openapi("Label", { example: "review" })
+export const Labels = z.array(Label).max(messageLimits.labels)
+
+const editedAt = timestamp.nullable().openapi({ description: "When the text was last edited; null when never. Earlier versions: listMessageVersions" })
+const messageLabels = z.array(z.string()).openapi({ description: "Labels on the message, in the order they were added" })
 
 export const Channel = z
   .object({
@@ -96,6 +108,9 @@ export const Reply = z
     text: z.string().openapi({ description: "Empty when the reply was deleted" }),
     deleted: z.boolean(),
     mentions: z.array(z.string()).openapi({ description: "Member names the text mentions with @name" }),
+    labels: messageLabels,
+    editedAt,
+    replyTo: z.string().nullable().openapi({ example: "m20", description: "The reply whose sub-thread this reply is in; null for a reply in the thread itself" }),
   })
   .openapi("Reply")
 
@@ -133,6 +148,8 @@ export const TextMessage = z
     text: z.string().openapi({ description: "Empty when the message was deleted" }),
     deleted: z.boolean(),
     mentions: z.array(z.string()).openapi({ description: "Member names the text mentions with @name" }),
+    labels: messageLabels,
+    editedAt,
     taskId: z.number().int().nullable(),
     threadId: z.string().nullable(),
     thread: orNull(ThreadSummary),
@@ -167,6 +184,38 @@ export const DeletedMessage = z
     deletedAt: timestamp,
   })
   .openapi("DeletedMessage")
+
+export const MessageVersion = z
+  .object({
+    version: z.number().int().openapi({ example: 1, description: "1 is the text as posted; each edit adds one" }),
+    text: z.string(),
+    mentions: z.array(z.string()),
+    at: timestamp.openapi({ description: "When this version was written" }),
+    current: z.boolean(),
+  })
+  .openapi("MessageVersion")
+
+export const MessageVersions = z
+  .object({
+    id: z.string().openapi({ example: "m12" }),
+    deleted: z.boolean(),
+    versions: z.array(MessageVersion).openapi({ description: "Oldest first, the current text last; empty when the message was deleted" }),
+  })
+  .openapi("MessageVersions")
+
+export const MessageState = z
+  .object({
+    id: z.string().openapi({ example: "m12" }),
+    channel: z.string(),
+    threadId: z.string().openapi({ description: "The thread the message is in, or its own id for a message in the channel" }),
+    who: z.string(),
+    text: z.string(),
+    mentions: z.array(z.string()),
+    labels: z.array(z.string()),
+    editedAt,
+    version: z.number().int().openapi({ description: "The current version number" }),
+  })
+  .openapi("MessageState")
 
 export const Inbox = z
   .object({
@@ -229,6 +278,10 @@ export type FeedItem = z.infer<typeof FeedItem>
 export type Thread = z.infer<typeof Thread>
 export type DeletedMessage = z.infer<typeof DeletedMessage>
 export type Inbox = z.infer<typeof Inbox>
+export type Label = z.infer<typeof Label>
+export type MessageVersion = z.infer<typeof MessageVersion>
+export type MessageVersions = z.infer<typeof MessageVersions>
+export type MessageState = z.infer<typeof MessageState>
 export type Activity = z.infer<typeof Activity>
 export type BoardEvent = z.infer<typeof BoardEvent>
 export type EventPage = z.infer<typeof EventPage>

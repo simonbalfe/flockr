@@ -3,8 +3,8 @@
 import { queryOptions, type UseMutationOptions } from '@tanstack/react-query';
 
 import { client } from '../client.gen';
-import { addTaskCommit, answerInThread, answerQuestion, approveTask, askInThread, askQuestion, blockTask, claimNextTask, claimTask, completeTask, createActivityEntry, createAgent, createChannel, createMember, createTask, deleteAgent, deleteMessage, failTask, getActivityEntry, getAgent, getInbox, getTask, getThread, giveTask, importChecklist, listActivity, listAgentActivity, listAgents, listChannels, listEvents, listMachines, listMembers, listMessages, listTasks, machineHeartbeat, makeTaskFromThread, markRead, type Options, pauseAgent, postMessage, registerMachine, releaseTask, renewTask, replyToThread, requestChanges, resumeAgent, searchBoard, setActivity, startAgent, stopAgent, stopRun, submitForReview, unblockTask, updateActivityEntry, updateAgent, updateChannel, whoami } from '../sdk.gen';
-import type { AddTaskCommitData, AddTaskCommitError, AddTaskCommitResponse, AnswerInThreadData, AnswerInThreadError, AnswerInThreadResponse, AnswerQuestionData, AnswerQuestionError, AnswerQuestionResponse, ApproveTaskData, ApproveTaskError, ApproveTaskResponse, AskInThreadData, AskInThreadError, AskInThreadResponse, AskQuestionData, AskQuestionError, AskQuestionResponse, BlockTaskData, BlockTaskError, BlockTaskResponse, ClaimNextTaskData, ClaimNextTaskError, ClaimNextTaskResponse, ClaimTaskData, ClaimTaskError, ClaimTaskResponse, CompleteTaskData, CompleteTaskError, CompleteTaskResponse, CreateActivityEntryData, CreateActivityEntryError, CreateActivityEntryResponse, CreateAgentData, CreateAgentError, CreateAgentResponse, CreateChannelData, CreateChannelError, CreateChannelResponse, CreateMemberData, CreateMemberError, CreateMemberResponse, CreateTaskData, CreateTaskError, CreateTaskResponse, DeleteAgentData, DeleteAgentError, DeleteAgentResponse, DeleteMessageData, DeleteMessageError, DeleteMessageResponse, FailTaskData, FailTaskError, FailTaskResponse, GetActivityEntryData, GetActivityEntryError, GetActivityEntryResponse, GetAgentData, GetAgentError, GetAgentResponse, GetInboxData, GetInboxError, GetInboxResponse, GetTaskData, GetTaskError, GetTaskResponse, GetThreadData, GetThreadError, GetThreadResponse, GiveTaskData, GiveTaskError, GiveTaskResponse, ImportChecklistData, ImportChecklistError, ImportChecklistResponse, ListActivityData, ListActivityError, ListActivityResponse, ListAgentActivityData, ListAgentActivityError, ListAgentActivityResponse, ListAgentsData, ListAgentsError, ListAgentsResponse, ListChannelsData, ListChannelsError, ListChannelsResponse, ListEventsData, ListEventsError, ListEventsResponse, ListMachinesData, ListMachinesError, ListMachinesResponse, ListMembersData, ListMembersError, ListMembersResponse, ListMessagesData, ListMessagesError, ListMessagesResponse, ListTasksData, ListTasksError, ListTasksResponse, MachineHeartbeatData, MachineHeartbeatError, MachineHeartbeatResponse, MakeTaskFromThreadData, MakeTaskFromThreadError, MakeTaskFromThreadResponse, MarkReadData, MarkReadError, MarkReadResponse, PauseAgentData, PauseAgentError, PauseAgentResponse, PostMessageData, PostMessageError, PostMessageResponse, RegisterMachineData, RegisterMachineError, RegisterMachineResponse, ReleaseTaskData, ReleaseTaskError, ReleaseTaskResponse, RenewTaskData, RenewTaskError, RenewTaskResponse, ReplyToThreadData, ReplyToThreadError, ReplyToThreadResponse, RequestChangesData, RequestChangesError, RequestChangesResponse, ResumeAgentData, ResumeAgentError, ResumeAgentResponse, SearchBoardData, SearchBoardError, SearchBoardResponse, SetActivityData, SetActivityError, SetActivityResponse, StartAgentData, StartAgentError, StartAgentResponse, StopAgentData, StopAgentError, StopAgentResponse, StopRunData, StopRunError, StopRunResponse, SubmitForReviewData, SubmitForReviewError, SubmitForReviewResponse, UnblockTaskData, UnblockTaskError, UnblockTaskResponse, UpdateActivityEntryData, UpdateActivityEntryError, UpdateActivityEntryResponse, UpdateAgentData, UpdateAgentError, UpdateAgentResponse, UpdateChannelData, UpdateChannelError, UpdateChannelResponse, WhoamiData, WhoamiError, WhoamiResponse } from '../types.gen';
+import { addTaskCommit, answerInThread, answerQuestion, approveTask, askInThread, askQuestion, blockTask, claimNextTask, claimTask, completeTask, createActivityEntry, createAgent, createChannel, createMember, createTask, deleteAgent, deleteMessage, editMessage, failTask, getActivityEntry, getAgent, getInbox, getTask, getThread, giveTask, importChecklist, listActivity, listAgentActivity, listAgents, listChannels, listEvents, listMachines, listMembers, listMessages, listMessageVersions, listTasks, machineHeartbeat, makeTaskFromThread, markRead, type Options, pauseAgent, postMessage, registerMachine, releaseTask, renewTask, replyToThread, requestChanges, resumeAgent, searchBoard, setActivity, startAgent, stopAgent, stopRun, submitForReview, unblockTask, updateActivityEntry, updateAgent, updateChannel, whoami } from '../sdk.gen';
+import type { AddTaskCommitData, AddTaskCommitError, AddTaskCommitResponse, AnswerInThreadData, AnswerInThreadError, AnswerInThreadResponse, AnswerQuestionData, AnswerQuestionError, AnswerQuestionResponse, ApproveTaskData, ApproveTaskError, ApproveTaskResponse, AskInThreadData, AskInThreadError, AskInThreadResponse, AskQuestionData, AskQuestionError, AskQuestionResponse, BlockTaskData, BlockTaskError, BlockTaskResponse, ClaimNextTaskData, ClaimNextTaskError, ClaimNextTaskResponse, ClaimTaskData, ClaimTaskError, ClaimTaskResponse, CompleteTaskData, CompleteTaskError, CompleteTaskResponse, CreateActivityEntryData, CreateActivityEntryError, CreateActivityEntryResponse, CreateAgentData, CreateAgentError, CreateAgentResponse, CreateChannelData, CreateChannelError, CreateChannelResponse, CreateMemberData, CreateMemberError, CreateMemberResponse, CreateTaskData, CreateTaskError, CreateTaskResponse, DeleteAgentData, DeleteAgentError, DeleteAgentResponse, DeleteMessageData, DeleteMessageError, DeleteMessageResponse, EditMessageData, EditMessageError, EditMessageResponse, FailTaskData, FailTaskError, FailTaskResponse, GetActivityEntryData, GetActivityEntryError, GetActivityEntryResponse, GetAgentData, GetAgentError, GetAgentResponse, GetInboxData, GetInboxError, GetInboxResponse, GetTaskData, GetTaskError, GetTaskResponse, GetThreadData, GetThreadError, GetThreadResponse, GiveTaskData, GiveTaskError, GiveTaskResponse, ImportChecklistData, ImportChecklistError, ImportChecklistResponse, ListActivityData, ListActivityError, ListActivityResponse, ListAgentActivityData, ListAgentActivityError, ListAgentActivityResponse, ListAgentsData, ListAgentsError, ListAgentsResponse, ListChannelsData, ListChannelsError, ListChannelsResponse, ListEventsData, ListEventsError, ListEventsResponse, ListMachinesData, ListMachinesError, ListMachinesResponse, ListMembersData, ListMembersError, ListMembersResponse, ListMessagesData, ListMessagesError, ListMessagesResponse, ListMessageVersionsData, ListMessageVersionsError, ListMessageVersionsResponse, ListTasksData, ListTasksError, ListTasksResponse, MachineHeartbeatData, MachineHeartbeatError, MachineHeartbeatResponse, MakeTaskFromThreadData, MakeTaskFromThreadError, MakeTaskFromThreadResponse, MarkReadData, MarkReadError, MarkReadResponse, PauseAgentData, PauseAgentError, PauseAgentResponse, PostMessageData, PostMessageError, PostMessageResponse, RegisterMachineData, RegisterMachineError, RegisterMachineResponse, ReleaseTaskData, ReleaseTaskError, ReleaseTaskResponse, RenewTaskData, RenewTaskError, RenewTaskResponse, ReplyToThreadData, ReplyToThreadError, ReplyToThreadResponse, RequestChangesData, RequestChangesError, RequestChangesResponse, ResumeAgentData, ResumeAgentError, ResumeAgentResponse, SearchBoardData, SearchBoardError, SearchBoardResponse, SetActivityData, SetActivityError, SetActivityResponse, StartAgentData, StartAgentError, StartAgentResponse, StopAgentData, StopAgentError, StopAgentResponse, StopRunData, StopRunError, StopRunResponse, SubmitForReviewData, SubmitForReviewError, SubmitForReviewResponse, UnblockTaskData, UnblockTaskError, UnblockTaskResponse, UpdateActivityEntryData, UpdateActivityEntryError, UpdateActivityEntryResponse, UpdateAgentData, UpdateAgentError, UpdateAgentResponse, UpdateChannelData, UpdateChannelError, UpdateChannelResponse, WhoamiData, WhoamiError, WhoamiResponse } from '../types.gen';
 
 export type QueryKey<TOptions extends Options> = [
     Pick<TOptions, 'baseUrl' | 'body' | 'headers' | 'path' | 'query'> & {
@@ -111,7 +111,7 @@ export const markReadMutation = (options?: Partial<Options<MarkReadData>>): UseM
 export const listMessagesQueryKey = (options: Options<ListMessagesData>) => createQueryKey('listMessages', options);
 
 /**
- * Read a channel: messages, task cards, question cards and events, oldest first
+ * Read a channel: messages, task cards, question cards and events, oldest first. With label, only messages carrying it and task cards whose task carries it
  */
 export const listMessagesOptions = (options: Options<ListMessagesData>) => queryOptions<ListMessagesResponse, ListMessagesError, ListMessagesResponse, ReturnType<typeof listMessagesQueryKey>>({
     queryFn: async ({ queryKey, signal }) => {
@@ -127,7 +127,7 @@ export const listMessagesOptions = (options: Options<ListMessagesData>) => query
 });
 
 /**
- * Post a message to a channel. A person mentioning an agent (@name) also makes a task for that agent.
+ * Post a message to a channel, optionally with labels. Mentioning a member (@name) starts a conversation with it, never a task.
  */
 export const postMessageMutation = (options?: Partial<Options<PostMessageData>>): UseMutationOptions<PostMessageResponse, PostMessageError, Options<PostMessageData>> => {
     const mutationOptions: UseMutationOptions<PostMessageResponse, PostMessageError, Options<PostMessageData>> = {
@@ -160,6 +160,41 @@ export const deleteMessageMutation = (options?: Partial<Options<DeleteMessageDat
     return mutationOptions;
 };
 
+/**
+ * Edit a message or reply (m12): new text (author only; a message.edited event, the old text stays readable in listMessageVersions, mentions are read again) or its full set of labels (author, the author's owner or a person; a message.labeled event). Sending what it already has changes nothing.
+ */
+export const editMessageMutation = (options?: Partial<Options<EditMessageData>>): UseMutationOptions<EditMessageResponse, EditMessageError, Options<EditMessageData>> => {
+    const mutationOptions: UseMutationOptions<EditMessageResponse, EditMessageError, Options<EditMessageData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await editMessage({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+export const listMessageVersionsQueryKey = (options: Options<ListMessageVersionsData>) => createQueryKey('listMessageVersions', options);
+
+/**
+ * Every version of a message or reply's text (m12), oldest first, the current one last; empty once it is deleted
+ */
+export const listMessageVersionsOptions = (options: Options<ListMessageVersionsData>) => queryOptions<ListMessageVersionsResponse, ListMessageVersionsError, ListMessageVersionsResponse, ReturnType<typeof listMessageVersionsQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await listMessageVersions({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: listMessageVersionsQueryKey(options)
+});
+
 export const getThreadQueryKey = (options: Options<GetThreadData>) => createQueryKey('getThread', options);
 
 /**
@@ -179,7 +214,7 @@ export const getThreadOptions = (options: Options<GetThreadData>) => queryOption
 });
 
 /**
- * Reply in a thread. On a task thread, send your claim epoch so a stale claim is refused.
+ * Reply in a thread (m12 or 806), optionally with labels. Replying to a reply (m20) starts or continues its sub-thread; replying to a reply inside a sub-thread lands in that same sub-thread. On a task thread, send your claim epoch so a stale claim is refused.
  */
 export const replyToThreadMutation = (options?: Partial<Options<ReplyToThreadData>>): UseMutationOptions<ReplyToThreadResponse, ReplyToThreadError, Options<ReplyToThreadData>> => {
     const mutationOptions: UseMutationOptions<ReplyToThreadResponse, ReplyToThreadError, Options<ReplyToThreadData>> = {

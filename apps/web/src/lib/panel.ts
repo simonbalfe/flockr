@@ -4,6 +4,7 @@ export interface PanelSearch {
   thread?: string
   task?: number
   agent?: string
+  label?: string
 }
 
 export function parsePanelSearch(raw: Record<string, unknown>): PanelSearch {
@@ -13,6 +14,7 @@ export function parsePanelSearch(raw: Record<string, unknown>): PanelSearch {
     thread: thread || undefined,
     task: Number.isInteger(task) && task > 0 ? task : undefined,
     agent: typeof raw.agent === "string" && raw.agent ? raw.agent : undefined,
+    label: typeof raw.label === "string" && raw.label ? raw.label : undefined,
   }
 }
 
@@ -27,5 +29,6 @@ export function usePanel() {
     openById: (id: string) => (/^\d+$/.test(id) ? go({ task: Number(id) }) : go({ thread: id })),
     openAgent: (name: string) => go({ agent: name }),
     close: () => go({}),
+    filterLabel: (label: string | undefined) => void navigate({ to: ".", search: (prev) => ({ ...prev, label }) }),
   }
 }

@@ -33,6 +33,9 @@ Other commands: `bun run build` (type check and production build into `dist/`), 
 | Open a thread and press "Make this a task" | A new task with the thread copied in |
 | Press "Import checklist" in a channel's Tasks view and paste `docs/phases/SPEC_MASTER_CHECKLIST.md` | One task per row not yet Done, each waiting on the row before it in its phase; importing again makes nothing new (`flockr checklist import` does the same, `flockr checklist sync` ticks the file) |
 | Press "Set repo" in a channel header and enter `github.com/owner/name`, then open a task with a commit | Each commit in the task header and each sha in its thread links to `https://<repo>/commit/<sha>`; "Add commit" on the task adds another (`flockr tasks commit 806 e4f5a6b` does the same) |
+| Hover your own message, press Edit, change the text, press Enter | The text changes for everyone with "(edited)"; click "(edited)" for the earlier versions (`flockr edit m12 <text>`, `flockr versions m12`) |
+| Hover a message, press Label, type `review ui`, press Enter | `+review` and `+ui` under the message; click one to show only messages and task cards carrying it, "Show all" clears it (`?label=review`, `flockr read backend --label review`) |
+| In a thread, hover a reply and press Reply | A sub-thread under that reply with its own reply box; afterwards it shows collapsed as "2 replies", click to expand (`flockr reply m20 <text>`) |
 | Hover a message, press Delete, then Yes | The message becomes "Message deleted" for everyone, live; its thread stays; `flockr delete m12` does the same |
 | Press Cmd+K | Jump to a channel, task or agent, or pick New agent |
 | Press Cmd+K and type `rate limit` | "Search messages and tasks" lists server hits with the words in bold; Enter opens the message's thread or the task (`flockr search rate limit` does the same) |
@@ -75,6 +78,8 @@ Agent activity (ADR 0015, `docs/guides/GUIDE_AGENT_ACTIVITY.md`) lives in `src/c
 | `question-prompt.tsx` | Confirmation, Questionnaire | Permission cards with the exact action; three or more options as a list, still one tap |
 | `working-line.tsx` | Task, shimmer | "claude is working on ..." and Stop |
 | `chat-scroll.tsx` | Chat, Message Scroller | The thread and task panels keep your place while entries stream |
+
+A message or reply renders through `src/components/message-item.tsx`: its edit and label modes, the "(edited)" versions list, its labels and, in a thread, its collapsed sub-thread (grouped by `splitSubThreads` from `@flockr/client`). There is no label control in the composer: labels are set from the message toolbar after posting (spec 1b message gaps).
 
 The grouping and summary logic is `src/lib/work.ts`, tested with `bun run --cwd apps/web test`.
 

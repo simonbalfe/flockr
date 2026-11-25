@@ -16,6 +16,7 @@ export type {
   FeedItem,
   Inbox,
   Member,
+  MessageVersion,
   MemberKind,
   Question,
   Reply,

@@ -9,6 +9,33 @@ export interface MessageDeleteCheck {
 export const mayDeleteMessage = ({ actor, author, authorOwner }: MessageDeleteCheck): boolean =>
   actor.name === author || actor.kind === "person" || authorOwner === actor.name
 
+export const mayLabelMessage = mayDeleteMessage
+
+export const mayEditMessage = ({ actor, author }: { actor: { name: string }; author: string }): boolean => actor.name === author
+
+export const labelSet = (labels: readonly string[]): string[] => [...new Set(labels.map((l) => l.trim()).filter(Boolean))]
+
+export const sameLabels = (a: readonly string[], b: readonly string[]): boolean => a.length === b.length && a.every((l) => b.includes(l))
+
+export interface SubThreads<T> {
+  top: T[]
+  under: Map<string, T[]>
+}
+
+export function splitSubThreads<T extends { kind: string }>(entries: readonly T[]): SubThreads<T> {
+  const top: T[] = []
+  const under = new Map<string, T[]>()
+  for (const entry of entries) {
+    const parent = "replyTo" in entry && typeof entry.replyTo === "string" ? entry.replyTo : null
+    if (parent === null) {
+      top.push(entry)
+      continue
+    }
+    under.set(parent, [...(under.get(parent) ?? []), entry])
+  }
+  return { top, under }
+}
+
 export const mayManageAgent = (actor: { kind: MemberKind }): boolean => actor.kind === "person"
 
 export function mentionsIn(text: string, members: ReadonlySet<string>): string[] {

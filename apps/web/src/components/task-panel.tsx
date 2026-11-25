@@ -1,7 +1,6 @@
 import { useTask, useTasks, useThread } from "@/api/hooks"
 import { AddCommitDialog } from "@/components/add-commit-dialog"
 import { CommitLinksProvider, CommitSha } from "@/components/commit-link"
-import { Feed } from "@/components/feed"
 import { MemberAvatar } from "@/components/member-avatar"
 import { KeyValueList, PanelFrame, PanelHeading } from "@/components/panel-frame"
 import { ChatItem } from "@/components/agent/chat-scroll"
@@ -10,6 +9,7 @@ import { QuestionCard } from "@/components/question-card"
 import { ReplyBox } from "@/components/reply-box"
 import { StateDot } from "@/components/state-dot"
 import { TaskActions } from "@/components/task-actions"
+import { ThreadEntries } from "@/components/thread-panel"
 import { useLiveActivity } from "@/lib/activity"
 import { usePanel } from "@/lib/panel"
 import { useNow } from "@/lib/now"
@@ -103,7 +103,7 @@ export function TaskPanel({ id }: { id: number }) {
       </ChatItem>
       <ChatItem className="px-5 pb-2">
         <CommitLinksProvider commits={current.commits}>
-          {thread.data?.entries.length ? <Feed entries={thread.data.entries} inThread /> : <div className="px-1 py-2 text-[13px] text-faint">No replies yet.</div>}
+          {thread.data?.entries.length ? <ThreadEntries entries={thread.data.entries} /> : <div className="px-1 py-2 text-[13px] text-faint">No replies yet.</div>}
         </CommitLinksProvider>
         {working.map((a) => (
           <div key={a.member} className="px-1 py-1.5">

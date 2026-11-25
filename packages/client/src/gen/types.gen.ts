@@ -61,6 +61,14 @@ export type TextMessage = {
      * Member names the text mentions with @name
      */
     mentions: Array<string>;
+    /**
+     * Labels on the message, in the order they were added
+     */
+    labels: Array<string>;
+    /**
+     * When the text was last edited; null when never. Earlier versions: listMessageVersions
+     */
+    editedAt: string | null;
     taskId: number | null;
     threadId: string | null;
     thread: ThreadSummary | null;
@@ -99,12 +107,76 @@ export type Event = {
     system: boolean;
 };
 
+/**
+ * Only messages carrying this label, and task cards whose task carries it
+ */
+export type Label = string;
+
 export type PostMessageResult = {
     message: TextMessage;
 };
 
 export type PostMessageBody = {
     text: string;
+    /**
+     * Labels to put on the message
+     */
+    labels?: Array<Label>;
+};
+
+export type MessageState = {
+    id: string;
+    channel: string;
+    /**
+     * The thread the message is in, or its own id for a message in the channel
+     */
+    threadId: string;
+    who: string;
+    text: string;
+    mentions: Array<string>;
+    labels: Array<string>;
+    /**
+     * When the text was last edited; null when never. Earlier versions: listMessageVersions
+     */
+    editedAt: string | null;
+    /**
+     * The current version number
+     */
+    version: number;
+};
+
+export type EditMessageBody = {
+    /**
+     * The new text; only the author may change it. Each change is a new version
+     */
+    text?: string;
+    /**
+     * The full set of labels; the author, the author's owner or a person may change it
+     */
+    labels?: Array<Label>;
+};
+
+export type MessageVersions = {
+    id: string;
+    deleted: boolean;
+    /**
+     * Oldest first, the current text last; empty when the message was deleted
+     */
+    versions: Array<MessageVersion>;
+};
+
+export type MessageVersion = {
+    /**
+     * 1 is the text as posted; each edit adds one
+     */
+    version: number;
+    text: string;
+    mentions: Array<string>;
+    /**
+     * When this version was written
+     */
+    at: string;
+    current: boolean;
 };
 
 export type DeletedMessage = {
@@ -149,6 +221,18 @@ export type Reply = {
      * Member names the text mentions with @name
      */
     mentions: Array<string>;
+    /**
+     * Labels on the message, in the order they were added
+     */
+    labels: Array<string>;
+    /**
+     * When the text was last edited; null when never. Earlier versions: listMessageVersions
+     */
+    editedAt: string | null;
+    /**
+     * The reply whose sub-thread this reply is in; null for a reply in the thread itself
+     */
+    replyTo: string | null;
 };
 
 export type ThreadQuestion = {
@@ -408,6 +492,10 @@ export type ReplyBody = {
      * The claimEpoch from your claim. A stale value is refused with 409.
      */
     epoch?: number;
+    /**
+     * Labels to put on the message
+     */
+    labels?: Array<Label>;
 };
 
 export type Task = {
@@ -1317,7 +1405,12 @@ export type ListMessagesData = {
     path: {
         channel: string;
     };
-    query?: never;
+    query?: {
+        /**
+         * Only messages carrying this label, and task cards whose task carries it
+         */
+        label?: Label;
+    };
     url: '/api/channels/{channel}/messages';
 };
 
@@ -1431,6 +1524,90 @@ export type DeleteMessageResponses = {
 };
 
 export type DeleteMessageResponse = DeleteMessageResponses[keyof DeleteMessageResponses];
+
+export type EditMessageData = {
+    body: EditMessageBody;
+    path: {
+        /**
+         * A message id such as m12
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/api/messages/{id}';
+};
+
+export type EditMessageErrors = {
+    /**
+     * The input is not valid
+     */
+    400: Error;
+    /**
+     * The acting member is not on this board, or may not do this
+     */
+    403: Error;
+    /**
+     * Not found
+     */
+    404: Error;
+    /**
+     * The task or message is in another state, or the claim epoch is stale
+     */
+    409: Error;
+};
+
+export type EditMessageError = EditMessageErrors[keyof EditMessageErrors];
+
+export type EditMessageResponses = {
+    /**
+     * OK
+     */
+    200: MessageState;
+};
+
+export type EditMessageResponse = EditMessageResponses[keyof EditMessageResponses];
+
+export type ListMessageVersionsData = {
+    body?: never;
+    path: {
+        /**
+         * A message id such as m12
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/api/messages/{id}/versions';
+};
+
+export type ListMessageVersionsErrors = {
+    /**
+     * The input is not valid
+     */
+    400: Error;
+    /**
+     * The acting member is not on this board, or may not do this
+     */
+    403: Error;
+    /**
+     * Not found
+     */
+    404: Error;
+    /**
+     * The task or message is in another state, or the claim epoch is stale
+     */
+    409: Error;
+};
+
+export type ListMessageVersionsError = ListMessageVersionsErrors[keyof ListMessageVersionsErrors];
+
+export type ListMessageVersionsResponses = {
+    /**
+     * OK
+     */
+    200: MessageVersions;
+};
+
+export type ListMessageVersionsResponse = ListMessageVersionsResponses[keyof ListMessageVersionsResponses];
 
 export type GetThreadData = {
     body?: never;

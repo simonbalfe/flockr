@@ -1,18 +1,18 @@
 import type { ReactNode } from "react"
 import { useMembers, useTasks } from "@/api/hooks"
 import type { ActivityEntry, Event, FeedItem, Member, Reply, Task, ThreadQuestion } from "@/api/types"
-import { Markdown } from "@/components/agent/markdown"
 import { WorkBlock } from "@/components/agent/work-block"
 import { MemberAvatar } from "@/components/member-avatar"
-import { MessageToolbar } from "@/components/message-toolbar"
+import { MessageItem } from "@/components/message-item"
 import { RichText } from "@/components/rich-text"
 import { splitWork } from "@/lib/work"
 import { QuestionCard, ThreadQuestionCard } from "@/components/question-card"
 import { TaskList } from "@/components/task-row"
-import { ThreadFooter } from "@/components/thread-footer"
 import { clock } from "@/lib/time"
 
-type Entry = FeedItem | Reply | ThreadQuestion | ActivityEntry
+export type Entry = FeedItem | Reply | ThreadQuestion | ActivityEntry
+
+export type SubThreadMap = ReadonlyMap<string, Entry[]>
 
 interface Group {
   who: string
@@ -57,7 +57,7 @@ function EventRow({ event }: { event: Event }) {
   )
 }
 
-function GroupBody({ group, inThread, tasks }: { group: Group; inThread: boolean; tasks: Map<number, Task> }) {
+function GroupBody({ group, inThread, tasks, subThreads }: { group: Group; inThread: boolean; tasks: Map<number, Task>; subThreads: SubThreadMap | null }) {
   const nodes: ReactNode[] = []
   let run: Task[] = []
   const flush = (key: string) => {
@@ -87,27 +87,14 @@ function GroupBody({ group, inThread, tasks }: { group: Group; inThread: boolean
       continue
     }
     const attached = item.kind === "text" && !inThread && item.taskId !== null ? tasks.get(item.taskId) : undefined
-    const replyThreadId = item.kind === "text" && !inThread && !item.thread ? item.threadId : null
-    nodes.push(
-      <div key={item.id} className="group/msg relative">
-        {item.deleted ? (
-          <p className="mt-0.5 text-muted-foreground">Message deleted</p>
-        ) : (
-          <>
-            <Markdown text={item.text} className="mt-0.5" />
-            {attached && <TaskList tasks={[attached]} />}
-            <MessageToolbar id={item.id} who={group.who} replyThreadId={replyThreadId} />
-          </>
-        )}
-        {item.kind === "text" && !inThread && <ThreadFooter message={item} />}
-      </div>,
-    )
+    const subReplies = subThreads && item.kind === "reply" && item.replyTo === null ? (subThreads.get(item.id) ?? []) : null
+    nodes.push(<MessageItem key={item.id} item={item} inThread={inThread} attached={attached} subReplies={subReplies} />)
   }
   flush("run-end")
   return <>{nodes}</>
 }
 
-export function Feed({ entries, inThread = false }: { entries: Entry[]; inThread?: boolean }) {
+export function Feed({ entries, inThread = false, subThreads = null }: { entries: Entry[]; inThread?: boolean; subThreads?: SubThreadMap | null }) {
   const members = useMembers()
   const taskList = useTasks()
   const tasks = new Map((taskList.data ?? []).map((t) => [t.id, t]))
@@ -126,7 +113,7 @@ export function Feed({ entries, inThread = false }: { entries: Entry[]; inThread
                 {sub && <span className="text-[12.5px] text-muted-foreground">{sub}</span>}
                 <span className="text-xs text-faint tabular-nums">{clock(group.at)}</span>
               </div>
-              <GroupBody group={group} inThread={inThread} tasks={tasks} />
+              <GroupBody group={group} inThread={inThread} tasks={tasks} subThreads={subThreads} />
             </div>
           </div>
         )

@@ -7,6 +7,7 @@ export const memberHeader = "x-flockr-member"
 export const defaultMember = "simon"
 export const leaseMinutes = 15
 export const activitySeconds = 120
+export const messageLimits = { labels: 10, labelChars: 40 } as const
 
 export const errorKinds = ["invalid", "not_member", "forbidden", "not_found", "already_exists", "wrong_state", "stale_claim", "not_holder", "lease_expired", "internal"] as const
 export type ErrorKind = (typeof errorKinds)[number]

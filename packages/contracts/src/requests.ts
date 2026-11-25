@@ -1,6 +1,6 @@
 import { z } from "@hono/zod-openapi"
 import { ApprovalAction } from "./activity"
-import { Activity, MemberKind, orNull, Task, TaskState, TextMessage } from "./board"
+import { Activity, Label, Labels, MemberKind, orNull, Task, TaskState, TextMessage } from "./board"
 import { checklistLimits, checklistSkipReasons } from "./checklist"
 import { commitMessageChars, Repo, Sha } from "./commits"
 
@@ -38,10 +38,24 @@ export const CreateMemberBody = z
   })
   .openapi("CreateMemberBody")
 
-export const PostMessageBody = z.object({ text }).openapi("PostMessageBody")
+const labels = Labels.default([]).openapi({ example: ["review"], description: "Labels to put on the message" })
+
+export const PostMessageBody = z.object({ text, labels }).openapi("PostMessageBody")
 export const PostMessageResult = z.object({ message: TextMessage }).openapi("PostMessageResult")
 
-export const ReplyBody = z.object({ text, epoch }).openapi("ReplyBody")
+export const ReplyBody = z.object({ text, epoch, labels }).openapi("ReplyBody")
+
+export const ListMessagesQuery = z.object({
+  label: Label.optional().openapi({ description: "Only messages carrying this label, and task cards whose task carries it" }),
+})
+
+export const EditMessageBody = z
+  .object({
+    text: text.optional().openapi({ description: "The new text; only the author may change it. Each change is a new version" }),
+    labels: Labels.optional().openapi({ description: "The full set of labels; the author, the author's owner or a person may change it" }),
+  })
+  .refine((body) => body.text !== undefined || body.labels !== undefined, "Give text or labels")
+  .openapi("EditMessageBody")
 
 export const ListTasksQuery = z.object({
   channel: z.string().optional(),
@@ -167,3 +181,5 @@ export type ChecklistImport = z.infer<typeof ChecklistImport>
 export type ChecklistSkip = z.infer<typeof ChecklistSkip>
 export type ListTasksQuery = z.infer<typeof ListTasksQuery>
 export type ReleaseBody = z.infer<typeof ReleaseBody>
+export type EditMessageBody = z.infer<typeof EditMessageBody>
+export type ListMessagesQuery = z.infer<typeof ListMessagesQuery>

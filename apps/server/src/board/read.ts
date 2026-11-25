@@ -1,7 +1,28 @@
-import { ActivityState, commitUrl, shortSha, type ActivityEntry, type Channel, type TaskCommit, Event, FeedItem, Inbox, ListTasksQuery, Member, Reply, Task, TextMessage, Thread, ThreadEntry, ThreadQuestion, ThreadSummary } from "@flockr/contracts"
+import {
+  ActivityState,
+  commitUrl,
+  shortSha,
+  type ActivityEntry,
+  type Channel,
+  type ListMessagesQuery,
+  type MessageVersions,
+  type TaskCommit,
+  Event,
+  FeedItem,
+  Inbox,
+  ListTasksQuery,
+  Member,
+  Reply,
+  Task,
+  TextMessage,
+  Thread,
+  ThreadEntry,
+  ThreadQuestion,
+  ThreadSummary,
+} from "@flockr/contracts"
 import { and, asc, eq, inArray, isNotNull, isNull, or, sql, type SQL } from "drizzle-orm"
 import type { Executor } from "../db/client"
-import { channels, members, messages, taskCommits, tasks, type MemberRow, type MessageRow, type TaskRow } from "../db/schema"
+import { channels, members, messages, messageVersions, taskCommits, tasks, type MemberRow, type MessageRow, type TaskRow } from "../db/schema"
 import { notFound } from "./errors"
 
 export const messageKey = (id: number) => `m${id}`
@@ -190,8 +211,17 @@ function entryOf(row: MessageRow): ThreadEntry {
     text: row.deletedAt ? "" : row.body,
     deleted: row.deletedAt !== null,
     mentions: row.deletedAt ? [] : row.mentions,
+    labels: row.labels,
+    editedAt: row.editedAt?.toISOString() ?? null,
+    replyTo: row.replyToId === null ? null : messageKey(row.replyToId),
   }
   return reply
+}
+
+export const replyOf = (row: MessageRow): Reply => {
+  const entry = entryOf(row)
+  if (entry.kind !== "reply") throw new Error(`${messageKey(row.id)} is not a reply`)
+  return entry
 }
 
 function eventOf(row: MessageRow): Event {
@@ -216,6 +246,8 @@ function textOf(row: MessageRow, replies: MessageRow[], known: Set<string>): Tex
     text: row.deletedAt ? "" : row.body,
     deleted: row.deletedAt !== null,
     mentions: row.deletedAt ? [] : row.mentions,
+    labels: row.labels,
+    editedAt: row.editedAt?.toISOString() ?? null,
     taskId: row.taskId,
     threadId: row.taskId === null ? messageKey(row.id) : null,
     thread: summarize(replies, known),
@@ -239,12 +271,20 @@ async function repliesByParent(db: Executor, ids: number[]): Promise<Map<number,
   return grouped
 }
 
-export async function listFeed(db: Executor, channel: string): Promise<FeedItem[]> {
+function labelFilter(label: string | undefined): SQL | undefined {
+  if (label === undefined) return undefined
+  return or(
+    sql`${label} = any(${messages.labels})`,
+    and(inArray(messages.kind, ["task", "ask"]), sql`exists (select 1 from tasks t where t.id = ${messages.taskId} and ${label} = any(t.labels))`),
+  )
+}
+
+export async function listFeed(db: Executor, channel: string, query: ListMessagesQuery = {}): Promise<FeedItem[]> {
   await requireChannel(db, channel)
   const rows = await db
     .select()
     .from(messages)
-    .where(and(eq(messages.channel, channel), isNull(messages.parentId), isNull(messages.threadTaskId)))
+    .where(and(eq(messages.channel, channel), isNull(messages.parentId), isNull(messages.threadTaskId), labelFilter(query.label)))
     .orderBy(asc(messages.id))
   const replies = await repliesByParent(
     db,
@@ -297,6 +337,23 @@ export async function getThread(db: Executor, raw: string): Promise<Thread> {
     taskId: null,
     root: root.kind === "text" ? textOf(root, entries, known) : null,
     entries: entries.map(entryOf),
+  }
+}
+
+export async function getMessageVersions(db: Executor, raw: string): Promise<MessageVersions> {
+  const ref = parseThreadId(raw)
+  if (ref.kind === "task") throw notFound(`${raw} is a task; versions belong to messages such as m12`)
+  const row = await findMessage(db, ref.id)
+  const id = messageKey(row.id)
+  if (row.deletedAt) return { id, deleted: true, versions: [] }
+  const earlier = await db.select().from(messageVersions).where(eq(messageVersions.messageId, row.id)).orderBy(asc(messageVersions.version))
+  return {
+    id,
+    deleted: false,
+    versions: [
+      ...earlier.map((v) => ({ version: v.version, text: v.body, mentions: v.mentions, at: v.writtenAt.toISOString(), current: false })),
+      { version: earlier.length + 1, text: row.body, mentions: row.mentions, at: (row.editedAt ?? row.createdAt).toISOString(), current: true },
+    ],
   }
 }
 

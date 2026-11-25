@@ -1,5 +1,21 @@
-import { currentStep, partHeadline, type ActivityEntry } from "@flockr/client"
-import type { Activity, BoardEvent, Channel, FeedItem, Inbox, Member, SearchHit, SnippetPart, Task, TaskCommit, Thread, ThreadEntry, ThreadQuestion } from "@flockr/client"
+import { currentStep, partHeadline, splitSubThreads, type ActivityEntry } from "@flockr/client"
+import type {
+  Activity,
+  BoardEvent,
+  Channel,
+  FeedItem,
+  Inbox,
+  Member,
+  MessageState,
+  MessageVersions,
+  SearchHit,
+  SnippetPart,
+  Task,
+  TaskCommit,
+  Thread,
+  ThreadEntry,
+  ThreadQuestion,
+} from "@flockr/client"
 
 export const clock = (iso: string) => {
   const d = new Date(iso)
@@ -51,6 +67,8 @@ export const memberLine = (m: Member) =>
 
 const deletedText = "(message deleted)"
 
+const marks = (m: { labels: string[]; editedAt: string | null }) => `${m.editedAt ? " (edited)" : ""}${m.labels.length ? `  [${m.labels.map((l) => `+${l}`).join(" ")}]` : ""}`
+
 const questionText = (q: ThreadQuestion) => `${q.question.text} [${q.question.options.join(" / ")}]`
 
 export function entryLine(entry: ThreadEntry): string {
@@ -62,7 +80,7 @@ export function entryLine(entry: ThreadEntry): string {
       return `${clock(entry.at)}  ${entry.who} asks: ${questionText(entry)}  (${state})`
     }
     case "reply":
-      return `${clock(entry.at)}  ${entry.who}: ${entry.deleted ? deletedText : entry.text}  (${entry.id})`
+      return `${clock(entry.at)}  ${entry.who}: ${entry.deleted ? deletedText : `${entry.text}${marks(entry)}`}  (${entry.id})`
     case "activity":
       return activityEntryLine(entry)
   }
@@ -84,14 +102,23 @@ export function feedLine(item: FeedItem, tasks: Map<number, Task>): string {
     case "text": {
       const thread = item.thread ? `  [${item.thread.count} ${item.thread.count === 1 ? "reply" : "replies"}: fc thread ${item.threadId}]` : item.threadId ? `  (${item.threadId})` : ""
       const task = item.taskId ? `  (about #${item.taskId})` : ""
-      return `${clock(item.at)}  ${item.who}: ${item.deleted ? deletedText : item.text}${task}${thread}`
+      return `${clock(item.at)}  ${item.who}: ${item.deleted ? deletedText : `${item.text}${marks(item)}`}${task}${thread}`
     }
   }
 }
 
 export function threadText(thread: Thread): string {
-  const head = thread.root ? [`#${thread.channel}  ${thread.root.who}: ${thread.root.deleted ? deletedText : thread.root.text}`, ""] : [`Thread of task #${thread.taskId} in #${thread.channel}`, ""]
-  return [...head, ...(thread.entries.length ? thread.entries.map(entryLine) : ["No replies yet."])].join("\n")
+  const head = thread.root ? [`#${thread.channel}  ${thread.root.who}: ${thread.root.deleted ? deletedText : `${thread.root.text}${marks(thread.root)}`}`, ""] : [`Thread of task #${thread.taskId} in #${thread.channel}`, ""]
+  const { top, under } = splitSubThreads(thread.entries)
+  const lines = top.flatMap((entry) => [entryLine(entry), ...(under.get(entry.id) ?? []).map((sub) => `    ${entryLine(sub)}`)])
+  return [...head, ...(lines.length ? lines : ["No replies yet."])].join("\n")
+}
+
+export const messageStateLine = (m: MessageState) => `${m.id} v${m.version} in ${m.threadId}: ${m.text}${marks(m)}`
+
+export function versionsText(history: MessageVersions): string {
+  if (history.deleted) return `${history.id} was deleted; its versions are gone with it.`
+  return history.versions.map((v) => `v${v.version}  ${clock(v.at)}  ${v.text}${v.current ? "  (current)" : ""}`).join("\n")
 }
 
 export function inboxText(inbox: Inbox): string {

@@ -11,7 +11,7 @@ const minutesOf = (clock: string) => {
 }
 
 export async function resetBoard(db: Database): Promise<void> {
-  await db.execute(sql`truncate events, activity, reads, messages, task_commits, tasks, channels, agents, machines, members, boards restart identity cascade`)
+  await db.execute(sql`truncate events, activity, reads, message_versions, messages, task_commits, tasks, channels, agents, machines, members, boards restart identity cascade`)
 }
 
 export async function seedBoard(db: Database, now = new Date()): Promise<boolean> {

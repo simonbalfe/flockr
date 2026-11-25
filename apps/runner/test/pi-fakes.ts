@@ -30,7 +30,7 @@ export class FakePiBoard implements PiBoard {
       id: root.thread,
       channel: "general",
       taskId: null,
-      root: { kind: "text", id: root.thread, channel: "general", who: root.who, at, text: root.text, deleted: false, mentions: [member], taskId: null, threadId: null, thread: null },
+      root: { kind: "text", id: root.thread, channel: "general", who: root.who, at, text: root.text, deleted: false, mentions: [member], labels: [], editedAt: null, taskId: null, threadId: null, thread: null },
       entries: [],
     })
   }
@@ -43,7 +43,7 @@ export class FakePiBoard implements PiBoard {
 
   say(thread: string, who: string, text: string): string {
     const id = `m${(this.next += 1)}`
-    this.push(thread, { kind: "reply", id, who, at, text, deleted: false, mentions: [] })
+    this.push(thread, { kind: "reply", id, who, at, text, deleted: false, mentions: [], labels: [], editedAt: null, replyTo: null })
     return id
   }
 

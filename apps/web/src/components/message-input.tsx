@@ -3,8 +3,17 @@ import { useState, type KeyboardEvent } from "react"
 import { InputGroup, InputGroupAddon, InputGroupButton, InputGroupTextarea } from "@/components/ui/input-group"
 import { cn } from "@/lib/utils"
 
-export function MessageInput({ label, placeholder, onSend }: { label: string; placeholder: string; onSend: (text: string) => void }) {
-  const [text, setText] = useState("")
+interface MessageInputProps {
+  label: string
+  placeholder: string
+  onSend: (text: string) => void
+  initial?: string
+  onCancel?: () => void
+  autoFocus?: boolean
+}
+
+export function MessageInput({ label, placeholder, onSend, initial = "", onCancel, autoFocus = false }: MessageInputProps) {
+  const [text, setText] = useState(initial)
   const empty = text.trim() === ""
 
   const send = () => {
@@ -14,6 +23,11 @@ export function MessageInput({ label, placeholder, onSend }: { label: string; pl
   }
 
   const onKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {
+    if (event.key === "Escape" && onCancel) {
+      event.preventDefault()
+      onCancel()
+      return
+    }
     if (event.key === "Enter" && !event.shiftKey) {
       event.preventDefault()
       send()
@@ -27,6 +41,7 @@ export function MessageInput({ label, placeholder, onSend }: { label: string; pl
         value={text}
         aria-label={label}
         placeholder={placeholder}
+        autoFocus={autoFocus}
         onChange={(event) => setText(event.target.value)}
         onKeyDown={onKeyDown}
         className="max-h-[140px] min-h-[36px] py-2 pl-3.5 text-sm"

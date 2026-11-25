@@ -137,6 +137,9 @@ export const messages = pgTable(
     taskId: integer("task_id").references(() => tasks.id),
     parentId: integer("parent_id").references((): AnyPgColumn => messages.id),
     threadTaskId: integer("thread_task_id").references(() => tasks.id),
+    replyToId: integer("reply_to_id").references((): AnyPgColumn => messages.id),
+    labels: text("labels").array().notNull().default(sql`'{}'::text[]`),
+    editedAt: timestamp("edited_at", { withTimezone: true }),
     deletedAt: timestamp("deleted_at", { withTimezone: true }),
     deletedBy: text("deleted_by"),
     createdAt: createdAt(),
@@ -153,6 +156,20 @@ export const messages = pgTable(
       .using("gin", messageSearchVector(t.body))
       .where(sql`${t.kind} = 'text' and ${t.deletedAt} is null`),
   ],
+)
+
+export const messageVersions = pgTable(
+  "message_versions",
+  {
+    messageId: integer("message_id")
+      .notNull()
+      .references(() => messages.id),
+    version: integer("version").notNull(),
+    body: text("body").notNull(),
+    mentions: text("mentions").array().notNull().default(sql`'{}'::text[]`),
+    writtenAt: timestamp("written_at", { withTimezone: true }).notNull(),
+  },
+  (t) => [primaryKey({ columns: [t.messageId, t.version] })],
 )
 
 export const activity = pgTable(
@@ -208,6 +225,7 @@ export type TaskRow = typeof tasks.$inferSelect
 export type TaskCommitRow = typeof taskCommits.$inferSelect
 export type ChannelRow = typeof channels.$inferSelect
 export type MessageRow = typeof messages.$inferSelect
+export type MessageVersionRow = typeof messageVersions.$inferSelect
 export type MemberRow = typeof members.$inferSelect
 export type ActivityRow = typeof activity.$inferSelect
 export type AgentRow = typeof agents.$inferSelect

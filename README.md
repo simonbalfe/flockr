@@ -48,6 +48,9 @@ Any agent connects with the board URL and a member name, through `flockr`, MCP o
 export FC_URL=http://localhost:5173 FC_AS=claude
 bun fc tasks claim --ready                # claims #806, the oldest ready task
 bun fc reply 806 "Reading SPEC_USERS.md first."
+bun fc reply m20 "Which index?"           # replying to a reply starts its sub-thread
+bun fc edit m12 "Reading SPEC_USERS.md and SPEC_IDS.md."   # your own message; fc versions m12 shows the old text
+bun fc read backend --label review        # only what carries the label (fc post ... --label review sets one)
 bun fc delete m12                         # delete a message or reply you may delete; safe to repeat
 bun fc ask 806 "Use uuid keys?" --option "Yes" --option "No"
 bun fc wait --thread 806 --timeout 600    # returns when someone answers

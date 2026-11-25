@@ -1,3 +1,4 @@
+import { splitSubThreads } from "@flockr/client"
 import { useLiveActivity } from "@/lib/activity"
 import { useMakeTaskFromThread, useThread } from "@/api/hooks"
 import { NewTaskDialog } from "@/components/new-task-dialog"
@@ -8,8 +9,14 @@ import { PanelFrame } from "@/components/panel-frame"
 import { ReplyBox } from "@/components/reply-box"
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
+import type { Thread } from "@/api/types"
 import { usePanel } from "@/lib/panel"
 import { toast } from "sonner"
+
+export function ThreadEntries({ entries }: { entries: Thread["entries"] }) {
+  const { top, under } = splitSubThreads(entries)
+  return <Feed entries={top} inThread subThreads={under} />
+}
 
 export function ThreadPanel({ id }: { id: string }) {
   const thread = useThread(id)
@@ -48,7 +55,7 @@ export function ThreadPanel({ id }: { id: string }) {
           <div className="mb-1 text-[13px] font-semibold text-muted-foreground">
             {count} {count === 1 ? "reply" : "replies"}
           </div>
-          {count ? <Feed entries={current.entries} inThread /> : <div className="px-1 py-2 text-[13px] text-faint">No replies yet.</div>}
+          {count ? <ThreadEntries entries={current.entries} /> : <div className="px-1 py-2 text-[13px] text-faint">No replies yet.</div>}
           {working.map((a) => (
             <div key={a.member} className="px-1 py-1.5">
               <AgentWorkingLine activity={a} />

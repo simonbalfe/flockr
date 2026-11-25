@@ -1,4 +1,4 @@
-import { MessageSquare, Trash2 } from "lucide-react"
+import { CornerDownRight, MessageSquare, Pencil, Tag, Trash2 } from "lucide-react"
 import { useState } from "react"
 import { toast } from "sonner"
 import { mayDeleteMessage } from "@flockr/client"
@@ -11,7 +11,13 @@ const reveal = "opacity-0 group-hover/msg:opacity-100 focus-within:opacity-100 [
 const control =
   "inline-flex items-center gap-1.5 rounded-lg px-2 py-[3px] text-[12.5px] text-muted-foreground outline-none hover:bg-muted hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50"
 
-export function MessageToolbar({ id, who, replyThreadId }: { id: string; who: string; replyThreadId: string | null }) {
+export interface MessageActions {
+  onEdit: (() => void) | null
+  onLabel: (() => void) | null
+  onReply: (() => void) | null
+}
+
+export function MessageToolbar({ id, who, replyThreadId, actions }: { id: string; who: string; replyThreadId: string | null; actions: MessageActions }) {
   const members = useMembers()
   const remove = useDeleteMessage()
   const { openThread } = usePanel()
@@ -19,7 +25,8 @@ export function MessageToolbar({ id, who, replyThreadId }: { id: string; who: st
   const actor = members.data?.find((m) => m.name === currentUser)
   const author = members.data?.find((m) => m.name === who)
   const canDelete = actor !== undefined && mayDeleteMessage({ actor, author: who, authorOwner: author?.owner ?? null })
-  if (!canDelete && replyThreadId === null) return null
+  const { onEdit, onLabel, onReply } = actions
+  if (!canDelete && replyThreadId === null && !onEdit && !onLabel && !onReply) return null
 
   const confirm = () =>
     remove.mutate(id, {
@@ -36,6 +43,24 @@ export function MessageToolbar({ id, who, replyThreadId }: { id: string; who: st
         <button type="button" onClick={() => openThread(replyThreadId)} className={control}>
           <MessageSquare className="size-[13px]" />
           Reply in thread
+        </button>
+      )}
+      {onReply && !confirming && (
+        <button type="button" onClick={onReply} className={control}>
+          <CornerDownRight className="size-[13px]" />
+          Reply
+        </button>
+      )}
+      {onEdit && !confirming && (
+        <button type="button" onClick={onEdit} className={control}>
+          <Pencil className="size-[13px]" />
+          Edit
+        </button>
+      )}
+      {onLabel && !confirming && (
+        <button type="button" onClick={onLabel} className={control}>
+          <Tag className="size-[13px]" />
+          Label
         </button>
       )}
       {canDelete && !confirming && (

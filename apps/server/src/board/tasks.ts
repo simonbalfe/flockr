@@ -76,14 +76,17 @@ export async function makeTaskFromThread(db: Database, actor: string, threadId: 
       spec: null,
     })
     const entries = await tx.select().from(messages).where(eq(messages.parentId, root.id)).orderBy(asc(messages.id))
-    if (entries.length) {
-      await tx.insert(messages).values(
-        entries.map((e) => ({
+    const copies = new Map<number, number>()
+    for (const e of entries) {
+      const [copy] = await tx
+        .insert(messages)
+        .values({
           channel: row.channel,
           kind: e.kind,
           who: e.who,
           body: e.body,
           mentions: e.mentions,
+          labels: e.labels,
           question: e.question,
           answer: e.answer,
           answeredBy: e.answeredBy,
@@ -91,11 +94,13 @@ export async function makeTaskFromThread(db: Database, actor: string, threadId: 
           activity: e.activity,
           system: e.system,
           threadTaskId: row.id,
+          replyToId: e.replyToId === null ? null : (copies.get(e.replyToId) ?? null),
           deletedAt: e.deletedAt,
           deletedBy: e.deletedBy,
           createdAt: e.createdAt,
-        })),
-      )
+        })
+        .returning({ id: messages.id })
+      if (copy) copies.set(e.id, copy.id)
     }
     return row.id
   })

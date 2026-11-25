@@ -180,6 +180,22 @@
             },
             "description": "Member names the text mentions with @name"
           },
+          "labels": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Labels on the message, in the order they were added"
+          },
+          "editedAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "example": "2026-11-24T10:40:02.000Z",
+            "description": "When the text was last edited; null when never. Earlier versions: listMessageVersions"
+          },
           "taskId": {
             "type": [
               "integer",
@@ -212,6 +228,8 @@
           "text",
           "deleted",
           "mentions",
+          "labels",
+          "editedAt",
           "taskId",
           "threadId",
           "thread"
@@ -349,6 +367,14 @@
           "system"
         ]
       },
+      "Label": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 40,
+        "pattern": "^[^\\s,]+$",
+        "example": "review",
+        "description": "Only messages carrying this label, and task cards whose task carries it"
+      },
       "PostMessageResult": {
         "type": "object",
         "properties": {
@@ -366,10 +392,157 @@
           "text": {
             "type": "string",
             "minLength": 1
+          },
+          "labels": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Label"
+            },
+            "maxItems": 10,
+            "default": [],
+            "example": [
+              "review"
+            ],
+            "description": "Labels to put on the message"
           }
         },
         "required": [
           "text"
+        ]
+      },
+      "MessageState": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "m12"
+          },
+          "channel": {
+            "type": "string"
+          },
+          "threadId": {
+            "type": "string",
+            "description": "The thread the message is in, or its own id for a message in the channel"
+          },
+          "who": {
+            "type": "string"
+          },
+          "text": {
+            "type": "string"
+          },
+          "mentions": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "labels": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "editedAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "example": "2026-11-24T10:40:02.000Z",
+            "description": "When the text was last edited; null when never. Earlier versions: listMessageVersions"
+          },
+          "version": {
+            "type": "integer",
+            "description": "The current version number"
+          }
+        },
+        "required": [
+          "id",
+          "channel",
+          "threadId",
+          "who",
+          "text",
+          "mentions",
+          "labels",
+          "editedAt",
+          "version"
+        ]
+      },
+      "EditMessageBody": {
+        "type": "object",
+        "properties": {
+          "text": {
+            "type": "string",
+            "minLength": 1,
+            "description": "The new text; only the author may change it. Each change is a new version"
+          },
+          "labels": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Label"
+            },
+            "maxItems": 10,
+            "description": "The full set of labels; the author, the author's owner or a person may change it"
+          }
+        }
+      },
+      "MessageVersions": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "m12"
+          },
+          "deleted": {
+            "type": "boolean"
+          },
+          "versions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MessageVersion"
+            },
+            "description": "Oldest first, the current text last; empty when the message was deleted"
+          }
+        },
+        "required": [
+          "id",
+          "deleted",
+          "versions"
+        ]
+      },
+      "MessageVersion": {
+        "type": "object",
+        "properties": {
+          "version": {
+            "type": "integer",
+            "example": 1,
+            "description": "1 is the text as posted; each edit adds one"
+          },
+          "text": {
+            "type": "string"
+          },
+          "mentions": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "at": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-11-24T10:40:02.000Z",
+            "description": "When this version was written"
+          },
+          "current": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "version",
+          "text",
+          "mentions",
+          "at",
+          "current"
         ]
       },
       "DeletedMessage": {
@@ -497,6 +670,30 @@
               "type": "string"
             },
             "description": "Member names the text mentions with @name"
+          },
+          "labels": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Labels on the message, in the order they were added"
+          },
+          "editedAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "example": "2026-11-24T10:40:02.000Z",
+            "description": "When the text was last edited; null when never. Earlier versions: listMessageVersions"
+          },
+          "replyTo": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "example": "m20",
+            "description": "The reply whose sub-thread this reply is in; null for a reply in the thread itself"
           }
         },
         "required": [
@@ -506,7 +703,10 @@
           "at",
           "text",
           "deleted",
-          "mentions"
+          "mentions",
+          "labels",
+          "editedAt",
+          "replyTo"
         ]
       },
       "ThreadQuestion": {
@@ -1346,6 +1546,18 @@
           "epoch": {
             "type": "integer",
             "description": "The claimEpoch from your claim. A stale value is refused with 409."
+          },
+          "labels": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Label"
+            },
+            "maxItems": 10,
+            "default": [],
+            "example": [
+              "review"
+            ],
+            "description": "Labels to put on the message"
           }
         },
         "required": [
@@ -3813,7 +4025,7 @@
         "tags": [
           "messages"
         ],
-        "summary": "Read a channel: messages, task cards, question cards and events, oldest first",
+        "summary": "Read a channel: messages, task cards, question cards and events, oldest first. With label, only messages carrying it and task cards whose task carries it",
         "parameters": [
           {
             "schema": {
@@ -3823,6 +4035,15 @@
             "required": true,
             "name": "channel",
             "in": "path"
+          },
+          {
+            "schema": {
+              "$ref": "#/components/schemas/Label"
+            },
+            "required": false,
+            "description": "Only messages carrying this label, and task cards whose task carries it",
+            "name": "label",
+            "in": "query"
           }
         ],
         "responses": {
@@ -3886,7 +4107,7 @@
         "tags": [
           "messages"
         ],
-        "summary": "Post a message to a channel. A person mentioning an agent (@name) also makes a task for that agent.",
+        "summary": "Post a message to a channel, optionally with labels. Mentioning a member (@name) starts a conversation with it, never a task.",
         "parameters": [
           {
             "schema": {
@@ -3963,6 +4184,88 @@
       }
     },
     "/api/messages/{id}": {
+      "patch": {
+        "operationId": "editMessage",
+        "tags": [
+          "messages"
+        ],
+        "summary": "Edit a message or reply (m12): new text (author only; a message.edited event, the old text stays readable in listMessageVersions, mentions are read again) or its full set of labels (author, the author's owner or a person; a message.labeled event). Sending what it already has changes nothing.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "description": "A message id such as m12",
+              "example": "m12"
+            },
+            "required": true,
+            "description": "A message id such as m12",
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EditMessageBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MessageState"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The input is not valid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The acting member is not on this board, or may not do this",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The task or message is in another state, or the claim epoch is stale",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
       "delete": {
         "operationId": "deleteMessage",
         "tags": [
@@ -3989,6 +4292,80 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/DeletedMessage"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The input is not valid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The acting member is not on this board, or may not do this",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The task or message is in another state, or the claim epoch is stale",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/messages/{id}/versions": {
+      "get": {
+        "operationId": "listMessageVersions",
+        "tags": [
+          "messages"
+        ],
+        "summary": "Every version of a message or reply's text (m12), oldest first, the current one last; empty once it is deleted",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "description": "A message id such as m12",
+              "example": "m12"
+            },
+            "required": true,
+            "description": "A message id such as m12",
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MessageVersions"
                 }
               }
             }
@@ -4116,7 +4493,7 @@
         "tags": [
           "threads"
         ],
-        "summary": "Reply in a thread. On a task thread, send your claim epoch so a stale claim is refused.",
+        "summary": "Reply in a thread (m12 or 806), optionally with labels. Replying to a reply (m20) starts or continues its sub-thread; replying to a reply inside a sub-thread lands in that same sub-thread. On a task thread, send your claim epoch so a stale claim is refused.",
         "parameters": [
           {
             "schema": {

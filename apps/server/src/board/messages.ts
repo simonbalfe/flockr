@@ -1,11 +1,23 @@
-import { mayDeleteMessage, mentionsIn, type DeletedMessage, type Reply, type TextMessage } from "@flockr/contracts"
-import { eq, isNull } from "drizzle-orm"
+import {
+  labelSet,
+  mayDeleteMessage,
+  mayEditMessage,
+  mayLabelMessage,
+  mentionsIn,
+  sameLabels,
+  type DeletedMessage,
+  type EditMessageBody,
+  type MessageState,
+  type Reply,
+  type TextMessage,
+} from "@flockr/contracts"
+import { count, eq, isNull } from "drizzle-orm"
 import type { Database, Tx } from "../db/client"
-import { members, messages, type MessageRow } from "../db/schema"
+import { members, messages, messageVersions, type MemberRow, type MessageRow } from "../db/schema"
 import { forbidden, invalid, wrongState } from "./errors"
-import { mutate } from "./events"
+import { mutate, type Emit } from "./events"
 import { requireActor } from "./members"
-import { findMember, findMessage, findMessageForUpdate, getThread, messageKey, parseThreadId, requireChannel, threadKeyOf } from "./read"
+import { findMember, findMessage, findMessageForUpdate, getThread, messageKey, parseThreadId, replyOf, requireChannel, threadKeyOf } from "./read"
 import { checkEpoch, emitMessage, insertMessage, lockTask } from "./write"
 
 async function mentionsOf(tx: Tx, text: string): Promise<string[]> {
@@ -13,13 +25,19 @@ async function mentionsOf(tx: Tx, text: string): Promise<string[]> {
   return mentionsIn(text, new Set(names.map((m) => m.name)))
 }
 
-export async function postMessage(db: Database, actor: string, channel: string, text: string): Promise<{ message: TextMessage }> {
+interface Said {
+  text: string
+  labels: string[]
+}
+
+export async function postMessage(db: Database, actor: string, channel: string, said: Said): Promise<{ message: TextMessage }> {
   const row = await mutate(db, async (tx, emit) => {
     await requireActor(tx, actor)
     await requireChannel(tx, channel)
-    const mentions = await mentionsOf(tx, text)
-    const created = await insertMessage(tx, { channel, kind: "text", who: actor, body: text, mentions })
-    emitMessage(emit, "message.posted", created, actor, messageKey(created.id), { mentions })
+    const mentions = await mentionsOf(tx, said.text)
+    const labels = labelSet(said.labels)
+    const created = await insertMessage(tx, { channel, kind: "text", who: actor, body: said.text, mentions, labels })
+    emitMessage(emit, "message.posted", created, actor, messageKey(created.id), { mentions, labels })
     return created
   })
   const thread = await getThread(db, messageKey(row.id))
@@ -27,26 +45,49 @@ export async function postMessage(db: Database, actor: string, channel: string, 
   return { message: thread.root }
 }
 
-export async function reply(db: Database, actor: string, threadId: string, text: string, epoch: number | undefined): Promise<Reply> {
+interface ReplyDraft extends Said {
+  epoch?: number | undefined
+}
+
+async function replyUnder(tx: Tx, emit: Emit, options: { actor: string; parent: MessageRow; draft: ReplyDraft; mentions: string[] }): Promise<MessageRow> {
+  const { actor, parent, draft, mentions } = options
+  if (parent.kind !== "text") throw invalid(`${messageKey(parent.id)} is not a reply; reply to a message, a reply or a task`)
+  const anchor = parent.replyToId ?? parent.id
+  const data = { mentions, labels: labelSet(draft.labels), replyTo: messageKey(anchor) }
+  const base = { channel: parent.channel, kind: "text" as const, who: actor, body: draft.text, mentions, labels: data.labels, replyToId: anchor }
+  if (parent.threadTaskId !== null) {
+    const task = await lockTask(tx, parent.threadTaskId)
+    checkEpoch(task, draft.epoch)
+    const created = await insertMessage(tx, { ...base, threadTaskId: task.id })
+    emitMessage(emit, "reply.posted", created, actor, String(task.id), data)
+    return created
+  }
+  const created = await insertMessage(tx, { ...base, parentId: parent.parentId })
+  emitMessage(emit, "reply.posted", created, actor, threadKeyOf(created), data)
+  return created
+}
+
+export async function reply(db: Database, actor: string, threadId: string, draft: ReplyDraft): Promise<Reply> {
   const row: MessageRow = await mutate(db, async (tx, emit) => {
     await requireActor(tx, actor)
     const ref = parseThreadId(threadId)
-    const mentions = await mentionsOf(tx, text)
+    const mentions = await mentionsOf(tx, draft.text)
+    const labels = labelSet(draft.labels)
     if (ref.kind === "task") {
       const task = await lockTask(tx, ref.id)
-      checkEpoch(task, epoch)
-      const created = await insertMessage(tx, { channel: task.channel, kind: "text", who: actor, body: text, mentions, threadTaskId: task.id })
-      emitMessage(emit, "reply.posted", created, actor, String(task.id), { mentions })
+      checkEpoch(task, draft.epoch)
+      const created = await insertMessage(tx, { channel: task.channel, kind: "text", who: actor, body: draft.text, mentions, labels, threadTaskId: task.id })
+      emitMessage(emit, "reply.posted", created, actor, String(task.id), { mentions, labels })
       return created
     }
     const parent = await findMessage(tx, ref.id)
-    if (parent.parentId !== null || parent.threadTaskId !== null) throw invalid(`${threadId} is itself a reply; reply to its thread instead`)
+    if (parent.parentId !== null || parent.threadTaskId !== null) return replyUnder(tx, emit, { actor, parent, draft, mentions })
     if (parent.kind !== "text") throw invalid(`${threadId} is not a message; reply to a message or a task`)
-    const created = await insertMessage(tx, { channel: parent.channel, kind: "text", who: actor, body: text, mentions, parentId: parent.id })
-    emitMessage(emit, "reply.posted", created, actor, messageKey(parent.id), { mentions })
+    const created = await insertMessage(tx, { channel: parent.channel, kind: "text", who: actor, body: draft.text, mentions, labels, parentId: parent.id })
+    emitMessage(emit, "reply.posted", created, actor, messageKey(parent.id), { mentions, labels })
     return created
   })
-  return { kind: "reply", id: messageKey(row.id), who: row.who, at: row.createdAt.toISOString(), text: row.body, deleted: false, mentions: row.mentions }
+  return replyOf(row)
 }
 
 const cardName = { text: "message", task: "task card", ask: "question card", event: "system event", question: "question", activity: "activity entry" } as const satisfies Record<MessageRow["kind"], string>
@@ -67,4 +108,60 @@ export async function deleteMessage(db: Database, actor: string, id: string): Pr
     return deleted
   })
   return { id: messageKey(row.id), channel: row.channel, deletedBy: row.deletedBy ?? actor, deletedAt: (row.deletedAt ?? new Date()).toISOString() }
+}
+
+async function editText(tx: Tx, emit: Emit, options: { actor: MemberRow; message: MessageRow; text: string }): Promise<MessageRow> {
+  const { actor, message, text } = options
+  if (!mayEditMessage({ actor, author: message.who })) throw forbidden(`${actor.name} may not edit ${messageKey(message.id)}: only its author, ${message.who}, can`)
+  if (text === message.body) return message
+  const [earlier] = await tx.select({ n: count() }).from(messageVersions).where(eq(messageVersions.messageId, message.id))
+  const replaced = (earlier?.n ?? 0) + 1
+  await tx.insert(messageVersions).values({ messageId: message.id, version: replaced, body: message.body, mentions: message.mentions, writtenAt: message.editedAt ?? message.createdAt })
+  const mentions = await mentionsOf(tx, text)
+  const [edited] = await tx.update(messages).set({ body: text, mentions, editedAt: new Date() }).where(eq(messages.id, message.id)).returning()
+  if (!edited) throw new Error("Message update returned nothing")
+  emitMessage(emit, "message.edited", edited, actor.name, threadKeyOf(edited), { text, mentions, version: replaced + 1 })
+  return edited
+}
+
+async function editLabels(tx: Tx, emit: Emit, options: { actor: MemberRow; message: MessageRow; labels: string[] }): Promise<MessageRow> {
+  const { actor, message } = options
+  const author = await findMember(tx, message.who)
+  if (!mayLabelMessage({ actor, author: message.who, authorOwner: author?.owner ?? null })) {
+    throw forbidden(`${actor.name} may not label ${messageKey(message.id)}: only its author, the author's owner or a person can`)
+  }
+  const labels = labelSet(options.labels)
+  if (sameLabels(labels, message.labels)) return message
+  const [labeled] = await tx.update(messages).set({ labels }).where(eq(messages.id, message.id)).returning()
+  if (!labeled) throw new Error("Message update returned nothing")
+  const added = labels.filter((l) => !message.labels.includes(l))
+  const removed = message.labels.filter((l) => !labels.includes(l))
+  emitMessage(emit, "message.labeled", labeled, actor.name, threadKeyOf(labeled), { labels, added, removed })
+  return labeled
+}
+
+export async function editMessage(db: Database, actor: string, id: string, body: EditMessageBody): Promise<MessageState> {
+  const { row, version } = await mutate(db, async (tx, emit) => {
+    const member = await requireActor(tx, actor)
+    const ref = parseThreadId(id)
+    if (ref.kind === "task") throw wrongState(`${id} is a task; only messages can be edited`)
+    let message = await findMessageForUpdate(tx, ref.id)
+    if (message.kind !== "text") throw wrongState(`${id} is a ${cardName[message.kind]}; only messages and replies can be edited`)
+    if (message.deletedAt) throw wrongState(`${id} was deleted; it cannot be edited`)
+    if (body.text !== undefined) message = await editText(tx, emit, { actor: member, message, text: body.text })
+    if (body.labels !== undefined) message = await editLabels(tx, emit, { actor: member, message, labels: body.labels })
+    const [earlier] = await tx.select({ n: count() }).from(messageVersions).where(eq(messageVersions.messageId, message.id))
+    return { row: message, version: (earlier?.n ?? 0) + 1 }
+  })
+  return {
+    id: messageKey(row.id),
+    channel: row.channel,
+    threadId: threadKeyOf(row),
+    who: row.who,
+    text: row.body,
+    mentions: row.mentions,
+    labels: row.labels,
+    editedAt: row.editedAt?.toISOString() ?? null,
+    version,
+  }
 }
