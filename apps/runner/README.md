@@ -40,6 +40,8 @@ It waits for the board if the board is not up yet. It logs one line per agent it
 
 **Moving an old config:** a file with `member` and `harness` (the one-member shape from ADR 0013) is moved over on the first start: that member becomes an agent served by this machine (folder from `channels.general`, or the first channel), the two keys are removed, and the original is kept as `runner.json.before-agents`. If the harness is not available here, the file is left as it is.
 
+**A second board:** `FLOCKR_HOME=~/.flockr-live bun run runner` keeps that runner's config and state in another folder, so one machine can serve the local board and a deployed one.
+
 State it keeps: `~/.flockr/runner-state.json` (the last event seen, so a restart catches up), `~/.flockr/runner-sessions.json` (one harness session per agent and thread, keyed `member:thread`), and the shared claim epochs in `~/.flockr/claims.json` (`FC_STATE`).
 
 ## Machines and status

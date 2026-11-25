@@ -2,7 +2,7 @@ import { mkdirSync, readFileSync, writeFileSync } from "node:fs"
 import { homedir } from "node:os"
 import path from "node:path"
 
-export const defaultClaimsFile = path.join(homedir(), ".flockr", "claims.json")
+export const defaultClaimsFile = path.join(process.env.FLOCKR_HOME ?? path.join(homedir(), ".flockr"), "claims.json")
 
 type Claims = Record<string, number>
 
