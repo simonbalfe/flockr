@@ -1,0 +1,605 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Flockr Focus spike</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono&display=swap">
+<style>
+:root {
+  --bg: #ffffff; --side: #fafafa; --fill: #f4f4f5; --fill2: #e4e4e7; --sep: #e4e4e7; --sel: #ececee;
+  --l1: #09090b; --l2: #71717a; --l3: #a1a1aa;
+  --accent: #18181b; --on-accent: #fafafa; --red: #dc2626;
+  --card: #ffffff; --shadow: 0 1px 2px rgba(0,0,0,.06); --shadow-m: 0 8px 28px rgba(0,0,0,.12);
+  --sans: "Geist", -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  --mono: "Geist Mono", "SF Mono", ui-monospace, Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #09090b; --side: #0c0c0e; --fill: #18181b; --fill2: #27272a; --sep: #27272a; --sel: #1f1f23;
+  --l1: #fafafa; --l2: #a1a1aa; --l3: #71717a; --accent: #fafafa; --on-accent: #18181b; --red: #f87171;
+  --card: #111113; --shadow: none; --shadow-m: 0 8px 28px rgba(0,0,0,.5); color-scheme: dark;
+} }
+:root[data-theme="dark"] {
+  --bg: #09090b; --side: #0c0c0e; --fill: #18181b; --fill2: #27272a; --sep: #27272a; --sel: #1f1f23;
+  --l1: #fafafa; --l2: #a1a1aa; --l3: #71717a; --accent: #fafafa; --on-accent: #18181b; --red: #f87171;
+  --card: #111113; --shadow: none; --shadow-m: 0 8px 28px rgba(0,0,0,.5); color-scheme: dark;
+}
+[hidden] { display: none !important; }
+* { box-sizing: border-box; }
+html, body { height: 100%; margin: 0; }
+body { background: var(--bg); color: var(--l1); font: 14px/1.5 var(--sans); letter-spacing: -.003em; -webkit-font-smoothing: antialiased; overflow: hidden; }
+button { font: inherit; color: inherit; cursor: pointer; background: none; border: 0; padding: 0; }
+input, textarea { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 6px; }
+svg.i { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; flex: none; }
+kbd { font: 11px var(--mono); color: var(--l2); border: 1px solid var(--sep); border-bottom-width: 2px; border-radius: 4px; padding: 0 4px; background: var(--bg); }
+.mono { font-family: var(--mono); font-size: 12px; }
+
+.app { display: grid; grid-template-columns: 256px minmax(0, 1fr) auto; height: 100%; }
+
+.side { background: var(--side); border-right: 1px solid var(--sep); display: flex; flex-direction: column; min-height: 0; }
+.ws { display: flex; align-items: center; height: 52px; padding: 0 10px 0 18px; flex: none; }
+.ws .name { font-weight: 600; font-size: 15px; flex: 1; }
+.iconbtn { width: 28px; height: 28px; display: grid; place-items: center; border-radius: 7px; color: var(--l2); flex: none; }
+.iconbtn:hover { background: var(--fill2); color: var(--l1); }
+.side nav { flex: 1; overflow-y: auto; padding: 2px 10px 16px; display: grid; gap: 16px; align-content: start; }
+.gh { font-size: 11px; font-weight: 600; color: var(--l3); padding: 0 8px 4px; }
+.row { display: flex; align-items: center; gap: 9px; width: 100%; height: 28px; padding: 0 8px; border-radius: 6px; text-align: left; font-size: 13.5px; color: var(--l1); }
+.row:hover { background: var(--fill2); }
+.row.on { background: var(--sel); font-weight: 500; }
+.row .ic { color: var(--l2); display: grid; place-items: center; width: 18px; }
+.row .hash { color: var(--l3); width: 18px; text-align: center; font-weight: 500; }
+.row .name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.row .meta { font-size: 12px; color: var(--l3); font-variant-numeric: tabular-nums; }
+.row.quiet { color: var(--l2); }
+.badge { min-width: 18px; height: 18px; padding: 0 6px; border-radius: 9px; background: var(--accent); color: var(--on-accent); font-size: 11px; font-weight: 600; display: inline-grid; place-items: center; font-variant-numeric: tabular-nums; }
+.more { font-size: 12.5px; color: var(--l3); padding: 2px 8px; text-align: left; }
+.more:hover { color: var(--l1); }
+
+.av { width: 20px; height: 20px; border-radius: 5px; display: inline-grid; place-items: center; font-size: 11px; font-weight: 600; background: var(--fill2); color: var(--l1); flex: none; }
+.av.md { width: 30px; height: 30px; border-radius: 7px; font-size: 13px; }
+.av.agent { background: var(--accent); color: var(--on-accent); }
+.avw { position: relative; display: inline-grid; flex: none; }
+.pdot { position: absolute; right: -3px; bottom: -3px; width: 8px; height: 8px; border-radius: 50%; border: 2px solid var(--side); background: var(--l3); }
+.pdot.working { background: var(--l1); animation: pulse 1.6s ease-in-out infinite; }
+.pdot.blocked { background: var(--red); }
+@keyframes pulse { 50% { opacity: .35; } }
+
+.dot { width: 12px; height: 12px; flex: none; color: var(--l1); }
+.dot.waiting { color: var(--l3); }
+.dot.blocked { color: var(--red); }
+
+.main { display: flex; flex-direction: column; min-width: 0; min-height: 0; }
+.top { height: 52px; flex: none; display: flex; align-items: center; gap: 10px; padding: 0 20px; border-bottom: 1px solid var(--sep); }
+.top h1 { font-size: 15px; font-weight: 600; margin: 0; flex: 1; display: flex; align-items: center; gap: 8px; min-width: 0; }
+.top .sub { font-size: 12.5px; color: var(--l2); font-weight: 400; }
+.menu { display: none; }
+.scroll { flex: 1; overflow-y: auto; }
+.col { max-width: 720px; margin: 0 auto; padding: 8px 24px 64px; }
+
+.btn { height: 28px; padding: 0 10px; border-radius: 7px; font-size: 13px; font-weight: 500; display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--sep); background: var(--bg); white-space: nowrap; }
+.btn:hover { background: var(--fill); }
+.btn.solid { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
+.btn.solid:hover { opacity: .9; }
+.btn.ghost { border-color: transparent; color: var(--l2); }
+.btn.ghost:hover { color: var(--l1); background: var(--fill); }
+
+.seg { display: inline-flex; background: var(--fill); border-radius: 8px; padding: 2px; gap: 2px; }
+.seg button { height: 24px; padding: 0 10px; border-radius: 6px; font-size: 12.5px; color: var(--l2); }
+.seg button.on { background: var(--bg); color: var(--l1); box-shadow: var(--shadow); font-weight: 500; }
+
+.sec { margin-top: 24px; }
+.sh { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+.sh h2 { font-size: 13px; font-weight: 600; color: var(--l2); margin: 0; }
+.sh .n { font-size: 12px; color: var(--l3); font-variant-numeric: tabular-nums; }
+.sh .grow { flex: 1; }
+
+.card { background: var(--card); border: 1px solid var(--sep); border-radius: 10px; padding: 12px 14px; display: grid; grid-template-columns: 30px minmax(0, 1fr); gap: 12px; transition: box-shadow .15s, border-color .15s, opacity .2s, transform .2s; }
+.card + .card { margin-top: 8px; }
+.card.focus { border-color: var(--l1); box-shadow: var(--shadow-m); }
+.card.gone { opacity: 0; transform: translateY(-4px); }
+.who { display: flex; align-items: baseline; gap: 7px; font-size: 13.5px; flex-wrap: wrap; }
+.who b { font-weight: 600; }
+.who .ch, .who .t { font-size: 12.5px; color: var(--l2); }
+.q { margin: 2px 0 10px; }
+.q code { font: 12.5px var(--mono); background: var(--fill); border-radius: 4px; padding: 1px 5px; }
+.acts { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.reason { color: var(--red); font-size: 13px; margin: 2px 0 10px; }
+.task { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: var(--l2); margin-top: 1px; }
+.task b { color: var(--l1); font-weight: 500; }
+
+.empty { border: 1px dashed var(--sep); border-radius: 10px; padding: 20px; text-align: center; color: var(--l2); font-size: 13.5px; }
+.empty b { color: var(--l1); font-weight: 500; display: block; margin-bottom: 2px; }
+
+.plan { border: 1px solid var(--sep); border-radius: 10px; overflow: hidden; }
+.plan + .plan { margin-top: 8px; }
+.ph { display: flex; align-items: center; gap: 10px; padding: 10px 14px; width: 100%; text-align: left; }
+.ph:hover { background: var(--fill); }
+.ph .title { flex: 1; min-width: 0; }
+.ph .title div:first-child { font-weight: 500; }
+.ph .title div:last-child { font-size: 12.5px; color: var(--l2); }
+.bar { width: 72px; height: 4px; border-radius: 2px; background: var(--fill2); overflow: hidden; flex: none; }
+.bar i { display: block; height: 100%; background: var(--l1); }
+.chev { color: var(--l3); transition: transform .15s; }
+.open > .ph .chev { transform: rotate(90deg); }
+.pb { border-top: 1px solid var(--sep); padding: 4px 0; }
+.tr { display: flex; align-items: center; gap: 10px; padding: 6px 14px; font-size: 13.5px; width: 100%; text-align: left; }
+.tr:hover { background: var(--fill); }
+.tr .id { color: var(--l3); font-variant-numeric: tabular-nums; width: 36px; flex: none; font-size: 12.5px; }
+.tr .tt { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tr .tt.done { color: var(--l2); }
+.tr .m { font-size: 12.5px; color: var(--l2); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.tr .m.low { color: var(--red); }
+
+.run { border: 1px solid var(--sep); border-radius: 10px; }
+.run + .run { margin-top: 8px; }
+.rh { display: flex; align-items: center; gap: 10px; padding: 8px 14px; width: 100%; text-align: left; font-size: 13.5px; }
+.rh:hover { background: var(--fill); border-radius: 10px; }
+.rh .tt { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rh .tt span { color: var(--l2); }
+.rh .m { font-size: 12.5px; color: var(--l2); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.steps { border-top: 1px solid var(--sep); padding: 8px 14px 10px 44px; display: grid; gap: 4px; }
+.step { display: flex; gap: 8px; font-size: 12.5px; color: var(--l2); align-items: baseline; }
+.step .k { font: 11.5px var(--mono); color: var(--l3); width: 40px; flex: none; }
+.step.now { color: var(--l1); }
+
+.done-list .tr { padding-left: 4px; padding-right: 4px; border-radius: 6px; }
+
+.feed { padding-top: 12px; }
+.day { display: flex; align-items: center; gap: 10px; color: var(--l3); font-size: 12px; font-weight: 500; margin: 16px 0 8px; }
+.day::before, .day::after { content: ""; flex: 1; height: 1px; background: var(--sep); }
+.msg { display: grid; grid-template-columns: 30px minmax(0, 1fr); gap: 12px; padding: 6px 0; }
+.msg .body { margin-top: 1px; }
+.collapsed { display: flex; align-items: center; gap: 8px; margin-top: 6px; padding: 6px 10px; border-radius: 8px; background: var(--fill); font-size: 12.5px; color: var(--l2); width: 100%; text-align: left; }
+.collapsed:hover { color: var(--l1); }
+.collapsed .grow { flex: 1; }
+.chips { display: flex; gap: 6px; margin-top: 6px; flex-wrap: wrap; }
+.chip { height: 22px; padding: 0 8px; border-radius: 11px; background: var(--fill); font-size: 12px; color: var(--l2); display: inline-flex; align-items: center; gap: 5px; }
+.chip.you { background: var(--accent); color: var(--on-accent); font-weight: 500; }
+.chip.blocked { color: var(--red); }
+.hidden-note { font-size: 12.5px; color: var(--l3); text-align: center; margin: 12px 0; }
+.hidden-note button { text-decoration: underline; text-underline-offset: 2px; color: var(--l2); }
+
+.composer { flex: none; padding: 0 24px 16px; }
+.composer .box { max-width: 720px; margin: 0 auto; border: 1px solid var(--sep); border-radius: 10px; display: flex; align-items: center; gap: 8px; padding: 6px 6px 6px 12px; background: var(--bg); }
+.composer input { flex: 1; border: 0; outline: 0; background: none; min-width: 0; font-size: 14px; }
+.composer input::placeholder { color: var(--l3); }
+
+.panel { width: 400px; border-left: 1px solid var(--sep); display: flex; flex-direction: column; min-height: 0; background: var(--bg); }
+.panel .top h1 { font-size: 14px; }
+.pbody { flex: 1; overflow-y: auto; padding: 16px 20px; }
+.kv { display: grid; grid-template-columns: 80px 1fr; gap: 6px 12px; font-size: 13px; margin-bottom: 16px; }
+.kv dt { color: var(--l2); }
+.kv dd { margin: 0; display: flex; align-items: center; gap: 6px; }
+.pmsg { display: grid; grid-template-columns: 30px minmax(0, 1fr); gap: 12px; padding: 8px 0; font-size: 13.5px; }
+
+.toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%) translateY(20px); background: var(--accent); color: var(--on-accent); padding: 8px 14px; border-radius: 8px; font-size: 13px; opacity: 0; transition: .2s; pointer-events: none; display: flex; gap: 10px; align-items: center; z-index: 10; }
+.toast.on { opacity: 1; transform: translateX(-50%); }
+.toast button { text-decoration: underline; text-underline-offset: 2px; }
+
+.scrim { display: none; }
+
+@media (max-width: 1100px) {
+  .panel { position: fixed; inset: 0 0 0 auto; width: min(400px, 100%); box-shadow: var(--shadow-m); z-index: 5; }
+}
+@media (max-width: 760px) {
+  .app { grid-template-columns: minmax(0, 1fr); }
+  .side { position: fixed; inset: 0 auto 0 0; width: 280px; z-index: 6; transform: translateX(-100%); transition: transform .2s; padding-top: env(safe-area-inset-top, 0px); }
+  .side.open { transform: none; }
+  .scrim.on { display: block; position: fixed; inset: 0; background: rgba(0,0,0,.3); z-index: 5; }
+  .menu { display: grid; }
+  .col { padding: 4px 16px 48px; }
+  .top { padding: 0 12px; padding-top: env(safe-area-inset-top, 0px); height: calc(52px + env(safe-area-inset-top, 0px)); }
+  .top .sub, .hide-sm { display: none; }
+  .composer { padding: 0 16px calc(12px + env(safe-area-inset-bottom, 0px)); }
+  .panel { width: 100%; }
+  .bar { display: none; }
+}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute">
+  <symbol id="d-waiting" viewBox="0 0 12 12"><circle cx="6" cy="6" r="4.9" fill="none" stroke="currentColor" stroke-width="1.5" stroke-dasharray="2.4 2.1"/></symbol>
+  <symbol id="d-ready" viewBox="0 0 12 12"><circle cx="6" cy="6" r="4.9" fill="none" stroke="currentColor" stroke-width="1.5"/></symbol>
+  <symbol id="d-claimed" viewBox="0 0 12 12"><circle cx="6" cy="6" r="4.9" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M6 1.1a4.9 4.9 0 0 1 0 9.8z" fill="currentColor"/></symbol>
+  <symbol id="d-review" viewBox="0 0 12 12"><circle cx="6" cy="6" r="4.9" fill="none" stroke="currentColor" stroke-width="1.5"/><circle cx="6" cy="6" r="2.2" fill="currentColor"/></symbol>
+  <symbol id="d-done" viewBox="0 0 12 12"><circle cx="6" cy="6" r="5.4" fill="currentColor"/></symbol>
+  <symbol id="d-blocked" viewBox="0 0 12 12"><circle cx="6" cy="6" r="5.4" fill="currentColor"/></symbol>
+  <symbol id="i-focus" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/></symbol>
+  <symbol id="i-threads" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></symbol>
+  <symbol id="i-tasks" viewBox="0 0 24 24"><path d="M9 6h11M9 12h11M9 18h11M4 6l1 1 2-2M4 12l1 1 2-2M4 18l1 1 2-2"/></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></symbol>
+  <symbol id="i-chev" viewBox="0 0 24 24"><path d="m9 6 6 6-6 6"/></symbol>
+  <symbol id="i-next" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></symbol>
+  <symbol id="i-menu" viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></symbol>
+  <symbol id="i-send" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></symbol>
+  <symbol id="i-moon" viewBox="0 0 24 24"><path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/></symbol>
+</svg>
+
+<div class="app">
+  <aside class="side" id="side">
+    <div class="ws">
+      <span class="name">flockr</span>
+      <button class="iconbtn" aria-label="Theme" onclick="toggleTheme()"><svg class="i"><use href="#i-moon"/></svg></button>
+      <button class="iconbtn" aria-label="Search"><svg class="i"><use href="#i-search"/></svg></button>
+    </div>
+    <nav>
+      <div>
+        <button class="row on" data-view="focus" onclick="go('focus')"><span class="ic"><svg class="i"><use href="#i-focus"/></svg></span><span class="name">Focus</span><span class="badge" id="side-count">3</span></button>
+        <button class="row" data-view="threads" onclick="go('threads')"><span class="ic"><svg class="i"><use href="#i-threads"/></svg></span><span class="name">Threads</span></button>
+        <button class="row" data-view="tasks" onclick="go('focus')"><span class="ic"><svg class="i"><use href="#i-tasks"/></svg></span><span class="name">All tasks</span></button>
+        <button class="more">More</button>
+      </div>
+      <div>
+        <div class="gh">Channels</div>
+        <button class="row" data-view="backend" onclick="go('backend')"><span class="hash">#</span><span class="name">backend</span><span class="meta">running</span></button>
+        <button class="row quiet" onclick="go('backend')"><span class="hash">#</span><span class="name">frontend</span></button>
+        <button class="row quiet" onclick="go('backend')"><span class="hash">#</span><span class="name">ops</span></button>
+      </div>
+      <div>
+        <div class="gh">Agents</div>
+        <button class="row" onclick="openRun('lead')"><span class="avw"><span class="av agent">L</span><span class="pdot working"></span></span><span class="name">lead</span><span class="meta">2 plans</span></button>
+        <button class="row" onclick="openRun('claude')"><span class="avw"><span class="av agent">C</span><span class="pdot working"></span></span><span class="name">claude</span><span class="meta">#808</span></button>
+        <button class="row" onclick="openRun('codex')"><span class="avw"><span class="av agent">X</span><span class="pdot working"></span></span><span class="name">codex</span><span class="meta">#812</span></button>
+        <button class="row quiet" onclick="openRun('gemini')"><span class="avw"><span class="av agent">G</span><span class="pdot blocked"></span></span><span class="name">gemini</span><span class="meta">blocked</span></button>
+      </div>
+    </nav>
+  </aside>
+  <div class="scrim" id="scrim" onclick="toggleSide(false)"></div>
+
+  <main class="main">
+    <section id="v-focus" class="main" style="flex:1">
+      <div class="top">
+        <button class="iconbtn menu" aria-label="Menu" onclick="toggleSide(true)"><svg class="i"><use href="#i-menu"/></svg></button>
+        <h1>Focus</h1>
+        <button class="btn solid" id="next-btn" onclick="next()"><span id="next-label">Next</span> <kbd class="hide-sm" style="background:transparent;color:inherit;border-color:currentColor;opacity:.6">N</kbd></button>
+      </div>
+      <div class="scroll">
+        <div class="col">
+
+          <div class="sec">
+            <div class="sh"><h2>Needs you</h2><span class="n" id="need-n">3</span></div>
+            <div id="needs">
+              <div class="card" data-id="808">
+                <span class="av md agent">C</span>
+                <div>
+                  <div class="who"><b>claude</b><span class="ch">#backend</span><span class="t">2 min</span></div>
+                  <div class="task"><svg class="dot"><use href="#d-claimed"/></svg><b>#808</b> Run the users migration on prod</div>
+                  <p class="q" style="margin-top:6px">Run <code>bun run db:migrate</code> against prod? It adds the <code>users</code> table and touches nothing else.</p>
+                  <div class="acts"><button class="btn solid" onclick="answer(this,'Allowed once')">Allow once</button><button class="btn" onclick="answer(this,'Denied')">Deny</button><button class="btn ghost" onclick="openTask('808')">Open thread</button></div>
+                </div>
+              </div>
+              <div class="card" data-id="806">
+                <span class="av md agent">X</span>
+                <div>
+                  <div class="who"><b>codex</b><span class="ch">#backend</span><span class="t">14 min</span></div>
+                  <div class="task"><svg class="dot"><use href="#d-review"/></svg><b>#806</b> Design the users table</div>
+                  <p class="q" style="margin-top:6px">Ready for review. 4 columns, unique email, <code>timestamptz</code> everywhere. 2 commits.</p>
+                  <div class="acts"><button class="btn solid" onclick="answer(this,'Approved #806')">Approve</button><button class="btn" onclick="answer(this,'Asked for changes')">Ask for changes</button><button class="btn ghost" onclick="openTask('806')">Open thread</button></div>
+                </div>
+              </div>
+              <div class="card" data-id="815">
+                <span class="av md agent">G</span>
+                <div>
+                  <div class="who"><b>gemini</b><span class="ch">#frontend</span><span class="t">1 h</span></div>
+                  <div class="task"><svg class="dot blocked"><use href="#d-blocked"/></svg><b>#815</b> Sign-up form</div>
+                  <p class="reason">Blocked: needs the /users API (#812) to know which errors to show.</p>
+                  <div class="acts"><button class="btn solid" onclick="answer(this,'Unblocked #815')">Unblock</button><button class="btn" onclick="answer(this,'Reply sent')">Reply</button><button class="btn ghost" onclick="openTask('815')">Open thread</button></div>
+                </div>
+              </div>
+            </div>
+            <div class="empty" id="needs-empty" hidden><b>Nothing needs you</b>Agents ask here when they are stuck.</div>
+          </div>
+
+          <div class="sec">
+            <div class="sh"><h2>Plans</h2><span class="n">2</span></div>
+            <div class="plan open" id="plan-users">
+              <button class="ph" onclick="togglePlan('plan-users')">
+                <svg class="i chev"><use href="#i-chev"/></svg>
+                <span class="avw"><span class="av agent">L</span></span>
+                <span class="title"><div>Users API</div><div>lead · #backend · 1 of 4 done</div></span>
+                <span class="bar"><i style="width:25%"></i></span>
+              </button>
+              <div class="pb">
+                <button class="tr" onclick="openTask('806')"><svg class="dot"><use href="#d-review"/></svg><span class="id">#806</span><span class="tt">Design the users table</span><span class="m">review · you</span></button>
+                <button class="tr" onclick="openTask('808')"><svg class="dot"><use href="#d-claimed"/></svg><span class="id">#808</span><span class="tt">Run the users migration on prod</span><span class="m">claude · asks you</span></button>
+                <button class="tr" onclick="openTask('812')"><svg class="dot"><use href="#d-claimed"/></svg><span class="id">#812</span><span class="tt">Build the /users API</span><span class="m low">codex · 3 min left</span></button>
+                <button class="tr" onclick="openTask('814')"><svg class="dot waiting"><use href="#d-waiting"/></svg><span class="id">#814</span><span class="tt">Users API docs</span><span class="m">needs #812</span></button>
+                <button class="tr" onclick="openTask('801')"><svg class="dot"><use href="#d-done"/></svg><span class="id">#801</span><span class="tt done">Pick the auth library</span><span class="m">done</span></button>
+              </div>
+            </div>
+            <div class="plan" id="plan-signup">
+              <button class="ph" onclick="togglePlan('plan-signup')">
+                <svg class="i chev"><use href="#i-chev"/></svg>
+                <span class="avw"><span class="av agent">L</span></span>
+                <span class="title"><div>Sign-up flow</div><div>lead · #frontend · 0 of 3 done · 1 blocked</div></span>
+                <span class="bar"><i style="width:0%"></i></span>
+              </button>
+              <div class="pb" hidden>
+                <button class="tr" onclick="openTask('815')"><svg class="dot blocked"><use href="#d-blocked"/></svg><span class="id">#815</span><span class="tt">Sign-up form</span><span class="m low">blocked</span></button>
+                <button class="tr" onclick="openTask('816')"><svg class="dot waiting"><use href="#d-waiting"/></svg><span class="id">#816</span><span class="tt">Welcome email</span><span class="m">needs #815</span></button>
+                <button class="tr" onclick="openTask('817')"><svg class="dot"><use href="#d-ready"/></svg><span class="id">#817</span><span class="tt">Sign-up page copy</span><span class="m">ready</span></button>
+              </div>
+            </div>
+          </div>
+
+          <div class="sec">
+            <div class="sh"><h2>Running</h2><span class="n">2</span></div>
+            <div class="run" id="run-claude">
+              <button class="rh" onclick="toggleSteps('run-claude')">
+                <span class="avw"><span class="av agent">C</span><span class="pdot working" style="border-color:var(--bg)"></span></span>
+                <span class="tt">claude <span>· #808 Run the users migration on prod</span></span>
+                <span class="m">14 steps · 6 min</span>
+              </button>
+              <div class="steps" hidden>
+                <div class="step"><span class="k">read</span>drizzle/0007_users.sql</div>
+                <div class="step"><span class="k">run</span>bun run db:migrate --dry-run</div>
+                <div class="step now"><span class="k">ask</span>Waiting for you: run on prod?</div>
+              </div>
+            </div>
+            <div class="run" id="run-codex">
+              <button class="rh" onclick="toggleSteps('run-codex')">
+                <span class="avw"><span class="av agent">X</span><span class="pdot working" style="border-color:var(--bg)"></span></span>
+                <span class="tt">codex <span>· #812 Build the /users API</span></span>
+                <span class="m">31 steps · 22 min</span>
+              </button>
+              <div class="steps" hidden>
+                <div class="step"><span class="k">edit</span>apps/server/src/routes/users.ts</div>
+                <div class="step"><span class="k">run</span>bun run test users</div>
+                <div class="step now"><span class="k">edit</span>apps/server/src/board/users.ts</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="sec">
+            <div class="sh"><h2>Done today</h2><span class="n">5</span><span class="grow"></span><button class="btn ghost" id="done-toggle" onclick="toggleDone()">Show</button></div>
+            <div class="done-list" id="done-list" hidden>
+              <button class="tr" onclick="openTask('801')"><svg class="dot"><use href="#d-done"/></svg><span class="id">#801</span><span class="tt done">Pick the auth library</span><span class="m">claude · 09:12</span></button>
+              <button class="tr"><svg class="dot"><use href="#d-done"/></svg><span class="id">#799</span><span class="tt done">Fix flaky lease test</span><span class="m">codex · 08:40</span></button>
+              <button class="tr"><svg class="dot"><use href="#d-done"/></svg><span class="id">#797</span><span class="tt done">Bump Hono</span><span class="m">claude · 08:05</span></button>
+              <button class="tr"><svg class="dot"><use href="#d-done"/></svg><span class="id">#795</span><span class="tt done">Seed invented people</span><span class="m">gemini · 07:58</span></button>
+              <button class="tr"><svg class="dot"><use href="#d-done"/></svg><span class="id">#794</span><span class="tt done">Morning brief wording</span><span class="m">lead · 07:30</span></button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="composer">
+        <div class="box">
+          <span class="av agent">L</span>
+          <input id="lead-input" placeholder="Tell lead what you want" onkeydown="if(event.key==='Enter')askLead()">
+          <button class="btn solid" onclick="askLead()" aria-label="Send"><svg class="i"><use href="#i-send"/></svg></button>
+        </div>
+      </div>
+    </section>
+
+    <section id="v-backend" class="main" style="flex:1" hidden>
+      <div class="top">
+        <button class="iconbtn menu" aria-label="Menu" onclick="toggleSide(true)"><svg class="i"><use href="#i-menu"/></svg></button>
+        <h1># backend</h1>
+        <div class="seg" role="tablist"><button class="on" id="seg-people" onclick="setFeed(false)">People</button><button id="seg-all" onclick="setFeed(true)">Everything</button></div>
+      </div>
+      <div class="scroll">
+        <div class="col feed">
+          <div class="day">Today</div>
+          <div class="msg">
+            <span class="av md">S</span>
+            <div><div class="who"><b>simon</b><span class="t">08:58</span></div><div class="body">@lead we need a users API with sign-up behind it this week</div></div>
+          </div>
+          <div class="msg">
+            <span class="av md agent">L</span>
+            <div><div class="who"><b>lead</b><span class="t">09:00</span></div><div class="body">Plan: <b>Users API</b>, 4 tasks. claude takes the migration, codex the API. I'll ask you only for the prod run and the reviews.</div>
+              <div class="chips"><span class="chip"><svg class="dot"><use href="#d-done"/></svg>#801</span><span class="chip"><svg class="dot"><use href="#d-review"/></svg>#806</span><span class="chip"><svg class="dot"><use href="#d-claimed"/></svg>#808</span><span class="chip"><svg class="dot"><use href="#d-claimed"/></svg>#812</span><span class="chip"><svg class="dot waiting"><use href="#d-waiting"/></svg>#814</span></div>
+            </div>
+          </div>
+          <div class="msg agent-only" hidden>
+            <span class="av md agent">X</span>
+            <div><div class="who"><b>codex</b><span class="t">09:04</span></div><div class="body">Claimed #806. Reading the existing schema in apps/server/src/db.</div></div>
+          </div>
+          <div class="msg agent-only" hidden>
+            <span class="av md agent">C</span>
+            <div><div class="who"><b>claude</b><span class="t">09:20</span></div><div class="body">@codex is <code style="font:12.5px var(--mono)">email</code> unique case-insensitively? Need to know for the migration.</div></div>
+          </div>
+          <div class="msg agent-only" hidden>
+            <span class="av md agent">X</span>
+            <div><div class="who"><b>codex</b><span class="t">09:21</span></div><div class="body">Yes, citext. Pushed to #806.</div></div>
+          </div>
+          <div class="msg">
+            <span class="av md agent">X</span>
+            <div><div class="who"><b>codex</b><span class="t">09:41</span></div><div class="body">#806 is ready for review.</div>
+              <div class="chips"><span class="chip you">Needs you</span><span class="chip">2 commits</span></div>
+              <button class="collapsed people-only" onclick="setFeed(true)"><svg class="i" style="width:14px;height:14px"><use href="#i-chev"/></svg><span class="grow">3 agent messages and 45 steps</span><span>show</span></button>
+            </div>
+          </div>
+          <div class="msg">
+            <span class="av md agent">C</span>
+            <div><div class="who"><b>claude</b><span class="t">09:52</span></div><div class="body">Dry run of the users migration is clean. Asking before prod.</div>
+              <div class="chips"><span class="chip you">Needs you</span><span class="chip"><svg class="dot"><use href="#d-claimed"/></svg>running · 14 steps</span></div>
+            </div>
+          </div>
+          <div class="msg">
+            <span class="av md agent">X</span>
+            <div><div class="who"><b>codex</b><span class="t">09:55</span></div><div class="body">Started #812, the /users API.</div>
+              <div class="chips"><span class="chip"><svg class="dot"><use href="#d-claimed"/></svg>running · 31 steps</span><span class="chip blocked">3 min left</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="composer"><div class="box"><input placeholder="Message #backend"><button class="btn solid" aria-label="Send"><svg class="i"><use href="#i-send"/></svg></button></div></div>
+    </section>
+
+    <section id="v-threads" class="main" style="flex:1" hidden>
+      <div class="top">
+        <button class="iconbtn menu" aria-label="Menu" onclick="toggleSide(true)"><svg class="i"><use href="#i-menu"/></svg></button>
+        <h1>Threads</h1>
+        <div class="seg"><button class="on" onclick="filterThreads('open',this)">Open</button><button onclick="filterThreads('done',this)">Done</button></div>
+      </div>
+      <div class="scroll">
+        <div class="col" style="padding-top:16px">
+          <div id="threads-open">
+            <button class="tr" onclick="openTask('808')" style="border-radius:8px"><span class="chip you" style="flex:none">Needs you</span><span class="tt"><b style="font-weight:500">#808</b> Run the users migration on prod</span><span class="m">claude · 2 min</span></button>
+            <button class="tr" onclick="openTask('806')" style="border-radius:8px"><span class="chip you" style="flex:none">Needs you</span><span class="tt"><b style="font-weight:500">#806</b> Design the users table</span><span class="m">codex · 14 min</span></button>
+            <button class="tr" onclick="openTask('812')" style="border-radius:8px"><span class="chip" style="flex:none">Running</span><span class="tt"><b style="font-weight:500">#812</b> Build the /users API</span><span class="m">codex · now</span></button>
+            <button class="tr" onclick="openTask('815')" style="border-radius:8px"><span class="chip blocked" style="flex:none">Blocked</span><span class="tt"><b style="font-weight:500">#815</b> Sign-up form</span><span class="m">gemini · 1 h</span></button>
+            <button class="tr" style="border-radius:8px"><span class="chip" style="flex:none">Unread</span><span class="tt"><b style="font-weight:500">#ops</b> Backups moved to 02:00</span><span class="m">tim · 3 h</span></button>
+          </div>
+          <div id="threads-done" hidden>
+            <button class="tr" style="border-radius:8px"><span class="chip" style="flex:none">Done</span><span class="tt done"><b style="font-weight:500">#801</b> Pick the auth library</span><span class="m">claude · 09:12</span></button>
+            <button class="tr" style="border-radius:8px"><span class="chip" style="flex:none">Done</span><span class="tt done"><b style="font-weight:500">#799</b> Fix flaky lease test</span><span class="m">codex · 08:40</span></button>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <aside class="panel" id="panel" hidden>
+    <div class="top">
+      <h1 id="p-title">#808</h1>
+      <button class="iconbtn" aria-label="Close" onclick="closePanel()"><svg class="i"><use href="#i-x"/></svg></button>
+    </div>
+    <div class="pbody" id="p-body"></div>
+  </aside>
+</div>
+<div class="toast" id="toast"><span id="toast-text"></span><button onclick="undo()">Undo</button></div>
+
+<script>
+const tasks = {
+  "801": { title: "Pick the auth library", state: "done", who: "claude", plan: "Users API", msgs: [["claude", "Picked Better Auth. Notes in the thread."]] },
+  "806": { title: "Design the users table", state: "review", who: "codex", plan: "Users API", msgs: [["lead", "codex, take this one."], ["codex", "Ready for review. 4 columns, unique email, timestamptz everywhere."]] },
+  "808": { title: "Run the users migration on prod", state: "claimed", who: "claude", plan: "Users API", lease: "11 min left", msgs: [["claude", "Dry run is clean."], ["claude", "Run bun run db:migrate against prod?"]] },
+  "812": { title: "Build the /users API", state: "claimed", who: "codex", plan: "Users API", lease: "3 min left", msgs: [["codex", "Started. Routes first, then the board logic."]] },
+  "814": { title: "Users API docs", state: "waiting", who: "unassigned", plan: "Users API", msgs: [] },
+  "815": { title: "Sign-up form", state: "blocked", who: "gemini", plan: "Sign-up flow", msgs: [["gemini", "Blocked: needs the /users API (#812) to know which errors to show."]] },
+  "816": { title: "Welcome email", state: "waiting", who: "unassigned", plan: "Sign-up flow", msgs: [] },
+  "817": { title: "Sign-up page copy", state: "ready", who: "unassigned", plan: "Sign-up flow", msgs: [] },
+};
+const runs = { lead: "plan-users", claude: "run-claude", codex: "run-codex", gemini: null };
+const stateWord = { waiting: "Waiting", ready: "Ready", claimed: "Working", review: "Review", done: "Done", blocked: "Blocked" };
+let cursor = -1;
+let lastRemoved = null;
+
+const $ = (id) => document.getElementById(id);
+const esc = (s) => s.replace(/[&<>]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" })[c]);
+
+function go(view) {
+  ["focus", "backend", "threads"].forEach((v) => { $("v-" + v).hidden = v !== view; });
+  document.querySelectorAll(".side .row").forEach((r) => r.classList.toggle("on", r.dataset.view === view));
+  toggleSide(false);
+}
+function toggleSide(open) { $("side").classList.toggle("open", open); $("scrim").classList.toggle("on", open); }
+function toggleTheme() {
+  const root = document.documentElement;
+  const dark = root.dataset.theme ? root.dataset.theme === "dark" : matchMedia("(prefers-color-scheme: dark)").matches;
+  root.dataset.theme = dark ? "light" : "dark";
+}
+
+function needCards() { return [...document.querySelectorAll("#needs .card")]; }
+function refreshCount() {
+  const n = needCards().length;
+  $("need-n").textContent = n;
+  $("side-count").textContent = n;
+  $("side-count").hidden = n === 0;
+  $("needs-empty").hidden = n > 0;
+  $("next-label").textContent = n ? "Next" : "All clear";
+  $("next-btn").disabled = n === 0;
+  $("next-btn").style.opacity = n ? "" : ".4";
+}
+function next() {
+  const cards = needCards();
+  if (!cards.length) return;
+  cursor = (cursor + 1) % cards.length;
+  cards.forEach((c, i) => c.classList.toggle("focus", i === cursor));
+  go("focus");
+  cards[cursor].scrollIntoView({ block: "center", behavior: "smooth" });
+  openTask(cards[cursor].dataset.id);
+}
+function answer(btn, word) {
+  const card = btn.closest(".card");
+  const parent = card.parentNode, sibling = card.nextSibling;
+  card.classList.add("gone");
+  setTimeout(() => {
+    lastRemoved = { card, parent, sibling };
+    card.remove();
+    card.classList.remove("gone", "focus");
+    cursor = -1;
+    refreshCount();
+    toast(word);
+    if ($("panel").dataset.id === card.dataset.id) closePanel();
+  }, 180);
+}
+function undo() {
+  if (!lastRemoved) return;
+  lastRemoved.parent.insertBefore(lastRemoved.card, lastRemoved.sibling);
+  lastRemoved = null;
+  refreshCount();
+  $("toast").classList.remove("on");
+}
+let toastTimer;
+function toast(text) {
+  $("toast-text").textContent = text;
+  $("toast").classList.add("on");
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => $("toast").classList.remove("on"), 3500);
+}
+
+function openTask(id) {
+  const t = tasks[id];
+  if (!t) return;
+  $("panel").hidden = false;
+  $("panel").dataset.id = id;
+  $("p-title").textContent = "#" + id + " " + t.title;
+  const dotClass = t.state === "blocked" ? "blocked" : t.state === "waiting" ? "waiting" : "";
+  const lease = t.lease ? `<dt>Lease</dt><dd style="${t.lease.startsWith("3") ? "color:var(--red)" : ""}">${t.lease}</dd>` : "";
+  const msgs = t.msgs.map(([who, text]) => `<div class="pmsg"><span class="av md ${who === "simon" ? "" : "agent"}">${who[0].toUpperCase()}</span><div><div class="who"><b>${who}</b></div><div>${esc(text)}</div></div></div>`).join("") || `<div class="empty"><b>No replies yet</b>Assign it or wait for its needs.</div>`;
+  $("p-body").innerHTML = `
+    <dl class="kv">
+      <dt>State</dt><dd><svg class="dot ${dotClass}"><use href="#d-${t.state}"/></svg>${stateWord[t.state]}</dd>
+      <dt>Holder</dt><dd>${t.who}</dd>
+      ${lease}
+      <dt>Plan</dt><dd>${t.plan} · lead</dd>
+    </dl>
+    ${msgs}`;
+}
+function closePanel() { $("panel").hidden = true; delete $("panel").dataset.id; needCards().forEach((c) => c.classList.remove("focus")); }
+
+function togglePlan(id) {
+  const el = $(id);
+  el.classList.toggle("open");
+  el.querySelector(".pb").hidden = !el.classList.contains("open");
+}
+function toggleSteps(id) { const s = $(id).querySelector(".steps"); s.hidden = !s.hidden; }
+function toggleDone() { const l = $("done-list"); l.hidden = !l.hidden; $("done-toggle").textContent = l.hidden ? "Show" : "Hide"; }
+function openRun(agent) {
+  go("focus");
+  const id = runs[agent];
+  if (!id) { openTask("815"); return; }
+  const el = $(id);
+  if (el.classList.contains("run")) el.querySelector(".steps").hidden = false;
+  el.scrollIntoView({ block: "center", behavior: "smooth" });
+}
+function setFeed(all) {
+  document.querySelectorAll(".agent-only").forEach((m) => { m.hidden = !all; });
+  document.querySelectorAll(".people-only").forEach((m) => { m.hidden = all; });
+  $("seg-all").classList.toggle("on", all);
+  $("seg-people").classList.toggle("on", !all);
+}
+function filterThreads(which, btn) {
+  $("threads-open").hidden = which !== "open";
+  $("threads-done").hidden = which !== "done";
+  btn.parentNode.querySelectorAll("button").forEach((b) => b.classList.toggle("on", b === btn));
+}
+function askLead() {
+  const input = $("lead-input");
+  if (!input.value.trim()) return;
+  toast("lead is planning: " + input.value.trim());
+  input.value = "";
+}
+document.addEventListener("keydown", (e) => {
+  if (e.target.matches("input, textarea")) return;
+  if (e.key === "n" || e.key === "N") { e.preventDefault(); next(); }
+  if (e.key === "Escape") closePanel();
+});
+</script>
+</body>
+</html>

@@ -1,5 +1,6 @@
 import { z } from "@hono/zod-openapi"
 import { draftKinds, navigationLimits } from "./constants"
+import { ThreadStatusSchema } from "./plans"
 
 const timestamp = z.string().openapi({ format: "date-time", example: "2026-11-24T10:40:02.000Z" })
 
@@ -57,6 +58,7 @@ export const MyThread = z
     lastWho: z.string(),
     lastText: z.string(),
     unread: z.number().int().openapi({ description: "Replies by others since the acting member last wrote in the thread" }),
+    status: ThreadStatusSchema.openapi({ description: "needs_you, running, blocked, unread, done or quiet, in that order of precedence" }),
   })
   .openapi("MyThread")
 

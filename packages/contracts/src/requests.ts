@@ -75,6 +75,7 @@ export const CreateTaskBody = z
     kind: z.string().min(1).default("build"),
     spec: z.string().nullable().default(null),
     text: z.string().optional().openapi({ description: "A first reply for the task thread" }),
+    plan: z.number().int().nullable().default(null).openapi({ description: "Put the new task in this plan; it must be open and in the same channel" }),
   })
   .openapi("CreateTaskBody")
 

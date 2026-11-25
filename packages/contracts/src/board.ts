@@ -85,6 +85,7 @@ export const Task = z
     reason: z.string().nullable(),
     question: orNull(Question),
     replyCount: z.number().int(),
+    planId: z.number().int().nullable().openapi({ description: "The plan this task belongs to, or null" }),
     createdAt: timestamp,
   })
   .openapi("Task")
