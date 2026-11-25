@@ -68,3 +68,6 @@ Example: four agents work in #backend and #frontend. Today the app opens on the 
 - [ ] `bun run test`, `bun run typecheck`, `bun run build`
 
 ## Notes from the build
+- 12c: Undo on a Needs you card delays the action instead of reversing it: the card hides at once, the mutation is sent when the 5 second toast ends (or on page hide), and a refusal brings the card back with the error. This makes every one-tap card action undoable, including answers and approvals that the API cannot reverse. Reply on a blocked card is the one action sent at once.
+- 12c: Live updates need nothing new: every board event already invalidates every query, so `getFocus` and the plan queries refresh with `task.*` and `plan.*` events like the inbox did.
+- 12c: Needs you sorts tasks by `createdAt` because a task carries no asked-at or blocked-at time; thread questions use their own `at`.
