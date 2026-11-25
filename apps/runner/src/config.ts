@@ -58,12 +58,20 @@ export interface BuiltInModel extends ModelEndpointConfig {
 const channelName = z.string().regex(/^[a-z0-9][a-z0-9-]*$/)
 const absolute = z.string().refine((folder) => path.isAbsolute(folder), { error: "Each channel folder must be an absolute path" })
 
+export const PanesConfig = z.object({
+  launcher: z.string().trim().min(1),
+  space: z.string().trim().min(1).max(64).default("flockr"),
+})
+
+export type PanesConfig = z.infer<typeof PanesConfig>
+
 export const RunnerConfig = z.object({
   board: z.url().default(defaultBoard),
   machine: z.string().trim().min(1).optional(),
   channels: z.record(channelName, absolute).default({}),
   maxSessions: z.number().int().min(1).max(8).default(2),
   maxMinutes: z.number().int().min(1).max(240).default(30),
+  panes: PanesConfig.optional(),
   member: z.string().regex(/^[a-z][a-z0-9-]*$/).optional(),
   harness: z.string().min(1).optional(),
 })

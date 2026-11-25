@@ -59,7 +59,7 @@ export const agents = pgTable(
   },
   (t) => [
     check("agents_permissions", sql`${t.permissions} in ('edit-free-commands-ask', 'read-only')`),
-    check("agents_desired", sql`${t.desired} in ('running', 'stopped')`),
+    check("agents_desired", sql`${t.desired} in ('running', 'paused', 'stopped')`),
     check("agents_reported", sql`${t.reported} is null or ${t.reported} in ('serving', 'working', 'error')`),
     index("agents_machine").on(t.machine),
   ],

@@ -7,6 +7,12 @@ const shape = {
   offline: <circle cx="4" cy="4" r="3" fill="none" stroke="currentColor" strokeWidth="1.4" />,
   online: <circle cx="4" cy="4" r="3.6" fill="currentColor" />,
   working: <circle cx="4" cy="4" r="3.6" fill="currentColor" />,
+  paused: (
+    <>
+      <path d="M2.2 1v6" stroke="currentColor" strokeWidth="1.6" />
+      <path d="M5.8 1v6" stroke="currentColor" strokeWidth="1.6" />
+    </>
+  ),
   error: (
     <>
       <circle cx="4" cy="4" r="3" fill="none" stroke="currentColor" strokeWidth="1.4" />
@@ -15,7 +21,7 @@ const shape = {
   ),
 } as const satisfies Record<AgentStatus, ReactNode>
 
-const tone = { offline: "text-faint", online: "text-foreground", working: "text-foreground animate-presence", error: "text-destructive" } as const satisfies Record<AgentStatus, string>
+const tone = { offline: "text-faint", online: "text-foreground", working: "text-foreground animate-presence", paused: "text-muted-foreground", error: "text-destructive" } as const satisfies Record<AgentStatus, string>
 
 export const statusText = (status: AgentStatus, reason: string | null) => `${agentStatusLabels[status]}${reason && status !== "online" && status !== "working" ? `: ${reason}` : ""}`
 

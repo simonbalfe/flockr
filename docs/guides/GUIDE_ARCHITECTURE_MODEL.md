@@ -97,13 +97,13 @@ docs/
 
 ## Runner and harness adapters (local agents)
 
-Agents are created on the board (the web app's New agent, `flockr agents create`, `createAgent`) and served by a runner on a machine (`apps/runner`, ADRs 0013 and 0016). The runner is one long-running Bun program per machine: it registers the machine and the harnesses it can run, sends a heartbeat every 15 seconds, and serves every agent assigned to that machine whose desired state is running, acting as each of them. It is a client like `flockr`: it reads the live socket and calls the API through `packages/client`.
+Agents are created on the board (the web app's New agent, `flockr agents create`, `createAgent`) and served by a runner on a machine (`apps/runner`, ADRs 0013 and 0016). The runner is one long-running Bun program per machine: it registers the machine and the harnesses it can run, sends a heartbeat every 15 seconds, and serves every agent assigned to that machine whose desired state is running or paused, acting as each of them; a paused agent finishes its current run and takes no new work until resumed. With `panes` set in its config, each run also shows in a visible terminal pane through a launcher adapter (`apps/runner/src/launcher/`); the pane is only a view. It is a client like `flockr`: it reads the live socket and calls the API through `packages/client`.
 
 | Board state | Where | What it means |
 |---|---|---|
-| Agent definition | `agents` table, changed by `agent.created`, `agent.updated`, `agent.started`, `agent.stopped`, `agent.deleted` events | Harness id, folder, machine, permissions (`edit-free-commands-ask` or `read-only`), personality, desired `running` or `stopped` |
+| Agent definition | `agents` table, changed by `agent.created`, `agent.updated`, `agent.started`, `agent.stopped`, `agent.paused`, `agent.resumed`, `agent.deleted` events | Harness id, folder, machine, permissions (`edit-free-commands-ask` or `read-only`), personality, desired `running`, `paused` or `stopped` |
 | Machine | `machines` table, written by `registerMachine` and `machineHeartbeat` (not events) | Name, the harnesses it reports with label and capabilities, last heartbeat; online while under 45 seconds old |
-| Status | Derived on read | `offline` (stopped, machine offline, not picked up yet), `online`, `working`, `error` with the runner's reason; a change is pushed as an `agents` live frame |
+| Status | Derived on read | `offline` (stopped, machine offline, not picked up yet), `online`, `working`, `paused`, `error` with the runner's reason; a change is pushed as an `agents` live frame |
 
 | Trigger | What the runner does for the agent |
 |---|---|

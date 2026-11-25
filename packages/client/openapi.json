@@ -1675,9 +1675,10 @@
           "offline",
           "online",
           "working",
+          "paused",
           "error"
         ],
-        "description": "offline: stopped or its machine is offline. online: served and idle. working: a run is active. error: the runner could not serve it (see statusReason)."
+        "description": "offline: stopped or its machine is offline. online: served and idle. working: a run is active. paused: it finishes its current run and takes no new work until resumed. error: the runner could not serve it (see statusReason)."
       },
       "AgentConfig": {
         "type": "object",
@@ -1747,8 +1748,10 @@
         "type": "string",
         "enum": [
           "running",
+          "paused",
           "stopped"
-        ]
+        ],
+        "description": "running: served and taking work. paused: served, finishing its current run, new work waits. stopped: not served."
       },
       "AgentDetail": {
         "allOf": [
@@ -7210,6 +7213,150 @@
           "agents"
         ],
         "summary": "Stop an agent: its sessions end, its claims are released and it ignores mentions until started; safe to repeat",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "example": "scout"
+            },
+            "required": true,
+            "name": "name",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentDetail"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The input is not valid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The acting member is not on this board, or may not do this",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The task or message is in another state, or the claim epoch is stale",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/agents/{name}/pause": {
+      "post": {
+        "operationId": "pauseAgent",
+        "tags": [
+          "agents"
+        ],
+        "summary": "Pause an agent: its current run finishes, then mentions, replies and ready tasks wait until it is resumed; safe to repeat. A stopped agent is refused",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "example": "scout"
+            },
+            "required": true,
+            "name": "name",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentDetail"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The input is not valid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The acting member is not on this board, or may not do this",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The task or message is in another state, or the claim epoch is stale",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/agents/{name}/resume": {
+      "post": {
+        "operationId": "resumeAgent",
+        "tags": [
+          "agents"
+        ],
+        "summary": "Resume a paused agent: it picks up the work that waited, conversations first, then ready tasks assigned to it; safe to repeat. A stopped agent is refused",
         "parameters": [
           {
             "schema": {

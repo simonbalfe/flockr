@@ -25,7 +25,9 @@ import {
   type RunnerConfig,
 } from "./config"
 import { harnesses } from "./harness/registry"
+import { runCommand } from "./launcher/command"
 import { migrateLegacy } from "./migrate"
+import { createRunPanes } from "./panes"
 import { instructions } from "./prompt"
 import { createRunner } from "./runner"
 import { createService, type Spawn } from "./service"
@@ -69,6 +71,14 @@ const clientFor = (member: string) => {
 const log = (line: string) => console.log(quiet ? line : `${new Date().toTimeString().slice(0, 8)} ${line}`)
 writeShims()
 
+const panes = createRunPanes({
+  config: config.panes,
+  path: inheritedPath,
+  run: runCommand,
+  watch: (agent) => [bunBinary, cliEntry, "--url", board, "agents", "watch", agent],
+  log,
+})
+
 function spawn(spec: Spawn) {
   const fcEnv = { FC_URL: board, FC_AS: spec.name, FC_STATE: claimsFile }
   return createRunner({
@@ -93,6 +103,7 @@ function spawn(spec: Spawn) {
     changed: spec.changed,
     freed: spec.freed,
     problem: spec.problem,
+    showRun: panes?.forAgent(spec.name),
   })
 }
 

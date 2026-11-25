@@ -1,4 +1,4 @@
-import type { Agent, AgentReportEntry, BoardEvent, HarnessInfo } from "@flockr/client"
+import type { Agent, AgentDesired, AgentReportEntry, BoardEvent, HarnessInfo } from "@flockr/client"
 import { agentEventTypes, machineLimits } from "@flockr/contracts/agents"
 import type { MachinePort } from "./board"
 import type { Harness } from "./harness/types"
@@ -42,7 +42,11 @@ export interface ServiceDeps {
 interface Box {
   settings: AgentSettings
   problem: string | null
+  paused: boolean
 }
+
+const serves = { running: true, paused: true, stopped: false } as const satisfies Record<AgentDesired, boolean>
+const holdsWork = { running: false, paused: true, stopped: false } as const satisfies Record<AgentDesired, boolean>
 
 interface Served {
   runner: AgentRunner
@@ -133,13 +137,13 @@ export function createService(deps: ServiceDeps) {
     return null
   }
 
-  async function serve(agent: Agent, harness: Harness, settings: AgentSettings): Promise<void> {
-    const box: Box = { settings, problem: null }
+  async function serve(agent: Agent, harness: Harness, settings: AgentSettings, paused: boolean): Promise<void> {
+    const box: Box = { settings, problem: null, paused }
     const runner = deps.spawn({
       name: agent.name,
       harness,
       settings: () => box.settings,
-      hasRoom,
+      hasRoom: () => !box.paused && hasRoom(),
       changed: beatSoon,
       freed: () => nudgeOthers(agent.name),
       problem: (reason) => {
@@ -151,7 +155,7 @@ export function createService(deps: ServiceDeps) {
     served.set(agent.name, { runner, harness: harness.name, box })
     try {
       await runner.start()
-      log(`${agent.name}: serving with ${harness.label} in ${settings.folder}`)
+      log(`${agent.name}: serving with ${harness.label} in ${settings.folder}${paused ? ", paused" : ""}`)
     } catch (error) {
       served.delete(agent.name)
       problems.set(agent.name, short(error))
@@ -162,7 +166,7 @@ export function createService(deps: ServiceDeps) {
 
   async function reconcile(agents: Agent[]): Promise<boolean> {
     let changed = false
-    const wanted = new Map(agents.flatMap((agent) => (agent.config && agent.config.machine === machine.id && agent.config.desired === "running" ? [[agent.name, agent]] : [])))
+    const wanted = new Map(agents.flatMap((agent) => (agent.config && agent.config.machine === machine.id && serves[agent.config.desired] ? [[agent.name, agent]] : [])))
     for (const name of [...served.keys()]) {
       if (wanted.has(name)) continue
       await stopServing(name, "stopped on the board")
@@ -186,10 +190,16 @@ export function createService(deps: ServiceDeps) {
       }
       if (problems.delete(name)) changed = true
       const settings: AgentSettings = { folder: config.folder, permissions: config.permissions, personality: config.personality, model: config.model }
+      const paused = holdsWork[config.desired]
       if (!current) {
-        await serve(agent, harness, settings)
+        await serve(agent, harness, settings, paused)
         changed = true
         continue
+      }
+      if (current.box.paused !== paused) {
+        current.box.paused = paused
+        log(`${name}: ${paused ? "paused; its current run finishes, new work waits" : "resumed; picking up the work that waited"}`)
+        if (!paused) void current.runner.nudge()
       }
       if (current.box.problem) {
         current.box.problem = null

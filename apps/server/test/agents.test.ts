@@ -84,6 +84,8 @@ describe("creating an agent", () => {
     for (const [method, path, body] of [
       ["POST", "/api/agents/scout/stop", undefined],
       ["POST", "/api/agents/scout/start", undefined],
+      ["POST", "/api/agents/scout/pause", undefined],
+      ["POST", "/api/agents/scout/resume", undefined],
       ["PATCH", "/api/agents/scout", { folder: "/tmp" }],
       ["DELETE", "/api/agents/scout", undefined],
     ] as const) {
@@ -159,6 +161,29 @@ describe("start, stop, update and delete", () => {
     const types = (await eventsOf(call)).map((e) => e.type).filter((t) => t.startsWith("agent."))
     expect(types).toEqual(["agent.created", "agent.stopped", "agent.started"])
     expect((await call("simon", "POST", "/api/agents/claude/start")).status).toBe(404)
+  })
+
+  test("pause and resume write one event each, are safe to repeat, keep the runner's report and refuse a stopped agent", async () => {
+    const { call } = await boardWithMachine()
+    await call("simon", "POST", "/api/agents", scout)
+    await call("simon", "POST", "/api/machines/danas-laptop/heartbeat", { agents: [{ name: "scout", state: "working" }] })
+    const paused = AgentDetail.parse((await call("simon", "POST", "/api/agents/scout/pause")).json)
+    expect(paused).toMatchObject({ status: "paused", statusReason: "Paused; finishing its current run", config: { desired: "paused" } })
+    await call("simon", "POST", "/api/agents/scout/pause")
+    await call("simon", "POST", "/api/machines/danas-laptop/heartbeat", { agents: [{ name: "scout", state: "serving" }] })
+    const idle = AgentDetail.parse((await call("simon", "GET", "/api/agents/scout")).json)
+    expect(idle).toMatchObject({ status: "paused", statusReason: "Paused; new work waits until it is resumed" })
+    const resumed = AgentDetail.parse((await call("simon", "POST", "/api/agents/scout/resume")).json)
+    expect(resumed).toMatchObject({ status: "online", config: { desired: "running" } })
+    await call("simon", "POST", "/api/agents/scout/resume")
+    await call("simon", "POST", "/api/agents/scout/stop")
+    for (const action of ["pause", "resume"]) {
+      const refused = await call("simon", "POST", `/api/agents/scout/${action}`)
+      expect(refused.status).toBe(409)
+      expect(kindOf(refused.json)).toBe("wrong_state")
+    }
+    const types = (await eventsOf(call)).map((e) => e.type).filter((t) => t.startsWith("agent."))
+    expect(types).toEqual(["agent.created", "agent.paused", "agent.resumed", "agent.stopped"])
   })
 
   test("update changes folder, permissions and personality and writes one event naming what changed", async () => {

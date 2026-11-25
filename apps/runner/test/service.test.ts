@@ -9,7 +9,7 @@ import { backupFile, migrateLegacy } from "../src/migrate"
 import { createRunner } from "../src/runner"
 import { createService, type Spawn } from "../src/service"
 import { emptyState, type RunnerState, type SessionMap } from "../src/store"
-import { event, fakeBoard, fakeHarness, manualTimers, memoryEpochs, memoryStore, messageThread } from "./fakes"
+import { event, fakeBoard, fakeHarness, manualTimers, memoryEpochs, memoryStore, messageThread, task } from "./fakes"
 
 const here = { id: "danas-laptop", name: "danas-laptop" }
 
@@ -195,6 +195,37 @@ describe("the machine service", () => {
     expect(started[0]?.spec.rule.edit).toBe("deny")
     await service.idle()
     expect(machine.lastReport()).toEqual([{ name: "scout", state: "working", reason: null }])
+  })
+
+  test("a paused agent finishes its running run but takes no new work; resuming picks up what waited", async () => {
+    const { service, machine, started, board, logs } = serviceSetup({ agents: [agent("claude")] })
+    const settle = async () => {
+      await Bun.sleep(0)
+      await service.receive(event({ type: "board.noticed", actor: "simon" }))
+    }
+    await service.start()
+    board.threads.set("m10", messageThread("m10", "simon", "@claude first"))
+    await service.receive(mention("m10", "claude"))
+    expect(started).toHaveLength(1)
+    machine.set([agent("claude", { desired: "paused" })])
+    await service.receive(event({ type: "agent.paused", actor: "simon", data: { name: "claude" } }))
+    expect(service.served.has("claude")).toBe(true)
+    expect(started[0]?.stopped).toBe(false)
+    board.threads.set("m11", messageThread("m11", "simon", "@claude second"))
+    await service.receive(mention("m11", "claude"))
+    board.tasks.set(5, task({ id: 5 }))
+    await service.receive(event({ type: "task.created", actor: "simon", taskId: 5, data: { state: "ready" } }))
+    started[0]?.end({ kind: "finished", text: "first answer" })
+    await settle()
+    expect(started).toHaveLength(1)
+    expect(board.calls).toContain("reply m10: first answer")
+    expect(board.tasks.get(5)?.state).toBe("ready")
+    machine.set([agent("claude")])
+    await service.receive(event({ type: "agent.resumed", actor: "simon", data: { name: "claude" } }))
+    await settle()
+    expect(started.map((s) => s.spec.thread)).toEqual(["m10", "m11", "5"])
+    expect(board.tasks.get(5)).toMatchObject({ state: "claimed", holder: "claude" })
+    expect(logs.some((l) => l.includes("claude: paused"))).toBe(true)
   })
 
   test("shutdown stops every served agent's sessions", async () => {

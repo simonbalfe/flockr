@@ -5,6 +5,7 @@ import { run } from "./api"
 import { need, UsageError, type Values } from "./args"
 import type { CommandContext } from "./activity"
 import { activityEntryLine, taskLine } from "./format"
+import { watchAgent } from "./watch"
 
 const servedText = (a: Agent) => (a.config ? `${a.config.harnessLabel ?? a.config.harness} on ${a.config.machineName}` : "connects by itself")
 
@@ -63,7 +64,7 @@ function pickHarness(machine: Machine, wanted: string | undefined): string {
   throw new UsageError(`Give --harness <id>. ${machine.id} offers ${machine.harnesses.length ? machine.harnesses.map((h) => h.id).join(", ") : "none"}.`)
 }
 
-export async function agentsCommand(context: CommandContext): Promise<number> {
+export async function agentsCommand(context: CommandContext & { baseUrl: string }): Promise<number> {
   const { positionals, values, print } = context
   const sub = positionals[1] ?? "list"
   const name = () => need(positionals[2], "agent name")
@@ -117,6 +118,14 @@ export async function agentsCommand(context: CommandContext): Promise<number> {
     case "stop":
       show(await run(sdk.stopAgent({ path: { name: name() } })))
       return 0
+    case "pause":
+      show(await run(sdk.pauseAgent({ path: { name: name() } })))
+      return 0
+    case "resume":
+      show(await run(sdk.resumeAgent({ path: { name: name() } })))
+      return 0
+    case "watch":
+      return watchAgent({ baseUrl: context.baseUrl, name: name() })
     case "delete": {
       const deleted = await run(sdk.deleteAgent({ path: { name: name() } }))
       print(deleted, () => `Deleted ${deleted.name}; its messages keep their author`)

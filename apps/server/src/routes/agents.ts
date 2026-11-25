@@ -1,6 +1,6 @@
 import { ActivityEntry, AgentActivityQuery, AgentDetail, AgentParams, CreateAgentBody, DeletedAgent, UpdateAgentBody } from "@flockr/contracts"
 import { z } from "@hono/zod-openapi"
-import { createAgent, deleteAgent, listAgentActivity, startAgent, stopAgent, updateAgent } from "../board/agents"
+import { createAgent, deleteAgent, listAgentActivity, pauseAgent, resumeAgent, startAgent, stopAgent, updateAgent } from "../board/agents"
 import { jsonBody, ok, operation, router } from "./shared"
 
 const tags: [string] = ["agents"]
@@ -53,6 +53,30 @@ export const agentRoutes = router()
       responses: ok(AgentDetail),
     }),
     async (c) => c.json(await stopAgent(c.var.db, c.var.member, c.req.valid("param").name), 200),
+  )
+  .openapi(
+    operation({
+      method: "post",
+      path: "/api/agents/{name}/pause",
+      operationId: "pauseAgent",
+      tags,
+      summary: "Pause an agent: its current run finishes, then mentions, replies and ready tasks wait until it is resumed; safe to repeat. A stopped agent is refused",
+      request: { params: AgentParams },
+      responses: ok(AgentDetail),
+    }),
+    async (c) => c.json(await pauseAgent(c.var.db, c.var.member, c.req.valid("param").name), 200),
+  )
+  .openapi(
+    operation({
+      method: "post",
+      path: "/api/agents/{name}/resume",
+      operationId: "resumeAgent",
+      tags,
+      summary: "Resume a paused agent: it picks up the work that waited, conversations first, then ready tasks assigned to it; safe to repeat. A stopped agent is refused",
+      request: { params: AgentParams },
+      responses: ok(AgentDetail),
+    }),
+    async (c) => c.json(await resumeAgent(c.var.db, c.var.member, c.req.valid("param").name), 200),
   )
   .openapi(
     operation({

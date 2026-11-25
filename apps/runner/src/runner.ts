@@ -55,6 +55,7 @@ export interface RunnerDeps {
   changed?: () => void
   freed?: () => void
   problem?: (reason: string) => void
+  showRun?: (run: { thread: string; folder: string }) => void
 }
 
 type Purpose = "work" | "talk"
@@ -165,6 +166,7 @@ export function createRunner(deps: RunnerDeps) {
     )
     runs.set(spec.thread, run)
     deps.changed?.()
+    deps.showRun?.({ thread: spec.thread, folder })
     log(`${member}: start ${spec.purpose} in ${spec.thread} (#${spec.channel}) in ${folder}${resumeId ? `, resuming ${resumeId}` : ""}`)
     run.cancel.push(timers.after(maxMinutes * 60_000, () => void enqueue(async () => stop(run, "time"))))
     const claim = spec.claim

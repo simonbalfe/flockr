@@ -9,13 +9,16 @@ export const permissionLabels = {
   "read-only": { label: "Read only", explanation: "Reads files but never edits them. Any command becomes a question a person answers." },
 } as const satisfies Record<AgentPermissions, { label: string; explanation: string }>
 
-export const agentStatuses = ["offline", "online", "working", "error"] as const
+export const agentStatuses = ["offline", "online", "working", "paused", "error"] as const
 export type AgentStatus = (typeof agentStatuses)[number]
 
-export const agentStatusLabels = { offline: "Offline", online: "Online", working: "Working", error: "Error" } as const satisfies Record<AgentStatus, string>
+export const agentStatusLabels = { offline: "Offline", online: "Online", working: "Working", paused: "Paused", error: "Error" } as const satisfies Record<AgentStatus, string>
 
-export const agentDesiredStates = ["running", "stopped"] as const
+export const agentDesiredStates = ["running", "paused", "stopped"] as const
 export type AgentDesired = (typeof agentDesiredStates)[number]
+
+export const agentActions = ["start", "stop", "pause", "resume"] as const
+export type AgentAction = (typeof agentActions)[number]
 
 export const agentReports = ["serving", "working", "error"] as const
 export type AgentReport = (typeof agentReports)[number]
@@ -25,6 +28,8 @@ export const agentEventTypes = {
   updated: "agent.updated",
   started: "agent.started",
   stopped: "agent.stopped",
+  paused: "agent.paused",
+  resumed: "agent.resumed",
   deleted: "agent.deleted",
 } as const
 
@@ -39,9 +44,12 @@ export const AgentPermissionsSchema = z.enum(agentPermissions).openapi("AgentPer
   description: "edit-free-commands-ask: reads and edits are free, other commands become a question card. read-only: reads are free, edits are refused, commands ask.",
 })
 export const AgentStatusSchema = z.enum(agentStatuses).openapi("AgentStatus", {
-  description: "offline: stopped or its machine is offline. online: served and idle. working: a run is active. error: the runner could not serve it (see statusReason).",
+  description:
+    "offline: stopped or its machine is offline. online: served and idle. working: a run is active. paused: it finishes its current run and takes no new work until resumed. error: the runner could not serve it (see statusReason).",
 })
-export const AgentDesiredSchema = z.enum(agentDesiredStates).openapi("AgentDesired")
+export const AgentDesiredSchema = z.enum(agentDesiredStates).openapi("AgentDesired", {
+  description: "running: served and taking work. paused: served, finishing its current run, new work waits. stopped: not served.",
+})
 export const AgentReportSchema = z.enum(agentReports).openapi("AgentReport")
 
 export const agentNamePattern = /^[a-z][a-z0-9-]+$/

@@ -37,9 +37,10 @@ Other commands: `bun run build` (type check and production build into `dist/`), 
 | Press Cmd+K | Jump to a channel, task or agent, or pick New agent |
 | Press Cmd+K and type `rate limit` | "Search messages and tasks" lists server hits with the words in bold; Enter opens the message's thread or the task (`flockr search rate limit` does the same) |
 | Press "+" beside Agents in the sidebar | The New agent dialog: name, harness and machine (from the runners that are online), folder, permissions, optional personality, then "Create and start". With no runner connected it says so and shows `bun run runner` with a copy button |
-| Look at the dots beside agents | Status by shape: hollow is offline, solid is online, pulsing is working, a slashed ring is an error (hover for the reason) |
-| Click an agent | Its panel: status, what it is on now (a link to the task), the questions it is waiting on a person for (answer them there), its recent runs as work blocks linking to their threads, owner, machine, harness, folder, permissions and personality (editable), Start or Stop, and Delete in the "..." menu |
+| Look at the dots beside agents | Status by shape: hollow is offline, solid is online, pulsing is working, two bars is paused, a slashed ring is an error (hover for the reason) |
+| Click an agent | Its panel: status, what it is on now (a link to the task), the questions it is waiting on a person for (answer them there), its recent runs as work blocks linking to their threads, owner, machine, harness, folder, permissions and personality (editable), Pause and Stop (Resume and Stop while paused, Start when stopped), and Delete in the "..." menu |
 | Mention a stopped agent | A quiet line under the message box: "scout is offline. Start it." |
+| Mention a paused agent | "scout is paused; it answers when resumed. Resume it." The mention waits and is answered on resume |
 | `FC_AS=claude bun fc activity post m12 "Add rate limiting"`, then `bun fc activity exec m41 -- bun test` | One collapsed work block in the thread; the command's output streams in live; "claude is working on Add rate limiting · Running bun test" under the reply box and a Stop button in the thread header |
 | Press Stop in the thread header | A `run.stop_requested` event for claude; the block says "stop requested" until the run finishes (`flockr stop m12` does the same) |
 | Reply in a thread while claude works | The reply box says "Steer claude"; the reply is a normal reply the runner passes into the running session |

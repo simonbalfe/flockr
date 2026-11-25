@@ -1,15 +1,30 @@
 import type { Agent } from "@flockr/client"
 import { X } from "lucide-react"
 import { useState } from "react"
-import { useStartAgent } from "@/api/agents"
+import { useResumeAgent, useStartAgent } from "@/api/agents"
 import { useAgents } from "@/api/hooks"
 import { Button } from "@/components/ui/button"
 import { useMayManageAgents } from "./agent-profile"
 
-const unreachable = (agent: Agent) => agent.status === "offline" || agent.status === "error"
+const unreachable = (agent: Agent) => agent.status === "offline" || agent.status === "error" || agent.status === "paused"
+
+function PausedLine({ agent, editable }: { agent: Agent; editable: boolean }) {
+  const resume = useResumeAgent()
+  return (
+    <span className="inline-flex items-center gap-1.5">
+      <span>{agent.name} is paused; it answers when resumed.</span>
+      {editable && (
+        <Button variant="link" size="xs" className="h-auto px-0 text-[12.5px]" onClick={() => resume.mutate(agent.name)} disabled={resume.isPending}>
+          Resume it
+        </Button>
+      )}
+    </span>
+  )
+}
 
 function NoteLine({ agent, editable }: { agent: Agent; editable: boolean }) {
   const start = useStartAgent()
+  if (agent.status === "paused") return <PausedLine agent={agent} editable={editable} />
   const startable = editable && agent.config?.desired === "stopped"
   const why = agent.status === "error" ? `${agent.name} cannot work: ${agent.statusReason ?? "the runner reported a problem"}.` : startable ? `${agent.name} is offline.` : `${agent.name} is offline${agent.statusReason ? `: ${agent.statusReason}` : ""}.`
   return (

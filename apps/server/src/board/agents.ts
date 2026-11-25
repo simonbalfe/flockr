@@ -1,5 +1,7 @@
 import {
   agentEventTypes,
+  type AgentAction,
+  type AgentDesired,
   HarnessInfo,
   machineLimits,
   mayManageAgent,
@@ -20,7 +22,7 @@ import { z } from "zod"
 import type { Database, Executor, Tx } from "../db/client"
 import { agents, machines, members, messages, tasks, type AgentRow, type MachineRow, type MemberRow, type TaskRow } from "../db/schema"
 import { liveSignals } from "../platform"
-import { alreadyExists, forbidden, invalid, notFound } from "./errors"
+import { alreadyExists, forbidden, invalid, notFound, wrongState } from "./errors"
 import { mutate, type Emit } from "./events"
 import { requireActor } from "./members"
 import { activityEntryOf, findAnyMember, presentMember, presentTasks } from "./read"
@@ -41,6 +43,7 @@ export interface StatusOf {
 export function statusOf(agent: AgentRow, machine: MachineRow | undefined, now: Date): StatusOf {
   if (agent.desired === "stopped") return { status: "offline", reason: "Stopped" }
   if (!machine || !isOnline(machine, now)) return { status: "offline", reason: `${machine?.name ?? agent.machine} is offline` }
+  if (agent.desired === "paused") return { status: "paused", reason: agent.reported === "working" ? "Paused; finishing its current run" : "Paused; new work waits until it is resumed" }
   if (agent.reported === null) return { status: "offline", reason: `Waiting for ${machine.name} to start it` }
   const status = reportStatus[agent.reported]
   return { status, reason: status === "error" ? (agent.reportedReason ?? "The runner could not serve it") : null }
@@ -236,26 +239,62 @@ export async function updateAgent(db: Database, actor: string, name: string, bod
   return getAgent(db, name)
 }
 
-async function setDesired(db: Database, actor: string, name: string, desired: AgentRow["desired"]): Promise<AgentDetail> {
+type Transition = { kind: "to"; desired: AgentDesired } | { kind: "same" } | { kind: "refused"; why: string }
+
+const to = (desired: AgentDesired): Transition => ({ kind: "to", desired })
+const same: Transition = { kind: "same" }
+const refused = (why: string): Transition => ({ kind: "refused", why })
+
+const transitions = {
+  start: { running: same, paused: to("running"), stopped: to("running") },
+  stop: { running: to("stopped"), paused: to("stopped"), stopped: same },
+  pause: { running: to("paused"), paused: same, stopped: refused("is stopped; start it first") },
+  resume: { running: same, paused: to("running"), stopped: refused("is stopped, not paused; start it instead") },
+} as const satisfies Record<AgentAction, Record<AgentDesired, Transition>>
+
+const actionEvent = {
+  start: agentEventTypes.started,
+  stop: agentEventTypes.stopped,
+  pause: agentEventTypes.paused,
+  resume: agentEventTypes.resumed,
+} as const satisfies Record<AgentAction, string>
+
+const servesReport = { running: true, paused: true, stopped: false } as const satisfies Record<AgentDesired, boolean>
+
+async function act(db: Database, actor: string, name: string, action: AgentAction): Promise<AgentDetail> {
   await mutate(db, async (tx, emit) => {
     await requireManager(tx, actor)
     const current = await lockServed(tx, name)
-    if (current.desired === desired) return
+    const transition: Transition = transitions[action][current.desired]
+    switch (transition.kind) {
+      case "same":
+        return
+      case "refused":
+        throw wrongState(`${name} ${transition.why}`)
+      case "to":
+        break
+      default: {
+        const never: never = transition
+        throw new Error(`Unknown transition ${JSON.stringify(never)}`)
+      }
+    }
+    const keepReport = servesReport[current.desired] && servesReport[transition.desired]
+    const report = keepReport ? {} : { reported: null, reportedReason: null, reportedAt: null }
     const [row] = await tx
       .update(agents)
-      .set({ desired, reported: null, reportedReason: null, reportedAt: null, updatedAt: new Date() })
+      .set({ desired: transition.desired, ...report, updatedAt: new Date() })
       .where(eq(agents.name, name))
       .returning()
     if (!row) throw new Error("Agent update returned nothing")
-    emitAgent(emit, desiredEvent[desired], actor, row)
+    emitAgent(emit, actionEvent[action], actor, row)
   })
   return getAgent(db, name)
 }
 
-const desiredEvent = { running: agentEventTypes.started, stopped: agentEventTypes.stopped } as const satisfies Record<AgentRow["desired"], string>
-
-export const startAgent = (db: Database, actor: string, name: string) => setDesired(db, actor, name, "running")
-export const stopAgent = (db: Database, actor: string, name: string) => setDesired(db, actor, name, "stopped")
+export const startAgent = (db: Database, actor: string, name: string) => act(db, actor, name, "start")
+export const stopAgent = (db: Database, actor: string, name: string) => act(db, actor, name, "stop")
+export const pauseAgent = (db: Database, actor: string, name: string) => act(db, actor, name, "pause")
+export const resumeAgent = (db: Database, actor: string, name: string) => act(db, actor, name, "resume")
 
 export async function deleteAgent(db: Database, actor: string, name: string): Promise<DeletedAgent> {
   return mutate(db, async (tx, emit) => {

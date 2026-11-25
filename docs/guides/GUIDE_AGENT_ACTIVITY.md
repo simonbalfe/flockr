@@ -70,6 +70,7 @@ fc activity finish $E --status error --title "Rate limiting: 2 tests fail"
 fc activity show $E
 fc stop m12 --member claude --reason "Wrong file"
 fc agents activity claude --limit 10           # claude's recent runs across threads, newest first
+fc agents watch claude                         # follow claude's runs live: a line per step, how each ended, its replies
 ```
 
 ## Mapping a harness's event stream to activity entries

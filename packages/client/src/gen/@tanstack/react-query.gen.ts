@@ -3,8 +3,8 @@
 import { queryOptions, type UseMutationOptions } from '@tanstack/react-query';
 
 import { client } from '../client.gen';
-import { addTaskCommit, answerInThread, answerQuestion, approveTask, askInThread, askQuestion, blockTask, claimNextTask, claimTask, completeTask, createActivityEntry, createAgent, createChannel, createMember, createTask, deleteAgent, deleteMessage, failTask, getActivityEntry, getAgent, getInbox, getTask, getThread, giveTask, importChecklist, listActivity, listAgentActivity, listAgents, listChannels, listEvents, listMachines, listMembers, listMessages, listTasks, machineHeartbeat, makeTaskFromThread, markRead, type Options, postMessage, registerMachine, releaseTask, renewTask, replyToThread, requestChanges, searchBoard, setActivity, startAgent, stopAgent, stopRun, submitForReview, unblockTask, updateActivityEntry, updateAgent, updateChannel, whoami } from '../sdk.gen';
-import type { AddTaskCommitData, AddTaskCommitError, AddTaskCommitResponse, AnswerInThreadData, AnswerInThreadError, AnswerInThreadResponse, AnswerQuestionData, AnswerQuestionError, AnswerQuestionResponse, ApproveTaskData, ApproveTaskError, ApproveTaskResponse, AskInThreadData, AskInThreadError, AskInThreadResponse, AskQuestionData, AskQuestionError, AskQuestionResponse, BlockTaskData, BlockTaskError, BlockTaskResponse, ClaimNextTaskData, ClaimNextTaskError, ClaimNextTaskResponse, ClaimTaskData, ClaimTaskError, ClaimTaskResponse, CompleteTaskData, CompleteTaskError, CompleteTaskResponse, CreateActivityEntryData, CreateActivityEntryError, CreateActivityEntryResponse, CreateAgentData, CreateAgentError, CreateAgentResponse, CreateChannelData, CreateChannelError, CreateChannelResponse, CreateMemberData, CreateMemberError, CreateMemberResponse, CreateTaskData, CreateTaskError, CreateTaskResponse, DeleteAgentData, DeleteAgentError, DeleteAgentResponse, DeleteMessageData, DeleteMessageError, DeleteMessageResponse, FailTaskData, FailTaskError, FailTaskResponse, GetActivityEntryData, GetActivityEntryError, GetActivityEntryResponse, GetAgentData, GetAgentError, GetAgentResponse, GetInboxData, GetInboxError, GetInboxResponse, GetTaskData, GetTaskError, GetTaskResponse, GetThreadData, GetThreadError, GetThreadResponse, GiveTaskData, GiveTaskError, GiveTaskResponse, ImportChecklistData, ImportChecklistError, ImportChecklistResponse, ListActivityData, ListActivityError, ListActivityResponse, ListAgentActivityData, ListAgentActivityError, ListAgentActivityResponse, ListAgentsData, ListAgentsError, ListAgentsResponse, ListChannelsData, ListChannelsError, ListChannelsResponse, ListEventsData, ListEventsError, ListEventsResponse, ListMachinesData, ListMachinesError, ListMachinesResponse, ListMembersData, ListMembersError, ListMembersResponse, ListMessagesData, ListMessagesError, ListMessagesResponse, ListTasksData, ListTasksError, ListTasksResponse, MachineHeartbeatData, MachineHeartbeatError, MachineHeartbeatResponse, MakeTaskFromThreadData, MakeTaskFromThreadError, MakeTaskFromThreadResponse, MarkReadData, MarkReadError, MarkReadResponse, PostMessageData, PostMessageError, PostMessageResponse, RegisterMachineData, RegisterMachineError, RegisterMachineResponse, ReleaseTaskData, ReleaseTaskError, ReleaseTaskResponse, RenewTaskData, RenewTaskError, RenewTaskResponse, ReplyToThreadData, ReplyToThreadError, ReplyToThreadResponse, RequestChangesData, RequestChangesError, RequestChangesResponse, SearchBoardData, SearchBoardError, SearchBoardResponse, SetActivityData, SetActivityError, SetActivityResponse, StartAgentData, StartAgentError, StartAgentResponse, StopAgentData, StopAgentError, StopAgentResponse, StopRunData, StopRunError, StopRunResponse, SubmitForReviewData, SubmitForReviewError, SubmitForReviewResponse, UnblockTaskData, UnblockTaskError, UnblockTaskResponse, UpdateActivityEntryData, UpdateActivityEntryError, UpdateActivityEntryResponse, UpdateAgentData, UpdateAgentError, UpdateAgentResponse, UpdateChannelData, UpdateChannelError, UpdateChannelResponse, WhoamiData, WhoamiError, WhoamiResponse } from '../types.gen';
+import { addTaskCommit, answerInThread, answerQuestion, approveTask, askInThread, askQuestion, blockTask, claimNextTask, claimTask, completeTask, createActivityEntry, createAgent, createChannel, createMember, createTask, deleteAgent, deleteMessage, failTask, getActivityEntry, getAgent, getInbox, getTask, getThread, giveTask, importChecklist, listActivity, listAgentActivity, listAgents, listChannels, listEvents, listMachines, listMembers, listMessages, listTasks, machineHeartbeat, makeTaskFromThread, markRead, type Options, pauseAgent, postMessage, registerMachine, releaseTask, renewTask, replyToThread, requestChanges, resumeAgent, searchBoard, setActivity, startAgent, stopAgent, stopRun, submitForReview, unblockTask, updateActivityEntry, updateAgent, updateChannel, whoami } from '../sdk.gen';
+import type { AddTaskCommitData, AddTaskCommitError, AddTaskCommitResponse, AnswerInThreadData, AnswerInThreadError, AnswerInThreadResponse, AnswerQuestionData, AnswerQuestionError, AnswerQuestionResponse, ApproveTaskData, ApproveTaskError, ApproveTaskResponse, AskInThreadData, AskInThreadError, AskInThreadResponse, AskQuestionData, AskQuestionError, AskQuestionResponse, BlockTaskData, BlockTaskError, BlockTaskResponse, ClaimNextTaskData, ClaimNextTaskError, ClaimNextTaskResponse, ClaimTaskData, ClaimTaskError, ClaimTaskResponse, CompleteTaskData, CompleteTaskError, CompleteTaskResponse, CreateActivityEntryData, CreateActivityEntryError, CreateActivityEntryResponse, CreateAgentData, CreateAgentError, CreateAgentResponse, CreateChannelData, CreateChannelError, CreateChannelResponse, CreateMemberData, CreateMemberError, CreateMemberResponse, CreateTaskData, CreateTaskError, CreateTaskResponse, DeleteAgentData, DeleteAgentError, DeleteAgentResponse, DeleteMessageData, DeleteMessageError, DeleteMessageResponse, FailTaskData, FailTaskError, FailTaskResponse, GetActivityEntryData, GetActivityEntryError, GetActivityEntryResponse, GetAgentData, GetAgentError, GetAgentResponse, GetInboxData, GetInboxError, GetInboxResponse, GetTaskData, GetTaskError, GetTaskResponse, GetThreadData, GetThreadError, GetThreadResponse, GiveTaskData, GiveTaskError, GiveTaskResponse, ImportChecklistData, ImportChecklistError, ImportChecklistResponse, ListActivityData, ListActivityError, ListActivityResponse, ListAgentActivityData, ListAgentActivityError, ListAgentActivityResponse, ListAgentsData, ListAgentsError, ListAgentsResponse, ListChannelsData, ListChannelsError, ListChannelsResponse, ListEventsData, ListEventsError, ListEventsResponse, ListMachinesData, ListMachinesError, ListMachinesResponse, ListMembersData, ListMembersError, ListMembersResponse, ListMessagesData, ListMessagesError, ListMessagesResponse, ListTasksData, ListTasksError, ListTasksResponse, MachineHeartbeatData, MachineHeartbeatError, MachineHeartbeatResponse, MakeTaskFromThreadData, MakeTaskFromThreadError, MakeTaskFromThreadResponse, MarkReadData, MarkReadError, MarkReadResponse, PauseAgentData, PauseAgentError, PauseAgentResponse, PostMessageData, PostMessageError, PostMessageResponse, RegisterMachineData, RegisterMachineError, RegisterMachineResponse, ReleaseTaskData, ReleaseTaskError, ReleaseTaskResponse, RenewTaskData, RenewTaskError, RenewTaskResponse, ReplyToThreadData, ReplyToThreadError, ReplyToThreadResponse, RequestChangesData, RequestChangesError, RequestChangesResponse, ResumeAgentData, ResumeAgentError, ResumeAgentResponse, SearchBoardData, SearchBoardError, SearchBoardResponse, SetActivityData, SetActivityError, SetActivityResponse, StartAgentData, StartAgentError, StartAgentResponse, StopAgentData, StopAgentError, StopAgentResponse, StopRunData, StopRunError, StopRunResponse, SubmitForReviewData, SubmitForReviewError, SubmitForReviewResponse, UnblockTaskData, UnblockTaskError, UnblockTaskResponse, UpdateActivityEntryData, UpdateActivityEntryError, UpdateActivityEntryResponse, UpdateAgentData, UpdateAgentError, UpdateAgentResponse, UpdateChannelData, UpdateChannelError, UpdateChannelResponse, WhoamiData, WhoamiError, WhoamiResponse } from '../types.gen';
 
 export type QueryKey<TOptions extends Options> = [
     Pick<TOptions, 'baseUrl' | 'body' | 'headers' | 'path' | 'query'> & {
@@ -875,6 +875,40 @@ export const stopAgentMutation = (options?: Partial<Options<StopAgentData>>): Us
     const mutationOptions: UseMutationOptions<StopAgentResponse, StopAgentError, Options<StopAgentData>> = {
         mutationFn: async (fnOptions) => {
             const { data } = await stopAgent({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+/**
+ * Pause an agent: its current run finishes, then mentions, replies and ready tasks wait until it is resumed; safe to repeat. A stopped agent is refused
+ */
+export const pauseAgentMutation = (options?: Partial<Options<PauseAgentData>>): UseMutationOptions<PauseAgentResponse, PauseAgentError, Options<PauseAgentData>> => {
+    const mutationOptions: UseMutationOptions<PauseAgentResponse, PauseAgentError, Options<PauseAgentData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await pauseAgent({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+/**
+ * Resume a paused agent: it picks up the work that waited, conversations first, then ready tasks assigned to it; safe to repeat. A stopped agent is refused
+ */
+export const resumeAgentMutation = (options?: Partial<Options<ResumeAgentData>>): UseMutationOptions<ResumeAgentResponse, ResumeAgentError, Options<ResumeAgentData>> => {
+    const mutationOptions: UseMutationOptions<ResumeAgentResponse, ResumeAgentError, Options<ResumeAgentData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await resumeAgent({
                 ...options,
                 ...fnOptions,
                 throwOnError: true

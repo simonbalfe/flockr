@@ -489,9 +489,9 @@ export type Agent = Member & {
 export type AgentState = 'working' | 'blocked' | 'idle';
 
 /**
- * offline: stopped or its machine is offline. online: served and idle. working: a run is active. error: the runner could not serve it (see statusReason).
+ * offline: stopped or its machine is offline. online: served and idle. working: a run is active. paused: it finishes its current run and takes no new work until resumed. error: the runner could not serve it (see statusReason).
  */
-export type AgentStatus = 'offline' | 'online' | 'working' | 'error';
+export type AgentStatus = 'offline' | 'online' | 'working' | 'paused' | 'error';
 
 export type AgentConfig = {
     /**
@@ -516,7 +516,10 @@ export type AgentConfig = {
  */
 export type AgentPermissions = 'edit-free-commands-ask' | 'read-only';
 
-export type AgentDesired = 'running' | 'stopped';
+/**
+ * running: served and taking work. paused: served, finishing its current run, new work waits. stopped: not served.
+ */
+export type AgentDesired = 'running' | 'paused' | 'stopped';
 
 export type AgentDetail = Agent & {
     tasks: Array<Task>;
@@ -3094,6 +3097,84 @@ export type StopAgentResponses = {
 };
 
 export type StopAgentResponse = StopAgentResponses[keyof StopAgentResponses];
+
+export type PauseAgentData = {
+    body?: never;
+    path: {
+        name: string;
+    };
+    query?: never;
+    url: '/api/agents/{name}/pause';
+};
+
+export type PauseAgentErrors = {
+    /**
+     * The input is not valid
+     */
+    400: Error;
+    /**
+     * The acting member is not on this board, or may not do this
+     */
+    403: Error;
+    /**
+     * Not found
+     */
+    404: Error;
+    /**
+     * The task or message is in another state, or the claim epoch is stale
+     */
+    409: Error;
+};
+
+export type PauseAgentError = PauseAgentErrors[keyof PauseAgentErrors];
+
+export type PauseAgentResponses = {
+    /**
+     * OK
+     */
+    200: AgentDetail;
+};
+
+export type PauseAgentResponse = PauseAgentResponses[keyof PauseAgentResponses];
+
+export type ResumeAgentData = {
+    body?: never;
+    path: {
+        name: string;
+    };
+    query?: never;
+    url: '/api/agents/{name}/resume';
+};
+
+export type ResumeAgentErrors = {
+    /**
+     * The input is not valid
+     */
+    400: Error;
+    /**
+     * The acting member is not on this board, or may not do this
+     */
+    403: Error;
+    /**
+     * Not found
+     */
+    404: Error;
+    /**
+     * The task or message is in another state, or the claim epoch is stale
+     */
+    409: Error;
+};
+
+export type ResumeAgentError = ResumeAgentErrors[keyof ResumeAgentErrors];
+
+export type ResumeAgentResponses = {
+    /**
+     * OK
+     */
+    200: AgentDetail;
+};
+
+export type ResumeAgentResponse = ResumeAgentResponses[keyof ResumeAgentResponses];
 
 export type ListAgentActivityData = {
     body?: never;

@@ -1,5 +1,14 @@
 import type { AgentPermissions, CreateAgentBody } from "@flockr/client"
-import { createAgentMutation, deleteAgentMutation, listMachinesOptions, startAgentMutation, stopAgentMutation, updateAgentMutation } from "@flockr/client/react-query"
+import {
+  createAgentMutation,
+  deleteAgentMutation,
+  listMachinesOptions,
+  pauseAgentMutation,
+  resumeAgentMutation,
+  startAgentMutation,
+  stopAgentMutation,
+  updateAgentMutation,
+} from "@flockr/client/react-query"
 import { useMutation, useQuery, useQueryClient, type MutateOptions, type UseMutationOptions } from "@tanstack/react-query"
 
 export const machineQueries = { machines: () => listMachinesOptions() }
@@ -22,4 +31,6 @@ export const useUpdateAgent = () =>
   }))
 export const useStartAgent = () => useAgentMutation(startAgentMutation(), byName)
 export const useStopAgent = () => useAgentMutation(stopAgentMutation(), byName)
+export const usePauseAgent = () => useAgentMutation(pauseAgentMutation(), byName)
+export const useResumeAgent = () => useAgentMutation(resumeAgentMutation(), byName)
 export const useDeleteAgent = () => useAgentMutation(deleteAgentMutation(), byName)

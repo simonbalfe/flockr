@@ -1,9 +1,9 @@
-import { mayManageAgent, permissionLabels, type ActivityEntry, type AgentConfig, type AgentDetail, type AgentPermissions } from "@flockr/client"
+import { mayManageAgent, permissionLabels, type ActivityEntry, type AgentConfig, type AgentDesired, type AgentDetail, type AgentPermissions } from "@flockr/client"
 import { Ellipsis } from "lucide-react"
 import { DropdownMenu } from "radix-ui"
 import { useState } from "react"
 import { toast } from "sonner"
-import { useDeleteAgent, useStartAgent, useStopAgent, useUpdateAgent } from "@/api/agents"
+import { useDeleteAgent, usePauseAgent, useResumeAgent, useStartAgent, useStopAgent, useUpdateAgent } from "@/api/agents"
 import { useAgent, useAgentActivity, useInbox, useMembers } from "@/api/hooks"
 import { currentUser } from "@/api/session"
 import { WorkBlock } from "@/components/agent/work-block"
@@ -123,22 +123,28 @@ function MoreMenu({ name }: { name: string }) {
   )
 }
 
+const controls = {
+  running: { action: "pause", label: "Pause", primary: false, stoppable: true, hint: "Pause lets its current run finish and holds new work. Stop ends its sessions and gives back its tasks." },
+  paused: { action: "resume", label: "Resume", primary: true, stoppable: true, hint: "Paused: its current run finishes, mentions and tasks wait until you resume it." },
+  stopped: { action: "start", label: "Start", primary: true, stoppable: false, hint: "It ignores mentions until started." },
+} as const satisfies Record<AgentDesired, { action: "start" | "pause" | "resume"; label: string; primary: boolean; stoppable: boolean; hint: string }>
+
 function Controls({ agent }: { agent: AgentDetail & { config: AgentConfig } }) {
-  const start = useStartAgent()
+  const actions = { start: useStartAgent(), pause: usePauseAgent(), resume: useResumeAgent() }
   const stop = useStopAgent()
-  const running = agent.config.desired === "running"
+  const control = controls[agent.config.desired]
+  const main = actions[control.action]
   return (
     <div className="flex items-center gap-2">
-      {running ? (
+      <Button variant={control.primary ? "default" : "outline"} size="sm" onClick={() => main.mutate(agent.name)} disabled={main.isPending}>
+        {control.label}
+      </Button>
+      {control.stoppable && (
         <Button variant="outline" size="sm" onClick={() => stop.mutate(agent.name)} disabled={stop.isPending}>
           Stop
         </Button>
-      ) : (
-        <Button size="sm" onClick={() => start.mutate(agent.name)} disabled={start.isPending}>
-          Start
-        </Button>
       )}
-      <span className="flex-1 text-xs text-faint">{running ? "Stopping ends its sessions and gives back its tasks." : "It ignores mentions until started."}</span>
+      <span className="flex-1 text-xs text-faint">{control.hint}</span>
       <MoreMenu name={agent.name} />
     </div>
   )

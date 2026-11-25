@@ -57,6 +57,13 @@
       "when": 1795606286949,
       "tag": "0007_task_commits",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1795607114747,
+      "tag": "0008_agent_pause",
+      "breakpoints": true
     }
   ]
 }
