@@ -12,10 +12,12 @@ const channelOf = (raw: string | undefined) => need(raw, "channel").replace(/^#/
 
 export async function areasCommand(context: AreasContext): Promise<number> {
   const { positionals, values, print } = context
-  const sub = positionals[1] ?? "list"
+  // "flockr areas general" is "flockr areas list general", as the help shows.
+  const named = ["list", "declare", "renew", "release"].includes(positionals[1] ?? "list")
+  const sub = named ? (positionals[1] ?? "list") : "list"
   switch (sub) {
     case "list": {
-      const channel = channelOf(positionals[2] ?? values.channel)
+      const channel = channelOf((named ? positionals[2] : positionals[1]) ?? values.channel)
       const areas = await run(sdk.listAreas({ path: { channel } }))
       print(areas, () => (areas.length ? areas.map(areaLine).join("\n") : `Nobody has declared a working area in #${channel}.`))
       return 0
