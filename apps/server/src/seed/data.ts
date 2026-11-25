@@ -24,8 +24,22 @@ export interface SeedTask {
   commit?: string
   reason?: string
   question?: Question
+  plan?: string
   replies?: SeedReply[]
 }
+
+export interface SeedPlan {
+  key: string
+  channel: string
+  title: string
+  goal: string
+  createdBy: string
+  at: string
+}
+
+export const seedPlans: SeedPlan[] = [
+  { key: "users-api", channel: "backend", title: "Users API", goal: "A users API with sign-up behind it this week", createdBy: "lead", at: "09:59" },
+]
 
 export type SeedReply = [who: string, at: string, text: string]
 
@@ -83,7 +97,7 @@ export interface SeedRoutine {
 export const seedRoutines: SeedRoutine[] = [{ name: "Morning brief", channel: "backend", schedule: "0 8 * * 1-5", action: { kind: "brief" }, createdBy: "simon" }]
 
 export const seedTasks: SeedTask[] = [
-  { id: 806, title: "Design the users table", channel: "backend", kind: "schema", state: "ready", at: "09:59", spec: "SPEC_USERS.md" },
+  { id: 806, title: "Design the users table", channel: "backend", kind: "schema", state: "ready", at: "09:59", spec: "SPEC_USERS.md", plan: "users-api" },
   {
     id: 808,
     title: "Run the users migration on prod",
@@ -94,6 +108,7 @@ export const seedTasks: SeedTask[] = [
     needs: [806],
     assignee: "claude",
     spec: "SPEC_USERS.md",
+    plan: "users-api",
   },
   {
     id: 812,
@@ -105,7 +120,20 @@ export const seedTasks: SeedTask[] = [
     needs: [808],
     assignee: "claude",
     spec: "SPEC_USERS.md",
+    plan: "users-api",
     replies: [["claude", "10:40", "Starts when #808 completes. Spec read."]],
+  },
+  {
+    id: 814,
+    title: "Write the users API docs",
+    channel: "backend",
+    kind: "docs",
+    state: "waiting",
+    at: "09:59",
+    needs: [812],
+    assignee: "codex",
+    spec: "SPEC_USERS.md",
+    plan: "users-api",
   },
   {
     id: 298,
@@ -195,15 +223,17 @@ export const seedFeeds: Record<string, SeedFeedItem[]> = {
       kind: "text",
       who: "simon",
       at: "09:58",
-      text: "Plan for users is in. Table first, then the migration, then the API. @claude takes the last two.",
+      text: "@lead we need a users API with sign-up behind it this week.",
       replies: [
+        ["lead", "09:59", "Plan: Users API, 4 tasks. The table design (#806) is open to anyone, claude runs the migration (#808) and builds the API (#812), codex writes the docs (#814). I will ask you before the prod run."],
         ["tim", "10:02", "Should the migration be reversible?"],
         ["simon", "10:03", "Yes, add a down step."],
       ],
     },
-    { kind: "task", who: "simon", at: "09:59", taskId: 806 },
-    { kind: "task", who: "simon", at: "09:59", taskId: 808 },
-    { kind: "task", who: "simon", at: "09:59", taskId: 812 },
+    { kind: "task", who: "lead", at: "09:59", taskId: 806 },
+    { kind: "task", who: "lead", at: "09:59", taskId: 808 },
+    { kind: "task", who: "lead", at: "09:59", taskId: 812 },
+    { kind: "task", who: "lead", at: "09:59", taskId: 814 },
     { kind: "text", who: "claude", at: "10:40", text: "Checked the chain: #812 waits on #808, which waits on the table design in #806. Nothing for me to start yet." },
     {
       kind: "text",

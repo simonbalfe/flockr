@@ -1,9 +1,9 @@
 import { mentionsIn, routineLimits } from "@flockr/contracts"
 import { sql } from "drizzle-orm"
 import type { Database, Tx } from "../db/client"
-import { agents, channels, machines, members, messages, reads, routines, taskCommits, tasks } from "../db/schema"
+import { agents, channels, machines, members, messages, plans, reads, routines, taskCommits, tasks } from "../db/schema"
 import { mutate } from "../board/events"
-import { seedAgents, seedChannels, seedClock, seedFeeds, seedMachines, seedMembers, seedRoutines, seedTasks, unreadForSimon, type SeedReply } from "./data"
+import { seedAgents, seedChannels, seedClock, seedFeeds, seedMachines, seedMembers, seedPlans, seedRoutines, seedTasks, unreadForSimon, type SeedReply } from "./data"
 
 const minutesOf = (clock: string) => {
   const [h, m] = clock.split(":").map(Number)
@@ -30,8 +30,15 @@ export async function seedBoard(db: Database, now = new Date()): Promise<boolean
       await tx.insert(routines).values({ ...r, triggerKind: "cron", enabled: false, perHour: routineLimits.perHourDefault, createdAt: at("08:00"), updatedAt: at("08:00") })
     }
 
+    const planIds = new Map<string, number>()
+    for (const { at: time, ...p } of seedPlans) {
+      const [row] = await tx.insert(plans).values({ ...p, createdAt: at(time), updatedAt: at(time) }).returning({ id: plans.id })
+      if (row) planIds.set(p.key, row.id)
+    }
+
     for (const t of seedTasks) {
       await tx.insert(tasks).values({
+        planId: t.plan ? (planIds.get(t.plan) ?? null) : null,
         id: t.id,
         title: t.title,
         channel: t.channel,
