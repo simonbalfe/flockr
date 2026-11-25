@@ -19,6 +19,7 @@ Research only: every feature the surveyed products have, and who has it. Nothing
 | DU | Claude Duet (Anthropic) | Always-on personal agent with project channels and a tasks panel; research preview, waitlist, one user only | Closest UX: channels plus tasks, but not shared |
 | DG | duet (GitHub, adamgogacz) | Agent skill: two agents on different models work as peers through a shared file-based message board | Partly: board for two agents |
 | DTM | DUET Teams (duetteams.com) | Kanban board with a hand-off lane where people and agents share one record; waitlist | Partly: board, early access |
+| CT | Chatter (marcvermeeren, open source, MIT) | Repo-scoped group chat, tasks, hand-offs and shared notes for coding agents running in Herdr on one machine; experimental, no server | Partly: agent-to-agent coordination, but local and not a workspace |
 
 ## Messages and threads
 
@@ -26,7 +27,7 @@ Research only: every feature the surveyed products have, and who has it. Nothing
 |---|---|---|---|
 | P1 | Channels with threaded replies in one ordered log | VB, BZ | VB: channels and threads; BZ: every message is a signed event in one log |
 | P2 | Stream channels for chat and forum channels for longer talk | BZ | Two channel types |
-| P3 | `@` mentions route a message to an agent | BZ, FB, DB, RK | FB: groups of 2 to 6 bots, routed by mention or a small router model |
+| P3 | `@` mentions route a message to an agent | BZ, FB, DB, RK, CT | FB: groups of 2 to 6 bots, routed by mention or a small router model; CT: `@name` pushes the message into that agent's session; only the person can use `@everyone` |
 | P4 | Steering: a message sent mid-turn joins the running turn | FB, RK | Queued into the live turn |
 | P5 | Wait on a thread until someone answers, with a timeout | VB, HD | `vb wait --re <id> --timeout 30m`; `hc wait` returns message, timeout or done |
 | P6 | Live tail that resumes without gaps | VB, RK, HD | RK: a sequence number per thread; HD: `hc events` JSON lines |
@@ -39,6 +40,7 @@ Research only: every feature the surveyed products have, and who has it. Nothing
 | P13 | Sub-threads for review in place of pull requests | ZD | Each sub-thread gets its own copy of the code |
 | P14 | Shared canvas per channel | BZ | Agents edit it through the command line |
 | P15 | Full-text search | BZ, VB | BZ: Postgres search; VB: inspector filters by text |
+| P80 | Delivery follows the agent's status: idle, working or done get the message; blocked or absent agents queue it until they settle | CT | Event hooks flush the queue when an agent's status changes; text is cleaned of terminal control codes |
 
 ## Tasks and coordination
 
@@ -48,18 +50,22 @@ Research only: every feature the surveyed products have, and who has it. Nothing
 | P17 | Claim the oldest ready task matching labels, optionally waiting | VB | `vb tasks claim --ready work/ --label step=fix --wait 10m` |
 | P18 | A claim is a 15-minute lease, renewed while working | VB | `vb tasks renew`; expiry returns it to ready |
 | P19 | Fencing: a holder whose claim was replaced cannot write | RK | A generation number on each claim |
-| P20 | Atomic claim and recovery of work in progress after a crash | OB | One SQL update claims; in-flight rows return to queued on restart |
+| P20 | Atomic claim and recovery of work in progress after a crash | OB, CT | One SQL update claims; in-flight rows return to queued on restart; CT: a message is claimed for delivery by one SQL update; a failed send puts it back |
 | P21 | A task needs other tasks and starts when they complete | VB | `--needs <id>` |
-| P22 | Assign a task to one named agent | VB | `--for <profile>` |
-| P23 | Agents hand work to each other | FB, RK, DB, OB | FB: owed replies with a 6-hop cap; RK: `handoff_to_bot` |
+| P22 | Assign a task to one named agent | VB, CT | `--for <profile>`; CT: `chatter task create --assignee codex` |
+| P23 | Agents hand work to each other | FB, RK, DB, OB, CT | FB: owed replies with a 6-hop cap; RK: `handoff_to_bot`; CT: `chatter handoff <task> <agent>` changes the owner and sends a pointer to a structured record |
 | P24 | Work assigned by `@` mention instead of tasks | BZ | No task object |
-| P25 | Work linked to the code that did it | ZD, BZ | ZD: edit IDs; BZ: git built in, a branch is a room |
+| P25 | Work linked to the code that did it | ZD, BZ, CT | ZD: edit IDs; BZ: git built in, a branch is a room; CT: `task done --commit`; a hand-off records branch and commit; code moves through normal Git |
 | P26 | Per-agent scratchpad: open, parked, done | RK | |
 | P27 | Parent and child agents; wait on any or all children | HD | `hc wait --children any\|all` |
 | P68 | A "ready for review" lane: finished work waits until a person marks it done | DU, DTM | DU: tasks are to do, in progress, waiting for you, finished; reminders until reviewed |
 | P69 | Agents suggest tasks from what they know | DU | |
 | P70 | Completion needs both sides to agree, at an exact version of the work | DG | One peer proposes, the other agrees or objects; "agreed incomplete" is a valid end |
 | P71 | Messages can never be edited or deleted | DG, DTM, BZ | |
+| P81 | Structured hand-off record: summary, branch, commit, files, tests run, next steps | CT | The receiver gets a short pointer and reads the record; ownership and an audit entry change in one step |
+| P82 | Typed shared notes: decision, discovery, dead end; old ones are superseded, not deleted | CT | Task-scoped lookup shows dead ends first, then decisions, then discoveries |
+| P83 | Open questions between agents that stay open until someone answers | CT | `chatter ask codex "..."`, `chatter answer 7 "..."` |
+| P84 | One shared space per Git repository, whatever the worktree | CT | Every worktree of a repo sees the same agents, chat, tasks and notes; other repos stay separate |
 
 ## People's view
 
@@ -73,8 +79,9 @@ Research only: every feature the surveyed products have, and who has it. Nothing
 | P33 | Voice | RK, BZ, DT, DTM | BZ: huddles |
 | P72 | Activity view per agent: steps taken, delegated tasks, questions waiting; pause all or stop one task | DT | Stopping does not undo finished actions |
 | P73 | Agents message first with progress, a question or a decision | DT, DU | |
-| P74 | A morning brief: one daily summary | DU | |
+| P74 | A morning brief: one daily summary | DU, CT | CT: `chatter brief` with a time such as 2h summarises changes since the last look |
 | P75 | Channels share memory but keep separate conversations | DU | One channel per project |
+| P86 | Team metrics from an append-only ledger: delivery time, tasks done, dead ends, question response time | CT | `chatter stats` |
 
 ## Agents and identity
 
@@ -82,14 +89,15 @@ Research only: every feature the surveyed products have, and who has it. Nothing
 |---|---|---|---|
 | P34 | Any number of agents, each named, shown with its person | VB | `--as claude` shows "claude via simon" |
 | P35 | Each agent has its own key and audit trail, revocable alone | BZ | One keypair per agent |
-| P36 | Agents act through a JSON command line and MCP | VB, BZ, DB | BZ: `buzz-cli`; DB: runs as an MCP server |
+| P36 | Agents act through a JSON command line and MCP | VB, BZ, DB, CT | BZ: `buzz-cli`; DB: runs as an MCP server; CT: `--json` on most read commands; no MCP |
 | P37 | A skill that teaches a coding agent to use the board | VB | `npx skills add vercel/board` |
-| P38 | Runs Claude Code, Codex and others as members | BZ, DB, ZD, HD | BZ: `buzz-acp` passes a mention to the agent |
+| P38 | Runs Claude Code, Codex and others as members | BZ, DB, ZD, HD, CT | BZ: `buzz-acp` passes a mention to the agent; CT: Claude Code, Codex, Pi and others, as panes in Herdr |
 | P39 | Agents keep working after the laptop closes | ZD, GB, DB, RK | Cloud runners or a server |
 | P40 | Hand coding to a cloud agent | GB | Cursor cloud agents |
 | P41 | Per-agent memory | FB, RK, DB | |
 | P42 | Role templates | HD, BZ, OB | HD: Markdown roles; OB: lead, research, build, review, ops |
 | P43 | Agents on other machines | HD, DB | `hc run --on <machine>` |
+| P85 | Start a teammate with a worktree and a purpose in one command; plan a whole team in a wizard | CT | `chatter spawn data-api --kind codex --purpose "..."` makes `agents/<name>`, starts and labels the agent in Herdr, announces it |
 
 ## Triggers, routines and sync
 
@@ -127,7 +135,7 @@ Research only: every feature the surveyed products have, and who has it. Nothing
 | Id | Feature | Who has it | How it works there |
 |---|---|---|---|
 | P61 | Nothing to deploy | VB | Lives in Vercel's API |
-| P62 | A board on one computer, shareable on a tailnet | VB | `npx @vercel/board serve` |
+| P62 | A board on one computer, shareable on a tailnet | VB, CT | `npx @vercel/board serve`; CT: one SQLite file per repository on one computer; no server |
 | P63 | In-memory board for tests, and a protocol conformance check | VB | |
 | P64 | Self-host with Docker | RK, BZ, OB | |
 | P65 | SQLite per agent in a Durable Object, asleep when idle | FB | Rumoured for ZD, unconfirmed |
@@ -168,3 +176,4 @@ Research only: every feature the surveyed products have, and who has it. Nothing
 - Claude Duet: https://airegeneration.substack.com/p/always-on-agents-claude-duet-the
 - duet: https://github.com/adamgogacz/duet
 - DUET Teams: https://duetteams.com/
+- Chatter: https://github.com/marcvermeeren/chatter (see `docs/reference/RESEARCH_CHATTER.md`)
