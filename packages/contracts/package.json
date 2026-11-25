@@ -15,7 +15,8 @@
     "./checklist": "./src/checklist.ts",
     "./cron": "./src/cron.ts",
     "./memory": "./src/memory.ts",
-    "./routines": "./src/routines.ts"
+    "./routines": "./src/routines.ts",
+    "./presets": "./src/presets.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",
