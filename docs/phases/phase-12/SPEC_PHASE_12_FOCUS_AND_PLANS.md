@@ -68,3 +68,15 @@ Example: four agents work in #backend and #frontend. Today the app opens on the 
 - [ ] `bun run test`, `bun run typecheck`, `bun run build`
 
 ## Notes from the build
+- 12c: Undo on a Needs you card delays the action instead of reversing it: the card hides at once, the mutation is sent when the 5 second toast ends (or on page hide), and a refusal brings the card back with the error. This makes every one-tap card action undoable, including answers and approvals that the API cannot reverse. Reply on a blocked card is the one action sent at once.
+- 12c: Live updates need nothing new: every board event already invalidates every query, so `getFocus` and the plan queries refresh with `task.*` and `plan.*` events like the inbox did.
+- 12c: Needs you sorts tasks by `createdAt` because a task carries no asked-at or blocked-at time; thread questions use their own `at`.
+- 12d: The channel feed has no activity entries, so the collapsed line counts only agent messages ("3 agent messages") and leaves steps out. "running · n steps" reads the thread's running activity entries through `useThread`, fetched only for threads with live activity.
+- 12d: "Answers a person" means the first message from an agent the person's last message mentioned; anything else between agents collapses. Watchers and bridges always show; only `agent` members collapse.
+- 12d: People / Everything is a menu, not a second segmented control beside Messages / Tasks / Areas (ux checklist: a toggle is one control with a menu). Threads' Open / Done is component state, not the URL: the root search parser drops unknown keys and the router is outside 12d.
+- 12d: The pure filter is `apps/web/src/components/feed/quiet.ts`, tested in `quiet.test.ts`.
+- 12b: The Lead personality lives once, in `packages/contracts/src/presets.ts` (`leadPreset`, `agentPresets`, `presetOf`), re-exported through `packages/client` for the web app. The seed and New agent both read it, so editing the text changes both; `presetOf(agent.personality)` tells 12c whether an agent was made from the Lead preset.
+- 12b: A personality lives on the `agents` row, which needs a machine, so the seeded `lead` sits on an invented offline machine (`seed-studio-mac`), stopped and read-only. To talk to a real lead, make one with the Lead preset in New agent on a machine with a runner.
+- 12b: The seeded Users API plan (key `users-api`, by lead) holds #806, #808, #812 and #814 (docs, codex, needs #812); simon's first #backend message is now "@lead we need a users API..." with lead's plan summary as the first reply. Tasks given to gemini break the agent detail test, which expects gemini to hold only #822.
+- 12b: A full `bun test` run on a Postgres shared with other builders can time out one slow test at 5 s (the commit migration or the backup restore); each passes alone.
+- 12c: The lead box finds the lead as the agent named `lead`, else the first agent whose personality `presetOf` reads as the Lead preset (an exact match after trimming, so an edited personality no longer counts).

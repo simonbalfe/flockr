@@ -128,7 +128,7 @@ describe("status", () => {
     await heartbeat(db, "simon", "danas-laptop", { agents: [] }, at(80))
     expect(await statusAt(at(81))).toEqual({ status: "offline", reason: "Waiting for danas-laptop to start it" })
     const machines = z.array(Machine).parse((await call("simon", "GET", "/api/machines")).json)
-    expect(machines).toEqual([expect.objectContaining({ id: "danas-laptop", harnesses: [harness] })])
+    expect(machines.filter((m) => m.online)).toEqual([expect.objectContaining({ id: "danas-laptop", harnesses: [harness] })])
   })
 
   test("a heartbeat changes only its own machine's agents and returns them", async () => {

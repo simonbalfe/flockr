@@ -139,10 +139,14 @@ export function useBoardSync(onNotice: (text: string) => void): void {
   }, [client, onNotice])
 }
 
-function useBoardMutation<Data, Err, Vars, Args>(options: UseMutationOptions<Data, Err, Vars>, toVars: (args: Args) => Vars) {
+export function useBoardMutation<Data, Err, Vars, Args>(options: UseMutationOptions<Data, Err, Vars>, toVars: (args: Args) => Vars) {
   const client = useQueryClient()
   const mutation = useMutation({ ...options, onSuccess: () => client.invalidateQueries() })
-  return { ...mutation, mutate: (args: Args, opts?: MutateOptions<Data, Err, Vars>) => mutation.mutate(toVars(args), opts) }
+  return {
+    ...mutation,
+    mutate: (args: Args, opts?: MutateOptions<Data, Err, Vars>) => mutation.mutate(toVars(args), opts),
+    mutateAsync: (args: Args) => mutation.mutateAsync(toVars(args)),
+  }
 }
 
 const onTask = (id: number) => ({ path: { id } })

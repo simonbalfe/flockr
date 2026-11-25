@@ -1,8 +1,9 @@
 import { Link } from "@tanstack/react-router"
-import { Bookmark, Inbox, KeyRound, ListChecks, LogOut, MessagesSquare, Repeat, Search, SendHorizontal, ShieldCheck } from "lucide-react"
+import { Bookmark, KeyRound, ListChecks, LogOut, MessagesSquare, Repeat, Search, SendHorizontal, ShieldCheck, Target } from "lucide-react"
 import type { ReactNode } from "react"
 import { useSignOut, useWhoami } from "@/api/auth"
-import { useAgents, useChannels, useDrafts, useInbox, useMembers, useMyThreads } from "@/api/hooks"
+import { useNeedsYou } from "@/api/focus"
+import { useAgents, useChannels, useDrafts, useMembers, useMyThreads } from "@/api/hooks"
 import { currentUser } from "@/api/session"
 import type { Agent } from "@/api/types"
 import { AgentsHeading } from "@/components/agents/agents-heading"
@@ -63,13 +64,13 @@ function SignedIn() {
 export function SidebarContent() {
   const channels = useChannels()
   const agents = useAgents()
-  const inbox = useInbox()
+  const needs = useNeedsYou()
   const members = useMembers()
   const drafts = useDrafts()
   const threads = useMyThreads()
   const newReplies = (threads.data ?? []).filter((t) => t.unread > 0).length
   const { openPalette } = useShell()
-  const waiting = (inbox.data?.questions.length ?? 0) + (inbox.data?.reviews.length ?? 0)
+  const waiting = needs.items.length
 
   return (
     <>
@@ -87,9 +88,9 @@ export function SidebarContent() {
       <ScrollArea className="min-h-0 flex-1">
         <nav className="grid content-start gap-4 px-2.5 pt-0.5 pb-4" aria-label="Workspace">
           <div>
-            <Link to="/inbox" search={(prev) => prev} className={rowClass} activeProps={{ className: activeClass }}>
-              <Inbox className="size-4 w-[18px]" />
-              <span className="flex-1">Waiting for you</span>
+            <Link to="/" search={(prev) => prev} className={rowClass} activeOptions={{ exact: true }} activeProps={{ className: activeClass }}>
+              <Target className="size-4 w-[18px]" />
+              <span className="flex-1">Focus</span>
               {waiting > 0 && <Badge className="h-[18px] min-w-[18px] rounded-full px-1.5 text-[11px] tabular-nums">{waiting}</Badge>}
             </Link>
             <Link to="/threads" search={(prev) => prev} className={cn(rowClass, newReplies > 0 && "font-semibold")} activeProps={{ className: activeClass }}>

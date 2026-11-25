@@ -1,4 +1,4 @@
-import { agentLimits, agentNamePattern, agentPermissions, defaultAgentPermissions, permissionLabels, runnerCommand, type AgentPermissions, type Machine } from "@flockr/client"
+import { agentLimits, agentNamePattern, agentPermissions, agentPresets, defaultAgentPermissions, permissionLabels, presetOf, runnerCommand, type AgentPermissions, type AgentPreset, type Machine } from "@flockr/client"
 import { useState, type FormEvent } from "react"
 import { toast } from "sonner"
 import { useCreateAgent, useMachines } from "@/api/agents"
@@ -65,6 +65,12 @@ function CreateForm({ machines, onDone }: { machines: Machine[]; onDone: () => v
   const chosenFolder = folder ?? lastFolder
   const [permissions, setPermissions] = useState<AgentPermissions>(defaultAgentPermissions)
   const [personality, setPersonality] = useState("")
+  const preset = presetOf(personality)
+  const pickPreset = (option: AgentPreset) => {
+    if (preset?.id === option.id) return setPersonality("")
+    setPersonality(option.personality)
+    if (!name) setName(option.id)
+  }
   const problem = nameProblem(name)
   const ready = name !== "" && problem === null && machine !== undefined && harness !== undefined && chosenFolder.startsWith("/")
 
@@ -127,18 +133,35 @@ function CreateForm({ machines, onDone }: { machines: Machine[]; onDone: () => v
         <span className={hintClass}>An absolute path on {machine?.name ?? "the machine"}. The agent reads and works here.</span>
       </label>
       <PermissionChoice value={permissions} onChange={setPermissions} />
-      <label className={labelClass}>
-        <span>
-          Personality <span className="font-normal text-faint">optional</span>
-        </span>
+      <div className={labelClass}>
+        <div className="flex items-center justify-between gap-2">
+          <label htmlFor="new-agent-personality">
+            Personality <span className="font-normal text-faint">optional</span>
+          </label>
+          <div className="flex items-center gap-1" role="group" aria-label="Personality presets">
+            {agentPresets.map((option) => (
+              <button
+                key={option.id}
+                type="button"
+                aria-pressed={preset?.id === option.id}
+                onClick={() => pickPreset(option)}
+                className={cn("h-6 rounded-md border px-2 text-xs font-normal", preset?.id === option.id ? "border-foreground/40 bg-muted" : "text-muted-foreground hover:bg-muted/60")}
+              >
+                {option.label}
+              </button>
+            ))}
+          </div>
+        </div>
         <textarea
-          className={cn(fieldClass, "h-auto min-h-[64px] resize-y py-2")}
+          id="new-agent-personality"
+          className={cn(fieldClass, "h-auto resize-y py-2", preset ? "min-h-[160px]" : "min-h-[64px]")}
           value={personality}
           onChange={(e) => setPersonality(e.target.value)}
           placeholder="You review pull requests and keep answers short."
           maxLength={agentLimits.personalityMax}
         />
-      </label>
+        {preset ? <span className={hintClass}>{preset.summary}</span> : null}
+      </div>
       <DialogFooter>
         <Button type="submit" disabled={!ready || create.isPending}>
           {create.isPending ? "Creating..." : "Create and start"}

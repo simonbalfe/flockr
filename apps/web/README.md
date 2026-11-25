@@ -24,10 +24,14 @@ Other commands: `bun run build` (type check and production build into `dist/`), 
 |---|---|
 | Write `@claude add rate limiting` in a channel | A message that mentions claude; no task is made, claude can answer in the thread |
 | Press "New task" in a Tasks view | A dialog (title, channel, assignee); an assigned task is bound to that member, an unassigned one is open for anyone |
-| An agent asks a question in a thread | A question card in the thread and in "Waiting for you"; once answered it becomes "Answered X by Y" |
+| An agent asks a question in a thread | A question card in the thread and in Focus, under Needs you; once answered it becomes "Answered X by Y" |
 | An agent starts working in a thread | "claude is working..." under the thread and in the composer line, until it stops or expires |
 | In a terminal, `FC_AS=claude bun flockr tasks claim --ready` | #806 shows claude holding it, live, with no reload |
-| `FC_AS=claude bun flockr ask 806 "Use uuid keys?" --option Yes --option No` | A question card in "Waiting for you" and a toast |
+| `FC_AS=claude bun flockr ask 806 "Use uuid keys?" --option Yes --option No` | A question card in Focus, under Needs you, and a toast |
+| Open the app, press Next or `N` | The oldest Needs you card is marked and its thread opens in the right panel; `N` again moves to the next one |
+| On a Needs you card press Approve, Unblock or an answer | The card goes at once and a toast offers Undo for 5 seconds; the action is sent when the toast ends (`flockr focus` lists the same cards) |
+| Open a plan row in Focus | Its tasks with state dot, holder and lease; the row shows "n of m done" and a progress bar (`flockr plans show 3`) |
+| Type a goal in the box at the bottom of Focus and pick #backend | A message `@lead <goal>` in #backend; lead answers in its thread and makes a plan |
 | Tap an answer | The answer lands in the task thread; `flockr wait --thread 806` returns it |
 | Open #806, press Claim, then Mark done | #808 becomes ready |
 | Open a thread and press the small task icon in its header ("Make this thread a task") | A new task with the thread copied in; threads no longer show task buttons under the conversation (Simon, 25 Nov 2026) |
@@ -38,15 +42,16 @@ Other commands: `bun run build` (type check and production build into `dist/`), 
 | Hover your own message, press Edit, change the text, press Enter | The text changes for everyone with "(edited)"; click "(edited)" for the earlier versions (`flockr edit m12 <text>`, `flockr versions m12`) |
 | Hover a message, press Label, type `review ui`, press Enter | `+review` and `+ui` under the message; click one to show only messages and task cards carrying it, "Show all" clears it (`?label=review`, `flockr read backend --label review`) |
 | In a thread, hover a reply and press Reply | A sub-thread under that reply with its own reply box; afterwards it shows collapsed as "2 replies", click to expand (`flockr reply m20 <text>`) |
+| Open #backend while agents talk to each other | People (the default, remembered per browser) shows people, agents answering or mentioning a person, questions and work for review; each run of other agent messages is one line, "3 agent messages", that opens Everything at that point. The menu beside Messages / Tasks / Areas switches to Everything. A message whose thread waits on a person shows "Needs you"; one whose thread has a run going shows "running · 14 steps" |
 | Press + next to Channels, type a name and Create | The channel is made (the name becomes lowercase with dashes, "UI Check" is #ui-check) and opens; `flockr channels create <id>` does the same |
 | Hover a message, press Delete, then Yes | The message disappears for everyone, live, leaving no placeholder (Simon, 25 Nov 2026); the API still returns it as `deleted: true` with empty text; `flockr delete m12` does the same |
 | Press + beside Direct messages and pick claude, then write a message | A private conversation only the two of you can read; claude answers in that message's thread with no @mention (`flockr dm claude "text"`) |
-| Open Threads in the sidebar | Every thread you started or replied in, newest first; "2 new" marks replies from others since you last wrote; click one to open it (`flockr threads`) |
+| Open Threads in the sidebar | Every thread you started or replied in; each Open row leads with its status (Needs you, Running, Blocked, Unread), most urgent first, and Done holds threads whose task is done; click one to open it (`flockr threads`) |
 | Hover a message and press Save, then open Saved items | The message is listed; the bookmark there removes it (`flockr save m12`, `flockr saved`) |
 | Type in a message box, wait a moment, reload or open another device | The text is still there; sending clears it; Drafts & sent lists every draft and your recent posts (`flockr drafts`, `flockr sent`) |
 | Press Cmd+K | Jump to a channel, task or agent, or pick New agent |
 | Press Cmd+K and type `rate limit` | "Search messages and tasks" lists server hits with the words in bold; Enter opens the message's thread or the task (`flockr search rate limit` does the same) |
-| Press "+" beside Agents in the sidebar | The New agent dialog: name, harness and machine (from the runners that are online), folder, permissions, optional personality, then "Create and start". With no runner connected it says so and shows `bun run runner` with a copy button |
+| Press "+" beside Agents in the sidebar | The New agent dialog: name, harness and machine (from the runners that are online), folder, permissions, optional personality (the Lead preset fills in the planning personality and the name `lead`; press it again to clear), then "Create and start". With no runner connected it says so and shows `bun run runner` with a copy button |
 | Look at the dots beside agents | Status by shape: hollow is offline, solid is online, pulsing is working, two bars is paused, a slashed ring is an error (hover for the reason) |
 | Click an agent | Its panel: status, what it is on now (a link to the task), the questions it is waiting on a person for (answer them there), its recent runs as work blocks linking to their threads, owner, machine, harness, folder, permissions and personality (editable), Pause and Stop (Resume and Stop while paused, Start when stopped), and Delete in the "..." menu |
 | Open an agent's panel and add a note in "Notes" | The note is listed with its kind and who wrote it; Edit, Archive and the Archived tab work; the agent reads its notes when a session starts (`flockr notes add "..." --kind preference`) |
@@ -58,7 +63,7 @@ Other commands: `bun run build` (type check and production build into `dist/`), 
 | Press Stop in the thread header | A `run.stop_requested` event for claude; the block says "stop requested" until the run finishes (`flockr stop m12` does the same) |
 | Reply in a thread while claude works | The reply box says "Steer claude"; the reply is a normal reply the runner passes into the running session |
 | Open Routines in the sidebar, press New routine, pick "On an event", `message.posted`, "Post a message", then turn its switch on and post in that channel | Within about 10 seconds `flockr` posts the routine's text, and the row shows "Done: posted m32 · just now"; the seeded Morning brief stays off until you turn it on (`flockr routines` does the same) |
-| Open Approval rules in the sidebar, pick #backend, set Post a message to Ask, then make a watcher on `message.posted` in #backend, turn it on and post there | Within about 10 seconds `flockr` posts "Routine ... wants to post a message" with a question card in its thread and in Waiting for you; Allow once runs it, Deny skips it ("Denied by simon" on the Routines row). Allow is disabled for Spend money and Change prod (`flockr rules set post ask --channel backend` does the same) |
+| Open Approval rules in the sidebar, pick #backend, set Post a message to Ask, then make a watcher on `message.posted` in #backend, turn it on and post there | Within about 10 seconds `flockr` posts "Routine ... wants to post a message" with a question card in its thread and in Focus; Allow once runs it, Deny skips it ("Denied by simon" on the Routines row). Allow is disabled for Spend money and Change prod (`flockr rules set post ask --channel backend` does the same) |
 | `flockr ask m12 "Edit a.ts?" --option "Allow once" --option Deny --action '{"tool":"edit_file","path":"a.ts","diff":"..."}'` | A permission card showing the tool, command or input and the diff, answered in one tap |
 
 Nothing moves by itself: tasks move only when a person here or an agent (through `flockr`, MCP or the API) acts, when a lease runs out (the server returns it to ready), or when a routine a person turned on fires.
@@ -77,6 +82,7 @@ Screens never touch the network directly. Everything goes through `src/api/`:
 | `src/api/hooks.ts` | The only place that talks to the API: the generated TanStack Query options and mutations wrapped as `useTasks`, `useClaimTask` and so on, plus `useBoardSync`, which listens on `/ws` and refreshes the cache on every board event, resuming after a drop |
 | `src/api/session.ts` | The acting member (`simon` until `whoami` names another, `actAs`) and the low-lease threshold |
 | `src/api/auth.ts` | `whoami`, the sign-in link, sign-out and keys; `SessionGate` (`src/components/session-gate.tsx`) shows `SignIn` on a 401 |
+| `src/api/focus.ts` | Focus and plans: `useFocus`, `usePlans`, `usePlan`, the plan mutations, `useNeedsYou` (the cards, oldest first, minus those waiting on Undo) and `hideWithUndo`, which hides a card and sends its action when the Undo toast ends; the card order is `src/lib/focus.ts`, tested with `bun run --cwd apps/web test` |
 | `src/api/routines.ts` | Routines: the list, create, on, off and delete, and whether the current member may manage them (a person) |
 | `src/api/approvals.ts` | Approval rules: the list (kinds with floors and defaults, and the rules set), set and clear, and whether the current member may manage them (a person) |
 | `src/api/agents.ts` | Machines and the agent mutations (create, update, start, stop, delete); agent status arrives live as an `agents` frame, which refreshes the cache |
@@ -104,11 +110,11 @@ The generated client lives in `packages/client` and is rebuilt with `bun run gen
 
 | Route | Screen |
 |---|---|
-| `/` | Redirects to `/c/backend` |
+| `/` | Focus: needs you, plans, running, done today, and a box to ask the lead |
 | `/c/$channel` | Messages |
 | `/c/$channel/tasks` | Kanban for one channel |
 | `/tasks` | Kanban for all channels |
-| `/inbox` | Waiting for you |
+| `/inbox` | Redirects to `/` |
 | `/threads` | Threads you are in |
 | `/saved` | Saved items |
 | `/drafts` | Drafts and sent |
