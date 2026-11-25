@@ -27,7 +27,6 @@ Every phase and sub-phase with its status: "where are we". Phases are product fe
 
 | State | Sub-phases | Detail |
 |---|---|---|
-| Now | 1a | Waiting on Simon's yes to this checklist |
 | Decide before 1d | Sign-in for people | Email code (reuse flarebot's `src/worker/auth.ts`) or an OIDC proxy in front of the web app |
 | Now | PL1 Live signals | Platform track (`docs/phases/platform/README.md`): Flockr moves to Cloudflare through platform adapters (ADRs 0017, 0018) |
 | Decide before 4d | Coding agents | ADR 0019 is proposed: Claude Code in a disposable sandbox per task |
@@ -39,11 +38,11 @@ Done when: two agents work the example chain through `flockr`, each task startin
 
 | Sub-phase | For | Delivers | Covers | Status |
 |---|---|---|---|---|
-| 1a Skeleton | both | pnpm and Turborepo workspace; the Flockr server on Hono `OpenAPIHono` running on Bun; Postgres for events, tasks, people, keys and boards; Docker Compose with a local Postgres; Infisical `local` and `prod`; hosting and deploys moved to the Platform track (ADR 0017); `pnpm check`; `docker compose up` as the local board; Vitest against a real Postgres | P62, P63, P65 | Not started |
-| 1b Event log and messages | both | Every change is an event with a sequence number; channels; post, reply, read; labels; messages never edited in place (an edit is a new event) | P1, P6, P7, P71 | Not started |
-| 1c Tasks | agents | States waiting, ready, claimed, blocked, review, done; create; claim the oldest ready task matching labels; 15-minute lease, renewed while working, released on expiry by a timer in the server; a new fence number per claim, so a stale holder's write is refused; complete, fail, release; needs, with waiting tasks turning ready by themselves; block with a reason; assign to one agent | P16, P17, P18, P19, P20, P21, P22, P68 | Not started |
+| 1a Skeleton | both | pnpm and Turborepo workspace; the Flockr server on Hono `OpenAPIHono` running on Bun; Postgres for events, tasks, people, keys and boards; Docker Compose with a local Postgres; Infisical `local` and `prod`; hosting and deploys moved to the Platform track (ADR 0017); `pnpm check`; `docker compose up` as the local board; Vitest against a real Postgres | P62, P63, P65 | Mostly built: Bun workspace (not pnpm and Turborepo, ADR 0005), Hono, Postgres through Drizzle, local Postgres in Compose, bun:test against Postgres, `bun run check`; Infisical config and running the board in Compose (PL11) left |
+| 1b Event log and messages | both | Every change is an event with a sequence number; channels; post, reply, read; labels; messages never edited in place (an edit is a new event) | P1, P6, P7, P71 | Mostly built: gapless event log, channels, post, reply, read markers; left: labels on messages, edits as new events |
+| 1c Tasks | agents | States waiting, ready, claimed, blocked, review, done; create; claim the oldest ready task matching labels; 15-minute lease, renewed while working, released on expiry by a timer in the server; a new fence number per claim, so a stale holder's write is refused; complete, fail, release; needs, with waiting tasks turning ready by themselves; block with a reason; assign to one agent | P16, P17, P18, P19, P20, P21, P22, P68 | Done (built before the checklist was tracked; audited 25 Nov 2026) |
 | 1d Keys and identity | both | People sign in (choice above); one API key per person; an agent names itself with `--as` or `BOARD_PROFILE` and shows as "claude via simon" | P34, P60 | Not started |
-| 1e `flockr` command line | agents | Built on the generated client; `--json` output; post, reply, read, tasks; `flockr wait` on a thread with a timeout; `flockr tail` resuming from the last sequence number | P5, P6, P36 | Not started |
+| 1e `flockr` command line | agents | Built on the generated client; `--json` output; post, reply, read, tasks; `flockr wait` on a thread with a timeout; `flockr tail` resuming from the last sequence number | P5, P6, P36 | Done: `flockr` (also `fc`) with `--json`, post, reply, read, tasks, `wait`, `tail` (audited 25 Nov 2026) |
 
 ## Phase 2: Slack-style web app
 
@@ -51,12 +50,12 @@ Done when: on a phone, Simon watches the chain move live, answers the migration 
 
 | Sub-phase | For | Delivers | Covers | Status |
 |---|---|---|---|---|
-| 2a Shell and channels | people | React, TanStack Router and Query, shadcn/ui, served by the Flockr server; sidebar with channels, agents (working, idle or blocked dot) and people; message feed and composer; live updates over a WebSocket patching the cache, resuming from the last sequence number | P28 | Not started |
-| 2b Thread panel | people | A task's header: state, holder, lease time left, needs, spec, commit; actions by state (claim, mark done, release, block with a reason, unblock); replies; sub-threads for review | P13, P28 | Not started |
-| 2c Tasks view | people | Columns by state, for one channel or all; expiring leases in red; waiting tasks show what they need | P28 | Not started |
-| 2d Waiting for you | people | Question cards an agent posts and a person answers in one tap; the review lane with approve and ask for changes; a count in the sidebar | P31, P68, P73 | Not started |
-| 2e Mentions and quick switcher | people | `@claude <text>` records the mention and starts a conversation in that message's thread, never a task (ADR 0014, superseding the earlier "creates a task" wording); tasks are made only on purpose (`flockr tasks create`, New task, Make this a task); ⌘K jumps to any channel, task or agent | P3, P24 | Mentions and New task built; quick switcher not started |
-| 2f Phone layout and presence | people | Works at phone width with the sidebar behind a button and the thread full screen; "claude is working on #803, 11 min left" under the message box | P32 | Not started |
+| 2a Shell and channels | people | React, TanStack Router and Query, shadcn/ui, served by the Flockr server; sidebar with channels, agents (working, idle or blocked dot) and people; message feed and composer; live updates over a WebSocket patching the cache, resuming from the last sequence number | P28 | Done (built before the checklist was tracked; audited 25 Nov 2026) |
+| 2b Thread panel | people | A task's header: state, holder, lease time left, needs, spec, commit; actions by state (claim, mark done, release, block with a reason, unblock); replies; sub-threads for review | P13, P28 | Mostly built: task header, actions by state, replies; left: commit as a link, sub-threads for review |
+| 2c Tasks view | people | Columns by state, for one channel or all; expiring leases in red; waiting tasks show what they need | P28 | Done (built before the checklist was tracked; audited 25 Nov 2026) |
+| 2d Waiting for you | people | Question cards an agent posts and a person answers in one tap; the review lane with approve and ask for changes; a count in the sidebar | P31, P68, P73 | Done (built before the checklist was tracked; audited 25 Nov 2026) |
+| 2e Mentions and quick switcher | people | `@claude <text>` records the mention and starts a conversation in that message's thread, never a task (ADR 0014, superseding the earlier "creates a task" wording); tasks are made only on purpose (`flockr tasks create`, New task, Make this a task); ⌘K jumps to any channel, task or agent | P3, P24 | Done: mentions, New task, Make this a task and the ⌘K switcher (audited 25 Nov 2026) |
+| 2f Phone layout and presence | people | Works at phone width with the sidebar behind a button and the thread full screen; "claude is working on #803, 11 min left" under the message box | P32 | Mostly built: sidebar behind a button, full-screen panel, presence line; left: a real phone run of the done-when flow |
 
 ## Phase 3: Any agent connects
 
@@ -64,10 +63,10 @@ Done when: an agent on another machine, with its own key and only the MCP server
 
 | Sub-phase | For | Delivers | Covers | Status |
 |---|---|---|---|---|
-| 3a MCP server | agents | Generated from the OpenAPI document, served at `/mcp` by the Flockr server | P36 | Not started |
-| 3b Board skill | agents | A Markdown skill for coding agents: find the channel, read the thread first, claim, reply with progress, complete with proof, ask instead of guessing | P37 | Not started |
+| 3a MCP server | agents | Generated from the OpenAPI document, served at `/mcp` by the Flockr server | P36 | Done (built before the checklist was tracked; audited 25 Nov 2026) |
+| 3b Board skill | agents | A Markdown skill for coding agents: find the channel, read the thread first, claim, reply with progress, complete with proof, ask instead of guessing | P37 | Done (built before the checklist was tracked; audited 25 Nov 2026) |
 | 3c Agent keys | both | Each agent gets its own key, shown with its owner and turned off alone; a key can be limited to some channels | P35, P58, P79 | Not started |
-| 3d Commit links | both | A task stores the commits that did it; the thread links to each | P25 | Not started |
+| 3d Commit links | both | A task stores the commits that did it; the thread links to each | P25 | Partial: one commit per task, shown as text; left: several commits, a repo per channel, links |
 | 3e Checklist import | both | A repo's `SPEC_MASTER_CHECKLIST.md` rows become tasks with their order; completing a task ticks its row | Our own | Not started |
 
 ## Phase 4: Launchers
@@ -99,7 +98,7 @@ Done when: one query lists every blocked task across all boards, and search find
 
 | Sub-phase | For | Delivers | Covers | Status |
 |---|---|---|---|---|
-| 6a Event copy | people | Reports run straight on the events table in Postgres; a copy to a column store only if it gets slow | Our own | Not started |
+| 6a Event copy | people | Reports run straight on the events table in Postgres; a copy to a column store only if it gets slow | Our own | Partial: events and tasks can be paged; left: a report route |
 | 6b Search | people | Find messages and tasks by text across channels | P15 | Not started |
 | 6c Morning brief | people | One daily summary: what finished, what is blocked, what waits for you | P74 | Not started |
 

@@ -3,6 +3,7 @@
   "private": true,
   "type": "module",
   "bin": {
+    "flockr": "./src/main.ts",
     "fc": "./src/main.ts"
   },
   "scripts": {

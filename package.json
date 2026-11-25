@@ -18,7 +18,8 @@
     "typecheck": "bun run --filter '*' typecheck",
     "fc": "bun apps/cli/src/main.ts",
     "check": "bun run typecheck && bun run test",
-    "runner": "bun apps/runner/src/main.ts"
+    "runner": "bun apps/runner/src/main.ts",
+    "flockr": "bun apps/cli/src/main.ts"
   },
   "overrides": {
     "mdast-util-to-hast": "13.2.1",
