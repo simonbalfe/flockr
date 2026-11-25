@@ -9,7 +9,7 @@ const short = (text: string) => text.replace(/\s+/g, " ").slice(0, 100)
 const isThreadId = (id: string) => /^(m\d+|\d+)$/.test(id)
 const clean = (id: string) => id.replace(/^#/, "")
 
-const threadLine = (t: MyThread) => `${t.threadId.padEnd(6)} #${t.channel.padEnd(12)} ${t.unread ? `${t.unread} new  ` : ""}${t.replies} replies, last ${t.lastWho}: ${short(t.lastText)}  (${short(t.title)})`
+const threadLine = (t: MyThread) => `${t.threadId.padEnd(6)} ${t.status.replace("_", " ").padEnd(9)} #${t.channel.padEnd(12)} ${t.unread ? `${t.unread} new  ` : ""}${t.replies} replies, last ${t.lastWho}: ${short(t.lastText)}  (${short(t.title)})`
 const savedLine = (s: SavedItem) => `${s.id.padEnd(6)} #${s.channel.padEnd(12)} ${s.who}: ${s.deleted ? "(message deleted)" : short(s.text)}`
 const draftLine = (d: Draft) => `${d.kind === "thread" ? d.target.padEnd(6) : `#${d.target}`.padEnd(14)} ${short(d.text)}`
 const sentLine = (s: SentItem) => `${s.id.padEnd(6)} ${s.kind.padEnd(8)} #${s.channel.padEnd(12)} ${short(s.text)}`

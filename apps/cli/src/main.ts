@@ -16,6 +16,7 @@ import { keysCommand } from "./keys"
 import { channelMemoryCommand, notesCommand } from "./memory"
 import { draftsCommand, dmCommand, savedCommand, sentCommand, threadsCommand } from "./navigation"
 import { openQueue } from "./live"
+import { focusCommand, planOf, plansCommand, setTaskPlan } from "./plans"
 
 const help = `flockr: the Flockr command line. Any agent or person can use it.
 
@@ -34,6 +35,7 @@ Reading
   flockr tasks list [--channel c] [--state s] [--mine] [--assignee m]
   flockr tasks show <id>
   flockr inbox                        questions and work waiting for a person
+  flockr focus                        what needs you (questions, reviews, blocked tasks), open plans, agent runs in progress, done today
   flockr search <text> [--channel c]  find messages, replies and tasks by text, best match first
   flockr members | flockr whoami
   flockr threads                      every thread you started or replied in, newest activity first, with replies from others since you last wrote
@@ -50,7 +52,8 @@ Writing
                                       an agent answers a direct message without an @mention; nobody else can read it
   flockr save <message-id> | flockr unsave <message-id>   keep a message or reply in your saved list; safe to repeat
   flockr draft <channel|thread-id> <text> | flockr draft <channel|thread-id> --clear   keep unsent text so it follows you to another device
-  flockr tasks create <channel> <title> [--for member] [--needs 806,808] [--label x] [--kind k] [--spec file] [--text first reply]
+  flockr tasks create <channel> <title> [--for member] [--needs 806,808] [--label x] [--kind k] [--spec file] [--text first reply] [--plan id]
+  flockr tasks plan <task> <plan|none>   put a task in an open plan of its channel, or take it out
   flockr tasks claim [<id>] [--ready] [--label x] [--mine] [--wait [--timeout s]]
   flockr tasks renew|unblock|approve <id>
   flockr tasks release <id> [--keep]  give it back; if it is assigned to you this also declines it (--keep stays assigned)
@@ -115,6 +118,13 @@ Agents served by a machine (a runner on that machine starts their sessions; a pe
   flockr machines                     machines with a runner, online or not, and the harnesses each can run
   flockr channels create <id> [--topic text] [--repo github.com/owner/name]
   flockr channels set <id> [--topic text] [--repo github.com/owner/name]   an empty --repo clears it; with a repo, commits print as links
+
+Plans (one goal in a channel, grouping its tasks; progress is counted from the tasks' states)
+  flockr plans [list] [--channel c] [--closed]   open plans, newest first, with "n of m done"; --closed lists the closed ones
+  flockr plans create <title> --channel <c> [--goal text] [--key k]   --key makes a retry return the same plan
+  flockr plans show <id>              the plan, its goal, progress and tasks
+  flockr plans edit <id> [--title t] [--goal text]   an empty --goal clears it
+  flockr plans close|reopen <id>      a closed plan takes no new tasks; safe to repeat
 
 Notes (an agent's own memory across conversations; a person may read and edit any agent's) and channel memory (what every agent in a channel reads first)
   flockr notes [list] [--agent a] [--archived]   its notes, newest first; --agent defaults to who you act as
@@ -290,6 +300,7 @@ async function tasks(v: Values): Promise<number> {
         ...(v.kind ? { kind: v.kind } : {}),
         spec: v.spec ?? null,
         ...(v.text ? { text: v.text } : {}),
+        plan: planOf(v.plan),
       }
       printTask(await run(sdk.createTask({ body })))
       return 0
@@ -343,6 +354,9 @@ async function tasks(v: Values): Promise<number> {
       printTask(remember(await run(sdk.handOffTask({ path: { id }, body }))))
       return 0
     }
+    case "plan":
+      printTask(await setTaskPlan(positionals))
+      return 0
     case "give":
       printTask(await run(sdk.giveTask({ path: { id: idArg() }, body: { to: need(positionals[3], "member") } })))
       return 0
@@ -507,6 +521,10 @@ async function main(): Promise<number> {
       return draftsCommand({ positionals, values, print })
     case "machines":
       return machinesCommand({ positionals, values, print })
+    case "plans":
+      return plansCommand({ positionals, values, print })
+    case "focus":
+      return focusCommand({ positionals, values, print })
     case "notes":
       return notesCommand({ positionals, values, print })
     case "memory":

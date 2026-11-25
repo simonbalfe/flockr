@@ -55,6 +55,7 @@ export function taskDetail(task: Task): string {
   if (task.assignee) lines.push(`  for       ${task.assignee}`)
   if (task.holder) lines.push(`  holder    ${task.holder}`)
   if (task.needs.length) lines.push(`  needs     ${task.needs.map((n) => `#${n}`).join(", ")}`)
+  if (task.planId !== null) lines.push(`  plan      ${task.planId} (flockr plans show ${task.planId})`)
   lines.push(`  branch    ${task.branch}`)
   if (task.spec) lines.push(`  spec      ${task.spec}`)
   for (const c of task.commits) lines.push(`  commit    ${commitLine(c)}`)

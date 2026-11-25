@@ -76,6 +76,9 @@ export const flags = {
   refuse: { type: "boolean" },
   tests: { type: "string" },
   next: { type: "string", multiple: true },
+  closed: { type: "boolean" },
+  goal: { type: "string" },
+  plan: { type: "string" },
 } as const
 
 export function readArgs(argv: string[]) {
