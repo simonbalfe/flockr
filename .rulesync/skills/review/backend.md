@@ -7,6 +7,7 @@ Scope: `apps/server` (routes, board rules, the database, live events, the lease 
   - every claim raises the task's fence number (`claimEpoch`); a renew, complete, submit, fail, release or reply that carries an older number is refused, and the refusal says the claim moved on; reproduce by claiming, letting the lease run out, claiming again as a second agent, then finishing as the first
   - only the holder renews; a renew after the lease ran out is refused, never a silent re-claim
   - the sweeper releases an expired lease once, however many server instances run it, and a second sweep over the same task changes nothing
+  - every sweep runs on every platform: `sweepOnce` in `apps/server/src/live/sweeper.ts` is called by the Bun timers and by the Worker's minute cron; a timer added only to `startSweeper` silently never runs on Cloudflare (leases and offline machines were never swept on prod until 25 Nov 2026)
   - every change writes its event with the next per-board sequence number in the same transaction as the table it updates; a write that changes a table without its event, or an event without its change, is a finding
   - events are never updated or deleted; an edit is a new event, and a reader rebuilds the latest state from the log
   - reading "after N" returns every event above N, oldest first, with no gap and no repeat, also while writes land; `NOTIFY` is sent after commit, so a listener never sees an event it cannot read

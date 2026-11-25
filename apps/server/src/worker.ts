@@ -3,6 +3,7 @@ import { createApp } from "./app"
 import { createAuthenticator, refuseLive } from "./auth/identity"
 import { backUp } from "./backup/backup"
 import { drainJobs } from "./board/drain"
+import { sweepOnce } from "./live/sweeper"
 import { boardId } from "./config"
 import type { Database } from "./db/client"
 import { useLiveSignals } from "./platform"
@@ -67,7 +68,13 @@ export default {
   async scheduled(controller: ScheduledController, rawEnv: unknown, ctx: ExecutionContext): Promise<void> {
     const env = WorkerEnv.parse(rawEnv)
     if (controller.cron === backupCron) return nightlyBackup(env)
-    const drained = await onBoard(env, ctx, { run: (db) => drainJobs(db), delivered: () => true })
+    const drained = await onBoard(env, ctx, {
+      run: async (db) => {
+        await sweepOnce(db)
+        return drainJobs(db)
+      },
+      delivered: () => true,
+    })
     if (drained.ran || drained.failed) console.log(`jobs: ${drained.ran} ran, ${drained.retrying} to retry, ${drained.failed} failed`)
   },
 }
