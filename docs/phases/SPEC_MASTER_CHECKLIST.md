@@ -22,6 +22,11 @@ Every phase and sub-phase with its status: "where are we". Phases are product fe
 | **Phase 4: Launchers** | a task turning ready opens a Herdr pane with its agent by itself, and another runs in a cloud container with the laptop shut | Not started |
 | **Phase 5: Watchers, routines and sync** | a reply in a Slack thread unblocks an example task, and a daily summary of open tasks posts by itself; both are off until someone turns them on | In progress: 5a, 5b, 5c, 5e done; 5d needs a Slack app |
 | **Phase 6: Reports and search** | one query lists every blocked task across all boards, and search finds a message by its text | Not started |
+| **Phase 7: Shared agent** | Simon and a friend each start a thread with the same agent on a VPS, in different channels, and both get answers at once without the threads mixing | Not started |
+| **Phase 8: Codebase coordination** | two agents on different machines (one on a VPS, one on the Mac) work one repo; each sees what the other is touching, and neither overwrites the other's work | Not started |
+| **Phase 9: Agents on demand** | from the app, Simon starts a new agent with a chosen model and a task, and it runs in the cloud with the laptop shut | Not started |
+| **Phase 10: Agent memory** | an agent uses a decision from last week's thread without being told it again | Not started |
+| **Phase 11: Teams** | two teams share one board, each with its own channels and agents, and a person sees only their teams | Not started |
 
 ## Now and Blocked
 
@@ -55,6 +60,7 @@ Done when: on a phone, Simon watches the chain move live, answers the migration 
 | 2d Waiting for you | people | Question cards an agent posts and a person answers in one tap; the review lane with approve and ask for changes; a count in the sidebar | P31, P68, P73 | Done (built before the checklist was tracked; audited 25 Nov 2026) |
 | 2e Mentions and quick switcher | people | `@claude <text>` records the mention and starts a conversation in that message's thread, never a task (ADR 0014, superseding the earlier "creates a task" wording); tasks are made only on purpose (`flockr tasks create`, New task, Make this a task); ⌘K jumps to any channel, task or agent | P3, P24 | Done: mentions, New task, Make this a task and the ⌘K switcher (audited 25 Nov 2026) |
 | 2f Phone layout and presence | people | Works at phone width with the sidebar behind a button and the thread full screen; "claude is working on #803, 11 min left" under the message box | P32 | Mostly built: sidebar behind a button, full-screen panel, presence line; left: a real phone run of the done-when flow |
+| 2g Slack navigation | people | The sidebar works like Slack's: direct messages between people and agents, a Threads view of every thread you are in, Saved items, and Drafts & sent | Our own | Not started |
 
 ## Phase 3: Any agent connects
 
@@ -101,14 +107,62 @@ Done when: one query lists every blocked task across all boards, and search find
 | 6b Search | people | Find messages and tasks by text across channels | P15 | Done (Work: 6b-search) |
 | 6c Morning brief | people | One daily summary: what finished, what is blocked, what waits for you | P74 | Done (Work: 5-routines): the `brief` routine action and `GET /api/brief`; a weekday 08:00 UTC Morning brief routine is seeded off |
 
+## Phase 7: Shared agent
+
+Done when: Simon and a friend each start a thread with the same agent on a VPS, in different channels, and both get answers at once without the threads mixing. Source: Simon's chat with Adam, 25 Nov 2026 ("me and my friend sharing a codebase, a coding agent on a VPS, we multiplayer chat to it").
+
+| Sub-phase | For | Delivers | Covers | Status |
+|---|---|---|---|---|
+| 7a A runner on a VPS | both | The runner runs on a VPS as a service, serving an agent whose folder is a clone of the shared repo; it restarts by itself | Our own | Not started |
+| 7b Parallel threads | both | One agent holds a separate session per thread and runs several at once, so two people's threads never share context | Our own | Not started |
+| 7c A second person | people | Invite a friend: an allowlist entry and a sign-in, the agent answers whoever mentions it, and each thread shows who asked | P34 | Not started |
+
+## Phase 8: Codebase coordination
+
+Done when: two agents on different machines (one on a VPS, one on the Mac) work one repo; each sees what the other is touching, and neither overwrites the other's work.
+
+| Sub-phase | For | Delivers | Covers | Status |
+|---|---|---|---|---|
+| 8a Working areas | agents | An agent says which files or folders it is working in before it edits; another agent sees that and picks other work or asks | Our own | Not started |
+| 8b A branch per task | agents | Each task's work goes on its own branch (`flockr/<task>`), merged only after review, so two agents never edit the same checkout | P25 | Not started |
+| 8c Hand-offs | agents | One agent hands a task, with its thread and branch, to another, and the board shows who holds it now | P23 | Not started |
+
+## Phase 9: Agents on demand
+
+Done when: from the app, Simon starts a new agent with a chosen model and a task, and it runs in the cloud with the laptop shut. Builds on 4c and 4d.
+
+| Sub-phase | For | Delivers | Covers | Status |
+|---|---|---|---|---|
+| 9a New agent in the cloud | people | New agent offers the machine `cloud`; the agent starts in a sandbox (PL6) and stops when idle | P39 | Not started |
+| 9b Any model | people | Pick the model per agent from the providers the board has keys for, through the model proxy (PL8) | P40 | Not started |
+| 9c Start with a task | people | Create an agent and its first task in one step; it ends itself when the task is done unless kept | Our own | Not started |
+
+## Phase 10: Agent memory
+
+Done when: an agent uses a decision from last week's thread without being told it again.
+
+| Sub-phase | For | Delivers | Covers | Status |
+|---|---|---|---|---|
+| 10a Agent notes | agents | Each agent keeps notes it can read and write across conversations, stored in Postgres | P41, P26 | Not started |
+| 10b Channel memory | both | A channel keeps decisions and facts every agent in it reads first; people can see and edit them | P75 | Not started |
+
+## Phase 11: Teams
+
+Done when: two teams share one board, each with its own channels and agents, and a person sees only their teams.
+
+| Sub-phase | For | Delivers | Covers | Status |
+|---|---|---|---|---|
+| 11a Teams | people | A team has people, agents and channels; a person sees the channels of the teams they are in | Our own | Not started |
+| 11b Team keys | both | A key and an agent can be limited to one team | P58 | Not started |
+
 ## Unplaced
 
 Parity rows with no sub-phase yet; place one when it is wanted:
 
 - **Messages:** P2 stream and forum channels, P4 steering a running turn, P8 reactions, P9 files, P10 scheduled posts, P11 typed message blocks, P12 comments pinned to edits, P14 channel canvas.
-- **Tasks:** P23 agents handing work to each other, P26 per-agent scratchpad, P69 agents suggesting tasks, P70 two-sided sign-off.
+- **Tasks:** P69 agents suggesting tasks, P70 two-sided sign-off.
 - **People's view:** P29 watching an agent's screen, P33 voice.
-- **Agents:** P41 memory, P42 role templates, P47 routines from plain language, P75 shared channel memory, P77 read-only background mode, P78 autonomy level per agent.
+- **Agents:** P42 role templates, P47 routines from plain language, P77 read-only background mode, P78 autonomy level per agent.
 - **Approvals and security:** P55 approval level per agent, P56 auto-review, P59 signed events.
 - **Sync and hosting:** P52 Linear, P67 many workspaces on one host.
 
