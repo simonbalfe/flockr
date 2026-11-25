@@ -68,3 +68,8 @@ Example: four agents work in #backend and #frontend. Today the app opens on the 
 - [ ] `bun run test`, `bun run typecheck`, `bun run build`
 
 ## Notes from the build
+
+- 12d: The channel feed has no activity entries, so the collapsed line counts only agent messages ("3 agent messages") and leaves steps out. "running · n steps" reads the thread's running activity entries through `useThread`, fetched only for threads with live activity.
+- 12d: "Answers a person" means the first message from an agent the person's last message mentioned; anything else between agents collapses. Watchers and bridges always show; only `agent` members collapse.
+- 12d: People / Everything is a menu, not a second segmented control beside Messages / Tasks / Areas (ux checklist: a toggle is one control with a menu). Threads' Open / Done is component state, not the URL: the root search parser drops unknown keys and the router is outside 12d.
+- 12d: The pure filter is `apps/web/src/components/feed/quiet.ts`, tested in `quiet.test.ts`.
