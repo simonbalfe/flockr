@@ -4,7 +4,7 @@ import { agentPermissions, agentStatusLabels, permissionLabels, runnerCommand, t
 import { run } from "./api"
 import { need, UsageError, type Values } from "./args"
 import type { CommandContext } from "./activity"
-import { taskLine } from "./format"
+import { activityEntryLine, taskLine } from "./format"
 
 const servedText = (a: Agent) => (a.config ? `${a.config.harnessLabel ?? a.config.harness} on ${a.config.machineName}` : "connects by itself")
 
@@ -77,6 +77,13 @@ export async function agentsCommand(context: CommandContext): Promise<number> {
     case "show":
       show(await run(sdk.getAgent({ path: { name: name() } })))
       return 0
+    case "activity": {
+      const limit = values.limit === undefined ? undefined : Number(values.limit)
+      if (limit !== undefined && !Number.isInteger(limit)) throw new UsageError("--limit must be a whole number")
+      const entries = await run(sdk.listAgentActivity({ path: { name: name() }, query: { limit } }))
+      print(entries, () => (entries.length ? entries.map((e) => `${activityEntryLine(e)}  in ${e.threadId} (#${e.channel})`).join("\n") : "No runs yet."))
+      return 0
+    }
     case "create": {
       const agentName = name()
       const machine = await pickMachine(values)

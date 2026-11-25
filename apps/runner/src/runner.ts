@@ -1,6 +1,7 @@
 import type { BoardEvent, RunEndStatus, Task, Thread } from "@flockr/client"
 import type { AgentPermissions } from "@flockr/contracts/agents"
 import type { EpochStore } from "@flockr/cli/epochs"
+import { activitySink, type ActivitySink } from "./activity"
 import type { BoardPort, Claim } from "./board"
 import { folderFor, isFolder, leaseRenewMs } from "./config"
 import type { Harness, PermissionBridge, Session, SessionExit } from "./harness/types"
@@ -69,6 +70,7 @@ interface Run {
   pending: string[]
   cancel: (() => void)[]
   entry: Promise<string | null>
+  activity: ActivitySink
   done: Promise<void>
 }
 
@@ -120,6 +122,9 @@ export function createRunner(deps: RunnerDeps) {
   function launch(spec: Launch, folder: string): void {
     const resumeId = storedSession(spec.thread)
     const settings = deps.settings()
+    let entryFound: (entry: Promise<string | null>) => void = () => undefined
+    const entry = new Promise<string | null>((resolve) => (entryFound = resolve))
+    const activity = activitySink({ entry, send: board.updateEntry, after: timers.after, log })
     const session = harness.start({
       title: `flockr ${member} ${spec.thread}`,
       prompt: spec.prompt(resumeId !== null),
@@ -133,6 +138,7 @@ export function createRunner(deps: RunnerDeps) {
       thread: spec.thread,
       personality: settings.personality,
       model: settings.model,
+      activity: activity.push,
     })
     deps.sessions.set({ ...deps.sessions.get(), [keyOf(spec.thread)]: { harness: harness.name, id: session.id } })
     let finished: () => void = () => undefined
@@ -145,14 +151,18 @@ export function createRunner(deps: RunnerDeps) {
       stopping: null,
       pending: [],
       cancel: [],
-      entry: board
+      entry,
+      activity,
+      done: new Promise((resolve) => (finished = resolve)),
+    }
+    entryFound(
+      board
         .startEntry(spec.thread, { title: spec.purpose === "work" ? `Working on #${spec.thread}` : "Answering", runId: session.id, key: `${session.id}-${Date.now()}` })
         .catch((error: unknown) => {
           log(`could not post the activity entry in ${spec.thread}: ${error instanceof Error ? error.message : String(error)}`)
           return null
         }),
-      done: new Promise((resolve) => (finished = resolve)),
-    }
+    )
     runs.set(spec.thread, run)
     deps.changed?.()
     log(`${member}: start ${spec.purpose} in ${spec.thread} (#${spec.channel}) in ${folder}${resumeId ? `, resuming ${resumeId}` : ""}`)
@@ -240,6 +250,7 @@ export function createRunner(deps: RunnerDeps) {
     for (const cancel of run.cancel) cancel()
     runs.delete(run.thread)
     deps.changed?.()
+    await run.activity.flush()
     const entryId = await run.entry
     if (entryId) await board.finishEntry(entryId, endStatus(run, exit)).catch(() => undefined)
     log(`${member}: end ${run.thread}: ${run.stopping ?? exit.kind}`)

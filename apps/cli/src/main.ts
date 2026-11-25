@@ -75,6 +75,7 @@ Agents served by a machine (a runner on that machine starts their sessions; a pe
                                       --machine defaults to the one online machine; --harness to its only harness
   fc agents update <name> [--folder path] [--permissions p] [--personality text] [--model id]   an empty --personality or --model clears it
   fc agents start|stop|delete <name>  stop ends its sessions and releases its claims; delete keeps its messages
+  fc agents activity <name> [--limit n]   its recent runs across threads, newest first, with the thread each is in
   fc machines                         machines with a runner, online or not, and the harnesses each can run
   fc channels create <id> [--topic text]
 

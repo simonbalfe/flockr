@@ -20,6 +20,23 @@ describe("conversations", () => {
     expect(board.calls).toEqual(["entry m10: Answering", "finish e-m10 ok", "reply m10: Hello there."])
   })
 
+  test("steps the harness reports reach the entry in batches, all of them before the run is finished", async () => {
+    const { runner, board, started, fire } = setup()
+    board.threads.set("m10", messageThread("m10", "simon", "@claude say hello"))
+    await runner.receive(mention("m10"))
+    const report = started[0]?.spec.activity
+    if (!report) throw new Error("no session")
+    report([{ type: "part.set", part: { type: "reasoning", id: "r1", text: "Hello is short.", status: "ok" } }])
+    report([{ type: "part.set", part: { type: "tool", id: "t1", name: "Read", status: "running" } }])
+    fire(500)
+    await runner.idle()
+    report([{ type: "part.finished", partId: "t1", status: "ok" }])
+    started[0]?.end({ kind: "finished", text: "Hello there." })
+    await runner.idle()
+    await runner.idle()
+    expect(board.calls).toEqual(["entry m10: Answering", "update e-m10: part.set, part.set", "update e-m10: part.finished", "finish e-m10 ok", "reply m10: Hello there."])
+  })
+
   test("a later reply without a mention resumes the stored session; a reply during a run goes into it", async () => {
     const { runner, board, started } = setup()
     board.threads.set("m10", messageThread("m10", "simon", "@claude say hello"))

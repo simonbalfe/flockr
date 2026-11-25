@@ -159,6 +159,7 @@ export function spec(overrides: Partial<SessionSpec> = {}): SessionSpec {
     thread: "m1",
     personality: null,
     model: null,
+    activity: () => undefined,
     ...overrides,
   }
 }

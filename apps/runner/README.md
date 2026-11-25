@@ -57,7 +57,7 @@ The board derives each agent's status from this: `offline` (stopped, machine off
 | Someone else replies in a thread the agent already replied in | Sends the reply into the running session, or resumes the stored one; no new `@` needed |
 | A ready task is assigned to the agent | Claims it, renews the claim every 5 minutes, submits it for review when the run ends, blocks it if the run crashes |
 | A person releases, blocks or takes the task while it runs | Stops the session |
-| A run is working | Posts an activity entry in the thread, so the agent shows as working, and finishes it with ok, error or stopped |
+| A run is working | Posts an activity entry in the thread, so the agent shows as working; fills it with the steps its harness adapter reports (thinking, tool calls and their results, commands, the plan, changed files), sent every half second; finishes it with ok, error or stopped once every step is sent |
 | A person asks to stop the run in a thread | Stops it; a stopped task run is blocked so it does not start again |
 | The agent is stopped or deleted on the board | Stops its sessions, releases its claims (keeping the assignment) and ignores it until it is started again |
 | A settings change (folder, permissions, personality) | The next session uses it; running sessions keep going |
@@ -92,6 +92,7 @@ Each agent has one of two permission sets (`agentPermissions` in `packages/contr
 | `src/migrate.ts` | Moves an old one-member config over |
 | `src/dev.ts` | `bun dev`: the web dev server plus a quiet, prefixed runner |
 | `src/routing.ts`, `src/prompt.ts`, `src/permissions.ts` | Pure rules: who is addressed, the prompts, what is free, asked or refused |
-| `src/harness/` | The harness interface (label, capabilities, probe, start), the registry and one adapter per harness |
+| `src/activity.ts` | Batches the steps a session reports (`SessionSpec.activity`) into activity entry updates |
+| `src/harness/` | The harness interface (label, capabilities, probe, start), the registry and one adapter per harness; `claude-code-activity.ts` maps Claude Code's `stream-json` lines to steps (`docs/guides/GUIDE_AGENT_ACTIVITY.md`) |
 | `src/bridge.ts`, `src/gate.ts`, `src/mcp.ts` | The permission bridge |
-| `test/` | `bun test`: config, prompts, permissions, store, routing, claims, the machine service and the migration, through a fake harness and a fake board |
+| `test/` | `bun test`: config, prompts, permissions, store, routing, claims, steps reaching the entry, the Claude Code stream mapping, the machine service and the migration, through a fake harness and a fake board |

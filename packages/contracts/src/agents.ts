@@ -29,7 +29,7 @@ export const agentEventTypes = {
 } as const
 
 export const machineLimits = { heartbeatSeconds: 15, onlineSeconds: 45 } as const
-export const agentLimits = { nameMin: 2, nameMax: 32, personalityMax: 4000, reasonMax: 300, modelMax: 200 } as const
+export const agentLimits = { nameMin: 2, nameMax: 32, personalityMax: 4000, reasonMax: 300, modelMax: 200, recentRuns: 5, recentRunsMax: 20 } as const
 
 export const runnerCommand = "bun run runner"
 
@@ -150,6 +150,16 @@ export const UpdateAgentBody = z
   })
   .openapi("UpdateAgentBody")
 
+export const AgentActivityQuery = z.object({
+  limit: z.coerce
+    .number()
+    .int()
+    .min(1)
+    .max(agentLimits.recentRunsMax)
+    .default(agentLimits.recentRuns)
+    .openapi({ type: "integer", description: `At most this many entries, newest first; default ${agentLimits.recentRuns}, at most ${agentLimits.recentRunsMax}` }),
+})
+
 export const DeletedAgent = z.object({ name: z.string(), removedAt: timestamp }).openapi("DeletedAgent")
 
 export type HarnessInfo = z.infer<typeof HarnessInfo>
@@ -161,3 +171,4 @@ export type HeartbeatBody = z.infer<typeof HeartbeatBody>
 export type CreateAgentBody = z.infer<typeof CreateAgentBody>
 export type UpdateAgentBody = z.infer<typeof UpdateAgentBody>
 export type DeletedAgent = z.infer<typeof DeletedAgent>
+export type AgentActivityQuery = z.infer<typeof AgentActivityQuery>

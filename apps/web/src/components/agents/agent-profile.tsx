@@ -1,16 +1,19 @@
-import { mayManageAgent, permissionLabels, type AgentConfig, type AgentDetail, type AgentPermissions } from "@flockr/client"
+import { mayManageAgent, permissionLabels, type ActivityEntry, type AgentConfig, type AgentDetail, type AgentPermissions } from "@flockr/client"
 import { Ellipsis } from "lucide-react"
 import { DropdownMenu } from "radix-ui"
 import { useState } from "react"
 import { toast } from "sonner"
 import { useDeleteAgent, useStartAgent, useStopAgent, useUpdateAgent } from "@/api/agents"
-import { useAgent, useMembers } from "@/api/hooks"
+import { useAgent, useAgentActivity, useInbox, useMembers } from "@/api/hooks"
 import { currentUser } from "@/api/session"
+import { WorkBlock } from "@/components/agent/work-block"
 import { MemberAvatar } from "@/components/member-avatar"
 import { KeyValueList, PanelFrame } from "@/components/panel-frame"
+import { QuestionCard, ThreadQuestionCard } from "@/components/question-card"
 import { TaskRow } from "@/components/task-row"
 import { Button } from "@/components/ui/button"
 import { usePanel } from "@/lib/panel"
+import { clock } from "@/lib/time"
 import { cn } from "@/lib/utils"
 import { fieldClass, PermissionChoice } from "./new-agent-dialog"
 import { AgentStatusShape, statusText } from "./status-dot"
@@ -141,11 +144,78 @@ function Controls({ agent }: { agent: AgentDetail & { config: AgentConfig } }) {
   )
 }
 
+const threadName = (id: string) => (/^\d+$/.test(id) ? `#${id}` : `Thread ${id}`)
+
+function Waiting({ name }: { name: string }) {
+  const inbox = useInbox()
+  const { openById } = usePanel()
+  const onTasks = inbox.data?.questions.filter((t) => t.holder === name) ?? []
+  const inThreads = inbox.data?.threadQuestions.filter((q) => q.who === name) ?? []
+  if (!onTasks.length && !inThreads.length) return null
+  return (
+    <>
+      <div className={sectionClass}>Waiting for a person</div>
+      {onTasks.map((task) => (
+        <div key={task.id} className="min-w-0">
+          <span className="text-[12.5px] text-muted-foreground">
+            #{task.id} · {task.title}
+          </span>
+          <QuestionCard task={task} />
+        </div>
+      ))}
+      {inThreads.map((entry) => (
+        <div key={entry.id} className="min-w-0">
+          <span className="text-[12.5px] text-muted-foreground">
+            {threadName(entry.threadId)} · #{entry.channel}
+          </span>
+          <ThreadQuestionCard entry={entry} onDetails={() => openById(entry.threadId)} />
+        </div>
+      ))}
+    </>
+  )
+}
+
+function RecentRun({ entry }: { entry: ActivityEntry }) {
+  const { openById } = usePanel()
+  return (
+    <div className="min-w-0">
+      <button type="button" onClick={() => openById(entry.threadId)} className="text-[12.5px] text-muted-foreground hover:text-foreground hover:underline">
+        {threadName(entry.threadId)} · #{entry.channel} · {clock(entry.at)}
+      </button>
+      <WorkBlock entries={[entry]} />
+    </div>
+  )
+}
+
+function RecentWork({ name }: { name: string }) {
+  const runs = useAgentActivity(name)
+  const entries = runs.data ?? []
+  return (
+    <>
+      <div className={sectionClass}>Recent work</div>
+      {entries.length ? entries.map((entry) => <RecentRun key={entry.id} entry={entry} />) : <div className="px-1 text-[13px] text-faint">No runs yet.</div>}
+    </>
+  )
+}
+
+const nowWords = { working: "Working on", blocked: "Blocked on", idle: "Idle" } as const satisfies Record<AgentDetail["state"], string>
+
+function NowRow({ agent, onOpen }: { agent: AgentDetail; onOpen: (id: number) => void }) {
+  const id = agent.taskId
+  if (id === null) return <span className="text-muted-foreground">{nowWords[agent.state]}</span>
+  return (
+    <button type="button" onClick={() => onOpen(id)} className="hover:underline">
+      {nowWords[agent.state]} #{id}
+    </button>
+  )
+}
+
 const withConfig = (agent: AgentDetail): agent is AgentDetail & { config: AgentConfig } => agent.config !== null
 
 export function AgentProfile({ name }: { name: string }) {
   const agent = useAgent(name)
   const editable = useMayManageAgents()
+  const { openTask } = usePanel()
   const current = agent.data
   return (
     <PanelFrame title={<span className="text-[13px] text-muted-foreground">Agent</span>}>
@@ -171,6 +241,7 @@ export function AgentProfile({ name }: { name: string }) {
             rows={
               current.config
                 ? [
+                    { label: "Now", value: <NowRow agent={current} onOpen={openTask} /> },
                     { label: "Owner", value: current.owner ?? "None" },
                     { label: "Machine", value: current.config.machineName },
                     { label: "Harness", value: current.config.harnessLabel ?? current.config.harness },
@@ -182,11 +253,14 @@ export function AgentProfile({ name }: { name: string }) {
                         ]),
                   ]
                 : [
+                    { label: "Now", value: <NowRow agent={current} onOpen={openTask} /> },
                     { label: "Runs in", value: current.runsIn ?? "Connects by itself" },
                     { label: "Acts for", value: current.owner },
                   ]
             }
           />
+          <Waiting name={name} />
+          <RecentWork name={name} />
           {current.config && <Settings key={JSON.stringify(current.config)} name={name} config={current.config} editable={editable} />}
           <div className={sectionClass}>Tasks</div>
           <div className="overflow-hidden rounded-[10px] bg-muted">

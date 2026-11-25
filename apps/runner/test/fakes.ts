@@ -163,6 +163,9 @@ export function fakeBoard() {
       record(`entry ${thread}: ${entry.title}`)
       return `e-${thread}`
     },
+    async updateEntry(entryId, updates) {
+      record(`update ${entryId}: ${updates.map((u) => u.type).join(", ")}`)
+    },
     async finishEntry(entryId, status) {
       record(`finish ${entryId} ${status}`)
     },

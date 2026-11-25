@@ -59,6 +59,7 @@ export const flags = {
   model: { type: "string" },
   machine: { type: "string" },
   action: { type: "string" },
+  limit: { type: "string" },
 } as const
 
 export function readArgs(argv: string[]) {

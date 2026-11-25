@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto"
 import { z } from "zod"
 import { bridgeServer, bridgeTool } from "../mcp"
+import { claudeActivity } from "./claude-code-activity"
 import type { PermissionRule, ToolKind, ToolRequest } from "../permissions"
 import type { Harness, PermissionCodec, Session, SessionExit, SessionSpec, SessionStatus } from "./types"
 
@@ -103,6 +104,7 @@ function start(spec: SessionSpec): Session {
   let stopped = false
   let status: SessionStatus = "running"
   const seen: { last: z.infer<typeof OutputLine> | null } = { last: null }
+  const activity = claudeActivity({ cwd: spec.folder, kindOf: (tool) => toolKind[tool] ?? "other" })
 
   const write = (text: string) => {
     inFlight += 1
@@ -124,7 +126,10 @@ function start(spec: SessionSpec): Session {
         const raw = buffer.slice(0, end).trim()
         buffer = buffer.slice(end + 1)
         if (!raw) continue
-        const parsed = OutputLine.safeParse(jsonOrNull(raw))
+        const value = jsonOrNull(raw)
+        const updates = activity.read(value)
+        if (updates.length) spec.activity(updates)
+        const parsed = OutputLine.safeParse(value)
         if (!parsed.success || parsed.data.type !== "result") continue
         seen.last = parsed.data
         inFlight -= 1

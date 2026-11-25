@@ -37,7 +37,7 @@ Other commands: `bun run build` (type check and production build into `dist/`), 
 | Press Cmd+K and type `rate limit` | "Search messages and tasks" lists server hits with the words in bold; Enter opens the message's thread or the task (`flockr search rate limit` does the same) |
 | Press "+" beside Agents in the sidebar | The New agent dialog: name, harness and machine (from the runners that are online), folder, permissions, optional personality, then "Create and start". With no runner connected it says so and shows `bun run runner` with a copy button |
 | Look at the dots beside agents | Status by shape: hollow is offline, solid is online, pulsing is working, a slashed ring is an error (hover for the reason) |
-| Click an agent | Its panel: status, owner, machine, harness, folder, permissions and personality (editable), Start or Stop, and Delete in the "..." menu |
+| Click an agent | Its panel: status, what it is on now (a link to the task), the questions it is waiting on a person for (answer them there), its recent runs as work blocks linking to their threads, owner, machine, harness, folder, permissions and personality (editable), Start or Stop, and Delete in the "..." menu |
 | Mention a stopped agent | A quiet line under the message box: "scout is offline. Start it." |
 | `FC_AS=claude bun fc activity post m12 "Add rate limiting"`, then `bun fc activity exec m41 -- bun test` | One collapsed work block in the thread; the command's output streams in live; "claude is working on Add rate limiting · Running bun test" under the reply box and a Stop button in the thread header |
 | Press Stop in the thread header | A `run.stop_requested` event for claude; the block says "stop requested" until the run finishes (`flockr stop m12` does the same) |
@@ -60,7 +60,7 @@ Screens never touch the network directly. Everything goes through `src/api/`:
 | `src/api/hooks.ts` | The only place that talks to the API: the generated TanStack Query options and mutations wrapped as `useTasks`, `useClaimTask` and so on, plus `useBoardSync`, which listens on `/ws` and refreshes the cache on every board event, resuming after a drop |
 | `src/api/session.ts` | The acting member (`simon`) and the low-lease threshold |
 | `src/api/agents.ts` | Machines and the agent mutations (create, update, start, stop, delete); agent status arrives live as an `agents` frame, which refreshes the cache |
-| `src/api/activity-live.ts` | Patches a cached thread from `activity.updated` events with the shared reducer (`applyActivityUpdates`), so streaming output never refetches; it refetches when a revision was missed. The Zod schemas it decodes with load in their own chunk |
+| `src/api/activity-live.ts` | Patches a cached thread, and the agent panel's recent runs (`listAgentActivity`), from `activity.updated` events with the shared reducer (`applyActivityUpdates`), so streaming output never refetches; it refetches when a revision was missed. The Zod schemas it decodes with load in their own chunk |
 
 Agent activity (ADR 0015, `docs/guides/GUIDE_AGENT_ACTIVITY.md`) lives in `src/components/agent/`, built from shadcn AI Elements patterns copied in and made monochrome:
 

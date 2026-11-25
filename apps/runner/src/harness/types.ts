@@ -1,3 +1,4 @@
+import type { ActivityUpdate } from "@flockr/client"
 import type { PermissionRule, ToolRequest } from "../permissions"
 
 export interface HarnessCapabilities {
@@ -24,6 +25,7 @@ export interface SessionSpec {
   thread: string
   personality: string | null
   model: string | null
+  activity: (updates: ActivityUpdate[]) => void
 }
 
 export type SessionExit = { kind: "finished"; text: string } | { kind: "failed"; error: string } | { kind: "stopped" }

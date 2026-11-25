@@ -2974,6 +2974,50 @@ export type StopAgentResponses = {
 
 export type StopAgentResponse = StopAgentResponses[keyof StopAgentResponses];
 
+export type ListAgentActivityData = {
+    body?: never;
+    path: {
+        name: string;
+    };
+    query?: {
+        /**
+         * At most this many entries, newest first; default 5, at most 20
+         */
+        limit?: number;
+    };
+    url: '/api/agents/{name}/activity';
+};
+
+export type ListAgentActivityErrors = {
+    /**
+     * The input is not valid
+     */
+    400: Error;
+    /**
+     * The acting member is not on this board, or may not do this
+     */
+    403: Error;
+    /**
+     * Not found
+     */
+    404: Error;
+    /**
+     * The task or message is in another state, or the claim epoch is stale
+     */
+    409: Error;
+};
+
+export type ListAgentActivityError = ListAgentActivityErrors[keyof ListAgentActivityErrors];
+
+export type ListAgentActivityResponses = {
+    /**
+     * OK
+     */
+    200: Array<ActivityEntry>;
+};
+
+export type ListAgentActivityResponse = ListAgentActivityResponses[keyof ListAgentActivityResponses];
+
 export type ListMachinesData = {
     body?: never;
     path?: never;

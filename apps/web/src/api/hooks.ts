@@ -32,7 +32,7 @@ import {
 } from "@flockr/client/react-query"
 import { keepPreviousData, queryOptions, useMutation, useQuery, useQueryClient, type MutateOptions, type QueryClient, type UseMutationOptions } from "@tanstack/react-query"
 import { useEffect } from "react"
-import { patchActivity } from "./activity-live"
+import { agentActivityQuery, patchActivity } from "./activity-live"
 import { currentUser } from "./session"
 
 configureClient({ baseUrl: window.location.origin, member: currentUser })
@@ -42,6 +42,7 @@ export const queries = {
   members: () => listMembersOptions(),
   agents: () => listAgentsOptions(),
   agent: (name: string) => getAgentOptions({ path: { name } }),
+  agentActivity: agentActivityQuery,
   messages: (channel: string) => queryOptions({ ...listMessagesOptions({ path: { channel } }), placeholderData: keepPreviousData }),
   thread: (id: string) => getThreadOptions({ path: { id } }),
   tasks: () => listTasksOptions(),
@@ -55,6 +56,7 @@ export const useChannels = () => useQuery(queries.channels())
 export const useMembers = () => useQuery(queries.members())
 export const useAgents = () => useQuery(queries.agents())
 export const useAgent = (name: string) => useQuery(queries.agent(name))
+export const useAgentActivity = (name: string) => useQuery(queries.agentActivity(name))
 export const useMessages = (channel: string) => useQuery(queries.messages(channel))
 export const useThread = (id: string) => useQuery(queries.thread(id))
 export const useTasks = () => useQuery(queries.tasks())

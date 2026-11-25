@@ -154,6 +154,24 @@ describe("activity entries", () => {
   })
 })
 
+describe("an agent's recent runs", () => {
+  test("they list only that agent's entries across its threads, newest first, up to the limit", async () => {
+    const { call, thread } = await threadWithReply()
+    const other = PostMessageResult.parse((await call("simon", "POST", "/api/channels/backend/messages", { text: "@claude and the docs" })).json).message.id
+    const first = ActivityEntryResult.parse((await call("claude", "POST", `/api/threads/${thread}/activity-entries`, { title: "Rate limiting" })).json).entry
+    await call("simon", "POST", `/api/threads/${thread}/activity-entries`, { title: "Not claude's" })
+    const second = ActivityEntryResult.parse((await call("claude", "POST", `/api/threads/${other}/activity-entries`, { title: "Docs" })).json).entry
+    const all = z.array(ActivityEntry).parse((await call("simon", "GET", "/api/agents/claude/activity")).json)
+    expect(all.map((e) => [e.id, e.threadId, e.who])).toEqual([
+      [second.id, other, "claude"],
+      [first.id, thread, "claude"],
+    ])
+    const one = z.array(ActivityEntry).parse((await call("simon", "GET", "/api/agents/claude/activity?limit=1")).json)
+    expect(one.map((e) => e.id)).toEqual([second.id])
+    expect((await call("simon", "GET", "/api/agents/nobody/activity")).status).toBe(404)
+  })
+})
+
 describe("stop a run", () => {
   test("a person asks a working member to stop: one run.stop_requested event, entries marked, repeat changes nothing", async () => {
     const { call, thread } = await threadWithReply()

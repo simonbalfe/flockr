@@ -1,5 +1,6 @@
-import { AgentDetail, AgentParams, CreateAgentBody, DeletedAgent, UpdateAgentBody } from "@flockr/contracts"
-import { createAgent, deleteAgent, startAgent, stopAgent, updateAgent } from "../board/agents"
+import { ActivityEntry, AgentActivityQuery, AgentDetail, AgentParams, CreateAgentBody, DeletedAgent, UpdateAgentBody } from "@flockr/contracts"
+import { z } from "@hono/zod-openapi"
+import { createAgent, deleteAgent, listAgentActivity, startAgent, stopAgent, updateAgent } from "../board/agents"
 import { jsonBody, ok, operation, router } from "./shared"
 
 const tags: [string] = ["agents"]
@@ -64,4 +65,16 @@ export const agentRoutes = router()
       responses: ok(DeletedAgent),
     }),
     async (c) => c.json(await deleteAgent(c.var.db, c.var.member, c.req.valid("param").name), 200),
+  )
+  .openapi(
+    operation({
+      method: "get",
+      path: "/api/agents/{name}/activity",
+      operationId: "listAgentActivity",
+      tags,
+      summary: "An agent's recent runs across all its threads, newest first: each activity entry at its latest state with its steps, thread and channel",
+      request: { params: AgentParams, query: AgentActivityQuery },
+      responses: ok(z.array(ActivityEntry)),
+    }),
+    async (c) => c.json(await listAgentActivity(c.var.db, c.req.valid("param").name, c.req.valid("query").limit), 200),
   )

@@ -1,6 +1,6 @@
 import * as sdk from "@flockr/client"
 import { callTimeoutMs } from "./config"
-import type { Agent, AgentDetail, Client, CreateAgentBody, HeartbeatBody, RegisterMachineBody, RunEndStatus, Task, TaskState, Thread, ThreadQuestion } from "@flockr/client"
+import type { ActivityUpdate, Agent, AgentDetail, Client, CreateAgentBody, HeartbeatBody, RegisterMachineBody, RunEndStatus, Task, TaskState, Thread, ThreadQuestion } from "@flockr/client"
 
 export type AskResult = { kind: "asked"; question: ThreadQuestion } | { kind: "refused"; reason: string }
 
@@ -16,6 +16,7 @@ export interface BoardPort {
   block: (claim: Claim, reason: string) => Promise<boolean>
   reply: (thread: string, text: string) => Promise<void>
   startEntry: (thread: string, entry: { title: string; runId: string; key: string }) => Promise<string>
+  updateEntry: (entryId: string, updates: ActivityUpdate[]) => Promise<void>
   finishEntry: (entryId: string, status: RunEndStatus) => Promise<void>
   ask: (thread: string, question: { text: string; detail: string; options: string[] }) => Promise<AskResult>
 }
@@ -88,6 +89,9 @@ export function boardClient(options: { member: string; client: Client }): BoardP
     },
     async startEntry(thread, entry) {
       return (await call(sdk.createActivityEntry({ ...on(), path: { id: thread }, body: { ...entry, parts: [] } }))).entry.id
+    },
+    async updateEntry(entryId, updates) {
+      await call(sdk.updateActivityEntry({ ...on(), path: { id: entryId }, body: { updates } }))
     },
     async finishEntry(entryId, status) {
       await call(sdk.updateActivityEntry({ ...on(), path: { id: entryId }, body: { updates: [{ type: "run.finished", status }] } }))

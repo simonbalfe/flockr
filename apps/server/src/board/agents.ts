@@ -3,6 +3,7 @@ import {
   HarnessInfo,
   machineLimits,
   mayManageAgent,
+  type ActivityEntry,
   type Agent,
   type AgentConfig,
   type AgentDetail,
@@ -14,15 +15,15 @@ import {
   type Member,
   type UpdateAgentBody,
 } from "@flockr/contracts"
-import { and, asc, eq, inArray, isNotNull, isNull, or } from "drizzle-orm"
+import { and, asc, desc, eq, inArray, isNotNull, isNull, or } from "drizzle-orm"
 import { z } from "zod"
 import type { Database, Executor, Tx } from "../db/client"
-import { agents, machines, members, tasks, type AgentRow, type MachineRow, type MemberRow, type TaskRow } from "../db/schema"
+import { agents, machines, members, messages, tasks, type AgentRow, type MachineRow, type MemberRow, type TaskRow } from "../db/schema"
 import { liveSignals } from "../platform"
 import { alreadyExists, forbidden, invalid, notFound } from "./errors"
 import { mutate, type Emit } from "./events"
 import { requireActor } from "./members"
-import { findAnyMember, presentMember, presentTasks } from "./read"
+import { activityEntryOf, findAnyMember, presentMember, presentTasks } from "./read"
 
 const Harnesses = z.array(HarnessInfo).catch([])
 
@@ -115,6 +116,17 @@ export async function getAgent(db: Executor, name: string, now = new Date()): Pr
     .orderBy(asc(tasks.id))
   const served = (await servedBy(db, [name])).get(name)
   return { ...present(presentMember(row), rows, served, now), tasks: await presentTasks(db, rows) }
+}
+
+export async function listAgentActivity(db: Executor, name: string, limit: number): Promise<ActivityEntry[]> {
+  await liveAgentMember(db, name)
+  const rows = await db
+    .select()
+    .from(messages)
+    .where(and(eq(messages.kind, "activity"), eq(messages.who, name), isNull(messages.deletedAt)))
+    .orderBy(desc(messages.id))
+    .limit(limit)
+  return rows.flatMap((row) => activityEntryOf(row) ?? [])
 }
 
 async function requireManager(tx: Tx, actor: string): Promise<MemberRow> {

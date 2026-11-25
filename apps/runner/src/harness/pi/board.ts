@@ -33,8 +33,6 @@ export function piBoard(options: { member: string; client: Client }): PiBoard {
       const members = await call(sdk.listMembers(on))
       return members.find((m) => m.name === name)?.kind ?? null
     },
-    async updateEntry(entryId, updates) {
-      await call(sdk.updateActivityEntry({ ...on, path: { id: entryId }, body: { updates } }))
-    },
+    updateEntry: port.updateEntry,
   }
 }

@@ -48,6 +48,7 @@ Replaying `activity.posted` and then each `activity.updated` through `applyActiv
 | `updateActivityEntry` | `POST /api/activity-entries/{id}/updates` `{ updates, revision? }` | Only the author. A `revision` lower than the entry's means a retry: nothing changes, `applied: false`. A finished run refuses updates (409) |
 | `getActivityEntry` | `GET /api/activity-entries/{id}` | Anyone |
 | `stopRun` | `POST /api/threads/{id}/stop` `{ member?, reason? }` | A person, the member itself, or its owner. Without `member`, everyone working there. Repeating it writes nothing (`repeated: true`) |
+| `listAgentActivity` | `GET /api/agents/{name}/activity?limit=5` | Anyone. The agent's newest entries across all its threads (at most 20), each at its latest state with `threadId` and `channel`; the agent panel's Recent work |
 
 Each is also an MCP tool of the same name and `fc api <operationId> --data '<json>'`. A permission question carries the exact action: `askInThread` and `askQuestion` take `action: { tool, command?, input?, path?, diff? }` (`fc ask ... --action '<json>'`), and the web app shows it as a confirmation card with the command, the input or the diff.
 
@@ -68,11 +69,27 @@ fc activity update $E --update '{"type":"part.set","part":{"type":"subagent","na
 fc activity finish $E --status error --title "Rate limiting: 2 tests fail"
 fc activity show $E
 fc stop m12 --member claude --reason "Wrong file"
+fc agents activity claude --limit 10           # claude's recent runs across threads, newest first
 ```
 
 ## Mapping a harness's event stream to activity entries
 
 A runner (or any agent wrapper) reads its harness's stream of events and turns it into entries. Nothing here depends on the harness: the adapter for a harness translates that harness's event names into the calls below, and only the adapter names the harness.
+
+**How the runner does it.** The runner core posts the entry (step 1), finishes it (step 10) and acts on stop (step 11). In between, each session gets a callback, `SessionSpec.activity(updates)`: the harness adapter turns its own stream into updates and hands them over, and the runner sends them in batches every half second (`apps/runner/src/activity.ts`), all of them before `run.finished`. The `claude-code` adapter maps its `stream-json` output in `apps/runner/src/harness/claude-code-activity.ts`:
+
+| Claude Code line | Becomes |
+|---|---|
+| `thinking` block | a finished `reasoning` part |
+| `text` block followed by more work | a finished `reasoning` part; the last text before `result` is the answer and only becomes the reply |
+| `tool_use` of a command tool (`Bash`) | a `terminal` part with the folder as `cwd`; its `tool_result` ends it with the output and an exit code |
+| `tool_use` of `TodoWrite` | the `plan` part (id `plan`), replaced on every write |
+| `tool_use` of `Task` or `Agent` | a `subagent` part; its result becomes the summary. The subagent's own lines (`parent_tool_use_id` set) are left out |
+| `tool_use` of an edit tool | a `tool` part, and on success the `files` part (id `files`) with the changed paths and line counts |
+| any other `tool_use` | a `tool` part with the input (long strings cut to 2,000 characters); its `tool_result` ends it with the output (4,000) |
+| `result` with `is_error` | an `error` part |
+
+It stops adding parts at 200 per entry rather than starting a second entry. The built-in agent (`pi-durable`) posts its tool steps from its own hooks instead.
 
 1. **Run start.** When the harness starts working on a message or task, create one entry in that thread: `createActivityEntry` with a short title (the request, cut to a line), `runId` set to the session or run id, and `key` set to the same, so a restarted runner finds its entry instead of posting a second one. Keep the returned `id` and `revision`.
 2. **Tool use.** On a tool call start, `part.set` a `tool` part with the call's id as the part id, its name and its input. If the input streams in pieces, send `part.set` again with the whole input once it is complete. On the result, `part.finished` with `status` and the result text as `output`.
