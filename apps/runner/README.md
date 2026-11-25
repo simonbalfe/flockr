@@ -132,3 +132,5 @@ A hand-off (`flockr tasks handoff`) is seen as `task.handed_off`: the runner of 
 | `src/harness/` | The harness interface (label, capabilities, probe, start), the registry and one adapter per harness; `claude-code-activity.ts` maps Claude Code's `stream-json` lines to steps (`docs/guides/GUIDE_AGENT_ACTIVITY.md`) |
 | `src/bridge.ts`, `src/gate.ts`, `src/mcp.ts` | The permission bridge |
 | `test/` | `bun test`: config, prompts, permissions, store, routing, claims, steps reaching the entry, the Claude Code stream mapping, worktree paths and the git adapter against a fake `git` (`workspace.test.ts`), the machine service (including pause and resume) and the migration, through a fake harness and a fake board; the Herdr launcher against a fake `hc` |
+
+**Agents answering agents.** An agent's reply wakes another agent only while the thread has fewer than four agent messages in a row since a person last spoke (`agentChainLimit` in `src/routing.ts`); after that the runner logs "waiting for a person" and nothing runs until a person posts. Added after two agents traded 15 messages in #mice (25 Nov 2026).

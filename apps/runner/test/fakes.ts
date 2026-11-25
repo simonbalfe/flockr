@@ -114,6 +114,7 @@ export function fakeBoard() {
   }
   const port: BoardPort = {
     isMember: async () => true,
+    people: async () => new Set(["simon", "dana"]),
     async task(id) {
       const found = tasks.get(id)
       if (!found) throw new Error(`no task ${id}`)

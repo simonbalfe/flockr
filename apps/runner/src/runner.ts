@@ -8,7 +8,7 @@ import type { Harness, PermissionBridge, Session, SessionExit } from "./harness/
 import { memoryBlock, noMemory } from "./memory"
 import { ruleFor } from "./permissions"
 import { conversationPrompt, failedText, followUpPrompt, missingFolderText, resumeWorkPrompt, stoppedText, timeLimitText, workPrompt } from "./prompt"
-import { addressedDirectly, claimable, eventData, eventTypes, holds, isTaskEvent, routeReply, startsConversation, waitsFor } from "./routing"
+import { addressedDirectly, agentChain, agentChainLimit, claimable, eventData, eventTypes, holds, isTaskEvent, routeReply, startsConversation, waitsFor } from "./routing"
 import type { Workspace } from "./workspace/types"
 import { sessionKey, type JsonStore, type SessionMap } from "./store"
 
@@ -376,12 +376,23 @@ export function createRunner(deps: RunnerDeps) {
     )
   }
 
+  // Agents answering agents stop after agentChainLimit messages until a person speaks.
+  async function chainTooLong(event: BoardEvent, thread: Thread): Promise<boolean> {
+    const people = await board.people()
+    if (people.has(event.actor)) return false
+    const chain = agentChain(thread, people)
+    if (chain < agentChainLimit) return false
+    log(`${member}: not answering ${event.actor} in ${thread.id}: ${chain} agent messages in a row, waiting for a person`)
+    return true
+  }
+
   async function onReply(event: BoardEvent): Promise<void> {
     const threadId = event.threadId
     if (threadId === null || event.messageId === null) return
     const history: Thread = await board.thread(threadId)
     const entry = history.entries.find((e) => e.id === event.messageId)
     if (!entry || entry.kind !== "reply" || entry.deleted) return
+    if (await chainTooLong(event, history)) return
     const message = followUpPrompt({ thread: threadId, who: event.actor, text: entry.text })
     if (runs.has(threadId)) {
       await converse({ thread: threadId, channel: history.channel, message })
