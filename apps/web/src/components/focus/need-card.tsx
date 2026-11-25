@@ -159,10 +159,10 @@ export function NeedCard({ item, focused }: { item: NeedItem; focused: boolean }
   const channel = item.kind === "threadQuestion" ? item.entry.channel : item.task.channel
   return (
     <div data-need={item.key} className={cn("grid scroll-my-24 grid-cols-[30px_minmax(0,1fr)] gap-3 rounded-xl px-2 py-3 transition-colors", focused && "bg-accent/60")}>
-      <MemberAvatar name={item.who} />
+      {item.who === null ? <span aria-hidden /> : <MemberAvatar name={item.who} />}
       <div className="min-w-0">
         <div className="flex items-baseline gap-2">
-          <span className="text-sm font-semibold">{item.who}</span>
+          {item.who !== null && <span className="text-sm font-semibold">{item.who}</span>}
           <span className="text-xs text-muted-foreground">#{channel}</span>
           <span className="text-xs text-faint">{ago(item.at, now)}</span>
         </div>

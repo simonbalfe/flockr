@@ -84,6 +84,30 @@ describe("focus (12a)", () => {
     expect(running[0]?.leaseExpiresAt).not.toBeNull()
   })
 
+  test("running lists every agent holding a claimed task, with no steps when it has no run, and leaves out people and other states", async () => {
+    const board = await freshBoard()
+    const idle = await makeTask(board, "Wire the sign-up form")
+    await claim(board, "gemini", idle.id)
+    const byPerson = await makeTask(board, "Call the email vendor")
+    await claim(board, "tim", byPerson.id)
+    const released = await makeTask(board, "Old work")
+    const releasedClaim = await claim(board, "codex", released.id)
+    await board.call("codex", "POST", `/api/tasks/${released.id}/release`, { epoch: releasedClaim.claimEpoch })
+
+    const running = (await focusOf(board)).running
+    const line = running.find((r) => r.taskId === idle.id)
+    expect(line).toMatchObject({ agent: "gemini", threadId: String(idle.id), title: "Wire the sign-up form", steps: 0, recent: [] })
+    expect(line?.leaseExpiresAt).not.toBeNull()
+    expect(running.map((r) => r.taskId)).not.toContain(byPerson.id)
+    expect(running.map((r) => r.taskId)).not.toContain(released.id)
+    const claimedByAgents = (await board.call("simon", "GET", "/api/tasks?state=claimed")).json
+    const agentHeld = z
+      .array(Task)
+      .parse(claimedByAgents)
+      .filter((t) => t.holder !== null && ["claude", "codex", "gemini"].includes(t.holder))
+    for (const task of agentHeld) expect(running.filter((r) => r.taskId === task.id)).toHaveLength(1)
+  })
+
   test("open plans are listed newest first with progress", async () => {
     const board = await freshBoard()
     const older = Plan.parse((await board.call("simon", "POST", "/api/plans", { channel: "backend", title: "Users API" })).json)

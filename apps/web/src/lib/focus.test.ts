@@ -54,6 +54,16 @@ describe("needItems", () => {
     expect(items.map(threadOf)).toEqual(["815", "m12", "806", "808"])
   })
 
+  test("a blocked card names its assignee, else its holder, else nobody", () => {
+    const items = needItems({
+      questions: [],
+      threadQuestions: [],
+      reviews: [],
+      blocked: [task(298, 1, { state: "blocked", holder: null }), task(299, 2, { state: "blocked", holder: "codex", assignee: "gemini" }), task(300, 3, { state: "blocked", holder: "codex" })],
+    })
+    expect(items.map((item) => item.who)).toEqual([null, "gemini", "codex"])
+  })
+
   test("a task asking a question and blocked is two cards", () => {
     const same = task(812, 3)
     const keys = needItems({ questions: [same], threadQuestions: [], reviews: [], blocked: [same] }).map((item) => item.key)
