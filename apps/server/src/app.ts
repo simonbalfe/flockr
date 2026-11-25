@@ -7,6 +7,7 @@ import { authOff, type AuthSettings } from "./auth/settings"
 import { BoardError, notFound, unauthenticated } from "./board/errors"
 import type { Database } from "./db/client"
 import { mcpHandler } from "./mcp/server"
+import { modelProxyPath, proxyModel, type ModelProxySettings } from "./model-proxy/proxy"
 import { activityRoutes } from "./routes/activity"
 import { activityEntryRoutes } from "./routes/activity-entries"
 import { agentRoutes } from "./routes/agents"
@@ -37,6 +38,8 @@ const info = {
 
 export interface AppOptions {
   auth?: AuthSettings
+  // Lets sandboxes reach the model without holding its key (PL8); off when null.
+  modelProxy?: ModelProxySettings | null
 }
 
 export function createApp(db: Database, options: AppOptions = {}) {
@@ -44,6 +47,8 @@ export function createApp(db: Database, options: AppOptions = {}) {
   const authenticator = createAuthenticator(db, options.auth ?? authOff)
 
   const identify: MiddlewareHandler<AppEnv> = async (c, next) => {
+    // A box proves itself with its box token, checked by the proxy, not as a member.
+    if (c.req.path.startsWith(`${modelProxyPath}/`)) return next()
     c.set("db", db)
     c.set("auth", authenticator)
     const open = authenticator.mode === "off" || isPublicApiPath(c.req.path)
@@ -90,6 +95,8 @@ export function createApp(db: Database, options: AppOptions = {}) {
 
   const document = () => api.getOpenAPI31Document({ openapi: "3.1.0", info })
 
+  // Not an OpenAPI operation: it is for sandboxes, not for people or agents on the board.
+  api.all(`${modelProxyPath}/*`, (c) => proxyModel(c.req.raw, options.modelProxy ?? null, new Date()))
   api.get("/api/openapi.json", (c) => c.json(document()))
   api.get("/api/docs", swaggerUI({ url: "/api/openapi.json" }))
   api.on(["GET", "POST"], `${authBasePath}/*`, (c) => {

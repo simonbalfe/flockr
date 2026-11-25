@@ -21,4 +21,4 @@ Every box has a time limit, a disk cap and clean-up:
 
 `bun run test` here runs the contract test against real Docker and skips it when Docker is not running. A new adapter passes the same test.
 
-The model key never enters a box: an egress proxy adds it outside (PL8).
+The model key never enters a box: give it `FLOCKR_MODEL_URL=<board>/api/model` and a box token from `issueBoxToken` (expiring with the box), and the board adds the real key (PL8, ADR 0024).

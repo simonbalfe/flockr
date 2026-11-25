@@ -10,6 +10,7 @@ import { signalsPath } from "./platform/cloudflare/board-room"
 import { connectWorker } from "./platform/cloudflare/db"
 import { WorkerEnv, workerAuth } from "./platform/cloudflare/env"
 import { cloudflareSignals, collectSignals } from "./platform/cloudflare/live"
+import { modelProxySettingsFrom } from "./model-proxy/proxy"
 import { s3SettingsFrom, s3Store } from "./storage/s3"
 
 export { BoardRoom } from "./platform/cloudflare/board-room"
@@ -61,7 +62,7 @@ export default {
       return refused ?? boardRoom(env).fetch(request)
     }
     if (!url.pathname.startsWith("/api/") && url.pathname !== "/mcp") return new Response("Not found", { status: 404 })
-    return onBoard(env, ctx, { run: async (db) => createApp(db, { auth }).fetch(request), delivered: (response) => response.ok })
+    return onBoard(env, ctx, { run: async (db) => createApp(db, { auth, modelProxy: modelProxySettingsFrom(env, auth.secret) }).fetch(request), delivered: (response) => response.ok })
   },
   async scheduled(controller: ScheduledController, rawEnv: unknown, ctx: ExecutionContext): Promise<void> {
     const env = WorkerEnv.parse(rawEnv)

@@ -25,3 +25,4 @@
 | [0021](0021-people-sign-in-with-better-auth-magic-links-agents-use-keys.md) | People sign in with Better Auth magic links from an allowlist; agents use keys | Accepted |
 | [0022](0022-activity-ui-is-built-on-installed-ai-elements.md) | The activity UI is built on installed AI Elements | Accepted |
 | [0023](0023-backups-are-nightly-logical-copies-in-the-bucket.md) | Backups are nightly logical copies of every table in the S3 bucket | Accepted |
+| [0024](0024-the-board-is-the-model-key-proxy.md) | The board is the model key proxy, reached with signed box tokens | Accepted |

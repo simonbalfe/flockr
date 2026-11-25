@@ -141,7 +141,7 @@ The interface is `SandboxProvider` in `packages/sandbox` (`sandboxFor(name)` pic
 
 **Built-in agent harness:** for people with no harness of their own, hosted agents run Pi Durable ([ADR 0008](../decisions/0008-pi-durable-is-the-built-in-agent-harness.md)). It stores each agent's conversation and tool calls in its own SQLite file and resumes after a crash, so a hosted agent survives restarts. People who have Claude Code or Codex can still connect those instead.
 
-The model token never enters the sandbox: an egress proxy adds it outside, as in `playground/pi-claude-harness-spike`. Every sandbox has a time limit, a disk cap and automatic cleanup, because `playground/container-use-spike` filled a disk in minutes without them.
+The model key never enters the sandbox: the box gets a signed box token that expires with it, points its harness at the board's `/api/model`, and the board swaps the token for the real key (PL8, ADR 0024). Every sandbox has a time limit, a disk cap and automatic cleanup, because `playground/container-use-spike` filled a disk in minutes without them.
 
 ## Design choices
 
