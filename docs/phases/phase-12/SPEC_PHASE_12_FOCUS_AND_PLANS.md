@@ -60,12 +60,12 @@ Example: four agents work in #backend and #frontend. Today the app opens on the 
 
 ## Exit checklist
 
-- [ ] 12a table, migration, board functions, routes, regenerated client and MCP tools, `flockr plans` and `flockr focus`, tests
-- [ ] 12b board skill Plans section, seeded lead and Users API plan, Lead preset
-- [ ] 12c Focus home, Next, cards, plans, running, done today, lead box
-- [ ] 12d People / Everything, collapsed runs, chips, thread status in Threads
-- [ ] Web README, board skill, ADR 0030, checklist rows
-- [ ] `bun run test`, `bun run typecheck`, `bun run build`
+- [x] 12a table, migration, board functions, routes, regenerated client and MCP tools, `flockr plans` and `flockr focus`, tests
+- [x] 12b board skill Plans section, seeded lead and Users API plan, Lead preset
+- [x] 12c Focus home, Next, cards, plans, running, done today, lead box
+- [x] 12d People / Everything, collapsed runs, chips, thread status in Threads
+- [x] Web README, board skill, ADR 0030, checklist rows
+- [x] `bun run test`, `bun run typecheck`, `bun run build`
 
 ## Notes from the build
 - 12c: Undo on a Needs you card delays the action instead of reversing it: the card hides at once, the mutation is sent when the 5 second toast ends (or on page hide), and a refusal brings the card back with the error. This makes every one-tap card action undoable, including answers and approvals that the API cannot reverse. Reply on a blocked card is the one action sent at once.
