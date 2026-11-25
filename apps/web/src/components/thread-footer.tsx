@@ -15,9 +15,9 @@ export function ThreadFooter({ message }: { message: TextMessage }) {
       onClick={() => openThread(threadId)}
       className="-ml-1.5 mt-1 inline-flex items-center gap-2 border border-transparent py-[3px] pr-2.5 pl-1.5 text-[12.5px] text-muted-foreground hover:border-border hover:bg-muted"
     >
-      <span className="flex">
-        {summary.participants.map((name, i) => (
-          <MemberAvatar key={name} name={name} size="xs" className={i > 0 ? "-ml-[5px] ring-2 ring-background" : "ring-2 ring-background"} />
+      <span className="flex gap-0.5">
+        {summary.participants.map((name) => (
+          <MemberAvatar key={name} name={name} size="xs" />
         ))}
       </span>
       <b className="font-semibold text-foreground">

@@ -101,9 +101,9 @@ function SubThread({ parent, replies, open, onOpenChange }: { parent: Reply; rep
           className="-ml-1.5 inline-flex items-center gap-2 border border-transparent py-[3px] pr-2.5 pl-1.5 text-[12.5px] text-muted-foreground hover:border-border hover:bg-muted"
         >
           <Chevron className="size-3.5" />
-          <span className="flex">
-            {participants.map((name, i) => (
-              <MemberAvatar key={name} name={name} size="xs" className={i > 0 ? "-ml-[5px] ring-2 ring-background" : "ring-2 ring-background"} />
+          <span className="flex gap-0.5">
+            {participants.map((name) => (
+              <MemberAvatar key={name} name={name} size="xs" />
             ))}
           </span>
           <b className="font-semibold text-foreground">

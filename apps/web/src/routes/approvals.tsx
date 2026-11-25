@@ -10,7 +10,7 @@ import { cn } from "@/lib/utils"
 
 const wholeBoard = ""
 
-const fieldClass = "h-8  border bg-background px-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+const fieldClass = "h-8  border bg-background px-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-1 focus-visible:ring-ring/50"
 
 const sourceTexts = (channel: string | null) =>
   ({ channel: `Set for #${channel ?? ""}`, board: channel === null ? "Set for the whole board" : "From the whole board", default: "Default" }) satisfies Record<ApprovalSource, string>
@@ -31,7 +31,7 @@ function VerdictControl({ info, value, disabled, onPick }: { info: ActionKindInf
             title={allowed ? undefined : `${info.label} is never looser than ${info.floor}`}
             onClick={() => !chosen && onPick(verdict)}
             className={cn(
-              "h-7 min-w-14  px-2.5 text-xs font-medium text-muted-foreground transition-colors outline-none focus-visible:ring-3 focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-40",
+              "h-7 min-w-14  px-2.5 text-xs font-medium text-muted-foreground transition-colors outline-none focus-visible:ring-1 focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-40",
               chosen && "bg-background text-foreground shadow-sm",
             )}
           >

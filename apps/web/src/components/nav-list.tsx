@@ -20,7 +20,7 @@ interface NavRowProps {
 export function NavRow({ who, place, when, text, note, unread = 0, onOpen, actions }: NavRowProps) {
   return (
     <li className="group/row relative border-b last:border-b-0">
-      <button type="button" onClick={onOpen} className="grid w-full grid-cols-[30px_minmax(0,1fr)] gap-3 px-1 py-2.5 text-left outline-none hover:bg-muted/60 focus-visible:ring-3 focus-visible:ring-ring/50">
+      <button type="button" onClick={onOpen} className="grid w-full grid-cols-[30px_minmax(0,1fr)] gap-3 px-1 py-2.5 text-left outline-none hover:bg-muted/60 focus-visible:ring-1 focus-visible:ring-ring/50">
         <MemberAvatar name={who} />
         <span className="min-w-0">
           <span className="flex items-baseline gap-[7px]">

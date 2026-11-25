@@ -7,7 +7,7 @@ import type { RoutineAction, RoutineTrigger } from "@/api/types"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 
-const fieldClass = "h-8 w-full  border bg-background px-2.5 text-[13.5px] outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+const fieldClass = "h-8 w-full  border bg-background px-2.5 text-[13.5px] outline-none focus-visible:border-ring focus-visible:ring-1 focus-visible:ring-ring/50"
 const anyone = ""
 
 type TriggerKind = (typeof routineTriggerKinds)[number]
