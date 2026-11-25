@@ -68,3 +68,6 @@ Example: four agents work in #backend and #frontend. Today the app opens on the 
 - [ ] `bun run test`, `bun run typecheck`, `bun run build`
 
 ## Notes from the build
+
+- 12b: The Lead personality lives once, in `packages/contracts/src/presets.ts` (`leadPreset`, `agentPresets`, `presetOf`), re-exported through `packages/client` for the web app. The seed and New agent both read it, so editing the text changes both; `presetOf(agent.personality)` tells 12c whether an agent was made from the Lead preset.
+- 12b: A personality lives on the `agents` row, which needs a machine, so the seeded `lead` sits on an invented offline machine (`seed-studio-mac`), stopped and read-only. To talk to a real lead, make one with the Lead preset in New agent on a machine with a runner.
