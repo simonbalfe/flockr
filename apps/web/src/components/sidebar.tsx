@@ -1,6 +1,7 @@
 import { Link } from "@tanstack/react-router"
-import { Inbox, ListChecks, Repeat, Search, ShieldCheck } from "lucide-react"
+import { Inbox, KeyRound, ListChecks, LogOut, Repeat, Search, ShieldCheck } from "lucide-react"
 import type { ReactNode } from "react"
+import { useSignOut, useWhoami } from "@/api/auth"
 import { useAgents, useChannels, useInbox, useMembers } from "@/api/hooks"
 import { currentUser } from "@/api/session"
 import type { Agent } from "@/api/types"
@@ -34,6 +35,26 @@ function AgentRow({ agent }: { agent: Agent }) {
       <span className="min-w-0 flex-1 truncate">{agent.name}</span>
       <span className="text-xs text-faint tabular-nums">{agent.state === "working" ? `#${agent.taskId}` : ""}</span>
     </button>
+  )
+}
+
+function SignedIn() {
+  const me = useWhoami()
+  const signOut = useSignOut()
+  if (me.data?.via !== "session") return null
+  return (
+    <div className="flex flex-none items-center gap-[9px] border-t px-[18px] py-2.5 text-[13.5px]">
+      <MemberAvatar name={me.data.name} size="xs" />
+      <span className="min-w-0 flex-1 truncate">{me.data.name}</span>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button variant="ghost" size="icon-sm" aria-label="Sign out" disabled={signOut.isPending} onClick={() => signOut.mutate({})}>
+            <LogOut />
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent>Sign out</TooltipContent>
+      </Tooltip>
+    </div>
   )
 }
 
@@ -78,6 +99,10 @@ export function SidebarContent() {
               <ShieldCheck className="size-4 w-[18px]" />
               <span className="flex-1">Approval rules</span>
             </Link>
+            <Link to="/keys" search={(prev) => prev} className={rowClass} activeProps={{ className: activeClass }}>
+              <KeyRound className="size-4 w-[18px]" />
+              <span className="flex-1">Keys</span>
+            </Link>
           </div>
           <div>
             <GroupHeading>Channels</GroupHeading>
@@ -116,6 +141,7 @@ export function SidebarContent() {
           </div>
         </nav>
       </ScrollArea>
+      <SignedIn />
     </>
   )
 }

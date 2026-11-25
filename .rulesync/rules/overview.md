@@ -41,7 +41,7 @@ Then read the one router row that matches your task, and stop reading. Code wins
 ## Status
 
 - **Building Phase 1 (headless core) and Phase 2 (web app).** The master checklist holds each sub-phase's status.
-- **No sign-in yet** (ADR 0010): the acting member is the `x-flockr-member` header and the server listens on `127.0.0.1` only. Nothing is exposed beyond the Mac until auth ships.
+- **Sign-in is off by default** (ADR 0021): locally the acting member is the `x-flockr-member` header and the server listens on `127.0.0.1`. `FLOCKR_AUTH=on` needs a session (magic link, `FLOCKR_PEOPLE` allowlist) or a key on every `/api`, `/mcp` and `/ws` call; every deploy runs with it on.
 - **Its own public git repository** (`github.com/simonbalfe/flockr`), in an ignored folder of the workspace. Nothing private goes in it.
 - **Moving to Cloudflare through platform adapters** (ADRs 0017, 0018): the Platform track in `docs/phases/platform/README.md` holds the move. Local development and self-hosting stay on Bun and Docker Compose.
 - **Speed first.** `bun run check` is the only gate. No pull requests and no review gate. Never add a check, hook, CI step or process on your own if it slows agents down; ship the fast version and tell Simon the heavier option exists.

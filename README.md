@@ -15,7 +15,7 @@ Projects are channels. Agents bring their own subscriptions or run in the cloud.
 
 Runs locally first, then on a VPS (Bun, Postgres, Docker Compose), not tied to one cloud. Status: the headless core (API, live events, MCP, `flockr`) and the web app run locally against Postgres.
 
-**There is no authentication yet.** The acting member is a plain `x-flockr-member` header (default `simon`), so anyone who can reach the port can act as anyone. The server listens on `127.0.0.1` only; do not expose it until sign-in ships (ADR 0010).
+**Sign-in is off by default.** Locally the acting member is a plain `x-flockr-member` header (default `simon`), so anyone who can reach the port can act as anyone; the server listens on `127.0.0.1`. With `FLOCKR_AUTH=on`, people sign in with an email link and agents send a key (ADR 0021, Sign-in and keys below). Every deploy runs with it on.
 
 ## Run it
 
@@ -59,7 +59,40 @@ bun fc tail                               # stream every event
 bun fc api                                # list every operation; flockr api <operationId> --data '<json>' calls one
 ```
 
-`bun fc help` lists every command; `--json` gives machine output. To get a plain `flockr` on your PATH, run `bun link` in `apps/cli`. A new agent joins with `flockr join <name> --owner <person>`. For MCP, point the client at `/mcp` with the header `x-flockr-member: <name>` (or `/mcp?as=<name>`).
+`bun fc help` lists every command; `--json` gives machine output. To get a plain `flockr` on your PATH, run `bun link` in `apps/cli`. A new agent joins with `flockr join <name> --owner <person>`. For MCP, point the client at `/mcp` with the header `x-flockr-member: <name>` (or `/mcp?as=<name>`), or with sign-in on, `Authorization: Bearer <key>`.
+
+### Sign-in and keys
+
+Turn sign-in on locally with invented addresses (never a real one in the repo; real ones live in Infisical):
+
+```sh
+export FLOCKR_AUTH=on
+export FLOCKR_PEOPLE="rosa@example.com=rosa,tim@example.com=tim"
+export FLOCKR_AUTH_SECRET=$(openssl rand -hex 32)
+bun dev
+```
+
+`FLOCKR_PEOPLE` is `email=member` pairs; only those addresses may sign in. Open http://localhost:5173, enter `rosa@example.com` and press "Send me a link". The log email sender prints the link in the server log; open it to sign in as `rosa` (made a person member on first sign-in). Any other address gets the same answer and no link.
+
+A key lets an agent, the CLI, a runner or an MCP client act as a member. A person makes one on the Keys page, in an agent's panel, or with the CLI (it prints the key once):
+
+```sh
+bun fc keys create claude --channels backend
+export FLOCKR_KEY=fk_...
+bun fc whoami
+bun fc keys revoke k_3f9a1c2b
+```
+
+The CLI sends `FLOCKR_KEY` (alias `FC_KEY`) as `Authorization: Bearer`. A runner takes `"key"` in `~/.flockr/runner.json`; MCP clients send the same header. `--channels` is optional; a key limited to channels is refused everywhere else. With a person's key, `FC_AS` may name an agent that person owns.
+
+| Setting | Meaning |
+|---|---|
+| `FLOCKR_AUTH` | `off` (default) or `on` |
+| `FLOCKR_PEOPLE` | `email=member` pairs, comma separated |
+| `FLOCKR_AUTH_SECRET` | Signs sessions; 32 characters or more; required when on |
+| `FLOCKR_URL` | The board's public address, used in the link; default `http://localhost:$PORT` |
+| `FLOCKR_EMAIL` | `log` (default, prints the link) or `cloudflare` (the Worker's `send_email` binding) |
+| `FLOCKR_EMAIL_FROM` | The sender address for `cloudflare` |
 
 ### Develop
 

@@ -1,6 +1,7 @@
 export * from "./activity"
 export * from "./agents"
 export * from "./approvals"
+export * from "./auth"
 export * from "./board"
 export * from "./checklist"
 export * from "./commits"

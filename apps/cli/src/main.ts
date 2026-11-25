@@ -8,9 +8,10 @@ import { checklistCommand } from "./checklist"
 import { briefCommand, routinesCommand } from "./routines"
 import { rulesCommand } from "./rules"
 import { int, need, optionalInt, readArgs, seconds, UsageError, type Values } from "./args"
-import { envMember, envUrl, stateFile } from "./config"
+import { envKey, envMember, envUrl, stateFile } from "./config"
 import { epochStore } from "./epochs"
 import { activityLine, channelLine, entryLine, eventLine, feedLine, inboxText, memberLine, messageStateLine, searchLine, taskDetail, taskLine, threadText, versionsText } from "./format"
+import { keysCommand } from "./keys"
 import { openQueue } from "./live"
 
 const help = `fc: the Flockr command line. Any agent or person can use it.
@@ -18,6 +19,8 @@ const help = `fc: the Flockr command line. Any agent or person can use it.
 Setup
   FC_URL   board address (default http://localhost:5173)
   FC_AS    the member you act as, sent as x-flockr-member (default ${defaultMember})
+  FLOCKR_KEY (or FC_KEY)  a key, sent as Authorization: Bearer; needed when the board has sign-in on.
+           The key names the member; FC_AS then only picks an agent the key's person owns
   --url, --as override them; --json prints machine-readable output on every command.
 
 Reading
@@ -85,6 +88,9 @@ Agents served by a machine (a runner on that machine starts their sessions; a pe
   fc agents pause|resume <name>       pause: its current run finishes, new mentions, replies and tasks wait; resume picks them up
   fc agents watch <name>              follow its runs live: each step, how it ended and its replies (what a runner pane shows)
   fc agents activity <name> [--limit n]   its recent runs across threads, newest first, with the thread each is in
+  fc keys [list]                      every key: whose, its owner, its channel limit, last used, revoked (a person only)
+  fc keys create <member> [--channels a,b]   make a key that acts as that member; it prints once, keep it
+  fc keys revoke <id>                 turn a key off for good; safe to repeat
   fc machines                         machines with a runner, online or not, and the harnesses each can run
   fc channels create <id> [--topic text] [--repo github.com/owner/name]
   fc channels set <id> [--topic text] [--repo github.com/owner/name]   an empty --repo clears it; with a repo, commits print as links
@@ -121,7 +127,7 @@ const argv = process.argv.slice(2)
 const { values, positionals } = readArgs(argv)
 const baseUrl = values.url ?? envUrl
 const member = values.as ?? envMember
-configureClient({ baseUrl, member })
+configureClient({ baseUrl, member, key: envKey })
 const epochs = epochStore({ file: stateFile, url: baseUrl, member })
 
 function print(data: unknown, text: () => string): void {
@@ -218,6 +224,7 @@ async function tail(v: Values): Promise<number> {
   const { connectLive } = sdk
   connectLive({
     baseUrl,
+    key: envKey,
     since,
     onHello: (head) => void (values.json ? undefined : console.error(`connected, board is at event ${head}`)),
     onStatus: (up) => void (up || values.json ? undefined : console.error("disconnected, reconnecting")),
@@ -445,6 +452,8 @@ async function main(): Promise<number> {
     }
     case "agents":
       return agentsCommand({ positionals, values, print, baseUrl })
+    case "keys":
+      return keysCommand({ positionals, values, print })
     case "machines":
       return machinesCommand({ positionals, values, print })
     case "routines":

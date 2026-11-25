@@ -9,6 +9,7 @@
     "./activity": "./src/activity.ts",
     "./agents": "./src/agents.ts",
     "./approvals": "./src/approvals.ts",
+    "./auth": "./src/auth.ts",
     "./activity-rules": "./src/activity-rules.ts",
     "./checklist": "./src/checklist.ts",
     "./cron": "./src/cron.ts",

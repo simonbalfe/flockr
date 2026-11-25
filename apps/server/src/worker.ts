@@ -1,12 +1,13 @@
 import { livePath } from "@flockr/contracts"
 import { createApp } from "./app"
+import { createAuthenticator, refuseLive } from "./auth/identity"
 import { drainJobs } from "./board/drain"
 import { boardId } from "./config"
 import type { Database } from "./db/client"
 import { useLiveSignals } from "./platform"
 import { signalsPath } from "./platform/cloudflare/board-room"
 import { connectWorker } from "./platform/cloudflare/db"
-import { WorkerEnv } from "./platform/cloudflare/env"
+import { WorkerEnv, workerAuth } from "./platform/cloudflare/env"
 import { cloudflareSignals, collectSignals } from "./platform/cloudflare/live"
 
 export { BoardRoom } from "./platform/cloudflare/board-room"
@@ -37,9 +38,13 @@ export default {
   async fetch(request: Request, rawEnv: unknown, ctx: ExecutionContext): Promise<Response> {
     const env = WorkerEnv.parse(rawEnv)
     const url = new URL(request.url)
-    if (url.pathname === livePath) return boardRoom(env).fetch(request)
+    const auth = workerAuth(env, request)
+    if (url.pathname === livePath) {
+      const refused = auth.mode === "on" ? await onBoard(env, ctx, { run: (db) => refuseLive(createAuthenticator(db, auth), request.headers), delivered: () => false }) : null
+      return refused ?? boardRoom(env).fetch(request)
+    }
     if (!url.pathname.startsWith("/api/") && url.pathname !== "/mcp") return new Response("Not found", { status: 404 })
-    return onBoard(env, ctx, { run: async (db) => createApp(db).fetch(request), delivered: (response) => response.ok })
+    return onBoard(env, ctx, { run: async (db) => createApp(db, { auth }).fetch(request), delivered: (response) => response.ok })
   },
   async scheduled(_controller: ScheduledController, rawEnv: unknown, ctx: ExecutionContext): Promise<void> {
     const env = WorkerEnv.parse(rawEnv)

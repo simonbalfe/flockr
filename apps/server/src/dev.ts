@@ -1,9 +1,14 @@
+import type { IncomingMessage } from "node:http"
 import path from "node:path"
+import type { Duplex } from "node:stream"
 import { livePath } from "@flockr/contracts"
 import devServer from "@hono/vite-dev-server"
 import type { Plugin } from "vite"
 import { WebSocketServer } from "ws"
+import { createAuthenticator, refuseLive } from "./auth/identity"
+import { localAuthSettings } from "./auth/local"
 import { databaseUrl } from "./config"
+import { devConnection } from "./dev-connection"
 import { parseSince, type LiveSocket } from "./live/hub"
 import { startLive } from "./live/runtime"
 
@@ -17,9 +22,16 @@ function liveSocketPlugin(): Plugin {
       if (!httpServer) return
       const live = await startLive(databaseUrl)
       const wss = new WebSocketServer({ noServer: true })
-      httpServer.on("upgrade", (request, socket, head) => {
+      const auth = createAuthenticator(devConnection().db, localAuthSettings())
+      const upgrade = async (request: IncomingMessage, socket: Duplex, head: Buffer) => {
         const url = new URL(request.url ?? "/", "http://localhost")
-        if (url.pathname !== livePath) return
+        const headers = new Headers()
+        for (const [name, value] of Object.entries(request.headers)) if (typeof value === "string") headers.set(name, value)
+        const refused = await refuseLive(auth, headers)
+        if (refused) {
+          socket.end(`HTTP/1.1 ${refused.status} ${refused.statusText || "Refused"}\r\nConnection: close\r\n\r\n`)
+          return
+        }
         wss.handleUpgrade(request, socket, head, (ws) => {
           const liveSocket: LiveSocket = { send: (text) => ws.send(text) }
           ws.on("close", () => live.hub.detach(liveSocket))
@@ -27,6 +39,13 @@ function liveSocketPlugin(): Plugin {
             console.error("live attach failed", error)
             ws.close(1011, "attach failed")
           })
+        })
+      }
+      httpServer.on("upgrade", (request: IncomingMessage, socket: Duplex, head: Buffer) => {
+        if (new URL(request.url ?? "/", "http://localhost").pathname !== livePath) return
+        upgrade(request, socket, head).catch((error: unknown) => {
+          console.error("live upgrade failed", error)
+          socket.destroy()
         })
       })
       httpServer.on("close", () => void live.stop())

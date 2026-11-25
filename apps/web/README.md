@@ -1,6 +1,6 @@
 # Flockr web
 
-The Flockr web frontend: a Slack-style board where people and coding agents share channels, threads and tasks. It reads and drives the real board through the generated API client, and live events keep it current. It acts as the member `simon` (the `x-flockr-member` header; there is no sign-in yet).
+The Flockr web frontend: a Slack-style board where people and coding agents share channels, threads and tasks. It reads and drives the real board through the generated API client, and live events keep it current. With sign-in off (the default) it acts as the member `simon` (the `x-flockr-member` header). With `FLOCKR_AUTH=on` it shows a sign-in page until a person opens their email link, then acts as the member `whoami` names; the sidebar footer signs out.
 
 ## Run
 
@@ -44,6 +44,7 @@ Other commands: `bun run build` (type check and production build into `dist/`), 
 | Click an agent | Its panel: status, what it is on now (a link to the task), the questions it is waiting on a person for (answer them there), its recent runs as work blocks linking to their threads, owner, machine, harness, folder, permissions and personality (editable), Pause and Stop (Resume and Stop while paused, Start when stopped), and Delete in the "..." menu |
 | Mention a stopped agent | A quiet line under the message box: "scout is offline. Start it." |
 | Mention a paused agent | "scout is paused; it answers when resumed. Resume it." The mention waits and is answered on resume |
+| Open Keys in the sidebar, press New key, pick claude and #backend | The key, shown once with a copy button; the list shows "claude via simon" and #backend; Revoke turns it off (`flockr keys create claude --channels backend`). An agent's panel has the same Keys section |
 | `FC_AS=claude bun fc activity post m12 "Add rate limiting"`, then `bun fc activity exec m41 -- bun test` | One collapsed work block in the thread; the command's output streams in live; "claude is working on Add rate limiting · Running bun test" under the reply box and a Stop button in the thread header |
 | Press Stop in the thread header | A `run.stop_requested` event for claude; the block says "stop requested" until the run finishes (`flockr stop m12` does the same) |
 | Reply in a thread while claude works | The reply box says "Steer claude"; the reply is a normal reply the runner passes into the running session |
@@ -65,7 +66,8 @@ Screens never touch the network directly. Everything goes through `src/api/`:
 |---|---|
 | `src/api/types.ts` | Re-exports the generated types (Task, FeedItem, Thread, Agent and so on) from `@flockr/client` |
 | `src/api/hooks.ts` | The only place that talks to the API: the generated TanStack Query options and mutations wrapped as `useTasks`, `useClaimTask` and so on, plus `useBoardSync`, which listens on `/ws` and refreshes the cache on every board event, resuming after a drop |
-| `src/api/session.ts` | The acting member (`simon`) and the low-lease threshold |
+| `src/api/session.ts` | The acting member (`simon` until `whoami` names another, `actAs`) and the low-lease threshold |
+| `src/api/auth.ts` | `whoami`, the sign-in link, sign-out and keys; `SessionGate` (`src/components/session-gate.tsx`) shows `SignIn` on a 401 |
 | `src/api/routines.ts` | Routines: the list, create, on, off and delete, and whether the current member may manage them (a person) |
 | `src/api/approvals.ts` | Approval rules: the list (kinds with floors and defaults, and the rules set), set and clear, and whether the current member may manage them (a person) |
 | `src/api/agents.ts` | Machines and the agent mutations (create, update, start, stop, delete); agent status arrives live as an `agents` frame, which refreshes the cache |

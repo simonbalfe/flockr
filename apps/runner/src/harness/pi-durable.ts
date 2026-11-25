@@ -10,7 +10,7 @@ import { endpointModels, type ModelSource } from "./pi/model"
 import { offeredFileTools, runIdFor } from "./pi/tools"
 import type { Harness, HarnessProbe, PermissionCodec, Session, SessionExit, SessionSpec, SessionStatus } from "./types"
 
-const SessionEnv = z.object({ FC_URL: z.url(), FC_AS: z.string().min(1) })
+const SessionEnv = z.object({ FC_URL: z.url(), FC_AS: z.string().min(1), FLOCKR_KEY: z.string().min(1).optional() })
 
 export const maxTurnsPerRun = 40
 
@@ -18,7 +18,7 @@ export interface PiDeps {
   model: () => BuiltInModel
   source: (model: BuiltInModel) => ModelSource
   stateFile: (member: string) => string
-  boardFor: (options: { url: string; member: string }) => PiBoard
+  boardFor: (options: { url: string; member: string; key: string | null }) => PiBoard
   log: (line: string) => void
   settings?: HarnessSettings
 }
@@ -40,13 +40,13 @@ export function createPiHarness(deps: PiDeps): Harness & { home: (member: string
     return source
   }
 
-  function homeFor(options: { url: string; member: string; model: BuiltInModel }): Promise<AgentHome> {
+  function homeFor(options: { url: string; member: string; key: string | null; model: BuiltInModel }): Promise<AgentHome> {
     const known = homes.get(options.member)
     if (known) return known
     const opened = AgentHome.open({
       file: deps.stateFile(options.member),
       member: options.member,
-      board: deps.boardFor({ url: options.url, member: options.member }),
+      board: deps.boardFor({ url: options.url, member: options.member, key: options.key }),
       models: sourceFor(options.model).models,
       log: deps.log,
       failedText,
@@ -79,7 +79,7 @@ export function createPiHarness(deps: PiDeps): Harness & { home: (member: string
     const model = deps.model()
     const folder = spec.folder.trim() ? spec.folder : null
     const fileTools = offeredFileTools(spec.rule)
-    const home = env.success ? homeFor({ url: env.data.FC_URL, member: env.data.FC_AS, model }) : Promise.reject(new Error("the session has no board address"))
+    const home = env.success ? homeFor({ url: env.data.FC_URL, member: env.data.FC_AS, key: env.data.FLOCKR_KEY ?? null, model }) : Promise.reject(new Error("the session has no board address"))
     const modelId = spec.model ?? model.defaultModel
 
     const ask = (prompt: string) =>
@@ -146,6 +146,6 @@ export const piDurable = createPiHarness({
   model: () => builtInModel(),
   source: (model) => endpointModels({ baseUrl: model.baseUrl, key: model.key ?? "", contextWindow: model.contextWindow, maxTokens: model.maxTokens }),
   stateFile: agentStateFile,
-  boardFor: ({ url, member }) => piBoard({ member, client: memberClient({ baseUrl: url, member }) }),
+  boardFor: ({ url, member, key }) => piBoard({ member, client: memberClient({ baseUrl: url, member, key }) }),
   log: (line) => console.log(line),
 })

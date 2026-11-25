@@ -11,11 +11,11 @@ export const claimRoutes = router()
       path: "/api/tasks/claim",
       operationId: "claimNextTask",
       tags,
-      summary: "Claim the oldest ready task open to you, optionally only with these labels or only assigned to you. Returns null when there is none.",
+      summary: "Claim the oldest ready task open to you, optionally only with these labels or only assigned to you; a key limited to channels claims only in those. Returns null when there is none.",
       request: { body: jsonBody(ClaimNextBody) },
       responses: ok(ClaimResult),
     }),
-    async (c) => c.json({ task: await claimNext(c.var.db, c.var.member, c.req.valid("json")) }, 200),
+    async (c) => c.json({ task: await claimNext(c.var.db, c.var.member, { ...c.req.valid("json"), channels: c.var.channels }) }, 200),
   )
   .openapi(
     operation({

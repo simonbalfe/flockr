@@ -1,4 +1,4 @@
-import { Agent, AgentDetail, CreateMemberBody, Member, MemberParams, orNull } from "@flockr/contracts"
+import { Agent, AgentDetail, AuthMode, CreateMemberBody, IdentitySource, Member, MemberParams, orNull } from "@flockr/contracts"
 import { z } from "@hono/zod-openapi"
 import { createMember } from "../board/members"
 import { getAgent, listAgents } from "../board/agents"
@@ -30,13 +30,21 @@ export const memberRoutes = router()
       path: "/api/me",
       operationId: "whoami",
       tags,
-      summary: "Show the acting member, taken from the x-flockr-member header",
-      responses: ok(z.object({ name: z.string(), member: orNull(Member) })),
+      summary: "Show the acting member and how it was named: the x-flockr-member header with sign-in off, or a session or a key with it on",
+      responses: ok(
+        z.object({
+          name: z.string(),
+          member: orNull(Member),
+          auth: AuthMode,
+          via: IdentitySource,
+          channels: orNull(z.array(z.string())).openapi({ description: "The channels the key is limited to; null when not limited" }),
+        }),
+      ),
     }),
     async (c) => {
       const row = await findMember(c.var.db, c.var.member)
       const member = row ? { name: row.name, kind: row.kind, owner: row.owner, runsIn: row.runsIn, source: row.source } : null
-      return c.json({ name: c.var.member, member }, 200)
+      return c.json({ name: c.var.member, member, auth: c.var.auth.mode, via: c.var.via, channels: c.var.channels }, 200)
     },
   )
   .openapi(

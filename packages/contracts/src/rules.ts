@@ -41,6 +41,7 @@ export const mayManageAgent = (actor: { kind: MemberKind }): boolean => actor.ki
 export const mayManageRoutine = (actor: { kind: MemberKind }): boolean => actor.kind === "person"
 
 export const mayManageApprovalRules = (actor: { kind: MemberKind }): boolean => actor.kind === "person"
+export const mayManageKeys = (actor: { kind: MemberKind }): boolean => actor.kind === "person"
 
 export function mentionsIn(text: string, members: ReadonlySet<string>): string[] {
   const found: string[] = []

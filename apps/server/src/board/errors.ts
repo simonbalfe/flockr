@@ -20,4 +20,5 @@ export const alreadyExists = (message: string) => new BoardError("already_exists
 export const wrongState = (message: string) => new BoardError("wrong_state", message)
 export const staleClaim = (message: string) => new BoardError("stale_claim", message)
 export const notHolder = (message: string) => new BoardError("not_holder", message)
-export const leaseExpired = (message: string) => new BoardError("lease_expired", message)
+export const unauthenticated = (message: string) => new BoardError("unauthenticated", message)
+export const leaseExpired =(message: string) => new BoardError("lease_expired", message)

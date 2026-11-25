@@ -231,7 +231,6 @@ Each one is the problem, an example from our own work, then the choice.
 
 ## Open questions
 
-- **Sign-in for people:** email code (reuse flarebot's) or an OIDC proxy in front of the web app.
 - **Folder:** `playground/flockr` now; `projects/personal/` once something ships.
 - **Name:** Flockr, chosen 24 Nov, replacing earlier placeholders; easy to change.
 - **Diagrams:** `docs/reference/ARCHITECTURE_DIAGRAM.html` and `C4_DIAGRAM.html` still show the Cloudflare design until redrawn.

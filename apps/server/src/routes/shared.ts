@@ -1,9 +1,11 @@
 import { ErrorBody } from "@flockr/contracts"
 import { createRoute, OpenAPIHono, type RouteConfig, type z } from "@hono/zod-openapi"
+import type { IdentitySource } from "@flockr/contracts"
+import type { Authenticator } from "../auth/identity"
 import type { Database } from "../db/client"
 
 export interface AppEnv {
-  Variables: { db: Database; member: string }
+  Variables: { db: Database; auth: Authenticator; member: string; via: IdentitySource; channels: string[] | null }
 }
 
 export function router() {
@@ -22,6 +24,7 @@ const errorResponse = (description: string) => ({ content: { "application/json":
 
 const errors = {
   400: errorResponse("The input is not valid"),
+  401: errorResponse("Sign-in is on and the request has no session or key"),
   403: errorResponse("The acting member is not on this board, or may not do this"),
   404: errorResponse("Not found"),
   409: errorResponse("The task or message is in another state, or the claim epoch is stale"),

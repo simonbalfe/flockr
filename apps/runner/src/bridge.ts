@@ -14,6 +14,7 @@ function watchAnswers(): Promise<AnswerWatch> {
     const heard = new Map<string, Answer>()
     const connection = connectLive({
       baseUrl: env.url,
+      key: env.key,
       onHello: () => ready(watch),
       onEvent: (event) => {
         if (event.type !== eventTypes.answered || event.messageId === null) return
@@ -36,7 +37,7 @@ function watchAnswers(): Promise<AnswerWatch> {
 }
 
 const gate = permissionGate({
-  board: boardClient({ member: env.member, client: memberClient({ baseUrl: env.url, member: env.member }) }),
+  board: boardClient({ member: env.member, client: memberClient({ baseUrl: env.url, member: env.member, key: env.key }) }),
   codec: harnessFor(env.harness).permissions,
   thread: env.thread,
   channel: env.channel,

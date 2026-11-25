@@ -1,4 +1,4 @@
-import { memberHeader } from "@flockr/contracts"
+import { authorizationHeader, memberHeader } from "@flockr/contracts"
 import { Server } from "@modelcontextprotocol/sdk/server/index.js"
 import { WebStandardStreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js"
 import { CallToolRequestSchema, ListToolsRequestSchema, type CallToolResult } from "@modelcontextprotocol/sdk/types.js"
@@ -12,13 +12,23 @@ export interface McpOptions {
 }
 
 const args = z.record(z.string(), z.unknown())
+const forwarded = [authorizationHeader, "cookie"] as const
 
-async function callTool(tool: OperationTool, input: unknown, member: string, options: McpOptions): Promise<CallToolResult> {
+function callerHeaders(request: Request, member: string): Record<string, string> {
+  const headers: Record<string, string> = { [memberHeader]: member }
+  for (const name of forwarded) {
+    const value = request.headers.get(name)
+    if (value !== null) headers[name] = value
+  }
+  return headers
+}
+
+async function callTool(tool: OperationTool, input: unknown, headers: Record<string, string>, options: McpOptions): Promise<CallToolResult> {
   const parsed = args.safeParse(input ?? {})
   if (!parsed.success) return { isError: true, content: [{ type: "text", text: "Arguments must be an object" }] }
   let request: { url: string; init: RequestInit }
   try {
-    request = toolRequest(tool, parsed.data, member)
+    request = toolRequest(tool, parsed.data, headers)
   } catch (error) {
     return { isError: true, content: [{ type: "text", text: error instanceof Error ? error.message : String(error) }] }
   }
@@ -48,7 +58,7 @@ export function mcpHandler(options: McpOptions) {
     server.setRequestHandler(CallToolRequestSchema, async ({ params }) => {
       const tool = allTools().get(params.name)
       if (!tool) return { isError: true, content: [{ type: "text", text: `Unknown tool ${params.name}` }] }
-      return callTool(tool, params.arguments, member, options)
+      return callTool(tool, params.arguments, callerHeaders(request, member), options)
     })
     const transport = new WebStandardStreamableHTTPServerTransport({ sessionIdGenerator: undefined, enableJsonResponse: true })
     await server.connect(transport)

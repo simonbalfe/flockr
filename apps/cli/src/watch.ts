@@ -3,6 +3,7 @@ import { activityEventTypes, applyActivityUpdates, connectLive, partHeadline, ty
 import { ActivityPostedData, ActivityUpdatedData } from "@flockr/client/activity"
 import { run } from "./api"
 import { clock } from "./format"
+import { envKey } from "./config"
 
 type State = Parameters<typeof applyActivityUpdates>[0]
 
@@ -114,6 +115,7 @@ export async function watchAgent(options: { baseUrl: string; name: string }): Pr
   }
   connectLive({
     baseUrl,
+    key: envKey,
     onHello: () =>
       queue(async () => {
         console.log(`Watching ${name} on ${baseUrl}: each run's steps show here as it works.`)

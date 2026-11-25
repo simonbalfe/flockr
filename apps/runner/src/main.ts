@@ -57,6 +57,7 @@ function readConfig(): RunnerConfig {
 const config = readConfig()
 
 const board = config.board
+const key = config.key ?? null
 const machine = machineIdentity(config)
 const sessionPath = `${shimDir}:${inheritedPath}`
 const skill = readFileSync(skillFile, "utf8")
@@ -64,7 +65,7 @@ const sessions = jsonStore(sessionsFile, SessionMap, {})
 const state = jsonStore(stateFile, RunnerState, emptyState)
 const clients = new Map<string, ReturnType<typeof memberClient>>()
 const clientFor = (member: string) => {
-  const found = clients.get(member) ?? memberClient({ baseUrl: board, member })
+  const found = clients.get(member) ?? memberClient({ baseUrl: board, member, key })
   clients.set(member, found)
   return found
 }
@@ -92,11 +93,11 @@ function spawn(spec: Spawn) {
     epochs: epochStore({ file: claimsFile, url: board, member: spec.name }),
     sessions,
     instructions: (settings) => instructions({ member: spec.name, skill, permissions: settings.permissions, personality: settings.personality }),
-    sessionEnv: { ...inherited(spec.harness.passEnv), ...fcEnv, PATH: sessionPath },
+    sessionEnv: { ...inherited(spec.harness.passEnv), ...fcEnv, ...(key ? { FLOCKR_KEY: key } : {}), PATH: sessionPath },
     bridge: ({ thread, channel }, settings) => ({
       command: bunBinary,
       args: [bridgeEntry],
-      env: { ...inherited(["HOME", "TMPDIR"]), ...fcEnv, PATH: inheritedPath, FLOCKR_THREAD: thread, FLOCKR_CHANNEL: channel, FLOCKR_HARNESS: spec.harness.name, FLOCKR_PERMISSIONS: settings.permissions },
+      env: { ...inherited(["HOME", "TMPDIR"]), ...fcEnv, FLOCKR_RUNNER_CONFIG: configFile, PATH: inheritedPath, FLOCKR_THREAD: thread, FLOCKR_CHANNEL: channel, FLOCKR_HARNESS: spec.harness.name, FLOCKR_PERMISSIONS: settings.permissions },
     }),
     log,
     hasRoom: spec.hasRoom,
@@ -107,7 +108,7 @@ function spawn(spec: Spawn) {
   })
 }
 
-const port = machineClient({ client: memberClient({ baseUrl: board }), forMember: clientFor })
+const port = machineClient({ client: memberClient({ baseUrl: board, key }), forMember: clientFor })
 const legacy = legacyAgent(config)
 const service = createService({
   machine,
@@ -147,6 +148,7 @@ log(`runner: ready with ${available.length ? available.map((h) => `${h.label} ($
 
 live = connectLive({
   baseUrl: board,
+  key,
   since: state.get().lastSeq,
   onHello: (head) => service.noteHead(head),
   onStatus: (up) => {

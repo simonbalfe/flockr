@@ -1,4 +1,4 @@
-import { defaultMember, memberHeader } from "@flockr/contracts/constants"
+import { authorizationHeader, bearerAuth, defaultMember, memberHeader } from "@flockr/contracts/constants"
 import { createClient, type Client } from "./gen/client"
 import { client } from "./gen/client.gen"
 
@@ -6,7 +6,8 @@ export * from "./gen"
 export { client } from "./gen/client.gen"
 export type { Client } from "./gen/client"
 export { connectLive, liveUrl, type LiveConnection, type LiveOptions } from "./live"
-export { activitySeconds, defaultMember, errorKinds, leaseMinutes, memberHeader, memberKinds, messageLimits, taskStates } from "@flockr/contracts/constants"
+export { authBasePath, keyLimits, signInWording } from "@flockr/contracts/auth"
+export { activitySeconds, authorizationHeader, bearerAuth, defaultMember, errorKinds, leaseMinutes, memberHeader, memberKinds, messageLimits, taskStates } from "@flockr/contracts/constants"
 export {
   labelSet,
   mayDeleteMessage,
@@ -14,6 +15,7 @@ export {
   mayLabelMessage,
   mayManageAgent,
   mayManageApprovalRules,
+  mayManageKeys,
   mayManageRoutine,
   mentionsIn,
   sameLabels,
@@ -74,10 +76,20 @@ export {
   verdictAllowed,
 } from "@flockr/contracts/approvals"
 
-export function configureClient(options: { baseUrl: string; member?: string }): void {
-  client.setConfig({ baseUrl: options.baseUrl, headers: { [memberHeader]: options.member ?? defaultMember } })
+export interface ClientOptions {
+  baseUrl: string
+  member?: string
+  key?: string | null
 }
 
-export function memberClient(options: { baseUrl: string; member?: string }): Client {
-  return createClient({ baseUrl: options.baseUrl, headers: { [memberHeader]: options.member ?? defaultMember } })
+export function clientHeaders(options: Omit<ClientOptions, "baseUrl">): Record<string, string> {
+  return { [memberHeader]: options.member ?? defaultMember, ...(options.key ? { [authorizationHeader]: bearerAuth(options.key) } : {}) }
+}
+
+export function configureClient(options: ClientOptions): void {
+  client.setConfig({ baseUrl: options.baseUrl, headers: clientHeaders(options) })
+}
+
+export function memberClient(options: ClientOptions): Client {
+  return createClient({ baseUrl: options.baseUrl, headers: clientHeaders(options) })
 }

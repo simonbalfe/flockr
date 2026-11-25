@@ -9,6 +9,7 @@ import { ChannelMessages } from "@/routes/channel-messages"
 import { ChannelTasks } from "@/routes/channel-tasks"
 import { InboxView } from "@/routes/inbox"
 import { ApprovalsView } from "@/routes/approvals"
+import { KeysView } from "@/routes/keys"
 import { RoutinesView } from "@/routes/routines"
 
 const rootRoute = createRootRouteWithContext<{ queryClient: QueryClient }>()({
@@ -40,6 +41,7 @@ const allTasksRoute = createRoute({ getParentRoute: () => rootRoute, path: "/tas
 const inboxRoute = createRoute({ getParentRoute: () => rootRoute, path: "/inbox", component: InboxView })
 const routinesRoute = createRoute({ getParentRoute: () => rootRoute, path: "/routines", component: RoutinesView })
 const approvalsRoute = createRoute({ getParentRoute: () => rootRoute, path: "/approvals", component: ApprovalsView })
+const keysRoute = createRoute({ getParentRoute: () => rootRoute, path: "/keys", component: KeysView })
 
 const routeTree = rootRoute.addChildren([
   indexRoute,
@@ -48,6 +50,7 @@ const routeTree = rootRoute.addChildren([
   inboxRoute,
   routinesRoute,
   approvalsRoute,
+  keysRoute,
 ])
 
 export function createAppRouter(queryClient: QueryClient) {

@@ -67,6 +67,7 @@ export type PanesConfig = z.infer<typeof PanesConfig>
 
 export const RunnerConfig = z.object({
   board: z.url().default(defaultBoard),
+  key: z.string().trim().min(1).optional(),
   machine: z.string().trim().min(1).optional(),
   channels: z.record(channelName, absolute).default({}),
   maxSessions: z.number().int().min(1).max(8).default(2),
@@ -144,7 +145,17 @@ const BridgeEnv = z.object({
   FLOCKR_PERMISSIONS: z.enum(agentPermissions),
 })
 
+const KeySection = z.object({ key: z.string().trim().min(1).optional() })
+
+export function configuredKey(file: string = configFile): string | null {
+  try {
+    return KeySection.safeParse(readRaw(file)).data?.key ?? null
+  } catch {
+    return null
+  }
+}
+
 export function bridgeEnv() {
   const env = BridgeEnv.parse(process.env)
-  return { url: env.FC_URL, member: env.FC_AS, thread: env.FLOCKR_THREAD, channel: env.FLOCKR_CHANNEL, harness: env.FLOCKR_HARNESS, permissions: env.FLOCKR_PERMISSIONS }
+  return { url: env.FC_URL, member: env.FC_AS, key: configuredKey(), thread: env.FLOCKR_THREAD, channel: env.FLOCKR_CHANNEL, harness: env.FLOCKR_HARNESS, permissions: env.FLOCKR_PERMISSIONS }
 }

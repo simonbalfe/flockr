@@ -1,11 +1,5 @@
 import { createApp } from "./app"
-import { databaseUrl } from "./config"
-import { connect, type Connection } from "./db/client"
+import { localAuthSettings } from "./auth/local"
+import { devConnection } from "./dev-connection"
 
-declare global {
-  var flockrDevConnection: Connection | undefined
-}
-
-globalThis.flockrDevConnection ??= connect(databaseUrl)
-
-export default createApp(globalThis.flockrDevConnection.db)
+export default createApp(devConnection().db, { auth: localAuthSettings() })

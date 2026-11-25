@@ -1,4 +1,4 @@
-import { configureClient, connectLive, type BoardEvent } from "@flockr/client"
+import { connectLive, type BoardEvent } from "@flockr/client"
 import {
   addTaskCommitMutation,
   answerInThreadMutation,
@@ -38,8 +38,6 @@ import { keepPreviousData, queryOptions, useMutation, useQuery, useQueryClient, 
 import { useEffect } from "react"
 import { agentActivityQuery, patchActivity } from "./activity-live"
 import { currentUser } from "./session"
-
-configureClient({ baseUrl: window.location.origin, member: currentUser })
 
 export const queries = {
   channels: () => listChannelsOptions(),

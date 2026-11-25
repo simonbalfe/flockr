@@ -4,16 +4,19 @@ export const agentStates = ["working", "blocked", "idle"] as const
 
 export const livePath = "/ws"
 export const memberHeader = "x-flockr-member"
+export const authorizationHeader = "authorization"
+export const bearerAuth = (key: string) => `Bearer ${key}`
 export const defaultMember = "simon"
 export const leaseMinutes = 15
 export const activitySeconds = 120
 export const messageLimits = { labels: 10, labelChars: 40 } as const
 
-export const errorKinds = ["invalid", "not_member", "forbidden", "not_found", "already_exists", "wrong_state", "stale_claim", "not_holder", "lease_expired", "internal"] as const
+export const errorKinds = ["invalid", "unauthenticated", "not_member", "forbidden", "not_found", "already_exists", "wrong_state", "stale_claim", "not_holder", "lease_expired", "internal"] as const
 export type ErrorKind = (typeof errorKinds)[number]
 
 export const errorStatus = {
   invalid: 400,
+  unauthenticated: 401,
   not_member: 403,
   forbidden: 403,
   not_found: 404,

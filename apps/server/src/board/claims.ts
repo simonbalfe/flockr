@@ -1,5 +1,5 @@
 import { leaseMinutes, type ClaimNextBody, type ReleaseBody, type Task } from "@flockr/contracts"
-import { and, arrayContains, asc, eq, isNull, lt, or, type SQL } from "drizzle-orm"
+import { and, arrayContains, asc, eq, inArray, isNull, lt, or, type SQL } from "drizzle-orm"
 import type { Database, Tx } from "../db/client"
 import { tasks, type TaskRow } from "../db/schema"
 import { mutate, type Emit } from "./events"
@@ -25,13 +25,14 @@ async function takeClaim(tx: Tx, emit: Emit, task: TaskRow, actor: string): Prom
   return row
 }
 
-export async function claimNext(db: Database, actor: string, body: ClaimNextBody): Promise<Task | null> {
+export async function claimNext(db: Database, actor: string, body: ClaimNextBody & { channels?: string[] | null }): Promise<Task | null> {
   const id = await mutate(db, async (tx, emit) => {
     await requireActor(tx, actor)
     const filters: SQL[] = [eq(tasks.state, "ready")]
     const open = body.mine ? eq(tasks.assignee, actor) : or(isNull(tasks.assignee), eq(tasks.assignee, actor))
     if (open) filters.push(open)
     if (body.labels.length) filters.push(arrayContains(tasks.labels, body.labels))
+    if (body.channels) filters.push(inArray(tasks.channel, body.channels))
     const [candidate] = await tx
       .select()
       .from(tasks)

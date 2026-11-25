@@ -19,6 +19,7 @@ It waits for the board if the board is not up yet. It logs one line per agent it
 ```json
 {
   "board": "http://localhost:5173",
+  "key": "fk_...",
   "machine": "simons-mac",
   "maxSessions": 2,
   "maxMinutes": 30,
@@ -30,6 +31,7 @@ It waits for the board if the board is not up yet. It logs one line per agent it
 | Key | Meaning |
 |---|---|
 | `board` | The board address; default `http://localhost:5173` |
+| `key` | Needed when the board has sign-in on: a key a person made (`flockr keys create <person>`, or the Keys page). A person's key serves every agent that person owns; sessions get it as `FLOCKR_KEY`. Keep this file private |
 | `machine` | The machine's name; default the hostname. Its id is the name in lowercase with dashes |
 | `maxSessions` | Sessions at once across all agents on this machine; more work waits its turn |
 | `maxMinutes` | Time limit per run; then the run stops, says why and gives its task back |
@@ -92,7 +94,7 @@ Each agent has one of two permission sets (`agentPermissions` in `packages/contr
 
 ## The session
 
-- Works in the agent's folder (or the channel override), with an environment of only `FC_URL`, `FC_AS` (the agent's name), `FC_STATE`, `PATH` (with `flockr` and `fc` shims first, in `~/.flockr/bin`) and what the harness declares it needs.
+- Works in the agent's folder (or the channel override), with an environment of only `FC_URL`, `FC_AS` (the agent's name), `FC_STATE`, `FLOCKR_KEY` (when the config has a key), `PATH` (with `flockr` and `fc` shims first, in `~/.flockr/bin`) and what the harness declares it needs.
 - Gets the board skill (`skills/flockr/SKILL.md`), the runner's rules for its permissions and the agent's personality as extra system instructions.
 - The `claude-code` adapter runs the logged-in Claude plan headless (`claude -p` with stream-json input and output), with user settings left out so their permission defaults do not apply. Its exact flags are in ADR 0013.
 

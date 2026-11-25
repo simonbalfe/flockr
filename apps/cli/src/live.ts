@@ -1,4 +1,5 @@
 import { connectLive, type BoardEvent } from "@flockr/client"
+import { envKey } from "./config"
 
 export interface EventQueue {
   next: (match: (event: BoardEvent) => boolean, deadline: number) => Promise<BoardEvent | null>
@@ -11,6 +12,7 @@ export function openQueue(baseUrl: string): Promise<EventQueue> {
     let wake: (() => void) | null = null
     const connection = connectLive({
       baseUrl,
+      key: envKey,
       onHello: () => resolve(queue),
       onEvent: (event) => {
         buffered.push(event)

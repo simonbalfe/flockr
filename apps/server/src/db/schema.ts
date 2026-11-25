@@ -313,6 +313,90 @@ export const jobApprovals = pgTable(
   (t) => [uniqueIndex("job_approvals_question").on(t.questionId)],
 )
 
+export const memberKeys = pgTable(
+  "member_keys",
+  {
+    id: text("id").primaryKey(),
+    member: text("member")
+      .notNull()
+      .references(() => members.name),
+    hash: text("hash").notNull(),
+    shown: text("shown").notNull(),
+    channels: text("channels").array(),
+    createdBy: text("created_by")
+      .notNull()
+      .references(() => members.name),
+    createdAt: createdAt(),
+    lastUsedAt: timestamp("last_used_at", { withTimezone: true }),
+    revokedAt: timestamp("revoked_at", { withTimezone: true }),
+  },
+  (t) => [uniqueIndex("member_keys_hash").on(t.hash), index("member_keys_member").on(t.member)],
+)
+
+const authTimestamp = (name: string) => timestamp(name, { withTimezone: true }).notNull().defaultNow()
+
+export const authUsers = pgTable("auth_users", {
+  id: text("id").primaryKey(),
+  name: text("name").notNull(),
+  email: text("email").notNull().unique(),
+  emailVerified: boolean("email_verified").notNull().default(false),
+  image: text("image"),
+  createdAt: authTimestamp("created_at"),
+  updatedAt: authTimestamp("updated_at"),
+})
+
+export const authSessions = pgTable(
+  "auth_sessions",
+  {
+    id: text("id").primaryKey(),
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+    token: text("token").notNull().unique(),
+    createdAt: authTimestamp("created_at"),
+    updatedAt: authTimestamp("updated_at"),
+    ipAddress: text("ip_address"),
+    userAgent: text("user_agent"),
+    userId: text("user_id")
+      .notNull()
+      .references(() => authUsers.id, { onDelete: "cascade" }),
+  },
+  (t) => [index("auth_sessions_user").on(t.userId)],
+)
+
+export const authAccounts = pgTable(
+  "auth_accounts",
+  {
+    id: text("id").primaryKey(),
+    accountId: text("account_id").notNull(),
+    providerId: text("provider_id").notNull(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => authUsers.id, { onDelete: "cascade" }),
+    accessToken: text("access_token"),
+    refreshToken: text("refresh_token"),
+    idToken: text("id_token"),
+    accessTokenExpiresAt: timestamp("access_token_expires_at", { withTimezone: true }),
+    refreshTokenExpiresAt: timestamp("refresh_token_expires_at", { withTimezone: true }),
+    scope: text("scope"),
+    password: text("password"),
+    createdAt: authTimestamp("created_at"),
+    updatedAt: authTimestamp("updated_at"),
+  },
+  (t) => [index("auth_accounts_user").on(t.userId)],
+)
+
+export const authVerifications = pgTable(
+  "auth_verifications",
+  {
+    id: text("id").primaryKey(),
+    identifier: text("identifier").notNull(),
+    value: text("value").notNull(),
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+    createdAt: authTimestamp("created_at"),
+    updatedAt: authTimestamp("updated_at"),
+  },
+  (t) => [index("auth_verifications_identifier").on(t.identifier)],
+)
+
 export type TaskRow = typeof tasks.$inferSelect
 export type TaskCommitRow = typeof taskCommits.$inferSelect
 export type ChannelRow = typeof channels.$inferSelect
@@ -326,3 +410,4 @@ export type RoutineRow = typeof routines.$inferSelect
 export type JobRow = typeof jobs.$inferSelect
 export type ApprovalRuleRow = typeof approvalRules.$inferSelect
 export type JobApprovalRow = typeof jobApprovals.$inferSelect
+export type MemberKeyRow = typeof memberKeys.$inferSelect

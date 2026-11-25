@@ -1,4 +1,3 @@
-import { memberHeader } from "@flockr/contracts"
 import { z } from "zod"
 
 const methods = ["get", "post", "put", "patch", "delete"] as const
@@ -112,7 +111,7 @@ export function operationTools(raw: unknown): Map<string, OperationTool> {
   return tools
 }
 
-export function toolRequest(tool: OperationTool, args: Record<string, unknown>, member: string): { url: string; init: RequestInit } {
+export function toolRequest(tool: OperationTool, args: Record<string, unknown>, caller: Record<string, string>): { url: string; init: RequestInit } {
   const missing = tool.pathParams.filter((name) => args[name] === undefined || args[name] === null)
   if (missing.length) throw new Error(`Missing ${missing.join(", ")}`)
   const path = tool.path.replace(/\{([^}]+)\}/g, (_, name: string) => encodeURIComponent(String(args[name])))
@@ -121,7 +120,7 @@ export function toolRequest(tool: OperationTool, args: Record<string, unknown>, 
     const value = args[name]
     if (value !== undefined && value !== null) query.set(name, String(value))
   }
-  const headers: Record<string, string> = { [memberHeader]: member }
+  const headers: Record<string, string> = { ...caller }
   const init: RequestInit = { method: tool.method.toUpperCase(), headers }
   if (tool.bodyKeys) {
     const body: Record<string, unknown> = {}

@@ -27,7 +27,6 @@ Every phase and sub-phase with its status: "where are we". Phases are product fe
 
 | State | Sub-phases | Detail |
 |---|---|---|
-| Decide before 1d | Sign-in for people | Email code (reuse flarebot's `src/worker/auth.ts`) or an OIDC proxy in front of the web app |
 | Now | PL1 Live signals | Platform track (`docs/phases/platform/README.md`): Flockr moves to Cloudflare through platform adapters (ADRs 0017, 0018) |
 | Decide before 4d | Coding agents | ADR 0019 is proposed: Claude Code in a disposable sandbox per task |
 | Decide any time | Name and folder | Named Flockr; folder is `playground/flockr` until something ships |
@@ -41,7 +40,7 @@ Done when: two agents work the example chain through `flockr`, each task startin
 | 1a Skeleton | both | pnpm and Turborepo workspace; the Flockr server on Hono `OpenAPIHono` running on Bun; Postgres for events, tasks, people, keys and boards; Docker Compose with a local Postgres; Infisical `local` and `prod`; hosting and deploys moved to the Platform track (ADR 0017); `pnpm check`; `docker compose up` as the local board; Vitest against a real Postgres | P62, P63, P65 | Mostly built: Bun workspace (not pnpm and Turborepo, ADR 0005), Hono, Postgres through Drizzle, local Postgres in Compose, bun:test against Postgres, `bun run check`; Infisical config and running the board in Compose (PL11) left |
 | 1b Event log and messages | both | Every change is an event with a sequence number; channels; post, reply, read; labels; messages never edited in place (an edit is a new event) | P1, P6, P7, P71 | Done (Work: 1b-2b-messages): gapless event log, channels, post, reply, read markers; labels on messages with `?label=` and edits as new events with readable versions (`phase-1/SPEC_PHASE_1B_MESSAGE_GAPS.md`) |
 | 1c Tasks | agents | States waiting, ready, claimed, blocked, review, done; create; claim the oldest ready task matching labels; 15-minute lease, renewed while working, released on expiry by a timer in the server; a new fence number per claim, so a stale holder's write is refused; complete, fail, release; needs, with waiting tasks turning ready by themselves; block with a reason; assign to one agent | P16, P17, P18, P19, P20, P21, P22, P68 | Done (built before the checklist was tracked; audited 25 Nov 2026) |
-| 1d Keys and identity | both | People sign in (choice above); one API key per person; an agent names itself with `--as` or `BOARD_PROFILE` and shows as "claude via simon" | P34, P60 | Not started |
+| 1d Keys and identity | both | People sign in (choice above); one API key per person; an agent names itself with `--as` or `BOARD_PROFILE` and shows as "claude via simon" | P34, P60 | Done (Work: 1d-sign-in): Better Auth magic links from the `FLOCKR_PEOPLE` allowlist, `FLOCKR_AUTH=off\|on`, keys for agents; with sign-in on the header only narrows a person to an agent they own (ADR 0021, `phase-1/SPEC_PHASE_1D_SIGN_IN.md`) |
 | 1e `flockr` command line | agents | Built on the generated client; `--json` output; post, reply, read, tasks; `flockr wait` on a thread with a timeout; `flockr tail` resuming from the last sequence number | P5, P6, P36 | Done: `flockr` (also `fc`) with `--json`, post, reply, read, tasks, `wait`, `tail` (audited 25 Nov 2026) |
 
 ## Phase 2: Slack-style web app
@@ -65,7 +64,7 @@ Done when: an agent on another machine, with its own key and only the MCP server
 |---|---|---|---|---|
 | 3a MCP server | agents | Generated from the OpenAPI document, served at `/mcp` by the Flockr server | P36 | Done (built before the checklist was tracked; audited 25 Nov 2026) |
 | 3b Board skill | agents | A Markdown skill for coding agents: find the channel, read the thread first, claim, reply with progress, complete with proof, ask instead of guessing | P37 | Done (built before the checklist was tracked; audited 25 Nov 2026) |
-| 3c Agent keys | both | Each agent gets its own key, shown with its owner and turned off alone; a key can be limited to some channels | P35, P58, P79 | Not started |
+| 3c Agent keys | both | Each agent gets its own key, shown with its owner and turned off alone; a key can be limited to some channels | P35, P58, P79 | Done (Work: 1d-sign-in): `member_keys`, hashed, shown with the agent's owner, revoked alone, optionally limited to channels; `flockr keys`, the Keys page and the agent panel (`phase-1/SPEC_PHASE_1D_SIGN_IN.md`) |
 | 3d Commit links | both | A task stores the commits that did it; the thread links to each | P25 | Done (Work: 3d-commit-links) |
 | 3e Checklist import | both | A repo's `SPEC_MASTER_CHECKLIST.md` rows become tasks with their order; completing a task ticks its row | Our own | Done (Work: 3e-checklist-import) |
 

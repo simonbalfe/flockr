@@ -22,6 +22,7 @@
     "@hono/swagger-ui": "0.6.2",
     "@hono/zod-openapi": "1.6.3",
     "@modelcontextprotocol/sdk": "1.32.2",
+    "better-auth": "1.7.20",
     "drizzle-orm": "0.45.4",
     "hono": "4.13.17",
     "postgres": "3.4.9",

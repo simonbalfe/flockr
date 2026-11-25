@@ -3,7 +3,7 @@
   "info": {
     "title": "Flockr",
     "version": "0.1.0",
-    "description": "A shared board for people and agents: channels, threads and tasks with claims and leases. There is no authentication yet: the acting member is the x-flockr-member header (default simon)."
+    "description": "A shared board for people and agents: channels, threads and tasks with claims and leases. With sign-in off (the default) the acting member is the x-flockr-member header (default simon). With sign-in on, every request needs a session cookie (/api/auth) or a key sent as Authorization: Bearer <key>; the header then only picks an agent the signed-in person owns."
   },
   "components": {
     "schemas": {
@@ -47,6 +47,7 @@
             "type": "string",
             "enum": [
               "invalid",
+              "unauthenticated",
               "not_member",
               "forbidden",
               "not_found",
@@ -1813,6 +1814,21 @@
         },
         "required": [
           "name"
+        ]
+      },
+      "AuthMode": {
+        "type": "string",
+        "enum": [
+          "off",
+          "on"
+        ]
+      },
+      "IdentitySource": {
+        "type": "string",
+        "enum": [
+          "header",
+          "session",
+          "key"
         ]
       },
       "Agent": {
@@ -4494,6 +4510,174 @@
           "default"
         ],
         "description": "Where the verdict came from: the channel's rule, the board rule, or the default"
+      },
+      "MemberKey": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "k_3f9a1c2b"
+          },
+          "member": {
+            "type": "string",
+            "example": "claude"
+          },
+          "owner": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The person the key's member acts for, when it is an agent"
+          },
+          "shown": {
+            "type": "string",
+            "example": "fk_8Hq2",
+            "description": "The first characters of the key, to tell keys apart"
+          },
+          "channels": {
+            "anyOf": [
+              {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The only channels the key may touch; null when it is not limited"
+          },
+          "createdBy": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-11-24T10:40:02.000Z"
+          },
+          "lastUsedAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "example": "2026-11-24T10:40:02.000Z"
+          },
+          "revokedAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "example": "2026-11-24T10:40:02.000Z"
+          }
+        },
+        "required": [
+          "id",
+          "member",
+          "owner",
+          "shown",
+          "channels",
+          "createdBy",
+          "createdAt",
+          "lastUsedAt",
+          "revokedAt"
+        ]
+      },
+      "CreatedKey": {
+        "type": "object",
+        "properties": {
+          "key": {
+            "$ref": "#/components/schemas/MemberKey"
+          },
+          "secret": {
+            "type": "string",
+            "description": "The key itself, shown only this once. Send it as Authorization: Bearer <secret>"
+          }
+        },
+        "required": [
+          "key",
+          "secret"
+        ]
+      },
+      "CreateKeyBody": {
+        "type": "object",
+        "properties": {
+          "member": {
+            "type": "string",
+            "example": "claude",
+            "description": "The member the key acts as"
+          },
+          "channels": {
+            "anyOf": [
+              {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "pattern": "^[a-z0-9][a-z0-9-]*$"
+                },
+                "minItems": 1,
+                "maxItems": 20
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "example": [
+              "backend"
+            ],
+            "description": "Limit the key to these channels; it is refused everywhere else"
+          }
+        },
+        "required": [
+          "member"
+        ]
+      },
+      "SignInResult": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "boolean"
+          },
+          "message": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "status",
+          "message"
+        ]
+      },
+      "SignInBody": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "format": "email",
+            "example": "dana@example.com"
+          },
+          "callbackURL": {
+            "type": "string",
+            "description": "Where the link lands after signing in: a path on this board",
+            "example": "/"
+          }
+        },
+        "required": [
+          "email"
+        ]
+      },
+      "SignOutResult": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "success"
+        ]
       }
     },
     "parameters": {}
@@ -4522,6 +4706,16 @@
           },
           "400": {
             "description": "The input is not valid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sign-in is on and the request has no session or key",
             "content": {
               "application/json": {
                 "schema": {
@@ -4591,6 +4785,16 @@
           },
           "400": {
             "description": "The input is not valid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sign-in is on and the request has no session or key",
             "content": {
               "application/json": {
                 "schema": {
@@ -4681,6 +4885,16 @@
               }
             }
           },
+          "401": {
+            "description": "Sign-in is on and the request has no session or key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
           "403": {
             "description": "The acting member is not on this board, or may not do this",
             "content": {
@@ -4753,6 +4967,16 @@
           },
           "400": {
             "description": "The input is not valid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sign-in is on and the request has no session or key",
             "content": {
               "application/json": {
                 "schema": {
@@ -4845,6 +5069,16 @@
               }
             }
           },
+          "401": {
+            "description": "Sign-in is on and the request has no session or key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
           "403": {
             "description": "The acting member is not on this board, or may not do this",
             "content": {
@@ -4917,6 +5151,16 @@
           },
           "400": {
             "description": "The input is not valid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sign-in is on and the request has no session or key",
             "content": {
               "application/json": {
                 "schema": {
@@ -5009,6 +5253,16 @@
               }
             }
           },
+          "401": {
+            "description": "Sign-in is on and the request has no session or key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
           "403": {
             "description": "The acting member is not on this board, or may not do this",
             "content": {
@@ -5073,6 +5327,16 @@
           },
           "400": {
             "description": "The input is not valid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sign-in is on and the request has no session or key",
             "content": {
               "application/json": {
                 "schema": {
@@ -5155,6 +5419,16 @@
               }
             }
           },
+          "401": {
+            "description": "Sign-in is on and the request has no session or key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
           "403": {
             "description": "The acting member is not on this board, or may not do this",
             "content": {
@@ -5221,6 +5495,16 @@
           },
           "400": {
             "description": "The input is not valid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sign-in is on and the request has no session or key",
             "content": {
               "application/json": {
                 "schema": {
@@ -5313,6 +5597,16 @@
               }
             }
           },
+          "401": {
+            "description": "Sign-in is on and the request has no session or key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
           "403": {
             "description": "The acting member is not on this board, or may not do this",
             "content": {
@@ -5387,6 +5681,16 @@
               }
             }
           },
+          "401": {
+            "description": "Sign-in is on and the request has no session or key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
           "403": {
             "description": "The acting member is not on this board, or may not do this",
             "content": {
@@ -5443,6 +5747,16 @@
           },
           "400": {
             "description": "The input is not valid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sign-in is on and the request has no session or key",
             "content": {
               "application/json": {
                 "schema": {
@@ -5520,6 +5834,16 @@
               }
             }
           },
+          "401": {
+            "description": "Sign-in is on and the request has no session or key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
           "403": {
             "description": "The acting member is not on this board, or may not do this",
             "content": {
@@ -5559,7 +5883,7 @@
         "tags": [
           "members"
         ],
-        "summary": "Show the acting member, taken from the x-flockr-member header",
+        "summary": "Show the acting member and how it was named: the x-flockr-member header with sign-in off, or a session or a key with it on",
         "responses": {
           "200": {
             "description": "OK",
@@ -5580,11 +5904,34 @@
                           "type": "null"
                         }
                       ]
+                    },
+                    "auth": {
+                      "$ref": "#/components/schemas/AuthMode"
+                    },
+                    "via": {
+                      "$ref": "#/components/schemas/IdentitySource"
+                    },
+                    "channels": {
+                      "anyOf": [
+                        {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "The channels the key is limited to; null when not limited"
                     }
                   },
                   "required": [
                     "name",
-                    "member"
+                    "member",
+                    "auth",
+                    "via",
+                    "channels"
                   ]
                 }
               }
@@ -5592,6 +5939,16 @@
           },
           "400": {
             "description": "The input is not valid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sign-in is on and the request has no session or key",
             "content": {
               "application/json": {
                 "schema": {
@@ -5656,6 +6013,16 @@
           },
           "400": {
             "description": "The input is not valid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sign-in is on and the request has no session or key",
             "content": {
               "application/json": {
                 "schema": {
@@ -5733,6 +6100,16 @@
               }
             }
           },
+          "401": {
+            "description": "Sign-in is on and the request has no session or key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
           "403": {
             "description": "The acting member is not on this board, or may not do this",
             "content": {
@@ -5797,6 +6174,16 @@
           },
           "400": {
             "description": "The input is not valid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sign-in is on and the request has no session or key",
             "content": {
               "application/json": {
                 "schema": {
@@ -5885,6 +6272,16 @@
               }
             }
           },
+          "401": {
+            "description": "Sign-in is on and the request has no session or key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
           "403": {
             "description": "The acting member is not on this board, or may not do this",
             "content": {
@@ -5955,6 +6352,16 @@
               }
             }
           },
+          "401": {
+            "description": "Sign-in is on and the request has no session or key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
           "403": {
             "description": "The acting member is not on this board, or may not do this",
             "content": {
@@ -5994,7 +6401,7 @@
         "tags": [
           "claims"
         ],
-        "summary": "Claim the oldest ready task open to you, optionally only with these labels or only assigned to you. Returns null when there is none.",
+        "summary": "Claim the oldest ready task open to you, optionally only with these labels or only assigned to you; a key limited to channels claims only in those. Returns null when there is none.",
         "requestBody": {
           "required": true,
           "content": {
@@ -6018,6 +6425,16 @@
           },
           "400": {
             "description": "The input is not valid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sign-in is on and the request has no session or key",
             "content": {
               "application/json": {
                 "schema": {
@@ -6090,6 +6507,16 @@
           },
           "400": {
             "description": "The input is not valid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sign-in is on and the request has no session or key",
             "content": {
               "application/json": {
                 "schema": {
@@ -6180,6 +6607,16 @@
               }
             }
           },
+          "401": {
+            "description": "Sign-in is on and the request has no session or key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
           "403": {
             "description": "The acting member is not on this board, or may not do this",
             "content": {
@@ -6254,6 +6691,16 @@
           },
           "400": {
             "description": "The input is not valid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sign-in is on and the request has no session or key",
             "content": {
               "application/json": {
                 "schema": {
@@ -6362,6 +6809,16 @@
               }
             }
           },
+          "401": {
+            "description": "Sign-in is on and the request has no session or key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
           "403": {
             "description": "The acting member is not on this board, or may not do this",
             "content": {
@@ -6423,6 +6880,16 @@
           },
           "400": {
             "description": "The input is not valid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sign-in is on and the request has no session or key",
             "content": {
               "application/json": {
                 "schema": {
@@ -6495,6 +6962,16 @@
           },
           "400": {
             "description": "The input is not valid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sign-in is on and the request has no session or key",
             "content": {
               "application/json": {
                 "schema": {
@@ -6585,6 +7062,16 @@
               }
             }
           },
+          "401": {
+            "description": "Sign-in is on and the request has no session or key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
           "403": {
             "description": "The acting member is not on this board, or may not do this",
             "content": {
@@ -6659,6 +7146,16 @@
           },
           "400": {
             "description": "The input is not valid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sign-in is on and the request has no session or key",
             "content": {
               "application/json": {
                 "schema": {
@@ -6749,6 +7246,16 @@
               }
             }
           },
+          "401": {
+            "description": "Sign-in is on and the request has no session or key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
           "403": {
             "description": "The acting member is not on this board, or may not do this",
             "content": {
@@ -6823,6 +7330,16 @@
           },
           "400": {
             "description": "The input is not valid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sign-in is on and the request has no session or key",
             "content": {
               "application/json": {
                 "schema": {
@@ -6913,6 +7430,16 @@
               }
             }
           },
+          "401": {
+            "description": "Sign-in is on and the request has no session or key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
           "403": {
             "description": "The acting member is not on this board, or may not do this",
             "content": {
@@ -6987,6 +7514,16 @@
           },
           "400": {
             "description": "The input is not valid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sign-in is on and the request has no session or key",
             "content": {
               "application/json": {
                 "schema": {
@@ -7077,6 +7614,16 @@
               }
             }
           },
+          "401": {
+            "description": "Sign-in is on and the request has no session or key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
           "403": {
             "description": "The acting member is not on this board, or may not do this",
             "content": {
@@ -7149,6 +7696,16 @@
               }
             }
           },
+          "401": {
+            "description": "Sign-in is on and the request has no session or key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
           "403": {
             "description": "The acting member is not on this board, or may not do this",
             "content": {
@@ -7213,6 +7770,16 @@
           },
           "400": {
             "description": "The input is not valid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sign-in is on and the request has no session or key",
             "content": {
               "application/json": {
                 "schema": {
@@ -7303,6 +7870,16 @@
               }
             }
           },
+          "401": {
+            "description": "Sign-in is on and the request has no session or key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
           "403": {
             "description": "The acting member is not on this board, or may not do this",
             "content": {
@@ -7385,6 +7962,16 @@
               }
             }
           },
+          "401": {
+            "description": "Sign-in is on and the request has no session or key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
           "403": {
             "description": "The acting member is not on this board, or may not do this",
             "content": {
@@ -7459,6 +8046,16 @@
           },
           "400": {
             "description": "The input is not valid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sign-in is on and the request has no session or key",
             "content": {
               "application/json": {
                 "schema": {
@@ -7551,6 +8148,16 @@
               }
             }
           },
+          "401": {
+            "description": "Sign-in is on and the request has no session or key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
           "403": {
             "description": "The acting member is not on this board, or may not do this",
             "content": {
@@ -7635,6 +8242,16 @@
               }
             }
           },
+          "401": {
+            "description": "Sign-in is on and the request has no session or key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
           "403": {
             "description": "The acting member is not on this board, or may not do this",
             "content": {
@@ -7688,6 +8305,16 @@
           },
           "400": {
             "description": "The input is not valid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sign-in is on and the request has no session or key",
             "content": {
               "application/json": {
                 "schema": {
@@ -7771,6 +8398,16 @@
           },
           "400": {
             "description": "The input is not valid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sign-in is on and the request has no session or key",
             "content": {
               "application/json": {
                 "schema": {
@@ -7863,6 +8500,16 @@
               }
             }
           },
+          "401": {
+            "description": "Sign-in is on and the request has no session or key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
           "403": {
             "description": "The acting member is not on this board, or may not do this",
             "content": {
@@ -7919,6 +8566,16 @@
           },
           "400": {
             "description": "The input is not valid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sign-in is on and the request has no session or key",
             "content": {
               "application/json": {
                 "schema": {
@@ -8011,6 +8668,16 @@
               }
             }
           },
+          "401": {
+            "description": "Sign-in is on and the request has no session or key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
           "403": {
             "description": "The acting member is not on this board, or may not do this",
             "content": {
@@ -8095,6 +8762,16 @@
               }
             }
           },
+          "401": {
+            "description": "Sign-in is on and the request has no session or key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
           "403": {
             "description": "The acting member is not on this board, or may not do this",
             "content": {
@@ -8161,6 +8838,16 @@
           },
           "400": {
             "description": "The input is not valid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sign-in is on and the request has no session or key",
             "content": {
               "application/json": {
                 "schema": {
@@ -8253,6 +8940,16 @@
               }
             }
           },
+          "401": {
+            "description": "Sign-in is on and the request has no session or key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
           "403": {
             "description": "The acting member is not on this board, or may not do this",
             "content": {
@@ -8317,6 +9014,16 @@
           },
           "400": {
             "description": "The input is not valid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sign-in is on and the request has no session or key",
             "content": {
               "application/json": {
                 "schema": {
@@ -8397,6 +9104,16 @@
               }
             }
           },
+          "401": {
+            "description": "Sign-in is on and the request has no session or key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
           "403": {
             "description": "The acting member is not on this board, or may not do this",
             "content": {
@@ -8469,6 +9186,16 @@
               }
             }
           },
+          "401": {
+            "description": "Sign-in is on and the request has no session or key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
           "403": {
             "description": "The acting member is not on this board, or may not do this",
             "content": {
@@ -8533,6 +9260,16 @@
           },
           "400": {
             "description": "The input is not valid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sign-in is on and the request has no session or key",
             "content": {
               "application/json": {
                 "schema": {
@@ -8626,6 +9363,16 @@
               }
             }
           },
+          "401": {
+            "description": "Sign-in is on and the request has no session or key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
           "403": {
             "description": "The acting member is not on this board, or may not do this",
             "content": {
@@ -8682,6 +9429,16 @@
           },
           "400": {
             "description": "The input is not valid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sign-in is on and the request has no session or key",
             "content": {
               "application/json": {
                 "schema": {
@@ -8751,6 +9508,16 @@
           },
           "400": {
             "description": "The input is not valid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sign-in is on and the request has no session or key",
             "content": {
               "application/json": {
                 "schema": {
@@ -8834,6 +9601,16 @@
           },
           "400": {
             "description": "The input is not valid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sign-in is on and the request has no session or key",
             "content": {
               "application/json": {
                 "schema": {
@@ -8939,6 +9716,16 @@
               }
             }
           },
+          "401": {
+            "description": "Sign-in is on and the request has no session or key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
           "403": {
             "description": "The acting member is not on this board, or may not do this",
             "content": {
@@ -8995,6 +9782,16 @@
           },
           "400": {
             "description": "The input is not valid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sign-in is on and the request has no session or key",
             "content": {
               "application/json": {
                 "schema": {
@@ -9072,6 +9869,16 @@
               }
             }
           },
+          "401": {
+            "description": "Sign-in is on and the request has no session or key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
           "403": {
             "description": "The acting member is not on this board, or may not do this",
             "content": {
@@ -9136,6 +9943,16 @@
           },
           "400": {
             "description": "The input is not valid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sign-in is on and the request has no session or key",
             "content": {
               "application/json": {
                 "schema": {
@@ -9224,6 +10041,16 @@
               }
             }
           },
+          "401": {
+            "description": "Sign-in is on and the request has no session or key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
           "403": {
             "description": "The acting member is not on this board, or may not do this",
             "content": {
@@ -9286,6 +10113,16 @@
           },
           "400": {
             "description": "The input is not valid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sign-in is on and the request has no session or key",
             "content": {
               "application/json": {
                 "schema": {
@@ -9366,6 +10203,16 @@
               }
             }
           },
+          "401": {
+            "description": "Sign-in is on and the request has no session or key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
           "403": {
             "description": "The acting member is not on this board, or may not do this",
             "content": {
@@ -9430,6 +10277,16 @@
           },
           "400": {
             "description": "The input is not valid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sign-in is on and the request has no session or key",
             "content": {
               "application/json": {
                 "schema": {
@@ -9523,6 +10380,16 @@
               }
             }
           },
+          "401": {
+            "description": "Sign-in is on and the request has no session or key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
           "403": {
             "description": "The acting member is not on this board, or may not do this",
             "content": {
@@ -9576,6 +10443,16 @@
           },
           "400": {
             "description": "The input is not valid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sign-in is on and the request has no session or key",
             "content": {
               "application/json": {
                 "schema": {
@@ -9645,6 +10522,16 @@
               }
             }
           },
+          "401": {
+            "description": "Sign-in is on and the request has no session or key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
           "403": {
             "description": "The acting member is not on this board, or may not do this",
             "content": {
@@ -9706,6 +10593,16 @@
           },
           "400": {
             "description": "The input is not valid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sign-in is on and the request has no session or key",
             "content": {
               "application/json": {
                 "schema": {
@@ -9796,6 +10693,16 @@
               }
             }
           },
+          "401": {
+            "description": "Sign-in is on and the request has no session or key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
           "403": {
             "description": "The acting member is not on this board, or may not do this",
             "content": {
@@ -9872,6 +10779,403 @@
           },
           "400": {
             "description": "The input is not valid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sign-in is on and the request has no session or key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The acting member is not on this board, or may not do this",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The task or message is in another state, or the claim epoch is stale",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/keys": {
+      "get": {
+        "operationId": "listKeys",
+        "tags": [
+          "keys"
+        ],
+        "summary": "Every key on the board: whose it is, its owner, the channels it is limited to, when it was last used and whether it is revoked. Never the key itself. Only a person can list keys",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/MemberKey"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The input is not valid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sign-in is on and the request has no session or key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The acting member is not on this board, or may not do this",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The task or message is in another state, or the claim epoch is stale",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "createKey",
+        "tags": [
+          "keys"
+        ],
+        "summary": "Make a key that acts as a member, optionally limited to some channels. The key is in the response once and never again. Only a person can make one",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateKeyBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreatedKey"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The input is not valid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sign-in is on and the request has no session or key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The acting member is not on this board, or may not do this",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The task or message is in another state, or the claim epoch is stale",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/keys/{id}/revoke": {
+      "post": {
+        "operationId": "revokeKey",
+        "tags": [
+          "keys"
+        ],
+        "summary": "Turn a key off for good; requests with it are refused from now on. Safe to repeat. Only a person can revoke one",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "example": "k_3f9a1c2b"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MemberKey"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The input is not valid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sign-in is on and the request has no session or key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The acting member is not on this board, or may not do this",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The task or message is in another state, or the claim epoch is stale",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/auth/sign-in/magic-link": {
+      "post": {
+        "operationId": "requestSignInLink",
+        "tags": [
+          "auth"
+        ],
+        "summary": "Email a one-time sign-in link to a person on the board's list. Any other address gets the same answer and no email",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SignInBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SignInResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The input is not valid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sign-in is on and the request has no session or key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The acting member is not on this board, or may not do this",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The task or message is in another state, or the claim epoch is stale",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/auth/sign-out": {
+      "post": {
+        "operationId": "signOut",
+        "tags": [
+          "auth"
+        ],
+        "summary": "End this browser's session; safe to repeat",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SignOutResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The input is not valid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sign-in is on and the request has no session or key",
             "content": {
               "application/json": {
                 "schema": {

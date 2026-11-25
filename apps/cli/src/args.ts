@@ -6,6 +6,7 @@ export const flags = {
   url: { type: "string" },
   as: { type: "string" },
   channel: { type: "string" },
+  channels: { type: "string" },
   state: { type: "string" },
   assignee: { type: "string" },
   mine: { type: "boolean" },

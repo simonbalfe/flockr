@@ -19,7 +19,7 @@ export type Channel = {
 
 export type Error = {
     error: string;
-    kind: 'invalid' | 'not_member' | 'forbidden' | 'not_found' | 'already_exists' | 'wrong_state' | 'stale_claim' | 'not_holder' | 'lease_expired' | 'internal';
+    kind: 'invalid' | 'unauthenticated' | 'not_member' | 'forbidden' | 'not_found' | 'already_exists' | 'wrong_state' | 'stale_claim' | 'not_holder' | 'lease_expired' | 'internal';
 };
 
 export type CreateChannelBody = {
@@ -558,6 +558,10 @@ export type CreateMemberBody = {
     runsIn?: string | null;
     source?: string | null;
 };
+
+export type AuthMode = 'off' | 'on';
+
+export type IdentitySource = 'header' | 'session' | 'key';
 
 export type Agent = Member & {
     state: AgentState;
@@ -1480,6 +1484,63 @@ export type ApprovalCheck = {
  */
 export type ApprovalSource = 'channel' | 'board' | 'default';
 
+export type MemberKey = {
+    id: string;
+    member: string;
+    /**
+     * The person the key's member acts for, when it is an agent
+     */
+    owner: string | null;
+    /**
+     * The first characters of the key, to tell keys apart
+     */
+    shown: string;
+    /**
+     * The only channels the key may touch; null when it is not limited
+     */
+    channels: Array<string> | null;
+    createdBy: string;
+    createdAt: string;
+    lastUsedAt: string | null;
+    revokedAt: string | null;
+};
+
+export type CreatedKey = {
+    key: MemberKey;
+    /**
+     * The key itself, shown only this once. Send it as Authorization: Bearer <secret>
+     */
+    secret: string;
+};
+
+export type CreateKeyBody = {
+    /**
+     * The member the key acts as
+     */
+    member: string;
+    /**
+     * Limit the key to these channels; it is refused everywhere else
+     */
+    channels?: Array<string> | null;
+};
+
+export type SignInResult = {
+    status: boolean;
+    message: string;
+};
+
+export type SignInBody = {
+    email: string;
+    /**
+     * Where the link lands after signing in: a path on this board
+     */
+    callbackURL?: string;
+};
+
+export type SignOutResult = {
+    success: boolean;
+};
+
 export type ListChannelsData = {
     body?: never;
     path?: never;
@@ -1492,6 +1553,10 @@ export type ListChannelsErrors = {
      * The input is not valid
      */
     400: Error;
+    /**
+     * Sign-in is on and the request has no session or key
+     */
+    401: Error;
     /**
      * The acting member is not on this board, or may not do this
      */
@@ -1529,6 +1594,10 @@ export type CreateChannelErrors = {
      * The input is not valid
      */
     400: Error;
+    /**
+     * Sign-in is on and the request has no session or key
+     */
+    401: Error;
     /**
      * The acting member is not on this board, or may not do this
      */
@@ -1569,6 +1638,10 @@ export type UpdateChannelErrors = {
      */
     400: Error;
     /**
+     * Sign-in is on and the request has no session or key
+     */
+    401: Error;
+    /**
      * The acting member is not on this board, or may not do this
      */
     403: Error;
@@ -1607,6 +1680,10 @@ export type MarkReadErrors = {
      * The input is not valid
      */
     400: Error;
+    /**
+     * Sign-in is on and the request has no session or key
+     */
+    401: Error;
     /**
      * The acting member is not on this board, or may not do this
      */
@@ -1654,6 +1731,10 @@ export type ListMessagesErrors = {
      */
     400: Error;
     /**
+     * Sign-in is on and the request has no session or key
+     */
+    401: Error;
+    /**
      * The acting member is not on this board, or may not do this
      */
     403: Error;
@@ -1692,6 +1773,10 @@ export type PostMessageErrors = {
      * The input is not valid
      */
     400: Error;
+    /**
+     * Sign-in is on and the request has no session or key
+     */
+    401: Error;
     /**
      * The acting member is not on this board, or may not do this
      */
@@ -1735,6 +1820,10 @@ export type DeleteMessageErrors = {
      */
     400: Error;
     /**
+     * Sign-in is on and the request has no session or key
+     */
+    401: Error;
+    /**
      * The acting member is not on this board, or may not do this
      */
     403: Error;
@@ -1776,6 +1865,10 @@ export type EditMessageErrors = {
      * The input is not valid
      */
     400: Error;
+    /**
+     * Sign-in is on and the request has no session or key
+     */
+    401: Error;
     /**
      * The acting member is not on this board, or may not do this
      */
@@ -1819,6 +1912,10 @@ export type ListMessageVersionsErrors = {
      */
     400: Error;
     /**
+     * Sign-in is on and the request has no session or key
+     */
+    401: Error;
+    /**
      * The acting member is not on this board, or may not do this
      */
     403: Error;
@@ -1860,6 +1957,10 @@ export type GetThreadErrors = {
      * The input is not valid
      */
     400: Error;
+    /**
+     * Sign-in is on and the request has no session or key
+     */
+    401: Error;
     /**
      * The acting member is not on this board, or may not do this
      */
@@ -1903,6 +2004,10 @@ export type ReplyToThreadErrors = {
      */
     400: Error;
     /**
+     * Sign-in is on and the request has no session or key
+     */
+    401: Error;
+    /**
      * The acting member is not on this board, or may not do this
      */
     403: Error;
@@ -1945,6 +2050,10 @@ export type MakeTaskFromThreadErrors = {
      */
     400: Error;
     /**
+     * Sign-in is on and the request has no session or key
+     */
+    401: Error;
+    /**
      * The acting member is not on this board, or may not do this
      */
     403: Error;
@@ -1981,6 +2090,10 @@ export type ListMembersErrors = {
      * The input is not valid
      */
     400: Error;
+    /**
+     * Sign-in is on and the request has no session or key
+     */
+    401: Error;
     /**
      * The acting member is not on this board, or may not do this
      */
@@ -2019,6 +2132,10 @@ export type CreateMemberErrors = {
      */
     400: Error;
     /**
+     * Sign-in is on and the request has no session or key
+     */
+    401: Error;
+    /**
      * The acting member is not on this board, or may not do this
      */
     403: Error;
@@ -2056,6 +2173,10 @@ export type WhoamiErrors = {
      */
     400: Error;
     /**
+     * Sign-in is on and the request has no session or key
+     */
+    401: Error;
+    /**
      * The acting member is not on this board, or may not do this
      */
     403: Error;
@@ -2078,6 +2199,12 @@ export type WhoamiResponses = {
     200: {
         name: string;
         member: Member | null;
+        auth: AuthMode;
+        via: IdentitySource;
+        /**
+         * The channels the key is limited to; null when not limited
+         */
+        channels: Array<string> | null;
     };
 };
 
@@ -2095,6 +2222,10 @@ export type ListAgentsErrors = {
      * The input is not valid
      */
     400: Error;
+    /**
+     * Sign-in is on and the request has no session or key
+     */
+    401: Error;
     /**
      * The acting member is not on this board, or may not do this
      */
@@ -2132,6 +2263,10 @@ export type CreateAgentErrors = {
      * The input is not valid
      */
     400: Error;
+    /**
+     * Sign-in is on and the request has no session or key
+     */
+    401: Error;
     /**
      * The acting member is not on this board, or may not do this
      */
@@ -2172,6 +2307,10 @@ export type DeleteAgentErrors = {
      */
     400: Error;
     /**
+     * Sign-in is on and the request has no session or key
+     */
+    401: Error;
+    /**
      * The acting member is not on this board, or may not do this
      */
     403: Error;
@@ -2210,6 +2349,10 @@ export type GetAgentErrors = {
      * The input is not valid
      */
     400: Error;
+    /**
+     * Sign-in is on and the request has no session or key
+     */
+    401: Error;
     /**
      * The acting member is not on this board, or may not do this
      */
@@ -2250,6 +2393,10 @@ export type UpdateAgentErrors = {
      */
     400: Error;
     /**
+     * Sign-in is on and the request has no session or key
+     */
+    401: Error;
+    /**
      * The acting member is not on this board, or may not do this
      */
     403: Error;
@@ -2286,6 +2433,10 @@ export type ClaimNextTaskErrors = {
      * The input is not valid
      */
     400: Error;
+    /**
+     * Sign-in is on and the request has no session or key
+     */
+    401: Error;
     /**
      * The acting member is not on this board, or may not do this
      */
@@ -2326,6 +2477,10 @@ export type ClaimTaskErrors = {
      */
     400: Error;
     /**
+     * Sign-in is on and the request has no session or key
+     */
+    401: Error;
+    /**
      * The acting member is not on this board, or may not do this
      */
     403: Error;
@@ -2365,6 +2520,10 @@ export type RenewTaskErrors = {
      */
     400: Error;
     /**
+     * Sign-in is on and the request has no session or key
+     */
+    401: Error;
+    /**
      * The acting member is not on this board, or may not do this
      */
     403: Error;
@@ -2403,6 +2562,10 @@ export type ReleaseTaskErrors = {
      * The input is not valid
      */
     400: Error;
+    /**
+     * Sign-in is on and the request has no session or key
+     */
+    401: Error;
     /**
      * The acting member is not on this board, or may not do this
      */
@@ -2449,6 +2612,10 @@ export type ListTasksErrors = {
      */
     400: Error;
     /**
+     * Sign-in is on and the request has no session or key
+     */
+    401: Error;
+    /**
      * The acting member is not on this board, or may not do this
      */
     403: Error;
@@ -2485,6 +2652,10 @@ export type CreateTaskErrors = {
      * The input is not valid
      */
     400: Error;
+    /**
+     * Sign-in is on and the request has no session or key
+     */
+    401: Error;
     /**
      * The acting member is not on this board, or may not do this
      */
@@ -2525,6 +2696,10 @@ export type GetTaskErrors = {
      */
     400: Error;
     /**
+     * Sign-in is on and the request has no session or key
+     */
+    401: Error;
+    /**
      * The acting member is not on this board, or may not do this
      */
     403: Error;
@@ -2563,6 +2738,10 @@ export type GiveTaskErrors = {
      * The input is not valid
      */
     400: Error;
+    /**
+     * Sign-in is on and the request has no session or key
+     */
+    401: Error;
     /**
      * The acting member is not on this board, or may not do this
      */
@@ -2603,6 +2782,10 @@ export type ImportChecklistErrors = {
      */
     400: Error;
     /**
+     * Sign-in is on and the request has no session or key
+     */
+    401: Error;
+    /**
      * The acting member is not on this board, or may not do this
      */
     403: Error;
@@ -2641,6 +2824,10 @@ export type AddTaskCommitErrors = {
      * The input is not valid
      */
     400: Error;
+    /**
+     * Sign-in is on and the request has no session or key
+     */
+    401: Error;
     /**
      * The acting member is not on this board, or may not do this
      */
@@ -2681,6 +2868,10 @@ export type CompleteTaskErrors = {
      */
     400: Error;
     /**
+     * Sign-in is on and the request has no session or key
+     */
+    401: Error;
+    /**
      * The acting member is not on this board, or may not do this
      */
     403: Error;
@@ -2719,6 +2910,10 @@ export type SubmitForReviewErrors = {
      * The input is not valid
      */
     400: Error;
+    /**
+     * Sign-in is on and the request has no session or key
+     */
+    401: Error;
     /**
      * The acting member is not on this board, or may not do this
      */
@@ -2759,6 +2954,10 @@ export type FailTaskErrors = {
      */
     400: Error;
     /**
+     * Sign-in is on and the request has no session or key
+     */
+    401: Error;
+    /**
      * The acting member is not on this board, or may not do this
      */
     403: Error;
@@ -2797,6 +2996,10 @@ export type BlockTaskErrors = {
      * The input is not valid
      */
     400: Error;
+    /**
+     * Sign-in is on and the request has no session or key
+     */
+    401: Error;
     /**
      * The acting member is not on this board, or may not do this
      */
@@ -2837,6 +3040,10 @@ export type UnblockTaskErrors = {
      */
     400: Error;
     /**
+     * Sign-in is on and the request has no session or key
+     */
+    401: Error;
+    /**
      * The acting member is not on this board, or may not do this
      */
     403: Error;
@@ -2875,6 +3082,10 @@ export type ApproveTaskErrors = {
      * The input is not valid
      */
     400: Error;
+    /**
+     * Sign-in is on and the request has no session or key
+     */
+    401: Error;
     /**
      * The acting member is not on this board, or may not do this
      */
@@ -2915,6 +3126,10 @@ export type RequestChangesErrors = {
      */
     400: Error;
     /**
+     * Sign-in is on and the request has no session or key
+     */
+    401: Error;
+    /**
      * The acting member is not on this board, or may not do this
      */
     403: Error;
@@ -2954,6 +3169,10 @@ export type AskQuestionErrors = {
      */
     400: Error;
     /**
+     * Sign-in is on and the request has no session or key
+     */
+    401: Error;
+    /**
      * The acting member is not on this board, or may not do this
      */
     403: Error;
@@ -2992,6 +3211,10 @@ export type AnswerQuestionErrors = {
      * The input is not valid
      */
     400: Error;
+    /**
+     * Sign-in is on and the request has no session or key
+     */
+    401: Error;
     /**
      * The acting member is not on this board, or may not do this
      */
@@ -3035,6 +3258,10 @@ export type AskInThreadErrors = {
      */
     400: Error;
     /**
+     * Sign-in is on and the request has no session or key
+     */
+    401: Error;
+    /**
      * The acting member is not on this board, or may not do this
      */
     403: Error;
@@ -3077,6 +3304,10 @@ export type AnswerInThreadErrors = {
      */
     400: Error;
     /**
+     * Sign-in is on and the request has no session or key
+     */
+    401: Error;
+    /**
      * The acting member is not on this board, or may not do this
      */
     403: Error;
@@ -3113,6 +3344,10 @@ export type GetInboxErrors = {
      * The input is not valid
      */
     400: Error;
+    /**
+     * Sign-in is on and the request has no session or key
+     */
+    401: Error;
     /**
      * The acting member is not on this board, or may not do this
      */
@@ -3160,6 +3395,10 @@ export type ListEventsErrors = {
      */
     400: Error;
     /**
+     * Sign-in is on and the request has no session or key
+     */
+    401: Error;
+    /**
      * The acting member is not on this board, or may not do this
      */
     403: Error;
@@ -3202,6 +3441,10 @@ export type SetActivityErrors = {
      */
     400: Error;
     /**
+     * Sign-in is on and the request has no session or key
+     */
+    401: Error;
+    /**
      * The acting member is not on this board, or may not do this
      */
     403: Error;
@@ -3238,6 +3481,10 @@ export type ListActivityErrors = {
      * The input is not valid
      */
     400: Error;
+    /**
+     * Sign-in is on and the request has no session or key
+     */
+    401: Error;
     /**
      * The acting member is not on this board, or may not do this
      */
@@ -3281,6 +3528,10 @@ export type CreateActivityEntryErrors = {
      */
     400: Error;
     /**
+     * Sign-in is on and the request has no session or key
+     */
+    401: Error;
+    /**
      * The acting member is not on this board, or may not do this
      */
     403: Error;
@@ -3322,6 +3573,10 @@ export type UpdateActivityEntryErrors = {
      * The input is not valid
      */
     400: Error;
+    /**
+     * Sign-in is on and the request has no session or key
+     */
+    401: Error;
     /**
      * The acting member is not on this board, or may not do this
      */
@@ -3365,6 +3620,10 @@ export type GetActivityEntryErrors = {
      */
     400: Error;
     /**
+     * Sign-in is on and the request has no session or key
+     */
+    401: Error;
+    /**
      * The acting member is not on this board, or may not do this
      */
     403: Error;
@@ -3407,6 +3666,10 @@ export type StopRunErrors = {
      */
     400: Error;
     /**
+     * Sign-in is on and the request has no session or key
+     */
+    401: Error;
+    /**
      * The acting member is not on this board, or may not do this
      */
     403: Error;
@@ -3445,6 +3708,10 @@ export type StartAgentErrors = {
      * The input is not valid
      */
     400: Error;
+    /**
+     * Sign-in is on and the request has no session or key
+     */
+    401: Error;
     /**
      * The acting member is not on this board, or may not do this
      */
@@ -3485,6 +3752,10 @@ export type StopAgentErrors = {
      */
     400: Error;
     /**
+     * Sign-in is on and the request has no session or key
+     */
+    401: Error;
+    /**
      * The acting member is not on this board, or may not do this
      */
     403: Error;
@@ -3524,6 +3795,10 @@ export type PauseAgentErrors = {
      */
     400: Error;
     /**
+     * Sign-in is on and the request has no session or key
+     */
+    401: Error;
+    /**
      * The acting member is not on this board, or may not do this
      */
     403: Error;
@@ -3562,6 +3837,10 @@ export type ResumeAgentErrors = {
      * The input is not valid
      */
     400: Error;
+    /**
+     * Sign-in is on and the request has no session or key
+     */
+    401: Error;
     /**
      * The acting member is not on this board, or may not do this
      */
@@ -3607,6 +3886,10 @@ export type ListAgentActivityErrors = {
      */
     400: Error;
     /**
+     * Sign-in is on and the request has no session or key
+     */
+    401: Error;
+    /**
      * The acting member is not on this board, or may not do this
      */
     403: Error;
@@ -3644,6 +3927,10 @@ export type ListMachinesErrors = {
      */
     400: Error;
     /**
+     * Sign-in is on and the request has no session or key
+     */
+    401: Error;
+    /**
      * The acting member is not on this board, or may not do this
      */
     403: Error;
@@ -3680,6 +3967,10 @@ export type RegisterMachineErrors = {
      * The input is not valid
      */
     400: Error;
+    /**
+     * Sign-in is on and the request has no session or key
+     */
+    401: Error;
     /**
      * The acting member is not on this board, or may not do this
      */
@@ -3719,6 +4010,10 @@ export type MachineHeartbeatErrors = {
      * The input is not valid
      */
     400: Error;
+    /**
+     * Sign-in is on and the request has no session or key
+     */
+    401: Error;
     /**
      * The acting member is not on this board, or may not do this
      */
@@ -3770,6 +4065,10 @@ export type SearchBoardErrors = {
      */
     400: Error;
     /**
+     * Sign-in is on and the request has no session or key
+     */
+    401: Error;
+    /**
      * The acting member is not on this board, or may not do this
      */
     403: Error;
@@ -3807,6 +4106,10 @@ export type ListRoutinesErrors = {
      */
     400: Error;
     /**
+     * Sign-in is on and the request has no session or key
+     */
+    401: Error;
+    /**
      * The acting member is not on this board, or may not do this
      */
     403: Error;
@@ -3843,6 +4146,10 @@ export type CreateRoutineErrors = {
      * The input is not valid
      */
     400: Error;
+    /**
+     * Sign-in is on and the request has no session or key
+     */
+    401: Error;
     /**
      * The acting member is not on this board, or may not do this
      */
@@ -3883,6 +4190,10 @@ export type DeleteRoutineErrors = {
      */
     400: Error;
     /**
+     * Sign-in is on and the request has no session or key
+     */
+    401: Error;
+    /**
      * The acting member is not on this board, or may not do this
      */
     403: Error;
@@ -3921,6 +4232,10 @@ export type GetRoutineErrors = {
      * The input is not valid
      */
     400: Error;
+    /**
+     * Sign-in is on and the request has no session or key
+     */
+    401: Error;
     /**
      * The acting member is not on this board, or may not do this
      */
@@ -3961,6 +4276,10 @@ export type UpdateRoutineErrors = {
      */
     400: Error;
     /**
+     * Sign-in is on and the request has no session or key
+     */
+    401: Error;
+    /**
      * The acting member is not on this board, or may not do this
      */
     403: Error;
@@ -4000,6 +4319,10 @@ export type EnableRoutineErrors = {
      */
     400: Error;
     /**
+     * Sign-in is on and the request has no session or key
+     */
+    401: Error;
+    /**
      * The acting member is not on this board, or may not do this
      */
     403: Error;
@@ -4038,6 +4361,10 @@ export type DisableRoutineErrors = {
      * The input is not valid
      */
     400: Error;
+    /**
+     * Sign-in is on and the request has no session or key
+     */
+    401: Error;
     /**
      * The acting member is not on this board, or may not do this
      */
@@ -4083,6 +4410,10 @@ export type ListRoutineJobsErrors = {
      */
     400: Error;
     /**
+     * Sign-in is on and the request has no session or key
+     */
+    401: Error;
+    /**
      * The acting member is not on this board, or may not do this
      */
     403: Error;
@@ -4119,6 +4450,10 @@ export type GetBriefErrors = {
      * The input is not valid
      */
     400: Error;
+    /**
+     * Sign-in is on and the request has no session or key
+     */
+    401: Error;
     /**
      * The acting member is not on this board, or may not do this
      */
@@ -4166,6 +4501,10 @@ export type ClearApprovalRuleErrors = {
      */
     400: Error;
     /**
+     * Sign-in is on and the request has no session or key
+     */
+    401: Error;
+    /**
      * The acting member is not on this board, or may not do this
      */
     403: Error;
@@ -4203,6 +4542,10 @@ export type ListApprovalRulesErrors = {
      */
     400: Error;
     /**
+     * Sign-in is on and the request has no session or key
+     */
+    401: Error;
+    /**
      * The acting member is not on this board, or may not do this
      */
     403: Error;
@@ -4239,6 +4582,10 @@ export type SetApprovalRuleErrors = {
      * The input is not valid
      */
     400: Error;
+    /**
+     * Sign-in is on and the request has no session or key
+     */
+    401: Error;
     /**
      * The acting member is not on this board, or may not do this
      */
@@ -4286,6 +4633,10 @@ export type CheckApprovalErrors = {
      */
     400: Error;
     /**
+     * Sign-in is on and the request has no session or key
+     */
+    401: Error;
+    /**
      * The acting member is not on this board, or may not do this
      */
     403: Error;
@@ -4309,3 +4660,210 @@ export type CheckApprovalResponses = {
 };
 
 export type CheckApprovalResponse = CheckApprovalResponses[keyof CheckApprovalResponses];
+
+export type ListKeysData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/keys';
+};
+
+export type ListKeysErrors = {
+    /**
+     * The input is not valid
+     */
+    400: Error;
+    /**
+     * Sign-in is on and the request has no session or key
+     */
+    401: Error;
+    /**
+     * The acting member is not on this board, or may not do this
+     */
+    403: Error;
+    /**
+     * Not found
+     */
+    404: Error;
+    /**
+     * The task or message is in another state, or the claim epoch is stale
+     */
+    409: Error;
+};
+
+export type ListKeysError = ListKeysErrors[keyof ListKeysErrors];
+
+export type ListKeysResponses = {
+    /**
+     * OK
+     */
+    200: Array<MemberKey>;
+};
+
+export type ListKeysResponse = ListKeysResponses[keyof ListKeysResponses];
+
+export type CreateKeyData = {
+    body: CreateKeyBody;
+    path?: never;
+    query?: never;
+    url: '/api/keys';
+};
+
+export type CreateKeyErrors = {
+    /**
+     * The input is not valid
+     */
+    400: Error;
+    /**
+     * Sign-in is on and the request has no session or key
+     */
+    401: Error;
+    /**
+     * The acting member is not on this board, or may not do this
+     */
+    403: Error;
+    /**
+     * Not found
+     */
+    404: Error;
+    /**
+     * The task or message is in another state, or the claim epoch is stale
+     */
+    409: Error;
+};
+
+export type CreateKeyError = CreateKeyErrors[keyof CreateKeyErrors];
+
+export type CreateKeyResponses = {
+    /**
+     * OK
+     */
+    200: CreatedKey;
+};
+
+export type CreateKeyResponse = CreateKeyResponses[keyof CreateKeyResponses];
+
+export type RevokeKeyData = {
+    body?: never;
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/api/keys/{id}/revoke';
+};
+
+export type RevokeKeyErrors = {
+    /**
+     * The input is not valid
+     */
+    400: Error;
+    /**
+     * Sign-in is on and the request has no session or key
+     */
+    401: Error;
+    /**
+     * The acting member is not on this board, or may not do this
+     */
+    403: Error;
+    /**
+     * Not found
+     */
+    404: Error;
+    /**
+     * The task or message is in another state, or the claim epoch is stale
+     */
+    409: Error;
+};
+
+export type RevokeKeyError = RevokeKeyErrors[keyof RevokeKeyErrors];
+
+export type RevokeKeyResponses = {
+    /**
+     * OK
+     */
+    200: MemberKey;
+};
+
+export type RevokeKeyResponse = RevokeKeyResponses[keyof RevokeKeyResponses];
+
+export type RequestSignInLinkData = {
+    body: SignInBody;
+    path?: never;
+    query?: never;
+    url: '/api/auth/sign-in/magic-link';
+};
+
+export type RequestSignInLinkErrors = {
+    /**
+     * The input is not valid
+     */
+    400: Error;
+    /**
+     * Sign-in is on and the request has no session or key
+     */
+    401: Error;
+    /**
+     * The acting member is not on this board, or may not do this
+     */
+    403: Error;
+    /**
+     * Not found
+     */
+    404: Error;
+    /**
+     * The task or message is in another state, or the claim epoch is stale
+     */
+    409: Error;
+};
+
+export type RequestSignInLinkError = RequestSignInLinkErrors[keyof RequestSignInLinkErrors];
+
+export type RequestSignInLinkResponses = {
+    /**
+     * OK
+     */
+    200: SignInResult;
+};
+
+export type RequestSignInLinkResponse = RequestSignInLinkResponses[keyof RequestSignInLinkResponses];
+
+export type SignOutData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/auth/sign-out';
+};
+
+export type SignOutErrors = {
+    /**
+     * The input is not valid
+     */
+    400: Error;
+    /**
+     * Sign-in is on and the request has no session or key
+     */
+    401: Error;
+    /**
+     * The acting member is not on this board, or may not do this
+     */
+    403: Error;
+    /**
+     * Not found
+     */
+    404: Error;
+    /**
+     * The task or message is in another state, or the claim epoch is stale
+     */
+    409: Error;
+};
+
+export type SignOutError = SignOutErrors[keyof SignOutErrors];
+
+export type SignOutResponses = {
+    /**
+     * OK
+     */
+    200: SignOutResult;
+};
+
+export type SignOutResponse = SignOutResponses[keyof SignOutResponses];

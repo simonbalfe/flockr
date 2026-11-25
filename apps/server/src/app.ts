@@ -1,17 +1,23 @@
-import { defaultMember, memberHeader } from "@flockr/contracts"
+import { authBasePath, defaultMember, memberHeader } from "@flockr/contracts"
 import { swaggerUI } from "@hono/swagger-ui"
-import { BoardError } from "./board/errors"
+import type { MiddlewareHandler } from "hono"
+import { createAuthenticator, headerIdentity, isPublicApiPath, signInNeeded } from "./auth/identity"
+import { requireInScope } from "./auth/scope"
+import { authOff, type AuthSettings } from "./auth/settings"
+import { BoardError, notFound, unauthenticated } from "./board/errors"
 import type { Database } from "./db/client"
 import { mcpHandler } from "./mcp/server"
 import { activityRoutes } from "./routes/activity"
 import { activityEntryRoutes } from "./routes/activity-entries"
 import { agentRoutes } from "./routes/agents"
 import { approvalRoutes } from "./routes/approvals"
+import { authRoutes } from "./routes/auth"
 import { channelRoutes } from "./routes/channels"
 import { checklistRoutes } from "./routes/checklist"
 import { claimRoutes } from "./routes/claims"
 import { eventRoutes } from "./routes/events"
 import { flowRoutes } from "./routes/flow"
+import { keyRoutes } from "./routes/keys"
 import { machineRoutes } from "./routes/machines"
 import { memberRoutes } from "./routes/members"
 import { messageRoutes } from "./routes/messages"
@@ -19,24 +25,40 @@ import { questionRoutes } from "./routes/questions"
 import { reviewRoutes } from "./routes/review"
 import { routineRoutes } from "./routes/routines"
 import { searchRoutes } from "./routes/search"
-import { router } from "./routes/shared"
+import { router, type AppEnv } from "./routes/shared"
 import { taskRoutes } from "./routes/tasks"
 import { threadRoutes } from "./routes/threads"
 
 const info = {
   title: "Flockr",
   version: "0.1.0",
-  description: `A shared board for people and agents: channels, threads and tasks with claims and leases. There is no authentication yet: the acting member is the ${memberHeader} header (default ${defaultMember}).`,
+  description: `A shared board for people and agents: channels, threads and tasks with claims and leases. With sign-in off (the default) the acting member is the ${memberHeader} header (default ${defaultMember}). With sign-in on, every request needs a session cookie (${authBasePath}) or a key sent as Authorization: Bearer <key>; the header then only picks an agent the signed-in person owns.`,
 }
 
-export function createApp(db: Database) {
-  const app = router()
+export interface AppOptions {
+  auth?: AuthSettings
+}
 
-  app.use("/api/*", async (c, next) => {
+export function createApp(db: Database, options: AppOptions = {}) {
+  const app = router()
+  const authenticator = createAuthenticator(db, options.auth ?? authOff)
+
+  const identify: MiddlewareHandler<AppEnv> = async (c, next) => {
     c.set("db", db)
-    c.set("member", c.req.header(memberHeader)?.trim() || defaultMember)
+    c.set("auth", authenticator)
+    const open = authenticator.mode === "off" || isPublicApiPath(c.req.path)
+    const identity = open ? headerIdentity(c.req.raw.headers) : await authenticator.identify(c.req.raw.headers)
+    if (!identity) throw unauthenticated(signInNeeded)
+    c.set("member", identity.member)
+    c.set("via", identity.via)
+    c.set("channels", identity.channels)
+    const request = c.req.raw
+    await requireInScope(db, identity.channels, { method: request.method, pathname: c.req.path, query: new URL(request.url).searchParams, body: () => request.clone().json().catch(() => null) })
     await next()
-  })
+  }
+
+  app.use("/api/*", identify)
+  app.use("/mcp", identify)
 
   app.onError((error, c) => {
     if (error instanceof BoardError) return c.json({ error: error.message, kind: error.kind }, error.status)
@@ -63,17 +85,23 @@ export function createApp(db: Database) {
     .route("/", searchRoutes)
     .route("/", routineRoutes)
     .route("/", approvalRoutes)
+    .route("/", keyRoutes)
+    .route("/", authRoutes)
 
   const document = () => api.getOpenAPI31Document({ openapi: "3.1.0", info })
 
   api.get("/api/openapi.json", (c) => c.json(document()))
   api.get("/api/docs", swaggerUI({ url: "/api/openapi.json" }))
+  api.on(["GET", "POST"], `${authBasePath}/*`, (c) => {
+    if (authenticator.mode === "off") throw notFound("Sign-in is off on this board (FLOCKR_AUTH=off)")
+    return authenticator.betterAuth().handler(c.req.raw)
+  })
   api.notFound((c) => c.json({ error: `No route for ${c.req.method} ${c.req.path}; see /api/openapi.json`, kind: "not_found" }, 404))
 
   const mcp = mcpHandler({ document, dispatch: (url, init) => Promise.resolve(api.request(url, init)), defaultMember })
   api.all("/mcp", (c) => mcp(c.req.raw))
 
-  return Object.assign(api, { document })
+  return Object.assign(api, { document, authenticator })
 }
 
 export type FlockrApp = ReturnType<typeof createApp>

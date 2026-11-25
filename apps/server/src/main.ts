@@ -1,6 +1,8 @@
 import path from "node:path"
 import { livePath } from "@flockr/contracts"
 import { createApp } from "./app"
+import { refuseLive } from "./auth/identity"
+import { localAuthSettings } from "./auth/local"
 import { databaseUrl, host, port } from "./config"
 import { connect } from "./db/client"
 import { parseSince, type LiveSocket } from "./live/hub"
@@ -15,7 +17,8 @@ if (!(await index.exists())) {
 }
 
 const connection = connect(databaseUrl)
-const app = createApp(connection.db)
+const auth = localAuthSettings()
+const app = createApp(connection.db, { auth })
 const live = await startLive(databaseUrl)
 
 async function staticFile(pathname: string): Promise<Response> {
@@ -30,9 +33,11 @@ async function staticFile(pathname: string): Promise<Response> {
 const server = Bun.serve<{ since: number | null; socket?: LiveSocket }>({
   hostname: host,
   port,
-  fetch(request, srv) {
+  async fetch(request, srv) {
     const url = new URL(request.url)
     if (url.pathname === livePath) {
+      const refused = await refuseLive(app.authenticator, request.headers)
+      if (refused) return refused
       if (srv.upgrade(request, { data: { since: parseSince(url) } })) return undefined
       return new Response("Expected a WebSocket upgrade", { status: 426 })
     }
@@ -55,7 +60,7 @@ const server = Bun.serve<{ since: number | null; socket?: LiveSocket }>({
   },
 })
 
-console.log(`Flockr on http://${server.hostname}:${server.port} (no authentication: bound to ${host})`)
+console.log(`Flockr on http://${server.hostname}:${server.port} (${auth.mode === "on" ? `sign-in on for ${auth.people.size} people` : `sign-in off: bound to ${host}`})`)
 
 const shutdown = async () => {
   await server.stop()

@@ -6,7 +6,7 @@ const platformFiles = ["worker.ts", "main.ts", "dev.ts", "dev-app.ts"]
 
 const forbidden: { label: string; pattern: RegExp }[] = [
   { label: "a cloudflare: import", pattern: /from\s+["']cloudflare:/ },
-  { label: "a Cloudflare binding", pattern: /\benv\.(HYPERDRIVE|BOARD_ROOM|AGENT)\b/ },
+  { label: "a Cloudflare binding", pattern: /\benv\.(HYPERDRIVE|BOARD_ROOM|AGENT|EMAIL)\b/ },
   { label: "a Bun API", pattern: /\bBun\.|from\s+["']bun(:|["'])/ },
   { label: "Postgres LISTEN/NOTIFY", pattern: /pg_notify|\b(sql|client)\.listen\(/ },
 ]

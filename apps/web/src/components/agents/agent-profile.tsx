@@ -6,7 +6,9 @@ import { toast } from "sonner"
 import { useDeleteAgent, usePauseAgent, useResumeAgent, useStartAgent, useStopAgent, useUpdateAgent } from "@/api/agents"
 import { useAgent, useAgentActivity, useInbox, useMembers } from "@/api/hooks"
 import { currentUser } from "@/api/session"
+import { useMayManageKeys } from "@/api/auth"
 import { WorkBlock } from "@/components/agent/work-block"
+import { KeyList, NewKeyDialog } from "@/components/keys/keys"
 import { MemberAvatar } from "@/components/member-avatar"
 import { KeyValueList, PanelFrame } from "@/components/panel-frame"
 import { QuestionCard, ThreadQuestionCard } from "@/components/question-card"
@@ -150,6 +152,19 @@ function Controls({ agent }: { agent: AgentDetail & { config: AgentConfig } }) {
   )
 }
 
+function Keys({ name }: { name: string }) {
+  if (!useMayManageKeys()) return null
+  return (
+    <>
+      <div className="mt-1.5 flex items-center justify-between">
+        <span className="text-[13px] font-semibold text-muted-foreground">Keys</span>
+        <NewKeyDialog member={name} />
+      </div>
+      <KeyList member={name} />
+    </>
+  )
+}
+
 const threadName = (id: string) => (/^\d+$/.test(id) ? `#${id}` : `Thread ${id}`)
 
 function Waiting({ name }: { name: string }) {
@@ -268,6 +283,7 @@ export function AgentProfile({ name }: { name: string }) {
           <Waiting name={name} />
           <RecentWork name={name} />
           {current.config && <Settings key={JSON.stringify(current.config)} name={name} config={current.config} editable={editable} />}
+          <Keys name={name} />
           <div className={sectionClass}>Tasks</div>
           <div className="overflow-hidden rounded-[10px] bg-muted">
             {current.tasks.length ? current.tasks.map((task) => <TaskRow key={task.id} task={task} showChannel />) : <div className="px-3 py-[9px] text-[13px] text-faint">No tasks yet.</div>}

@@ -1,9 +1,10 @@
-import { livePath } from "@flockr/contracts/constants"
+import { authorizationHeader, bearerAuth, livePath } from "@flockr/contracts/constants"
 import type { LiveFrame } from "@flockr/contracts"
 import type { Activity, BoardEvent } from "./gen/types.gen"
 
 export interface LiveOptions {
   baseUrl: string
+  key?: string | null
   since?: number | null
   onEvent: (event: BoardEvent) => void
   onHello?: (head: number) => void
@@ -15,6 +16,19 @@ export interface LiveOptions {
 export interface LiveConnection {
   close: () => void
   readonly lastSeq: number | null
+}
+
+interface HeaderSocket {
+  new (url: string, options: { headers: Record<string, string> }): WebSocket
+}
+
+const takesHeaders = (socket: unknown): socket is HeaderSocket => typeof socket === "function" && "Bun" in globalThis
+
+function openSocket(url: string, key: string | null | undefined): WebSocket {
+  if (!key) return new WebSocket(url)
+  const Socket = globalThis.WebSocket
+  if (!takesHeaders(Socket)) throw new Error("This runtime's WebSocket cannot send a key header; a browser signs in with its session cookie instead")
+  return new Socket(url, { headers: { [authorizationHeader]: bearerAuth(key) } })
 }
 
 function isFrame(value: unknown): value is LiveFrame {
@@ -36,7 +50,8 @@ export function connectLive(options: LiveOptions): LiveConnection {
   let delay = 500
 
   const open = () => {
-    socket = new WebSocket(liveUrl(options.baseUrl, lastSeq))
+    const url = liveUrl(options.baseUrl, lastSeq)
+    socket = openSocket(url, options.key)
     socket.onopen = () => {
       delay = 500
       options.onStatus?.(true)

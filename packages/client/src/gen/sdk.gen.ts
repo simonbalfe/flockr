@@ -2,7 +2,7 @@
 
 import type { Client, ClientMeta, Options as Options2, RequestResult, TDataShape } from './client';
 import { client } from './client.gen';
-import type { AddTaskCommitData, AddTaskCommitErrors, AddTaskCommitResponses, AnswerInThreadData, AnswerInThreadErrors, AnswerInThreadResponses, AnswerQuestionData, AnswerQuestionErrors, AnswerQuestionResponses, ApproveTaskData, ApproveTaskErrors, ApproveTaskResponses, AskInThreadData, AskInThreadErrors, AskInThreadResponses, AskQuestionData, AskQuestionErrors, AskQuestionResponses, BlockTaskData, BlockTaskErrors, BlockTaskResponses, CheckApprovalData, CheckApprovalErrors, CheckApprovalResponses, ClaimNextTaskData, ClaimNextTaskErrors, ClaimNextTaskResponses, ClaimTaskData, ClaimTaskErrors, ClaimTaskResponses, ClearApprovalRuleData, ClearApprovalRuleErrors, ClearApprovalRuleResponses, CompleteTaskData, CompleteTaskErrors, CompleteTaskResponses, CreateActivityEntryData, CreateActivityEntryErrors, CreateActivityEntryResponses, CreateAgentData, CreateAgentErrors, CreateAgentResponses, CreateChannelData, CreateChannelErrors, CreateChannelResponses, CreateMemberData, CreateMemberErrors, CreateMemberResponses, CreateRoutineData, CreateRoutineErrors, CreateRoutineResponses, CreateTaskData, CreateTaskErrors, CreateTaskResponses, DeleteAgentData, DeleteAgentErrors, DeleteAgentResponses, DeleteMessageData, DeleteMessageErrors, DeleteMessageResponses, DeleteRoutineData, DeleteRoutineErrors, DeleteRoutineResponses, DisableRoutineData, DisableRoutineErrors, DisableRoutineResponses, EditMessageData, EditMessageErrors, EditMessageResponses, EnableRoutineData, EnableRoutineErrors, EnableRoutineResponses, FailTaskData, FailTaskErrors, FailTaskResponses, GetActivityEntryData, GetActivityEntryErrors, GetActivityEntryResponses, GetAgentData, GetAgentErrors, GetAgentResponses, GetBriefData, GetBriefErrors, GetBriefResponses, GetInboxData, GetInboxErrors, GetInboxResponses, GetRoutineData, GetRoutineErrors, GetRoutineResponses, GetTaskData, GetTaskErrors, GetTaskResponses, GetThreadData, GetThreadErrors, GetThreadResponses, GiveTaskData, GiveTaskErrors, GiveTaskResponses, ImportChecklistData, ImportChecklistErrors, ImportChecklistResponses, ListActivityData, ListActivityErrors, ListActivityResponses, ListAgentActivityData, ListAgentActivityErrors, ListAgentActivityResponses, ListAgentsData, ListAgentsErrors, ListAgentsResponses, ListApprovalRulesData, ListApprovalRulesErrors, ListApprovalRulesResponses, ListChannelsData, ListChannelsErrors, ListChannelsResponses, ListEventsData, ListEventsErrors, ListEventsResponses, ListMachinesData, ListMachinesErrors, ListMachinesResponses, ListMembersData, ListMembersErrors, ListMembersResponses, ListMessagesData, ListMessagesErrors, ListMessagesResponses, ListMessageVersionsData, ListMessageVersionsErrors, ListMessageVersionsResponses, ListRoutineJobsData, ListRoutineJobsErrors, ListRoutineJobsResponses, ListRoutinesData, ListRoutinesErrors, ListRoutinesResponses, ListTasksData, ListTasksErrors, ListTasksResponses, MachineHeartbeatData, MachineHeartbeatErrors, MachineHeartbeatResponses, MakeTaskFromThreadData, MakeTaskFromThreadErrors, MakeTaskFromThreadResponses, MarkReadData, MarkReadErrors, MarkReadResponses, PauseAgentData, PauseAgentErrors, PauseAgentResponses, PostMessageData, PostMessageErrors, PostMessageResponses, RegisterMachineData, RegisterMachineErrors, RegisterMachineResponses, ReleaseTaskData, ReleaseTaskErrors, ReleaseTaskResponses, RenewTaskData, RenewTaskErrors, RenewTaskResponses, ReplyToThreadData, ReplyToThreadErrors, ReplyToThreadResponses, RequestChangesData, RequestChangesErrors, RequestChangesResponses, ResumeAgentData, ResumeAgentErrors, ResumeAgentResponses, SearchBoardData, SearchBoardErrors, SearchBoardResponses, SetActivityData, SetActivityErrors, SetActivityResponses, SetApprovalRuleData, SetApprovalRuleErrors, SetApprovalRuleResponses, StartAgentData, StartAgentErrors, StartAgentResponses, StopAgentData, StopAgentErrors, StopAgentResponses, StopRunData, StopRunErrors, StopRunResponses, SubmitForReviewData, SubmitForReviewErrors, SubmitForReviewResponses, UnblockTaskData, UnblockTaskErrors, UnblockTaskResponses, UpdateActivityEntryData, UpdateActivityEntryErrors, UpdateActivityEntryResponses, UpdateAgentData, UpdateAgentErrors, UpdateAgentResponses, UpdateChannelData, UpdateChannelErrors, UpdateChannelResponses, UpdateRoutineData, UpdateRoutineErrors, UpdateRoutineResponses, WhoamiData, WhoamiErrors, WhoamiResponses } from './types.gen';
+import type { AddTaskCommitData, AddTaskCommitErrors, AddTaskCommitResponses, AnswerInThreadData, AnswerInThreadErrors, AnswerInThreadResponses, AnswerQuestionData, AnswerQuestionErrors, AnswerQuestionResponses, ApproveTaskData, ApproveTaskErrors, ApproveTaskResponses, AskInThreadData, AskInThreadErrors, AskInThreadResponses, AskQuestionData, AskQuestionErrors, AskQuestionResponses, BlockTaskData, BlockTaskErrors, BlockTaskResponses, CheckApprovalData, CheckApprovalErrors, CheckApprovalResponses, ClaimNextTaskData, ClaimNextTaskErrors, ClaimNextTaskResponses, ClaimTaskData, ClaimTaskErrors, ClaimTaskResponses, ClearApprovalRuleData, ClearApprovalRuleErrors, ClearApprovalRuleResponses, CompleteTaskData, CompleteTaskErrors, CompleteTaskResponses, CreateActivityEntryData, CreateActivityEntryErrors, CreateActivityEntryResponses, CreateAgentData, CreateAgentErrors, CreateAgentResponses, CreateChannelData, CreateChannelErrors, CreateChannelResponses, CreateKeyData, CreateKeyErrors, CreateKeyResponses, CreateMemberData, CreateMemberErrors, CreateMemberResponses, CreateRoutineData, CreateRoutineErrors, CreateRoutineResponses, CreateTaskData, CreateTaskErrors, CreateTaskResponses, DeleteAgentData, DeleteAgentErrors, DeleteAgentResponses, DeleteMessageData, DeleteMessageErrors, DeleteMessageResponses, DeleteRoutineData, DeleteRoutineErrors, DeleteRoutineResponses, DisableRoutineData, DisableRoutineErrors, DisableRoutineResponses, EditMessageData, EditMessageErrors, EditMessageResponses, EnableRoutineData, EnableRoutineErrors, EnableRoutineResponses, FailTaskData, FailTaskErrors, FailTaskResponses, GetActivityEntryData, GetActivityEntryErrors, GetActivityEntryResponses, GetAgentData, GetAgentErrors, GetAgentResponses, GetBriefData, GetBriefErrors, GetBriefResponses, GetInboxData, GetInboxErrors, GetInboxResponses, GetRoutineData, GetRoutineErrors, GetRoutineResponses, GetTaskData, GetTaskErrors, GetTaskResponses, GetThreadData, GetThreadErrors, GetThreadResponses, GiveTaskData, GiveTaskErrors, GiveTaskResponses, ImportChecklistData, ImportChecklistErrors, ImportChecklistResponses, ListActivityData, ListActivityErrors, ListActivityResponses, ListAgentActivityData, ListAgentActivityErrors, ListAgentActivityResponses, ListAgentsData, ListAgentsErrors, ListAgentsResponses, ListApprovalRulesData, ListApprovalRulesErrors, ListApprovalRulesResponses, ListChannelsData, ListChannelsErrors, ListChannelsResponses, ListEventsData, ListEventsErrors, ListEventsResponses, ListKeysData, ListKeysErrors, ListKeysResponses, ListMachinesData, ListMachinesErrors, ListMachinesResponses, ListMembersData, ListMembersErrors, ListMembersResponses, ListMessagesData, ListMessagesErrors, ListMessagesResponses, ListMessageVersionsData, ListMessageVersionsErrors, ListMessageVersionsResponses, ListRoutineJobsData, ListRoutineJobsErrors, ListRoutineJobsResponses, ListRoutinesData, ListRoutinesErrors, ListRoutinesResponses, ListTasksData, ListTasksErrors, ListTasksResponses, MachineHeartbeatData, MachineHeartbeatErrors, MachineHeartbeatResponses, MakeTaskFromThreadData, MakeTaskFromThreadErrors, MakeTaskFromThreadResponses, MarkReadData, MarkReadErrors, MarkReadResponses, PauseAgentData, PauseAgentErrors, PauseAgentResponses, PostMessageData, PostMessageErrors, PostMessageResponses, RegisterMachineData, RegisterMachineErrors, RegisterMachineResponses, ReleaseTaskData, ReleaseTaskErrors, ReleaseTaskResponses, RenewTaskData, RenewTaskErrors, RenewTaskResponses, ReplyToThreadData, ReplyToThreadErrors, ReplyToThreadResponses, RequestChangesData, RequestChangesErrors, RequestChangesResponses, RequestSignInLinkData, RequestSignInLinkErrors, RequestSignInLinkResponses, ResumeAgentData, ResumeAgentErrors, ResumeAgentResponses, RevokeKeyData, RevokeKeyErrors, RevokeKeyResponses, SearchBoardData, SearchBoardErrors, SearchBoardResponses, SetActivityData, SetActivityErrors, SetActivityResponses, SetApprovalRuleData, SetApprovalRuleErrors, SetApprovalRuleResponses, SignOutData, SignOutErrors, SignOutResponses, StartAgentData, StartAgentErrors, StartAgentResponses, StopAgentData, StopAgentErrors, StopAgentResponses, StopRunData, StopRunErrors, StopRunResponses, SubmitForReviewData, SubmitForReviewErrors, SubmitForReviewResponses, UnblockTaskData, UnblockTaskErrors, UnblockTaskResponses, UpdateActivityEntryData, UpdateActivityEntryErrors, UpdateActivityEntryResponses, UpdateAgentData, UpdateAgentErrors, UpdateAgentResponses, UpdateChannelData, UpdateChannelErrors, UpdateChannelResponses, UpdateRoutineData, UpdateRoutineErrors, UpdateRoutineResponses, WhoamiData, WhoamiErrors, WhoamiResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -131,7 +131,7 @@ export const createMember = <ThrowOnError extends boolean = false>(options: Opti
 });
 
 /**
- * Show the acting member, taken from the x-flockr-member header
+ * Show the acting member and how it was named: the x-flockr-member header with sign-in off, or a session or a key with it on
  */
 export const whoami = <ThrowOnError extends boolean = false>(options?: Options<WhoamiData, ThrowOnError>): RequestResult<WhoamiResponses, WhoamiErrors, ThrowOnError> => (options?.client ?? client).get<WhoamiResponses, WhoamiErrors, ThrowOnError>({ url: '/api/me', ...options });
 
@@ -175,7 +175,7 @@ export const updateAgent = <ThrowOnError extends boolean = false>(options: Optio
 });
 
 /**
- * Claim the oldest ready task open to you, optionally only with these labels or only assigned to you. Returns null when there is none.
+ * Claim the oldest ready task open to you, optionally only with these labels or only assigned to you; a key limited to channels claims only in those. Returns null when there is none.
  */
 export const claimNextTask = <ThrowOnError extends boolean = false>(options: Options<ClaimNextTaskData, ThrowOnError>): RequestResult<ClaimNextTaskResponses, ClaimNextTaskErrors, ThrowOnError> => (options.client ?? client).post<ClaimNextTaskResponses, ClaimNextTaskErrors, ThrowOnError>({
     url: '/api/tasks/claim',
@@ -603,3 +603,42 @@ export const setApprovalRule = <ThrowOnError extends boolean = false>(options: O
  * What happens when an agent or a routine does this kind of action in this channel: allow (go ahead), ask (ask a person in the thread first and wait for Allow once) or block (do not do it). The stricter of the rule and the floor
  */
 export const checkApproval = <ThrowOnError extends boolean = false>(options: Options<CheckApprovalData, ThrowOnError>): RequestResult<CheckApprovalResponses, CheckApprovalErrors, ThrowOnError> => (options.client ?? client).get<CheckApprovalResponses, CheckApprovalErrors, ThrowOnError>({ url: '/api/approval-rules/check', ...options });
+
+/**
+ * Every key on the board: whose it is, its owner, the channels it is limited to, when it was last used and whether it is revoked. Never the key itself. Only a person can list keys
+ */
+export const listKeys = <ThrowOnError extends boolean = false>(options?: Options<ListKeysData, ThrowOnError>): RequestResult<ListKeysResponses, ListKeysErrors, ThrowOnError> => (options?.client ?? client).get<ListKeysResponses, ListKeysErrors, ThrowOnError>({ url: '/api/keys', ...options });
+
+/**
+ * Make a key that acts as a member, optionally limited to some channels. The key is in the response once and never again. Only a person can make one
+ */
+export const createKey = <ThrowOnError extends boolean = false>(options: Options<CreateKeyData, ThrowOnError>): RequestResult<CreateKeyResponses, CreateKeyErrors, ThrowOnError> => (options.client ?? client).post<CreateKeyResponses, CreateKeyErrors, ThrowOnError>({
+    url: '/api/keys',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Turn a key off for good; requests with it are refused from now on. Safe to repeat. Only a person can revoke one
+ */
+export const revokeKey = <ThrowOnError extends boolean = false>(options: Options<RevokeKeyData, ThrowOnError>): RequestResult<RevokeKeyResponses, RevokeKeyErrors, ThrowOnError> => (options.client ?? client).post<RevokeKeyResponses, RevokeKeyErrors, ThrowOnError>({ url: '/api/keys/{id}/revoke', ...options });
+
+/**
+ * Email a one-time sign-in link to a person on the board's list. Any other address gets the same answer and no email
+ */
+export const requestSignInLink = <ThrowOnError extends boolean = false>(options: Options<RequestSignInLinkData, ThrowOnError>): RequestResult<RequestSignInLinkResponses, RequestSignInLinkErrors, ThrowOnError> => (options.client ?? client).post<RequestSignInLinkResponses, RequestSignInLinkErrors, ThrowOnError>({
+    url: '/api/auth/sign-in/magic-link',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * End this browser's session; safe to repeat
+ */
+export const signOut = <ThrowOnError extends boolean = false>(options?: Options<SignOutData, ThrowOnError>): RequestResult<SignOutResponses, SignOutErrors, ThrowOnError> => (options?.client ?? client).post<SignOutResponses, SignOutErrors, ThrowOnError>({ url: '/api/auth/sign-out', ...options });
