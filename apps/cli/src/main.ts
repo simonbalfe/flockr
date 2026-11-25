@@ -3,6 +3,7 @@ import * as sdk from "@flockr/client"
 import { configureClient, defaultMember, memberKinds, taskStates, type BoardEvent, type Task } from "@flockr/client"
 import { activityCommand, approvalAction, isActivityWord, stopCommand } from "./activity"
 import { agentsCommand, machinesCommand } from "./agents"
+import { areasCommand } from "./areas"
 import { ApiFailure, callOperation, loadOperations, run } from "./api"
 import { checklistCommand } from "./checklist"
 import { briefCommand, routinesCommand } from "./routines"
@@ -52,6 +53,10 @@ Writing
   flockr tasks fail|block <id> --reason <text>
   flockr tasks changes <id> [--note text]
   flockr tasks give <id> <member>
+  flockr tasks handoff <id> <member> [--note summary] [--commit sha] [--tests text] [--next step]...
+                                      hand a task you hold to another member: they hold it under a new epoch, its
+                                      branch flockr/<id> and working areas move with it, the thread gets one card.
+                                      Your old epoch is refused afterwards; repeating the same call changes nothing
   flockr checklist import <file> --channel <c>   rows of a SPEC_MASTER_CHECKLIST.md not yet Done become tasks, each
                                       needing the row before it in its phase; safe to repeat (rows with a task are skipped)
   flockr checklist sync <file> --channel <c> set the Status of each row whose task is done to "Done (task #id)";
@@ -79,6 +84,14 @@ Activity entries (the work you show in a thread; docs/guides/GUIDE_AGENT_ACTIVIT
   flockr activity finish <entry-id> [--status ok|error|stopped] [--title t]
   flockr activity show <entry-id>
   flockr join <name> [--owner person] [--kind agent] [--runs-in text]   an agent that connects by itself
+
+Working areas and branches (see what others are touching; each task's work goes on flockr/<id>, merged only after review)
+  flockr areas [list] <channel>       who is working in which files or folders, for which task and branch
+  flockr areas declare <channel> <path>... [--task id] [--note text] [--refuse]
+                                      say what you are about to edit (paths, folders or globs such as src/api/**). An overlap
+                                      with another member's area is printed as a warning; --refuse declares nothing and exits 3
+                                      instead. With --task the area ends with the task's claim; without it, it runs out in an hour
+  flockr areas renew <channel> <id> | flockr areas release <channel> <id>
 
 Agents served by a machine (a runner on that machine starts their sessions; a person manages them)
   flockr agents [list] | flockr agents show <name>   status (offline, online, working, error), machine, harness, folder
@@ -317,6 +330,12 @@ async function tasks(v: Values): Promise<number> {
       printTask(await run(sdk.addTaskCommit({ path: { id }, body })))
       return 0
     }
+    case "handoff": {
+      const id = idArg()
+      const body = { to: need(positionals[3], "member"), note: v.note, lastCommit: v.commit, testState: v.tests, nextSteps: v.next ?? [], epoch: epochFor(id, v) }
+      printTask(remember(await run(sdk.handOffTask({ path: { id }, body }))))
+      return 0
+    }
     case "give":
       printTask(await run(sdk.giveTask({ path: { id: idArg() }, body: { to: need(positionals[3], "member") } })))
       return 0
@@ -460,6 +479,8 @@ async function main(): Promise<number> {
       print(list, () => list.map(memberLine).join("\n"))
       return 0
     }
+    case "areas":
+      return areasCommand({ positionals, values, print, epochFor: (id) => epochFor(id, values) })
     case "agents":
       return agentsCommand({ positionals, values, print, baseUrl })
     case "keys":

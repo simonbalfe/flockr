@@ -2,6 +2,7 @@ import type { BoardEvent, MemoryItem, Task, Thread, ThreadEntry } from "@flockr/
 import type { EpochStore } from "@flockr/cli/epochs"
 import type { BoardPort, Claim } from "../src/board"
 import type { Harness, Session, SessionExit, SessionSpec } from "../src/harness/types"
+import type { Workspace } from "../src/workspace/types"
 import { createRunner, type AgentSettings, type Timers } from "../src/runner"
 import type { JsonStore, SessionMap } from "../src/store"
 
@@ -77,6 +78,7 @@ export function task(values: Partial<Task> & { id: number }): Task {
     leaseExpiresAt: null,
     claimEpoch: 0,
     spec: null,
+    branch: `flockr/${values.id}`,
     commits: [],
     reason: null,
     question: null,
@@ -251,7 +253,7 @@ export function event(values: Partial<BoardEvent> & { type: string; actor: strin
   return { seq, at: "2026-11-24T10:00:00.000Z", channel: "general", taskId: null, threadId: null, messageId: null, data: {}, ...values }
 }
 
-export function setup(options: { config?: Partial<TestOptions>; capabilities?: { resume: boolean; streaming: boolean } } = {}) {
+export function setup(options: { config?: Partial<TestOptions>; capabilities?: { resume: boolean; streaming: boolean }; workspace?: Workspace } = {}) {
   const board = fakeBoard()
   const { harness, started } = fakeHarness(options.capabilities)
   const { timers, fire } = manualTimers()
@@ -273,6 +275,7 @@ export function setup(options: { config?: Partial<TestOptions>; capabilities?: {
     log: (line) => void logs.push(line),
     problem: (reason) => void problems.push(reason),
     timers,
+    workspace: options.workspace,
   })
   return { runner, board, started, fire, sessions, epochs, logs, problems }
 }

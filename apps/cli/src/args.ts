@@ -71,6 +71,10 @@ export const flags = {
   tag: { type: "string", multiple: true },
   archived: { type: "boolean" },
   before: { type: "string" },
+  task: { type: "string" },
+  refuse: { type: "boolean" },
+  tests: { type: "string" },
+  next: { type: "string", multiple: true },
 } as const
 
 export function readArgs(argv: string[]) {

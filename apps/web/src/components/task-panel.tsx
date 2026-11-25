@@ -1,4 +1,5 @@
-import { useTask, useTasks, useThread } from "@/api/hooks"
+import { useAreas, useTask, useTasks, useThread } from "@/api/hooks"
+import { HandOffDialog } from "@/components/hand-off-dialog"
 import { AddCommitDialog } from "@/components/add-commit-dialog"
 import { CommitLinksProvider, CommitSha } from "@/components/commit-link"
 import { MemberAvatar } from "@/components/member-avatar"
@@ -19,9 +20,10 @@ export function TaskPanel({ id }: { id: number }) {
   const task = useTask(id)
   const thread = useThread(String(id))
   const tasks = useTasks()
+  const areas = useAreas(task.data?.channel ?? "")
   const { openTask } = usePanel()
   const now = useNow()
-  const working = useLiveActivity().filter((a) => a.threadId === String(id))
+  const live = useLiveActivity().filter((a) => a.threadId === String(id))
   const current = task.data
   if (!current) return <PanelFrame title={<span className="font-mono text-xs text-faint">#{id}</span>}>{null}</PanelFrame>
 
@@ -61,6 +63,11 @@ export function TaskPanel({ id }: { id: number }) {
   if (current.commits.length) {
     rows.push({ label: current.commits.length === 1 ? "Commit" : "Commits", value: current.commits.map((c) => <CommitSha key={c.sha} commit={c} />) })
   }
+  rows.push({ label: "Branch", value: <span className="font-mono text-[12.5px]">{current.branch}</span> })
+  const working = (areas.data ?? []).filter((a) => a.taskId === id)
+  if (working.length) {
+    rows.push({ label: "Working in", value: working.flatMap((a) => a.paths).map((p) => <span key={p} className="font-mono text-[12.5px]">{p}</span>) })
+  }
   rows.push({ label: "Kind", value: current.kind })
 
   const showStatus = (current.state === "claimed" || current.state === "waiting" || current.state === "ready") && status.text !== stateLabel[current.state]
@@ -96,6 +103,7 @@ export function TaskPanel({ id }: { id: number }) {
         <div className="flex flex-wrap items-center gap-2">
           <TaskActions task={current} />
           <AddCommitDialog taskId={id} />
+          {current.state === "claimed" && <HandOffDialog task={current} />}
         </div>
       </ChatItem>
       <ChatItem>
@@ -105,7 +113,7 @@ export function TaskPanel({ id }: { id: number }) {
         <CommitLinksProvider commits={current.commits}>
           {thread.data?.entries.length ? <ThreadEntries entries={thread.data.entries} /> : <div className="px-1 py-2 text-[13px] text-faint">No replies yet.</div>}
         </CommitLinksProvider>
-        {working.map((a) => (
+        {live.map((a) => (
           <div key={a.member} className="px-1 py-1.5">
             <AgentWorkingLine activity={a} />
           </div>

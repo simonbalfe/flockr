@@ -20,6 +20,7 @@ import {
   quiet,
   sessionsFile,
   shimDir,
+  worktreesHome,
   skillFile,
   stateFile,
   type RunnerConfig,
@@ -30,6 +31,8 @@ import { migrateLegacy } from "./migrate"
 import { createRunPanes } from "./panes"
 import { instructions } from "./prompt"
 import { createRunner } from "./runner"
+import { runIn } from "./workspace/command"
+import { gitWorkspace } from "./workspace/git"
 import { createService, type Spawn } from "./service"
 import { emptyState, jsonStore, RunnerState, SessionMap } from "./store"
 
@@ -105,6 +108,7 @@ function spawn(spec: Spawn) {
     freed: spec.freed,
     problem: spec.problem,
     showRun: panes?.forAgent(spec.name),
+    workspace: gitWorkspace({ root: worktreesHome, run: runIn }),
   })
 }
 

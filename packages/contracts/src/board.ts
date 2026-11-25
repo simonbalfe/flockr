@@ -76,6 +76,7 @@ export const Task = z
     leaseExpiresAt: timestamp.nullable(),
     claimEpoch: z.number().int().openapi({ description: "Fence number, raised by every claim. Send it back on renew, complete and reply." }),
     spec: z.string().nullable(),
+    branch: z.string().openapi({ example: "flockr/806", description: "Where this task's work goes: flockr/<id>. Merged only after review" }),
     commits: z.array(TaskCommit).openapi({ description: "The commits that did this task, oldest first" }),
     reason: z.string().nullable(),
     question: orNull(Question),

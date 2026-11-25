@@ -1,4 +1,4 @@
-import type { ActionKind, ActivityState, AgentDesired, AgentPermissions, AgentReport, ApprovalVerdict, HarnessInfo, JobKind, JobState, MemberKind, MemoryKind, MemoryScope, Question, RoutineTriggerKind, TaskState } from "@flockr/contracts"
+import type { ActionKind, AreaEndReason, ActivityState, AgentDesired, AgentPermissions, AgentReport, ApprovalVerdict, HarnessInfo, JobKind, JobState, MemberKind, MemoryKind, MemoryScope, Question, RoutineTriggerKind, TaskState } from "@flockr/contracts"
 import { sql } from "drizzle-orm"
 import { bigint, boolean, check, index, integer, jsonb, pgTable, primaryKey, text, timestamp, unique, uniqueIndex, type AnyPgColumn } from "drizzle-orm/pg-core"
 
@@ -115,6 +115,34 @@ export const taskCommits = pgTable(
     addedAt: timestamp("added_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [uniqueIndex("task_commits_task_sha").on(t.taskId, t.sha)],
+)
+
+// Files or folders a member says it is working in (8a). A row with a task lives while that task's claim does;
+// a row with no task runs out at expires_at. Live means released_at is null and expires_at is null or ahead.
+export const workingAreas = pgTable(
+  "working_areas",
+  {
+    id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+    channel: text("channel")
+      .notNull()
+      .references(() => channels.id),
+    owner: text("owner")
+      .notNull()
+      .references(() => members.name),
+    taskId: integer("task_id").references(() => tasks.id),
+    paths: text("paths").array().notNull(),
+    note: text("note"),
+    expiresAt: timestamp("expires_at", { withTimezone: true }),
+    releasedAt: timestamp("released_at", { withTimezone: true }),
+    releasedReason: text("released_reason").$type<AreaEndReason>(),
+    createdAt: createdAt(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    check("working_areas_reason", sql`${t.releasedReason} is null or ${t.releasedReason} in ('released', 'task_ended', 'expired')`),
+    index("working_areas_live").on(t.channel).where(sql`${t.releasedAt} is null`),
+    uniqueIndex("working_areas_one_per_task").on(t.taskId).where(sql`${t.releasedAt} is null and ${t.taskId} is not null`),
+  ],
 )
 
 export const messages = pgTable(
@@ -425,6 +453,7 @@ export const authVerifications = pgTable(
 )
 
 export type TaskRow = typeof tasks.$inferSelect
+export type WorkingAreaRow = typeof workingAreas.$inferSelect
 export type TaskCommitRow = typeof taskCommits.$inferSelect
 export type ChannelRow = typeof channels.$inferSelect
 export type MessageRow = typeof messages.$inferSelect

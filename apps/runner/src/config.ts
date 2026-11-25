@@ -10,6 +10,7 @@ export const runnerHome = process.env.FLOCKR_HOME ?? path.join(homedir(), ".floc
 export const configFile = process.env.FLOCKR_RUNNER_CONFIG ?? path.join(runnerHome, "runner.json")
 export const stateFile = path.join(runnerHome, "runner-state.json")
 export const sessionsFile = path.join(runnerHome, "runner-sessions.json")
+export const worktreesHome = path.join(runnerHome, "worktrees")
 export const shimDir = path.join(runnerHome, "bin")
 export const cliNames = ["flockr", "fc"] as const
 export const claimsFile = process.env.FC_STATE ?? defaultClaimsFile

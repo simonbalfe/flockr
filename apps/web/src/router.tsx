@@ -4,6 +4,7 @@ import { queries } from "@/api/hooks"
 import { AppShell } from "@/components/app-shell"
 import { parsePanelSearch } from "@/lib/panel"
 import { AllTasks } from "@/routes/all-tasks"
+import { ChannelAreas } from "@/routes/channel-areas"
 import { ChannelFrame } from "@/routes/channel-frame"
 import { ChannelMessages } from "@/routes/channel-messages"
 import { ChannelTasks } from "@/routes/channel-tasks"
@@ -37,6 +38,7 @@ const indexRoute = createRoute({
 const channelRoute = createRoute({ getParentRoute: () => rootRoute, path: "/c/$channel", component: ChannelFrame })
 const channelMessagesRoute = createRoute({ getParentRoute: () => channelRoute, path: "/", component: ChannelMessages })
 const channelTasksRoute = createRoute({ getParentRoute: () => channelRoute, path: "/tasks", component: ChannelTasks })
+const channelAreasRoute = createRoute({ getParentRoute: () => channelRoute, path: "/areas", component: ChannelAreas })
 const allTasksRoute = createRoute({ getParentRoute: () => rootRoute, path: "/tasks", component: AllTasks })
 const inboxRoute = createRoute({ getParentRoute: () => rootRoute, path: "/inbox", component: InboxView })
 const routinesRoute = createRoute({ getParentRoute: () => rootRoute, path: "/routines", component: RoutinesView })
@@ -45,7 +47,7 @@ const keysRoute = createRoute({ getParentRoute: () => rootRoute, path: "/keys", 
 
 const routeTree = rootRoute.addChildren([
   indexRoute,
-  channelRoute.addChildren([channelMessagesRoute, channelTasksRoute]),
+  channelRoute.addChildren([channelMessagesRoute, channelTasksRoute, channelAreasRoute]),
   allTasksRoute,
   inboxRoute,
   routinesRoute,

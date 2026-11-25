@@ -31,6 +31,7 @@ export type {
   TaskMessage,
   TaskState,
   TextMessage,
+  WorkingArea,
   Thread,
   ThreadEntry,
   ThreadQuestion,

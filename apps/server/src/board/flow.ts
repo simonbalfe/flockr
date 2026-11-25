@@ -5,6 +5,7 @@ import { tasks, type TaskRow } from "../db/schema"
 import { latestCommit, recordCommit } from "./commits"
 import { invalid } from "./errors"
 import { leaseFromNow } from "./claims"
+import { releaseTaskAreas } from "./areas"
 import { mutate, type Emit } from "./events"
 import { requireActor } from "./members"
 import { getTask } from "./read"
@@ -29,6 +30,7 @@ async function startReadyTasks(tx: Tx, emit: Emit, finished: TaskRow, actor: str
 async function finish(tx: Tx, emit: Emit, task: TaskRow, actor: string, type: string, threadText: string, channelText: string, commit?: string): Promise<void> {
   if (commit) await recordCommit(tx, emit, task, actor, { sha: commit })
   const row = await updateTask(tx, task.id, { state: "done", leaseExpiresAt: null, question: null, reason: null })
+  await releaseTaskAreas(tx, emit, row, actor)
   await threadEvent(tx, row, actor, threadText)
   await channelEvent(tx, row.channel, actor, channelText)
   emitTask(emit, type, row, actor, { commit: commit ?? (await latestCommit(tx, row.id)) })
@@ -58,6 +60,7 @@ export async function submitForReview(db: Database, actor: string, id: number, b
     const note = body.note?.trim() || (commit ? `Done in \`${shortSha(commit)}\`. Ready for review.` : "Done. Ready for review.")
     await taskReply(tx, task, actor, note)
     const row = await updateTask(tx, id, { state: "review", leaseExpiresAt: null, question: null })
+    await releaseTaskAreas(tx, emit, row, actor)
     await feedText(tx, row.channel, actor, `Finished #${id}, ready for review.`, id)
     emitTask(emit, "task.submitted", row, actor, { commit })
   })
@@ -93,6 +96,7 @@ export async function failTask(db: Database, actor: string, id: number, reason: 
     requireState(task, "claimed")
     requireHolder(task, member, epoch)
     const row = await updateTask(tx, id, { state: "blocked", holder: null, leaseExpiresAt: null, question: null, reason: `Failed: ${reason}` })
+    await releaseTaskAreas(tx, emit, row, actor)
     await threadEvent(tx, row, actor, `failed this task: ${reason}`)
     await channelEvent(tx, row.channel, actor, `failed #${id}: ${reason}`)
     emitTask(emit, "task.failed", row, actor, { reason })
@@ -107,6 +111,7 @@ export async function blockTask(db: Database, actor: string, id: number, reason:
     requireState(task, "ready", "claimed")
     if (task.state === "claimed") requireHolder(task, member, epoch)
     const row = await updateTask(tx, id, { state: "blocked", leaseExpiresAt: null, reason })
+    await releaseTaskAreas(tx, emit, row, actor)
     await threadEvent(tx, row, actor, `blocked this task: ${reason}`)
     await channelEvent(tx, row.channel, actor, `blocked #${id}: ${reason}`)
     emitTask(emit, "task.blocked", row, actor, { reason })

@@ -2,6 +2,7 @@ import { leaseMinutes, type ClaimNextBody, type ReleaseBody, type Task } from "@
 import { and, arrayContains, asc, eq, inArray, isNull, lt, or, type SQL } from "drizzle-orm"
 import type { Database, Tx } from "../db/client"
 import { tasks, type TaskRow } from "../db/schema"
+import { releaseTaskAreas } from "./areas"
 import { mutate, type Emit } from "./events"
 import { requireActor } from "./members"
 import { getTask } from "./read"
@@ -85,6 +86,7 @@ export async function releaseTask(db: Database, actor: string, id: number, body:
     requireHolder(task, member, body.epoch)
     const holder = task.holder ?? actor
     const row = await updateTask(tx, id, { state: "ready", holder: null, leaseExpiresAt: null, question: null, ...(declines ? { assignee: null } : {}) })
+    await releaseTaskAreas(tx, emit, row, actor)
     await threadEvent(tx, row, holder, declines ? "released and declined this task" : "released this task")
     emitTask(emit, "task.released", row, actor, { holder, declined: declines })
   })
@@ -102,6 +104,7 @@ export async function sweepExpiredClaims(db: Database, now = new Date()): Promis
     for (const task of expired) {
       const holder = task.holder ?? "flockr"
       const row = await updateTask(tx, task.id, { state: "ready", holder: null, leaseExpiresAt: null })
+      await releaseTaskAreas(tx, emit, row, holder, "expired")
       await channelEvent(tx, row.channel, holder, `lease ran out on #${row.id}, back to ready`)
       emitTask(emit, "task.expired", row, holder, { holder: task.holder, epoch: task.claimEpoch })
     }

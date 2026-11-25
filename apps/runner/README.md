@@ -96,6 +96,20 @@ Each agent has one of two permission sets (`agentPermissions` in `packages/contr
 - A person can decide commands per channel without changing the agent: before asking, the bridge reads the board's approval rule for `command` in the thread's channel (`checkApproval`; the runner passes the channel as `FLOCKR_CHANNEL`). Allow runs the command with no card, ask asks as above, block refuses it. The agent's setting stays a limit and the stricter wins (`commandLimits` in `src/permissions.ts`): an `edit-free-commands-ask` agent follows the channel, a `read-only` agent still asks where commands are allowed, since a command can write files. The free commands stay free, and the agent's own refusals never reach the board. If the board cannot answer, the bridge asks. Rules: `flockr rules`, the Approval rules page, `docs/phases/phase-5/SPEC_PHASE_5C_APPROVAL_RULES.md`.
 - Permissions are never skipped, and full access is not offered.
 
+## A branch and a worktree per task
+
+When a session works a claimed task in a folder that is a git repository, the runner gives it its own checkout (`src/workspace/`, ADR 0028). Two sessions on one repo never share a working tree, and neither switches the branch under the other.
+
+| Step | What happens |
+|---|---|
+| Find the repo | `git rev-parse --show-toplevel` in the agent's or channel's folder; not a repo means the session just uses the folder |
+| Where | `~/.flockr/worktrees/<repo name>/<task id>` (`worktreesHome` in `src/config.ts`), outside the repo |
+| Which branch | `flockr/<task id>`, the task's `branch`. Reused if the worktree is already there on that branch; checked out if it exists locally; made from `origin/flockr/<id>` if another machine pushed it (after a best-effort `git fetch`); otherwise made from the remote's default branch, else `main`, `master` or `HEAD` |
+| What it never does | Push, commit or delete a worktree. The session does that, through the approval rules |
+| The prompt | Names the branch, tells the agent to declare its working area (`flockr areas declare <channel> <path>... --task <id>`), commit and push `flockr/<id>`, and add commits with `flockr tasks commit` |
+
+A hand-off (`flockr tasks handoff`) is seen as `task.handed_off`: the runner of the member who gave the task stops its run without releasing (the claim already moved), and the runner of the member who took it adopts the task and starts a session in its own worktree, which fetches the branch the first member pushed. `git worktree remove ~/.flockr/worktrees/<repo>/<id>` cleans up one after the task is merged. `git push` and `git commit` are shell commands, so they follow the channel's approval rule for commands (`flockr rules`); allow `command` in a channel where agents should push without a card.
+
 ## The session
 
 - Works in the agent's folder (or the channel override), with an environment of only `FC_URL`, `FC_AS` (the agent's name), `FC_STATE`, `FLOCKR_KEY` (when the config has a key), `PATH` (with `flockr` and `fc` shims first, in `~/.flockr/bin`) and what the harness declares it needs.
@@ -112,8 +126,9 @@ Each agent has one of two permission sets (`agentPermissions` in `packages/contr
 | `src/migrate.ts` | Moves an old one-member config over |
 | `src/panes.ts`, `src/launcher/` | Run panes: picks the configured launcher adapter and shows each run in its pane; the launcher interface, the registry, the real command runner and one adapter per launcher (`herdr.ts`) |
 | `src/dev.ts` | `bun dev`: the web dev server plus a quiet, prefixed runner |
+| `src/workspace/` | The workspace interface (`prepare` gives a task its own folder), the path rules (`paths.ts`), the `git` adapter and the real command runner |
 | `src/routing.ts`, `src/prompt.ts`, `src/permissions.ts` | Pure rules: who is addressed, the prompts, what is free, asked or refused |
 | `src/activity.ts` | Batches the steps a session reports (`SessionSpec.activity`) into activity entry updates |
 | `src/harness/` | The harness interface (label, capabilities, probe, start), the registry and one adapter per harness; `claude-code-activity.ts` maps Claude Code's `stream-json` lines to steps (`docs/guides/GUIDE_AGENT_ACTIVITY.md`) |
 | `src/bridge.ts`, `src/gate.ts`, `src/mcp.ts` | The permission bridge |
-| `test/` | `bun test`: config, prompts, permissions, store, routing, claims, steps reaching the entry, the Claude Code stream mapping, the machine service (including pause and resume) and the migration, through a fake harness and a fake board; the Herdr launcher against a fake `hc` |
+| `test/` | `bun test`: config, prompts, permissions, store, routing, claims, steps reaching the entry, the Claude Code stream mapping, worktree paths and the git adapter against a fake `git` (`workspace.test.ts`), the machine service (including pause and resume) and the migration, through a fake harness and a fake board; the Herdr launcher against a fake `hc` |

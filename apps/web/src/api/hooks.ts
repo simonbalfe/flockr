@@ -8,6 +8,7 @@ import {
   claimTaskMutation,
   completeTaskMutation,
   createTaskMutation,
+  declareAreaMutation,
   deleteMessageMutation,
   editMessageMutation,
   getAgentOptions,
@@ -15,8 +16,10 @@ import {
   getTaskOptions,
   getThreadOptions,
   giveTaskMutation,
+  handOffTaskMutation,
   importChecklistMutation,
   listActivityOptions,
+  listAreasOptions,
   listAgentsOptions,
   listChannelsOptions,
   listMembersOptions,
@@ -26,6 +29,7 @@ import {
   makeTaskFromThreadMutation,
   markReadMutation,
   postMessageMutation,
+  releaseAreaMutation,
   releaseTaskMutation,
   replyToThreadMutation,
   stopRunMutation,
@@ -49,6 +53,7 @@ export const queries = {
   versions: (id: string) => listMessageVersionsOptions({ path: { id } }),
   thread: (id: string) => getThreadOptions({ path: { id } }),
   tasks: () => listTasksOptions(),
+  areas: (channel: string) => listAreasOptions({ path: { channel } }),
   task: (id: number) => getTaskOptions({ path: { id } }),
   inbox: () => getInboxOptions(),
   activity: () => listActivityOptions(),
@@ -64,6 +69,7 @@ export const useMessages = (channel: string, label?: string) => useQuery(queries
 export const useMessageVersions = (id: string, enabled: boolean) => useQuery({ ...queries.versions(id), enabled })
 export const useThread = (id: string) => useQuery(queries.thread(id))
 export const useTasks = () => useQuery(queries.tasks())
+export const useAreas = (channel: string) => useQuery(queries.areas(channel))
 export const useTask = (id: number) => useQuery(queries.task(id))
 export const useInbox = () => useQuery(queries.inbox())
 export const useActivity = () => useQuery(queries.activity())
@@ -154,3 +160,11 @@ export const useUpdateChannel = () =>
   useBoardMutation(updateChannelMutation(), (a: { channel: string; repo: string | null }) => ({ path: { channel: a.channel }, body: { repo: a.repo } }))
 export const useAddCommit = () =>
   useBoardMutation(addTaskCommitMutation(), (a: { id: number; sha: string; message?: string }) => ({ ...onTask(a.id), body: { sha: a.sha, message: a.message } }))
+export const useDeclareArea = () =>
+  useBoardMutation(declareAreaMutation(), (a: { channel: string; paths: string[]; note?: string; refuse?: boolean }) => ({
+    path: { channel: a.channel },
+    body: { paths: a.paths, note: a.note, overlap: a.refuse ? ("refuse" as const) : ("warn" as const) },
+  }))
+export const useReleaseArea = () => useBoardMutation(releaseAreaMutation(), (a: { channel: string; id: number }) => ({ path: { channel: a.channel, id: a.id } }))
+export const useHandOffTask = () =>
+  useBoardMutation(handOffTaskMutation(), (a: { id: number; to: string; note?: string; epoch: number }) => ({ ...onTask(a.id), body: { to: a.to, note: a.note, nextSteps: [], epoch: a.epoch } }))

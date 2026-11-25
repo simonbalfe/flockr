@@ -56,6 +56,7 @@
               "stale_claim",
               "not_holder",
               "lease_expired",
+              "area_overlap",
               "internal"
             ]
           }
@@ -1626,6 +1627,11 @@
               "null"
             ]
           },
+          "branch": {
+            "type": "string",
+            "example": "flockr/806",
+            "description": "Where this task's work goes: flockr/<id>. Merged only after review"
+          },
           "commits": {
             "type": "array",
             "items": {
@@ -1671,6 +1677,7 @@
           "leaseExpiresAt",
           "claimEpoch",
           "spec",
+          "branch",
           "commits",
           "reason",
           "question",
@@ -2124,6 +2131,223 @@
         "required": [
           "to"
         ]
+      },
+      "HandoffBody": {
+        "type": "object",
+        "properties": {
+          "to": {
+            "type": "string",
+            "example": "reviewer",
+            "description": "The member who takes the task"
+          },
+          "note": {
+            "type": "string",
+            "minLength": 1,
+            "description": "The summary: what is done and what is left, posted in the thread"
+          },
+          "lastCommit": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{7,64}$",
+            "example": "a1b2c3d",
+            "description": "The last commit on the task's branch; added to the task's commits"
+          },
+          "testState": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200,
+            "example": "bun test passes, e2e not run",
+            "description": "Where the tests stand"
+          },
+          "nextSteps": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            },
+            "maxItems": 10,
+            "default": [],
+            "description": "What the next holder should do, in order"
+          },
+          "epoch": {
+            "type": "integer",
+            "description": "The claimEpoch from your claim. A stale value is refused with 409."
+          }
+        },
+        "required": [
+          "to"
+        ]
+      },
+      "WorkingArea": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "example": 12
+          },
+          "channel": {
+            "type": "string",
+            "example": "backend"
+          },
+          "owner": {
+            "type": "string",
+            "example": "claude"
+          },
+          "taskId": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "description": "The task this area belongs to; it ends with the task's claim. Null for an area with its own expiry"
+          },
+          "branch": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "example": "flockr/806",
+            "description": "The task's branch; null for an area with no task"
+          },
+          "paths": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "example": [
+              "apps/server/src/board",
+              "packages/contracts/**"
+            ],
+            "description": "Files, folders or globs, relative to the channel's repo"
+          },
+          "note": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "expiresAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "example": "2026-11-25T10:40:02.000Z",
+            "description": "When an area with no task runs out unless renewed; null while a task holds it"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-11-25T10:40:02.000Z"
+          }
+        },
+        "required": [
+          "id",
+          "channel",
+          "owner",
+          "taskId",
+          "branch",
+          "paths",
+          "note",
+          "expiresAt",
+          "createdAt"
+        ]
+      },
+      "DeclareAreaResult": {
+        "type": "object",
+        "properties": {
+          "area": {
+            "$ref": "#/components/schemas/WorkingArea"
+          },
+          "overlaps": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AreaOverlap"
+            },
+            "description": "Other members' live areas that meet yours: who, which task, which paths. Empty when nothing meets. With overlap refuse, any overlap is a 409 instead"
+          }
+        },
+        "required": [
+          "area",
+          "overlaps"
+        ]
+      },
+      "AreaOverlap": {
+        "type": "object",
+        "properties": {
+          "area": {
+            "$ref": "#/components/schemas/WorkingArea"
+          },
+          "paths": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "yours": {
+                  "type": "string"
+                },
+                "theirs": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "yours",
+                "theirs"
+              ]
+            },
+            "description": "Which of your paths meets which of theirs"
+          }
+        },
+        "required": [
+          "area",
+          "paths"
+        ]
+      },
+      "DeclareAreaBody": {
+        "type": "object",
+        "properties": {
+          "paths": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 200
+            },
+            "minItems": 1,
+            "maxItems": 20,
+            "example": [
+              "apps/server/src/board",
+              "packages/contracts/**"
+            ],
+            "description": "Files, folders or globs (* ? **) in the channel's repo, no .. and no leading /"
+          },
+          "taskId": {
+            "type": "integer",
+            "description": "The claimed task this work is for. The area then ends with the task's claim and is renewed with its lease. Omit for an area with its own expiry"
+          },
+          "note": {
+            "type": "string",
+            "maxLength": 300,
+            "description": "Why, in a few words"
+          },
+          "overlap": {
+            "$ref": "#/components/schemas/AreaPolicy"
+          },
+          "epoch": {
+            "type": "integer",
+            "description": "The claimEpoch from your claim. A stale value is refused with 409."
+          }
+        },
+        "required": [
+          "paths"
+        ]
+      },
+      "AreaPolicy": {
+        "type": "string",
+        "enum": [
+          "warn",
+          "refuse"
+        ],
+        "default": "warn",
+        "description": "warn (default) declares the area and returns what it overlaps; refuse declares nothing and answers 409 when it overlaps another member's live area"
       },
       "ChecklistImport": {
         "type": "object",
@@ -7209,6 +7433,455 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Task"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The input is not valid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sign-in is on and the request has no session or key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The acting member is not on this board, or may not do this",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The task or message is in another state, or the claim epoch is stale",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/tasks/{id}/handoff": {
+      "post": {
+        "operationId": "handOffTask",
+        "tags": [
+          "tasks"
+        ],
+        "summary": "Hand a claimed task you hold to another member, with a note: they hold it now under a new claim epoch with a fresh lease, the thread gets the note, and its branch and working areas move with it. Your old epoch is refused afterwards; repeating the same call changes nothing.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "integer",
+              "example": 806
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HandoffBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Task"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The input is not valid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sign-in is on and the request has no session or key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The acting member is not on this board, or may not do this",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The task or message is in another state, or the claim epoch is stale",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/channels/{channel}/areas": {
+      "get": {
+        "operationId": "listAreas",
+        "tags": [
+          "areas"
+        ],
+        "summary": "List the live working areas in a channel: who is working in which files or folders, for which task and branch",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "example": "backend"
+            },
+            "required": true,
+            "name": "channel",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/WorkingArea"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The input is not valid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sign-in is on and the request has no session or key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The acting member is not on this board, or may not do this",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The task or message is in another state, or the claim epoch is stale",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "declareArea",
+        "tags": [
+          "areas"
+        ],
+        "summary": "Say which files, folders or globs you are about to edit, for a task you hold or on their own. Another member's live area that meets yours comes back as overlaps (a warning); with overlap refuse it is a 409 and nothing is declared. Declaring again for the same task replaces its paths.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "example": "backend"
+            },
+            "required": true,
+            "name": "channel",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DeclareAreaBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeclareAreaResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The input is not valid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sign-in is on and the request has no session or key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The acting member is not on this board, or may not do this",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The task or message is in another state, or the claim epoch is stale",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/channels/{channel}/areas/{id}/renew": {
+      "post": {
+        "operationId": "renewArea",
+        "tags": [
+          "areas"
+        ],
+        "summary": "Renew an area that has no task for another hour; an area with a task lives as long as the task's claim",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "example": "backend"
+            },
+            "required": true,
+            "name": "channel",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "example": 12
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WorkingArea"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The input is not valid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sign-in is on and the request has no session or key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The acting member is not on this board, or may not do this",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The task or message is in another state, or the claim epoch is stale",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/channels/{channel}/areas/{id}/release": {
+      "post": {
+        "operationId": "releaseArea",
+        "tags": [
+          "areas"
+        ],
+        "summary": "Say you have stopped working in an area; safe to repeat. Only its owner or a person can release it",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "example": "backend"
+            },
+            "required": true,
+            "name": "channel",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "example": 12
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WorkingArea"
                 }
               }
             }

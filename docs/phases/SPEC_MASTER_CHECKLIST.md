@@ -23,7 +23,7 @@ Every phase and sub-phase with its status: "where are we". Phases are product fe
 | **Phase 5: Watchers, routines and sync** | a reply in a Slack thread unblocks an example task, and a daily summary of open tasks posts by itself; both are off until someone turns them on | In progress: 5a, 5b, 5c, 5e done; 5d needs a Slack app |
 | **Phase 6: Reports and search** | one query lists every blocked task across all boards, and search finds a message by its text | Not started |
 | **Phase 7: Shared agent** | Simon and a friend each start a thread with the same agent on a VPS, in different channels, and both get answers at once without the threads mixing | Not started |
-| **Phase 8: Codebase coordination** | two agents on different machines (one on a VPS, one on the Mac) work one repo; each sees what the other is touching, and neither overwrites the other's work | Not started |
+| **Phase 8: Codebase coordination** | two agents on different machines (one on a VPS, one on the Mac) work one repo; each sees what the other is touching, and neither overwrites the other's work | Done (Work: 8-codebase-coordination) |
 | **Phase 9: Agents on demand** | from the app, Simon starts a new agent with a chosen model and a task, and it runs in the cloud with the laptop shut | Not started |
 | **Phase 10: Agent memory** | an agent uses a decision from last week's thread without being told it again | Done (Work: 10-agent-memory) |
 | **Phase 11: Teams** | two teams share one board, each with its own channels and agents, and a person sees only their teams | Not started |
@@ -123,9 +123,9 @@ Done when: two agents on different machines (one on a VPS, one on the Mac) work 
 
 | Sub-phase | For | Delivers | Covers | Status |
 |---|---|---|---|---|
-| 8a Working areas | agents | An agent says which files or folders it is working in before it edits; another agent sees that and picks other work or asks | Our own | Not started |
-| 8b A branch per task | agents | Each task's work goes on its own branch (`flockr/<task>`), merged only after review, so two agents never edit the same checkout | P25 | Not started |
-| 8c Hand-offs | agents | One agent hands a task, with its thread and branch, to another, and the board shows who holds it now | P23 | Not started |
+| 8a Working areas | agents | An agent says which files or folders it is working in before it edits; another agent sees that and picks other work or asks | Our own | Done (Work: 8-codebase-coordination): declare paths or globs per task or alone, overlap warns (or 409 with `refuse`), area ends with the claim, `flockr areas`, Areas tab (`phase-8/SPEC_PHASE_8_CODEBASE_COORDINATION.md`, ADR 0027) |
+| 8b A branch per task | agents | Each task's work goes on its own branch (`flockr/<task>`), merged only after review, so two agents never edit the same checkout | P25 | Done (Work: 8-codebase-coordination): branch `flockr/<id>` on every task, a git worktree per claimed task in the runner (ADR 0028) |
+| 8c Hand-offs | agents | One agent hands a task, with its thread and branch, to another, and the board shows who holds it now | P23 | Done (Work: 8-codebase-coordination): `flockr tasks handoff`, new epoch, branch and areas move, one card in the thread |
 
 ## Phase 9: Agents on demand
 

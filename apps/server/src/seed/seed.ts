@@ -11,7 +11,7 @@ const minutesOf = (clock: string) => {
 }
 
 export async function resetBoard(db: Database): Promise<void> {
-  await db.execute(sql`truncate memory_items, hook_deliveries, member_keys, auth_sessions, auth_accounts, auth_verifications, auth_users, job_approvals, approval_rules, jobs, routines, events, activity, reads, message_versions, messages, task_commits, tasks, channels, agents, machines, members, boards restart identity cascade`)
+  await db.execute(sql`truncate working_areas, memory_items, hook_deliveries, member_keys, auth_sessions, auth_accounts, auth_verifications, auth_users, job_approvals, approval_rules, jobs, routines, events, activity, reads, message_versions, messages, task_commits, tasks, channels, agents, machines, members, boards restart identity cascade`)
 }
 
 export async function seedBoard(db: Database, now = new Date()): Promise<boolean> {
