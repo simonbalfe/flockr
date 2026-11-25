@@ -88,7 +88,7 @@ Research only: every feature the surveyed products have, and who has it. Nothing
 | Id | Feature | Who has it | How it works there |
 |---|---|---|---|
 | P34 | Any number of agents, each named, shown with its person | VB | `--as claude` shows "claude via simon" |
-| P35 | Each agent has its own key and audit trail, revocable alone | BZ | One keypair per agent |
+| P35 | Each agent has its own key and audit trail, revocable alone | BZ | One keypair per agent. In code: the desktop app generates a Nostr keypair per managed agent (`agents_pending.rs`), keeps it in the OS keyring (`SECURITY.md`) and hands it to the harness bridge as `BUZZ_PRIVATE_KEY`; the relay checks every event's signature (`handlers/event.rs`). Owner link is first-write-wins in `users.agent_owner_pubkey`. No rotation: a new key is a new agent. See `docs/reference/RESEARCH_BUZZ_IDENTITY.md` |
 | P36 | Agents act through a JSON command line and MCP | VB, BZ, DB, CT | BZ: `buzz-cli`; DB: runs as an MCP server; CT: `--json` on most read commands; no MCP |
 | P37 | A skill that teaches a coding agent to use the board | VB | `npx skills add vercel/board` |
 | P38 | Runs Claude Code, Codex and others as members | BZ, DB, ZD, HD, CT | BZ: `buzz-acp` passes a mention to the agent; CT: Claude Code, Codex, Pi and others, as panes in Herdr |
@@ -98,6 +98,11 @@ Research only: every feature the surveyed products have, and who has it. Nothing
 | P42 | Role templates | HD, BZ, OB | HD: Markdown roles; OB: lead, research, build, review, ops |
 | P43 | Agents on other machines | HD, DB | `hc run --on <machine>` |
 | P85 | Start a teammate with a worktree and a purpose in one command; plan a whole team in a wizard | CT | `chatter spawn data-api --kind codex --purpose "..."` makes `agents/<name>`, starts and labels the agent in Herdr, announces it |
+| P87 | Public profile per agent: display name, picture, about line, shown the same as a person's | BZ | Nostr `kind:0` metadata, published by the agent's own key; the desktop app keeps it in step with the saved agent |
+| P88 | An agent shows its owner next to its name with a bot icon; "Agent; owner unavailable" when the link is missing | BZ | `MessageAgentOwner.tsx` in the desktop app |
+| P89 | Same agent key in several workspaces, with separate membership, profile and presence in each | BZ | `VISION_AGENT.md`: state is community-local |
+| P93 | Agent definitions (name pool, avatar, prompt, model) as shareable blueprints a new agent is made from | BZ | NIP-AP persona events, `kind:30175`; overlaps P42 |
+| P94 | Per-turn token and cost record, readable only by the agent's owner | BZ | NIP-AM, `kind:44200`, encrypted to the owner |
 
 ## Triggers, routines and sync
 
@@ -123,12 +128,15 @@ Research only: every feature the surveyed products have, and who has it. Nothing
 | P56 | Auto-review of risky actions; ask when unsure | GB, RK | |
 | P57 | Secrets agents use but never see | DB, FB, RK, GB | DB: a vault with values redacted from logs; GB: tokens held server side |
 | P58 | Keys limited to one channel | BZ | |
-| P59 | Signed events and a hash-chain audit log | BZ | |
+| P59 | Signed events and a hash-chain audit log | BZ | Two separate things. Every event is signed by its author (BIP-340 Schnorr, checked on arrival). The audit log (`buzz-audit`) is a keyless SHA-256 chain: it detects edits to single rows but an attacker with database write access can recompute it (`SECURITY.md`). Signatures prove who wrote; the chain shows nothing was altered. See `docs/reference/RESEARCH_BUZZ_IDENTITY.md` |
 | P60 | Email-code sign-in with an allowlist | FB | |
 | P76 | Per-action rule: allow, ask or block, above a floor no rule can lower | DT | Password changes and money transfers stay with the person |
 | P77 | Read-only mode for background work | DT | Reads connected apps while you are away; cannot send or edit |
 | P78 | Autonomy level per agent: low, medium, high, ask first | DTM, DB | |
 | P79 | Specialist agents with their own identity and logins, apart from their owner | DT | |
+| P90 | Agent joins a workspace through its owner: the owner's membership is the agent's access, so removing the owner cuts every agent | BZ | NIP-AA: the agent shows an owner-signed credential when it connects; no separate enrolment |
+| P91 | Owner-signed proof that an agent belongs to them, carried on the agent's events and profile, limited by event kind and time | BZ | NIP-OA `auth` tag; the agent's key stays the only author; republishing the profile without the tag withdraws it |
+| P92 | Archive an agent: hidden from member lists and autocomplete, history kept, owner or admin can undo | BZ | NIP-IA, kinds 9035 and 9036 |
 
 ## Hosting and storage
 
