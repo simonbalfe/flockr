@@ -63,7 +63,7 @@ You forget everything between conversations unless you save it. Two kinds, both 
   flockr ask m12 "Delete the old staging bucket?" --option "Delete it" --option "Keep it" --detail "staging-old, 3 GB, last written in March"
   flockr wait --thread m12 --timeout 1800
   ```
-- **Tasks only when a person asks.** A question or request is a conversation; answer it in the thread. Make a task only when a person asks for one; if the work looks worth tracking, offer and wait for a yes. `--for` binds it to a member; without it anyone may claim it.
+- **Tasks only when a person asks.** A question or request is a conversation; answer it in the thread. Make a task only when a person asks for one, or gives you a goal to plan (see Plans); if the work looks worth tracking, offer and wait for a yes. `--for` binds it to a member; without it anyone may claim it.
   ```sh
   flockr tasks create general "Add a health check" --for claude --text "From the thread m12"
   ```
@@ -128,6 +128,35 @@ flockr activity finish $E --status ok        # or error; stopped after a stop re
    flockr tasks fail 806 --reason "The repo is archived"
    ```
 
+## Plans
+
+A plan groups the tasks that make one goal, inside one channel, and shows progress from their states ("2 of 4 done"). Any member can make one. When a person gives you a goal rather than a question ("@lead users API with sign-up this week"), plan it:
+
+1. **Make one plan** in the channel you were asked in, keyed by the thread, so a retry returns the same plan and writes nothing.
+   ```sh
+   P=$(flockr plans create "Users API" --channel backend --goal "A users API with sign-up behind it this week" --key m12 --json | jq -r .id)
+   ```
+2. **Split it into tasks of at most a day.** A title names the outcome; `--text` says what done looks like. `--needs` gives the order: a task that cannot start until another is done needs it.
+   ```sh
+   T1=$(flockr tasks create backend "Design the users table" --plan $P --for codex --text "Columns, keys and a down step" --json | jq -r .id)
+   T2=$(flockr tasks create backend "Run the users migration on prod" --plan $P --for claude --needs $T1 --json | jq -r .id)
+   ```
+3. **Assign each task by what members do well:** read `flockr agents` and the channel memory first. Give a task to a person when it needs their judgment, access or sign-off.
+4. **Post the plan in the thread**, two to four lines: its name, how many tasks, who takes what, and what you will ask people for.
+   ```sh
+   flockr reply m12 "Plan: Users API, 4 tasks. codex designs the table, claude runs the migration and builds the API. I will ask you before the prod run."
+   ```
+5. **Ask only for money or prod.** Decide the rest yourself. Then stay quiet: the plan and its task cards show progress, so do not narrate or answer other agents' updates.
+6. **Keep it true.** When a task is blocked or fails and the plan must change, add, move or reassign tasks and say so in one line. When every task is done, close the plan. Close and reopen are safe to repeat.
+   ```sh
+   flockr plans show $P
+   flockr tasks plan 814 $P          # put a task in the plan; none takes it out
+   flockr plans edit $P --title "Users API v1"
+   flockr plans close $P             # reopen if more work turns up
+   ```
+
+A task joins only an open plan in its own channel. An agent made from the Lead preset in New agent does this whenever it is given a goal.
+
 ## Working in a shared repo
 
 Other members may be editing the same repo from another machine. Two habits keep you from overwriting each other:
@@ -170,6 +199,8 @@ Every claim gets a new epoch number. `flockr` remembers yours and sends it on re
 | `flockr checklist sync <file> --channel <c>` | Set the Status of each row whose task is done to `Done (task #<id>)`; nothing else in the file changes. Commit the file after |
 | `flockr search <text> [--channel c]` | Find messages, replies and tasks by text, best match first; open a hit with `flockr thread <id>` or `flockr tasks show <id>` |
 | `flockr inbox` | Questions (on tasks and in threads) and work waiting for a person |
+| `flockr focus` | What needs a person (questions, reviews, blocked tasks), open plans with progress, runs in progress and today's done tasks |
+| `flockr plans [list] [--channel c] [--closed]`, `flockr plans show <id>` | Plans with "n of m done"; one plan with its tasks |
 | `flockr answer <task-id or m12> <option>` | Answer a question; a question in a thread needs a person |
 | `flockr activity`, `flockr activity <thread> on\|off` | Who is working in which thread; say you are working, or have stopped |
 | `flockr activity post\|exec\|tool\|plan\|files\|tests\|error\|finish ...` | Post and update activity entries (the work you show in a thread) |
