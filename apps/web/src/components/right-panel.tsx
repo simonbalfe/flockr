@@ -3,9 +3,11 @@ import { ChannelMemoryPanel } from "@/components/memory/channel-memory-panel"
 import { AgentProfile } from "@/components/agents/agent-profile"
 import { TaskPanel } from "@/components/task-panel"
 import { ThreadPanel } from "@/components/thread-panel"
+import { PaneHandle } from "@/components/pane-handle"
 import { usePanel } from "@/lib/panel"
+import { resetPane, resizePane } from "@/lib/panes"
 
-export function RightPanel() {
+export function RightPanel({ width, onDragging }: { width: number; onDragging: (dragging: boolean) => void }) {
   const { search, close } = usePanel()
   const open = search.task !== undefined || search.thread !== undefined || search.agent !== undefined || search.memory !== undefined
 
@@ -23,8 +25,9 @@ export function RightPanel() {
   return (
     <aside
       aria-label="Details"
-      className="fixed inset-y-0 right-0 z-20 flex w-full max-w-[380px] min-h-0 flex-col border-l bg-background shadow-[-12px_0_40px_rgba(0,0,0,0.18)] max-nav:max-w-none panel:static panel:z-auto panel:w-[380px] panel:shadow-none"
+      className="fixed inset-y-0 right-0 z-20 flex w-full max-w-[var(--panel-w)] min-h-0 animate-in flex-col border-l bg-background shadow-[-12px_0_40px_rgba(0,0,0,0.18)] duration-200 slide-in-from-right max-nav:max-w-none motion-reduce:animate-none panel:relative panel:z-auto panel:w-[var(--panel-w)] panel:shadow-none"
     >
+      <PaneHandle edge="left" width={width} label="Resize the panel" onResize={(next) => resizePane("panel", next)} onReset={() => resetPane("panel")} onDragging={onDragging} />
       {search.task !== undefined ? (
         <TaskPanel key={`task-${search.task}`} id={search.task} />
       ) : search.thread !== undefined ? (

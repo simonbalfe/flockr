@@ -1,5 +1,5 @@
 import { Link, useRouterState } from "@tanstack/react-router"
-import { ArrowLeft, Bookmark, KeyRound, ListChecks, LogOut, MessagesSquare, Repeat, Search, SendHorizontal, Settings, ShieldCheck, Target } from "lucide-react"
+import { ArrowLeft, Bookmark, KeyRound, ListChecks, LogOut, MessagesSquare, Repeat, PanelLeftClose, Search, SendHorizontal, Settings, ShieldCheck, Target } from "lucide-react"
 import type { ReactNode } from "react"
 import { useSignOut, useWhoami } from "@/api/auth"
 import { useNeedsYou } from "@/api/focus"
@@ -74,6 +74,20 @@ function SidebarFooter() {
   )
 }
 
+function CollapseSidebar() {
+  const { toggleSidebar } = useShell()
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <Button variant="ghost" size="icon-sm" className="max-nav:hidden" aria-label="Hide sidebar (Cmd+B)" onClick={toggleSidebar}>
+          <PanelLeftClose />
+        </Button>
+      </TooltipTrigger>
+      <TooltipContent>Hide sidebar ⌘B</TooltipContent>
+    </Tooltip>
+  )
+}
+
 const settingsLinks = [
   { to: "/settings/routines", label: "Routines", icon: Repeat },
   { to: "/settings/approvals", label: "Approval rules", icon: ShieldCheck },
@@ -89,7 +103,8 @@ function SettingsSidebar() {
             <ArrowLeft />
           </Link>
         </Button>
-        <span className="text-[15px] font-semibold">Settings</span>
+        <span className="flex-1 text-[15px] font-semibold">Settings</span>
+        <CollapseSidebar />
       </div>
       <ScrollArea className="min-h-0 flex-1">
         <nav className="grid content-start px-2.5 pt-0.5 pb-4" aria-label="Settings">
@@ -126,14 +141,17 @@ function BoardSidebar() {
     <>
       <div className="flex h-[52px] flex-none items-center justify-between pr-2.5 pl-[18px]">
         <span className="text-[15px] font-semibold">flockr</span>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button variant="ghost" size="icon-sm" aria-label="Search (Cmd+K)" onClick={openPalette}>
-              <Search />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>Search ⌘K</TooltipContent>
-        </Tooltip>
+        <span className="flex items-center">
+          <CollapseSidebar />
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button variant="ghost" size="icon-sm" aria-label="Search (Cmd+K)" onClick={openPalette}>
+                <Search />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Search ⌘K</TooltipContent>
+          </Tooltip>
+        </span>
       </div>
       <ScrollArea className="min-h-0 flex-1">
         <nav className="grid content-start gap-4 px-2.5 pt-0.5 pb-4" aria-label="Workspace">

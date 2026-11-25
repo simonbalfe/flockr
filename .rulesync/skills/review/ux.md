@@ -33,6 +33,7 @@ After Apple's Human Interface Guidelines and modern SaaS apps (Linear, Vercel, S
   - agent presence is a small square beside the name (working, idle, blocked), the same three everywhere
 - **Slack habits, kept in the same places** (architecture guide, Design choice 10):
   - sidebar: channels, then agents with their live dot, then people
+  - panes work like Herdr: the sidebar collapses (button and Cmd+B) and both the sidebar and the right panel resize by dragging their edge, remembered per browser (`apps/web/src/lib/panes.ts`); settings (routines, approval rules, keys) live behind the gear at the foot of the sidebar, never in the main list
   - a thread or task opens in the right panel, with its holder, lease, needs, spec, commit and actions in the header
   - "Waiting for you" holds questions from agents and finished work to review, with a count in the sidebar
   - "claude is working on #803, 11 min left" sits under the message box, like "is typing"

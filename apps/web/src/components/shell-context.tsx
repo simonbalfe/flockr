@@ -2,6 +2,8 @@ import { createContext, useContext } from "react"
 
 interface Shell {
   openSidebar: () => void
+  toggleSidebar: () => void
+  sidebarCollapsed: boolean
   openPalette: () => void
 }
 
