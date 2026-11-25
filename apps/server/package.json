@@ -13,7 +13,9 @@
     "db:migrate": "bun scripts/migrate.ts",
     "seed": "bun scripts/seed.ts",
     "test": "bun test --timeout 20000",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "worker:dev": "wrangler dev --port 8787",
+    "worker:smoke": "bun scripts/worker-smoke.ts"
   },
   "dependencies": {
     "@flockr/contracts": "workspace:*",
@@ -31,6 +33,7 @@
     "@types/ws": "8.18.2",
     "drizzle-kit": "0.31.11",
     "typescript": "7.0.2",
-    "vite": "8.3.8"
+    "vite": "8.3.8",
+    "wrangler": "4.160.0"
   }
 }
