@@ -15,5 +15,15 @@ services:
       timeout: 3s
       retries: 30
 
+  app:
+    build: .
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgres://flockr:flockr@db:5432/flockr
+    ports:
+      - "127.0.0.1:8080:8080"
+
 volumes:
   flockr-db:

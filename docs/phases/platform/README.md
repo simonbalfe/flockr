@@ -20,7 +20,7 @@ Testing, ops and infrastructure work: hosting, deploys, adapters, backups, check
 | PL8 Model key proxy | The model key (OpenRouter for now) stays outside every sandbox: boxes call the model through an egress proxy that adds it (ADR 0007) | PL6 | Not started |
 | PL9 Platform import guard | Nothing outside `apps/server/src/platform/` and the entry files imports `cloudflare:`, reads a Cloudflare binding, uses a Bun API or Postgres `LISTEN/NOTIFY`: `apps/server/test/platform.test.ts`, a millisecond test inside `bun run test`; a lint rule later | PL1 | Done (Work: pl9-platform-guard) |
 | PL10 Deploy on push | Pushing `main` runs `bun run check` and deploys the Worker with migrations; a staging environment; rollback by redeploying the last good version | PL2, PL4 | Not started |
-| PL11 Self-host path | `docker compose up` still runs the whole board and runner with the Bun entry; both entries pass the server tests | PL2 | Not started |
+| PL11 Self-host path | `docker compose up -d` builds and runs the board (web app, API, MCP, live events) on `127.0.0.1:8080` with the Bun entry, migrating on start (`Dockerfile`, `compose.yaml`); the runner stays per machine because it needs that machine's harnesses and logins | PL2 | Done (Work: pl11-self-host) |
 
 ## Order
 
