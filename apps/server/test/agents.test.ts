@@ -1,9 +1,11 @@
 import { describe, expect, test } from "bun:test"
 import { Agent, AgentDetail, agentPermissions, DeletedAgent, ErrorBody, EventPage, FeedItem, HeartbeatResult, Machine, Member } from "@flockr/contracts"
+import { eq } from "drizzle-orm"
 import { z } from "zod"
 import { createActivityEntry, getActivityEntry } from "../src/board/activity-entries"
 import { listAgents } from "../src/board/agents"
 import { heartbeat, registerMachine, sweepMachines } from "../src/board/machines"
+import { members } from "../src/db/schema"
 import { freshBoard } from "./harness"
 
 const harness = { id: "local-agent", label: "Local Agent", capabilities: { resume: true, streaming: true } }
@@ -261,5 +263,18 @@ describe("runs left behind", () => {
     const run = await createActivityEntry(db, "scout", posted.id, { title: "Looking", parts: [] }, at(1))
     expect((await call("simon", "DELETE", "/api/agents/scout")).status).toBe(200)
     expect((await getActivityEntry(db, run.entry.id)).status).toBe("stopped")
+  })
+
+  test("a sweep ends a run its agent left behind after being deleted, while its machine stays online", async () => {
+    const { db, call } = await boardWithMachine()
+    await call("simon", "POST", "/api/agents", scout)
+    const posted = z.object({ message: z.object({ id: z.string() }).loose() }).parse((await call("simon", "POST", "/api/channels/backend/messages", { text: "@scout look" })).json).message
+    const t0 = new Date()
+    const at = (seconds: number) => new Date(t0.getTime() + seconds * 1000)
+    await registerMachine(db, "simon", machineBody, t0)
+    const late = await createActivityEntry(db, "scout", posted.id, { title: "Still going", parts: [] }, at(1))
+    await db.update(members).set({ removedAt: at(2) }).where(eq(members.name, "scout"))
+    expect(await sweepMachines(db, at(3))).toEqual([])
+    expect((await getActivityEntry(db, late.entry.id)).status).toBe("stopped")
   })
 })

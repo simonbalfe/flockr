@@ -1,7 +1,7 @@
 import { machineLimits, type HeartbeatBody, type HeartbeatResult, type Machine, type RegisterMachineBody } from "@flockr/contracts"
-import { and, asc, eq, lt } from "drizzle-orm"
+import { and, asc, eq, isNotNull, lt, or } from "drizzle-orm"
 import type { Database, Executor, Tx } from "../db/client"
-import { agents, machines, type MachineRow } from "../db/schema"
+import { agents, machines, members, type MachineRow } from "../db/schema"
 import { endRunsOf } from "./activity-entries"
 import { harnessesOf, isOnline, listAgents, notifyAgents, statusOf } from "./agents"
 import { notFound } from "./errors"
@@ -104,7 +104,8 @@ export async function sweepMachines(db: Database, now = new Date()): Promise<str
     .select({ name: agents.name })
     .from(agents)
     .innerJoin(machines, eq(agents.machine, machines.id))
-    .where(lt(machines.lastSeenAt, cutoff))
+    .innerJoin(members, eq(members.name, agents.name))
+    .where(or(lt(machines.lastSeenAt, cutoff), isNotNull(members.removedAt)))
   await endRunsOf(db, offline.map((row) => row.name), now)
   return swept
 }
