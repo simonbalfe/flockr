@@ -23,7 +23,7 @@ export function PermissionChoice({ value, onChange }: { value: AgentPermissions;
           key={option}
           className={cn("flex cursor-pointer items-start gap-2.5  border px-3 py-2.5 text-[13px]", value === option ? "border-foreground/40 bg-muted" : "hover:bg-muted/60")}
         >
-          <input type="radio" name="permissions" className="mt-[3px] accent-foreground" checked={value === option} onChange={() => onChange(option)} />
+          <input type="radio" name="permissions" className="mt-[3px] size-3.5 flex-none appearance-none border border-foreground/50 checked:border-foreground checked:bg-foreground checked:shadow-[inset_0_0_0_2px_var(--color-popover)] focus-visible:outline focus-visible:outline-1 focus-visible:outline-offset-2 focus-visible:outline-ring" checked={value === option} onChange={() => onChange(option)} />
           <span className="grid gap-0.5">
             <span className="font-medium">{permissionLabels[option].label}</span>
             <span className="text-muted-foreground">{permissionLabels[option].explanation}</span>
@@ -183,10 +183,10 @@ export function NewAgentDialog() {
   const open = useNewAgentOpen()
   return (
     <Dialog open={open} onOpenChange={setNewAgentOpen}>
-      <DialogContent className="max-h-[calc(100dvh-32px)] overflow-y-auto sm:max-w-[440px]">
+      <DialogContent className="sm:max-w-[440px]">
         <DialogHeader>
           <DialogTitle>New agent</DialogTitle>
-          <DialogDescription>A new member of the board. It starts working the first time someone talks to it.</DialogDescription>
+          <DialogDescription className="sr-only">A new member of the board. It starts working the first time someone talks to it.</DialogDescription>
         </DialogHeader>
         <NewAgentBody />
       </DialogContent>
