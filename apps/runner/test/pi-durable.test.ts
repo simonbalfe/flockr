@@ -10,6 +10,7 @@ import { insideFolder } from "../src/harness/pi/folder"
 import { offeredFileTools, runIdFor, toolNames } from "../src/harness/pi/tools"
 import { openAgentStorage } from "../src/harness/pi/sqlite"
 import { harnesses } from "../src/harness/registry"
+import type { SessionSaver } from "../src/harness/types"
 import { ruleFor } from "../src/permissions"
 import { failedText } from "../src/prompt"
 import { FakePiBoard, fauxSource, member, person, piHarness, spec, tempDir, testModel } from "./pi-fakes"
@@ -355,4 +356,46 @@ registerStorageConformance({ describe, expect, it }, "the runner's Bun SQLite st
   } finally {
     await storage.close(BACKGROUND_CONTEXT)
   }
+})
+
+describe("saved sessions (PL5)", () => {
+  function fakeSaver() {
+    const chunks: Uint8Array[] = []
+    const places: string[] = []
+    const saver: SessionSaver = {
+      restore: async (place) => {
+        places.push(`restore ${place.session}`)
+        return [...chunks]
+      },
+      save: async (place, chunk) => {
+        places.push(`save ${place.session}`)
+        chunks.push(chunk.data)
+        return true
+      },
+      cursor: () => null,
+      mark: () => undefined,
+      latest: async () => null,
+    }
+    return { saver, chunks, places }
+  }
+
+  test("a wiped agent rebuilds from its chunks in turn order and remembers the earlier turns", async () => {
+    const board = newBoard()
+    const saved = fakeSaver()
+    const first = fauxSource([say("Noted: the code word is heron."), say("Noted: the colour is teal.")])
+    const one = piHarness({ board, source: first.source, dir: tempDir() })
+    await one.harness.start(spec({ prompt: "dana: remember the code word heron", saver: saved.saver })).exit
+    board.say("m1", person, "and the colour teal")
+    await one.harness.start(spec({ prompt: "dana: and the colour teal", saver: saved.saver })).exit
+    await (await one.harness.home(member))?.close()
+    expect(saved.chunks.length).toBeGreaterThanOrEqual(2)
+
+    board.say("m1", person, "what were they?")
+    const second = fauxSource([(context) => say(transcript(context).includes("heron") && transcript(context).includes("teal") ? "heron and teal" : "I do not remember")])
+    const two = piHarness({ board, source: second.source, dir: tempDir() })
+    await two.harness.start(spec({ prompt: "dana replied in thread m1:\n\nwhat were they?", saver: saved.saver })).exit
+    expect(board.replies.at(-1)?.text).toBe("heron and teal")
+    expect(saved.places.filter((p) => p.startsWith("restore"))).toEqual(["restore agent", "restore agent"])
+    await (await two.harness.home(member))?.close()
+  })
 })

@@ -76,6 +76,7 @@ export const RunnerConfig = z.object({
   panes: PanesConfig.optional(),
   member: z.string().regex(/^[a-z][a-z0-9-]*$/).optional(),
   harness: z.string().min(1).optional(),
+  saveSessions: z.boolean().default(false),
 })
 
 export type RunnerConfig = z.infer<typeof RunnerConfig>

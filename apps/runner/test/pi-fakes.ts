@@ -158,6 +158,8 @@ export function spec(overrides: Partial<SessionSpec> = {}): SessionSpec {
     bridge: { command: "bun", args: [], env: {} },
     timeLimitMs: 60_000,
     rule: defaultRule,
+    claim: null,
+    saver: null,
     thread: "m1",
     personality: null,
     model: null,

@@ -555,3 +555,31 @@ export const hookDeliveries = pgTable(
   },
   (t) => [primaryKey({ columns: [t.host, t.delivery] })],
 )
+
+export interface StoredChunk {
+  turn: number
+  fence: string
+  bytes: number
+  sha256: string
+  savedAt: string
+}
+
+export const sessionPointers = pgTable(
+  "session_pointers",
+  {
+    agent: text("agent")
+      .notNull()
+      .references(() => members.name, { onDelete: "cascade" }),
+    session: text("session").notNull(),
+    thread: text("thread"),
+    epoch: integer("epoch").notNull().default(0),
+    fence: text("fence").notNull(),
+    taskId: integer("task_id"),
+    chunks: jsonb("chunks").$type<StoredChunk[]>().notNull().default(sql`'[]'::jsonb`),
+    createdAt: createdAt(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [primaryKey({ columns: [t.agent, t.session] }), index("session_pointers_thread").on(t.agent, t.thread, t.updatedAt)],
+)
+
+export type SessionPointerRow = typeof sessionPointers.$inferSelect

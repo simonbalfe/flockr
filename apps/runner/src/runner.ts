@@ -4,7 +4,7 @@ import type { EpochStore } from "@flockr/cli/epochs"
 import { activitySink, type ActivitySink } from "./activity"
 import type { BoardPort, Claim } from "./board"
 import { folderFor, isFolder, leaseRenewMs } from "./config"
-import type { Harness, PermissionBridge, Session, SessionExit } from "./harness/types"
+import type { Harness, PermissionBridge, Session, SessionExit, SessionSaver, SessionSpec } from "./harness/types"
 import { memoryBlock, noMemory } from "./memory"
 import { ruleFor } from "./permissions"
 import { conversationPrompt, failedText, followUpPrompt, missingFolderText, resumeWorkPrompt, stoppedText, timeLimitText, workPrompt } from "./prompt"
@@ -64,6 +64,8 @@ export interface RunnerDeps {
   problem?: (reason: string) => void
   showRun?: (run: { thread: string; folder: string }) => void
   workspace?: Workspace
+  saver?: SessionSaver | null
+  saveSessions?: boolean
 }
 
 type Purpose = "work" | "talk"
@@ -111,6 +113,28 @@ export function createRunner(deps: RunnerDeps) {
   const hasRoom = deps.hasRoom ?? (() => runs.size < deps.maxSessions)
   const keyOf = (thread: string) => sessionKey(member, thread)
 
+  const saver = harness.chunks && (harness.chunks.saving === "always" || deps.saveSessions === true) ? (deps.saver ?? null) : null
+
+  async function resumeFor(thread: string): Promise<string | null> {
+    const stored = storedSession(thread)
+    if (stored !== null || !saver || !harness.capabilities.resume) return stored
+    return saver.latest(thread).catch((error: unknown) => {
+      log(`${member}: could not look up a saved session for ${thread}: ${error instanceof Error ? error.message : String(error)}`)
+      return null
+    })
+  }
+
+  async function readied(spec: SessionSpec): Promise<SessionSpec> {
+    if (!saver || !harness.chunks) return spec
+    try {
+      await harness.chunks.ready(spec)
+      return spec
+    } catch (error) {
+      log(`${member}: could not restore the saved session for ${spec.thread}, starting fresh: ${error instanceof Error ? error.message : String(error)}`)
+      return { ...spec, resumeId: null }
+    }
+  }
+
   const storedSession = (thread: string): string | null => {
     if (!harness.capabilities.resume) return null
     const stored = deps.sessions.get()[keyOf(thread)]
@@ -149,19 +173,19 @@ export function createRunner(deps: RunnerDeps) {
     return { folder: prepared.folder, worktree: true }
   }
 
-  function launch(spec: Launch, folder: string): void {
-    const resumeId = storedSession(spec.thread)
+  async function launch(spec: Launch, folder: string): Promise<void> {
+    const wanted = await resumeFor(spec.thread)
     const settings = deps.settings()
     let entryFound: (entry: Promise<string | null>) => void = () => undefined
     const entry = new Promise<string | null>((resolve) => (entryFound = resolve))
     const activity = activitySink({ entry, send: board.updateEntry, after: timers.after, log })
-    const session = harness.start({
+    const ready = await readied({
       title: `flockr ${member} ${spec.thread}`,
-      prompt: spec.prompt(resumeId !== null),
+      prompt: spec.prompt(wanted !== null),
       instructions: deps.instructions(settings),
       folder,
       env: deps.sessionEnv,
-      resumeId,
+      resumeId: wanted,
       bridge: deps.bridge({ thread: spec.thread, channel: spec.channel }, settings),
       timeLimitMs: maxMinutes * 60_000,
       rule: ruleFor(settings.permissions),
@@ -169,7 +193,11 @@ export function createRunner(deps: RunnerDeps) {
       personality: settings.personality,
       model: settings.model,
       activity: activity.push,
+      claim: spec.claim,
+      saver,
     })
+    const resumeId = ready.resumeId
+    const session = harness.start(resumeId === wanted ? ready : { ...ready, prompt: spec.prompt(resumeId !== null) })
     deps.sessions.set({ ...deps.sessions.get(), [keyOf(spec.thread)]: { harness: harness.name, id: session.id } })
     let finished: () => void = () => undefined
     const run: Run = {
@@ -316,7 +344,7 @@ export function createRunner(deps: RunnerDeps) {
     const history = await board.thread(thread)
     const memory = await memoryText(task.channel)
     const place = await workFolder(folder, claimed)
-    launch(
+    await launch(
       {
         thread,
         channel: task.channel,
@@ -337,7 +365,7 @@ export function createRunner(deps: RunnerDeps) {
     const history = await board.thread(thread)
     const memory = await memoryText(task.channel)
     const place = await workFolder(folder, task)
-    launch(
+    await launch(
       {
         thread,
         channel: task.channel,
@@ -370,7 +398,7 @@ export function createRunner(deps: RunnerDeps) {
     if (claim) epochs.set(claim.taskId, claim.epoch)
     const memory = await memoryText(channel)
     const place = task && claim ? await workFolder(folder, task) : { folder }
-    launch(
+    await launch(
       { thread, channel, purpose: "talk", claim, prompt: (resuming) => (resuming && message !== null ? message : conversationPrompt(history, memory)) },
       place.folder,
     )

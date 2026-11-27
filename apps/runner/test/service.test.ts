@@ -252,7 +252,7 @@ describe("moving an old one-member config", () => {
     const moved = await migrateLegacy({ file, config, legacy: { member: "claude", harness: "fake" }, machine: here, available: [harness], port: machine.port, sessions, log: () => undefined })
     expect(moved).toBe(true)
     expect(machine.created).toEqual([`simon: claude fake ${dir} danas-laptop`])
-    expect(JSON.parse(readFileSync(file, "utf8"))).toEqual({ board: "http://localhost:5173", channels: { general: dir }, maxSessions: 3, maxMinutes: 20 })
+    expect(JSON.parse(readFileSync(file, "utf8"))).toEqual({ board: "http://localhost:5173", channels: { general: dir }, maxSessions: 3, maxMinutes: 20, saveSessions: false })
     expect(JSON.parse(readFileSync(backupFile(file), "utf8"))).toEqual(old)
     expect(sessions.value()).toEqual({ "claude:m10": { harness: "fake", id: "s1" } })
     const unavailable = await migrateLegacy({ file, config, legacy: { member: "claude", harness: "missing" }, machine: here, available: [harness], port: machine.port, sessions, log: () => undefined })

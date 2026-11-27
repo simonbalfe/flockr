@@ -7,6 +7,7 @@ import { authOff, type AuthSettings } from "./auth/settings"
 import { BoardError, notFound, unauthenticated } from "./board/errors"
 import { hooksPath, receiveHook, type HookSettings } from "./board/hook-route"
 import type { Database } from "./db/client"
+import type { ObjectStore } from "./storage/store"
 import { mcpHandler } from "./mcp/server"
 import { modelProxyPath, proxyModel, type ModelProxySettings } from "./model-proxy/proxy"
 import { activityRoutes } from "./routes/activity"
@@ -32,6 +33,7 @@ import { questionRoutes } from "./routes/questions"
 import { reviewRoutes } from "./routes/review"
 import { routineRoutes } from "./routes/routines"
 import { searchRoutes } from "./routes/search"
+import { sessionRoutes } from "./routes/sessions"
 import { router, type AppEnv } from "./routes/shared"
 import { taskRoutes } from "./routes/tasks"
 import { threadRoutes } from "./routes/threads"
@@ -46,6 +48,7 @@ export interface AppOptions {
   auth?: AuthSettings
   modelProxy?: ModelProxySettings | null
   hooks?: HookSettings | null
+  objects?: ObjectStore | null
 }
 
 export function createApp(db: Database, options: AppOptions = {}) {
@@ -104,6 +107,7 @@ export function createApp(db: Database, options: AppOptions = {}) {
     .route("/", navigationRoutes)
     .route("/", planRoutes)
     .route("/", focusRoutes)
+    .route("/", sessionRoutes(options.objects ?? null))
     .route("/", authRoutes)
 
   const document = () => api.getOpenAPI31Document({ openapi: "3.1.0", info })

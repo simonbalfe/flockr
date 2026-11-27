@@ -1,9 +1,11 @@
 import { randomUUID } from "node:crypto"
+import { existsSync } from "node:fs"
 import { z } from "zod"
 import { bridgeServer, bridgeTool } from "../mcp"
 import { claudeActivity } from "./claude-code-activity"
+import { claudeSessionFile, rebuildClaudeFile, takeClaudeChunk } from "./claude-code-chunks"
 import type { PermissionRule, ToolKind, ToolRequest } from "../permissions"
-import type { Harness, PermissionCodec, Session, SessionExit, SessionSpec, SessionStatus } from "./types"
+import type { Harness, PermissionCodec, Session, SessionChunks, SessionExit, SessionSaver, SessionSpec, SessionStatus } from "./types"
 
 const toolKind: Record<string, ToolKind> = {
   Read: "read",
@@ -88,8 +90,37 @@ const oneLine = (text: string) => {
   return line.length > 300 ? `${line.slice(0, 297)}...` : line
 }
 
+const placeOf = (spec: SessionSpec, id: string) => ({ session: id, thread: spec.thread, claim: spec.claim })
+
+const fileOf = (spec: SessionSpec, id: string) => claudeSessionFile({ env: spec.env, folder: spec.folder, id })
+
+function turnSaver(spec: SessionSpec, id: string, saver: SessionSaver | null): () => Promise<void> {
+  let saving: Promise<void> = Promise.resolve()
+  return () => {
+    if (!saver) return saving
+    saving = saving
+      .then(async () => {
+        const taken = takeClaudeChunk({ file: fileOf(spec, id), from: Number(saver.cursor(id) ?? "0") })
+        if (taken) await saver.save(placeOf(spec, id), { data: taken.data, cursor: String(taken.to) })
+      })
+      .catch(() => undefined)
+    return saving
+  }
+}
+
+const chunks: SessionChunks = {
+  saving: "when-allowed",
+  async ready(spec) {
+    const id = spec.resumeId
+    if (!spec.saver || id === null || existsSync(fileOf(spec, id))) return
+    const saved = await spec.saver.restore(placeOf(spec, id))
+    if (saved.length) spec.saver.mark(id, String(rebuildClaudeFile({ file: fileOf(spec, id), chunks: saved })))
+  },
+}
+
 function start(spec: SessionSpec): Session {
   const id = spec.resumeId ?? randomUUID()
+  const saveTurn = turnSaver(spec, id, spec.saver)
   const binary = Bun.which(binaryName, { PATH: spec.env.PATH ?? "" }) ?? binaryName
   const proc = Bun.spawn({
     cmd: [binary, ...claudeArgs(spec, id)],
@@ -132,6 +163,7 @@ function start(spec: SessionSpec): Session {
         const parsed = OutputLine.safeParse(value)
         if (!parsed.success || parsed.data.type !== "result") continue
         seen.last = parsed.data
+        void saveTurn()
         inFlight -= 1
         if (inFlight <= 0) close()
       }
@@ -140,6 +172,7 @@ function start(spec: SessionSpec): Session {
 
   const exit = (async (): Promise<SessionExit> => {
     const [code, errText] = await Promise.all([proc.exited, new Response(proc.stderr).text(), readOut().catch(() => undefined)])
+    await saveTurn()
     status = "exited"
     if (stopped) return { kind: "stopped" }
     const result = seen.last
@@ -179,5 +212,6 @@ export const claudeCode: Harness = {
   probe: (env) => (Bun.which(binaryName, { PATH: env.PATH }) ? { kind: "available" } : { kind: "missing", reason: `${binaryName} is not on the PATH` }),
   passEnv: ["HOME", "USER", "LOGNAME", "SHELL", "TMPDIR", "LANG", "LC_ALL", "TERM", "CLAUDE_CONFIG_DIR"],
   permissions: codec,
+  chunks,
   start,
 }

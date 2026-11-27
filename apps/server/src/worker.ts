@@ -33,6 +33,11 @@ async function nightlyBackup(env: WorkerEnv): Promise<void> {
   }
 }
 
+const bucketOf = (env: WorkerEnv) => {
+  const settings = s3SettingsFrom(env)
+  return settings ? s3Store(settings) : null
+}
+
 const boardRoom = (env: WorkerEnv) => env.BOARD_ROOM.get(env.BOARD_ROOM.idFromName(boardId))
 
 interface BoardWork<T> {
@@ -63,7 +68,7 @@ export default {
       return refused ?? boardRoom(env).fetch(request)
     }
     if (!url.pathname.startsWith("/api/") && url.pathname !== "/mcp") return new Response("Not found", { status: 404 })
-    return onBoard(env, ctx, { run: async (db) => createApp(db, { auth, modelProxy: modelProxySettingsFrom(env, auth.secret), hooks: hookSettingsFrom(env) }).fetch(request), delivered: (response) => response.ok })
+    return onBoard(env, ctx, { run: async (db) => createApp(db, { auth, modelProxy: modelProxySettingsFrom(env, auth.secret), hooks: hookSettingsFrom(env), objects: bucketOf(env) }).fetch(request), delivered: (response) => response.ok })
   },
   async scheduled(controller: ScheduledController, rawEnv: unknown, ctx: ExecutionContext): Promise<void> {
     const env = WorkerEnv.parse(rawEnv)

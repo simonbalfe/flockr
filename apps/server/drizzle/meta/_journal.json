@@ -127,6 +127,13 @@
       "when": 1795646875294,
       "tag": "0017_plans",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1795748886210,
+      "tag": "0018_session_pointers",
+      "breakpoints": true
     }
   ]
 }

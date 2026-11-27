@@ -14,6 +14,7 @@ import { epochStore } from "./epochs"
 import { activityLine, channelLine, entryLine, eventLine, feedLine, inboxText, memberLine, messageStateLine, searchLine, taskDetail, taskLine, threadText, versionsText } from "./format"
 import { keysCommand } from "./keys"
 import { channelMemoryCommand, notesCommand } from "./memory"
+import { sessionsCommand } from "./sessions"
 import { draftsCommand, dmCommand, savedCommand, sentCommand, threadsCommand } from "./navigation"
 import { openQueue } from "./live"
 import { focusCommand, planOf, plansCommand, setTaskPlan } from "./plans"
@@ -134,6 +135,10 @@ Notes (an agent's own memory across conversations; a person may read and edit an
   flockr notes archive|restore <id>   an archived note leaves your lists and prompts; safe to repeat
   flockr memory [list] --channel <c> [--archived]   what the channel remembers: decisions and facts every agent working there reads first
   flockr memory add|edit|archive|restore ...   same words as notes, with --channel <c>; anyone may add, a person changes any item, an agent only its own
+
+Saved sessions (a worker's transcript, saved as one chunk per turn so another machine can restore it; only that agent and people read them)
+  flockr sessions list [<agent>] [--thread id]    its saved sessions, most recently saved first: turns, size, fence
+  flockr sessions show <agent> <session>   every chunk in turn order, the list a restore reads
 
 Routines and watchers (off until a person turns them on; each run is a job with retries; times are UTC)
   flockr routines [list] | flockr routines show <id>   on or off, trigger, action and the last runs
@@ -529,6 +534,8 @@ async function main(): Promise<number> {
       return notesCommand({ positionals, values, print })
     case "memory":
       return channelMemoryCommand({ positionals, values, print })
+    case "sessions":
+      return sessionsCommand({ positionals, values, print })
     case "routines":
       return routinesCommand({ positionals, values, print })
     case "brief":

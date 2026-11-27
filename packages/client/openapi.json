@@ -5688,6 +5688,335 @@
           "at"
         ]
       },
+      "SessionSummary": {
+        "type": "object",
+        "properties": {
+          "agent": {
+            "type": "string",
+            "example": "scout"
+          },
+          "session": {
+            "type": "string",
+            "maxLength": 128,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$",
+            "example": "agent"
+          },
+          "thread": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The thread the session works in, when it belongs to one",
+            "example": "806"
+          },
+          "fence": {
+            "type": "string",
+            "description": "The one fence that may save the next chunk",
+            "example": "session-2"
+          },
+          "epoch": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "The session epoch; each open without a claim bumps it"
+          },
+          "taskId": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "description": "The task whose claim fences the session, when it works one"
+          },
+          "turns": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "bytes": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-11-27T08:00:00.000Z"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-11-27T08:00:00.000Z"
+          }
+        },
+        "required": [
+          "agent",
+          "session",
+          "thread",
+          "fence",
+          "epoch",
+          "taskId",
+          "turns",
+          "bytes",
+          "createdAt",
+          "updatedAt"
+        ]
+      },
+      "SavedSession": {
+        "type": "object",
+        "properties": {
+          "agent": {
+            "type": "string",
+            "example": "scout"
+          },
+          "session": {
+            "type": "string",
+            "maxLength": 128,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$",
+            "example": "agent"
+          },
+          "thread": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The thread the session works in, when it belongs to one",
+            "example": "806"
+          },
+          "fence": {
+            "type": "string",
+            "description": "The one fence that may save the next chunk",
+            "example": "session-2"
+          },
+          "epoch": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "The session epoch; each open without a claim bumps it"
+          },
+          "taskId": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "description": "The task whose claim fences the session, when it works one"
+          },
+          "turns": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "bytes": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "chunks": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SessionChunkInfo"
+            },
+            "description": "Every saved chunk in turn order; a restore reads exactly these"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-11-27T08:00:00.000Z"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-11-27T08:00:00.000Z"
+          }
+        },
+        "required": [
+          "agent",
+          "session",
+          "thread",
+          "fence",
+          "epoch",
+          "taskId",
+          "turns",
+          "bytes",
+          "chunks",
+          "createdAt",
+          "updatedAt"
+        ]
+      },
+      "SessionChunkInfo": {
+        "type": "object",
+        "properties": {
+          "turn": {
+            "type": "integer",
+            "minimum": 1,
+            "example": 4
+          },
+          "fence": {
+            "type": "string",
+            "description": "The fence it was saved under, as in its object key",
+            "example": "session-2"
+          },
+          "bytes": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "sha256": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "savedAt": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-11-27T08:00:00.000Z"
+          }
+        },
+        "required": [
+          "turn",
+          "fence",
+          "bytes",
+          "sha256",
+          "savedAt"
+        ]
+      },
+      "OpenSessionBody": {
+        "type": "object",
+        "properties": {
+          "claim": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "task": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "epoch": {
+                "type": "integer",
+                "minimum": 1
+              }
+            },
+            "default": null,
+            "required": [
+              "task",
+              "epoch"
+            ],
+            "description": "The claim the session works under. Without one, opening bumps the session epoch so any older worker's saves are refused"
+          },
+          "thread": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "minLength": 1,
+            "maxLength": 64,
+            "default": null,
+            "example": "806"
+          }
+        }
+      },
+      "SaveChunkResult": {
+        "type": "object",
+        "properties": {
+          "saved": {
+            "type": "boolean",
+            "description": "False when this exact chunk was already saved and nothing changed"
+          },
+          "session": {
+            "$ref": "#/components/schemas/SessionSummary"
+          }
+        },
+        "required": [
+          "saved",
+          "session"
+        ]
+      },
+      "SaveChunkBody": {
+        "type": "object",
+        "properties": {
+          "fence": {
+            "$ref": "#/components/schemas/SessionFence"
+          },
+          "turn": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "The session's next turn number; sending a saved turn again with the same content changes nothing"
+          },
+          "data": {
+            "type": "string",
+            "description": "The chunk, base64; opaque to the board, at most 8388608 bytes"
+          }
+        },
+        "required": [
+          "fence",
+          "turn",
+          "data"
+        ]
+      },
+      "SessionFence": {
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "claim"
+                ]
+              },
+              "task": {
+                "type": "integer",
+                "minimum": 1,
+                "example": 806
+              },
+              "epoch": {
+                "type": "integer",
+                "minimum": 1,
+                "example": 3
+              }
+            },
+            "required": [
+              "kind",
+              "task",
+              "epoch"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "session"
+                ]
+              },
+              "epoch": {
+                "type": "integer",
+                "minimum": 1,
+                "example": 2
+              }
+            },
+            "required": [
+              "kind",
+              "epoch"
+            ]
+          }
+        ],
+        "description": "claim: the task's claim epoch, for a session working a claimed task. session: the session epoch on the pointer, bumped by each open"
+      },
+      "SessionChunk": {
+        "type": "object",
+        "properties": {
+          "turn": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "fence": {
+            "type": "string"
+          },
+          "data": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "turn",
+          "fence",
+          "data"
+        ]
+      },
       "SignInResult": {
         "type": "object",
         "properties": {
@@ -14796,6 +15125,513 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Focus"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The input is not valid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sign-in is on and the request has no session or key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The acting member is not on this board, or may not do this",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The task or message is in another state, or the claim epoch is stale",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/agents/{name}/sessions": {
+      "get": {
+        "operationId": "listSavedSessions",
+        "tags": [
+          "saved sessions"
+        ],
+        "summary": "A worker's saved sessions, most recently saved first: each one's fence, turns and size. Only that agent and people may read them; thread= keeps the sessions of one thread",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "example": "scout"
+            },
+            "required": true,
+            "name": "name",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Only the sessions working in this thread"
+            },
+            "required": false,
+            "description": "Only the sessions working in this thread",
+            "name": "thread",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "description": "Newest first; at most 200"
+            },
+            "required": false,
+            "description": "Newest first; at most 200",
+            "name": "limit",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/SessionSummary"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The input is not valid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sign-in is on and the request has no session or key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The acting member is not on this board, or may not do this",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The task or message is in another state, or the claim epoch is stale",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/agents/{name}/sessions/{session}": {
+      "get": {
+        "operationId": "getSavedSession",
+        "tags": [
+          "saved sessions"
+        ],
+        "summary": "One saved session with every chunk in turn order: the list a restore reads. A chunk uploaded but never added here is ignored",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "example": "scout"
+            },
+            "required": true,
+            "name": "name",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$",
+              "example": "agent"
+            },
+            "required": true,
+            "name": "session",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SavedSession"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The input is not valid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sign-in is on and the request has no session or key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The acting member is not on this board, or may not do this",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The task or message is in another state, or the claim epoch is stale",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/agents/{name}/sessions/{session}/open": {
+      "post": {
+        "operationId": "openSavedSession",
+        "tags": [
+          "saved sessions"
+        ],
+        "summary": "Start or restore a session before saving to it; only the agent itself. With a claim it is fenced by that claim's epoch; without one the session epoch goes up by one, so an older worker's saves are refused. Returns the chunks to restore",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "example": "scout"
+            },
+            "required": true,
+            "name": "name",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$",
+              "example": "agent"
+            },
+            "required": true,
+            "name": "session",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OpenSessionBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SavedSession"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The input is not valid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sign-in is on and the request has no session or key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The acting member is not on this board, or may not do this",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The task or message is in another state, or the claim epoch is stale",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/agents/{name}/sessions/{session}/chunks": {
+      "post": {
+        "operationId": "saveSessionChunk",
+        "tags": [
+          "saved sessions"
+        ],
+        "summary": "Save one turn's new steps as a chunk; only the agent itself, under the session's current fence (a stale fence is refused). Sending the same chunk again changes nothing; other content for a saved turn is refused",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "example": "scout"
+            },
+            "required": true,
+            "name": "name",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$",
+              "example": "agent"
+            },
+            "required": true,
+            "name": "session",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaveChunkBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SaveChunkResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The input is not valid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sign-in is on and the request has no session or key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The acting member is not on this board, or may not do this",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The task or message is in another state, or the claim epoch is stale",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/agents/{name}/sessions/{session}/chunks/{turn}": {
+      "get": {
+        "operationId": "readSessionChunk",
+        "tags": [
+          "saved sessions"
+        ],
+        "summary": "One saved chunk, base64, as the pointer lists it; only that agent and people may read it",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "example": "scout"
+            },
+            "required": true,
+            "name": "name",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$",
+              "example": "agent"
+            },
+            "required": true,
+            "name": "session",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "example": 1
+            },
+            "required": true,
+            "name": "turn",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionChunk"
                 }
               }
             }

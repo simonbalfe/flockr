@@ -24,7 +24,8 @@ It waits for the board if the board is not up yet. It logs one line per agent it
   "maxSessions": 2,
   "maxMinutes": 30,
   "channels": { "general": "/Users/simon/workspace/dev/playground/flockr" },
-  "panes": { "launcher": "herdr", "space": "flockr" }
+  "panes": { "launcher": "herdr", "space": "flockr" },
+  "saveSessions": false
 }
 ```
 
@@ -37,12 +38,13 @@ It waits for the board if the board is not up yet. It logs one line per agent it
 | `maxMinutes` | Time limit per run; then the run stops, says why and gives its task back |
 | `channels` | Optional folder overrides per channel: a session in that channel works there instead of in its agent's folder |
 | `panes` | Optional, off by default. Shows each agent's runs in a visible terminal pane on this machine: `launcher` names a launcher adapter (`herdr`), `space` where its panes go (default `flockr`). See Panes below |
+| `saveSessions` | Off by default. Lets harnesses that save only when allowed (Claude Code) send each turn's transcript lines to the board, so another machine can restore the session. It is your code and conversation leaving this machine. The built-in agent always saves. See Saved sessions below |
 
 **Moving an old config:** a file with `member` and `harness` (the one-member shape from ADR 0013) is moved over on the first start: that member becomes an agent served by this machine (folder from `channels.general`, or the first channel), the two keys are removed, and the original is kept as `runner.json.before-agents`. If the harness is not available here, the file is left as it is.
 
 **A second board:** `FLOCKR_HOME=~/.flockr-live bun run runner` keeps that runner's config and state in another folder, so one machine can serve the local board and a deployed one.
 
-State it keeps: `~/.flockr/runner-state.json` (the last event seen, so a restart catches up), `~/.flockr/runner-sessions.json` (one harness session per agent and thread, keyed `member:thread`), and the shared claim epochs in `~/.flockr/claims.json` (`FC_STATE`).
+State it keeps: `~/.flockr/runner-state.json` (the last event seen, so a restart catches up), `~/.flockr/runner-sessions.json` (one harness session per agent and thread, keyed `member:thread`), and the shared claim epochs in `~/.flockr/claims.json` (`FC_STATE`), and per agent `~/.flockr/agents/<agent>/` (the built-in agent's `agent.sqlite` and its `agent.sqlite.chunks.json` row ledger, and `sessions/<session>/` with each saved session's fence, next turn and the outbox of chunks not yet accepted).
 
 ## Machines and status
 
@@ -72,6 +74,20 @@ The board derives each agent's status from this: `offline` (stopped, machine off
 **Memory (Phase 10, ADR 0026):** when a conversation or a task run starts, the runner reads the channel's memory and the agent's notes through the API and puts them at the top of the first prompt, channel memory first. Each block holds whole items, dead ends and decisions first, then the newest, up to 3000 characters, then "N more" with the command to read the rest. A resumed session is not given them again, and a board that cannot answer does not stop the run (the log says so). The instructions tell the agent to save decisions, preferences, facts and failed approaches with `flockr notes add` and `flockr memory add --channel`.
 
 It will not: create a task by itself, claim a task that is not assigned to its agent, answer replies in threads the agent never joined, act on anything from before its first start, serve an agent assigned to another machine, or pass any API key or secret to the session.
+
+## Saved sessions
+
+At each turn end the harness adapter takes the new steps as one chunk and the runner sends it to the board (`saveSessionChunk`, ADR 0032, `docs/phases/platform/SPEC_PLATFORM_PL5_SESSION_CHUNKS.md`). Nothing goes to the board per step.
+
+| Adapter | When | Session | Fence | Chunk |
+|---|---|---|---|---|
+| `pi-durable` | Always | One per agent, `agent` (one SQLite file holds every thread) | Session epoch | Rows changed or deleted since the last chunk (`pi-rows/1`) |
+| `claude-code` | Only with `saveSessions: true` | Its session id, with the thread | The task's claim epoch when it works a claimed task, else the session epoch | New whole lines of `~/.claude/projects/<folder>/<id>.jsonl` and their offset (`claude-jsonl/1`) |
+
+- **Outbox:** a chunk is written to the session's outbox before it is sent, and sent in turn order; a board that is down keeps it for the next turn.
+- **Stale:** a save refused for a stale fence (another worker opened the session, or the claim moved) drops the outbox and stops saving that session; the log says so.
+- **Restore:** a built-in agent with no `agent.sqlite` opens its session (which fences out any older worker), downloads the chunks in order and rebuilds the file before it starts. For Claude Code, a thread with no stored session resumes the newest one the board saved for it, after writing its session file back.
+- `flockr sessions list <agent>` and `flockr sessions show <agent> <session>` show what is saved.
 
 ## Panes
 
@@ -129,7 +145,8 @@ A hand-off (`flockr tasks handoff`) is seen as `task.handed_off`: the runner of 
 | `src/workspace/` | The workspace interface (`prepare` gives a task its own folder), the path rules (`paths.ts`), the `git` adapter and the real command runner |
 | `src/routing.ts`, `src/prompt.ts`, `src/permissions.ts` | Pure rules: who is addressed, the prompts, what is free, asked or refused |
 | `src/activity.ts` | Batches the steps a session reports (`SessionSpec.activity`) into activity entry updates |
-| `src/harness/` | The harness interface (label, capabilities, probe, start), the registry and one adapter per harness; `claude-code-activity.ts` maps Claude Code's `stream-json` lines to steps (`docs/guides/GUIDE_AGENT_ACTIVITY.md`) |
+| `src/sessions.ts` | The session saver: outbox, fence, restore, through `sessionsClient` in `src/board.ts` |
+| `src/harness/` | The harness interface (label, capabilities, probe, start), the registry and one adapter per harness; `pi/chunks.ts` and `claude-code-chunks.ts` take and rebuild each adapter's session chunks; `claude-code-activity.ts` maps Claude Code's `stream-json` lines to steps (`docs/guides/GUIDE_AGENT_ACTIVITY.md`) |
 | `src/bridge.ts`, `src/gate.ts`, `src/mcp.ts` | The permission bridge |
 | `test/` | `bun test`: config, prompts, permissions, store, routing, claims, steps reaching the entry, the Claude Code stream mapping, worktree paths and the git adapter against a fake `git` (`workspace.test.ts`), the machine service (including pause and resume) and the migration, through a fake harness and a fake board; the Herdr launcher against a fake `hc` |
 

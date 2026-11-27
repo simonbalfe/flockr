@@ -25,6 +25,8 @@ export function s3SettingsFrom(env: Env): S3Settings | null {
   })
 }
 
+const preconditionFailed = 412
+
 const ListPage = z.object({ keys: z.array(z.string()), next: z.string().nullable() })
 
 function parseList(xml: string): z.infer<typeof ListPage> {
@@ -54,6 +56,10 @@ export function s3Store(settings: S3Settings): ObjectStore {
   return {
     async put(key, body, contentType) {
       await send(objectUrl(key), { method: "PUT", body, headers: { "content-type": contentType } })
+    },
+    async create(key, body, contentType) {
+      const response = await send(objectUrl(key), { method: "PUT", body, headers: { "content-type": contentType, "if-none-match": "*" } }, [preconditionFailed])
+      return response.status === preconditionFailed ? "exists" : "created"
     },
     async get(key) {
       const response = await send(objectUrl(key), { method: "GET" }, [404])

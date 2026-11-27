@@ -30,6 +30,7 @@ export function fakeHarness(capabilities = { resume: true, streaming: true }, na
     probe: () => ({ kind: "available" }),
     passEnv: [],
     permissions: { read: () => null, allow: () => ({ ok: true }), deny: (message) => ({ ok: false, message }) },
+    chunks: null,
     start(spec) {
       next += 1
       let end: (exit: SessionExit) => void = () => undefined

@@ -3,7 +3,8 @@ import { livePath } from "@flockr/contracts"
 import { createApp } from "./app"
 import { refuseLive } from "./auth/identity"
 import { localAuthSettings } from "./auth/local"
-import { databaseUrl, host, port } from "./config"
+import { databaseUrl, host, objectsDir, port } from "./config"
+import { localObjectStore } from "./storage/local"
 import { connect } from "./db/client"
 import { parseSince, type LiveSocket } from "./live/hub"
 import { startLive } from "./live/runtime"
@@ -20,7 +21,7 @@ if (!(await index.exists())) {
 
 const connection = connect(databaseUrl)
 const auth = localAuthSettings()
-const app = createApp(connection.db, { auth, modelProxy: modelProxySettingsFrom(process.env, auth.secret), hooks: hookSettingsFrom(process.env) })
+const app = createApp(connection.db, { auth, modelProxy: modelProxySettingsFrom(process.env, auth.secret), hooks: hookSettingsFrom(process.env), objects: localObjectStore(process.env, objectsDir()) })
 const live = await startLive(databaseUrl)
 
 async function staticFile(pathname: string): Promise<Response> {

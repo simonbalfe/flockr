@@ -1,6 +1,6 @@
 # 0018: Durable Objects are disposable: no data lives only in one, and no board rules run in one
 
-Status: accepted, 25 Nov 2026. Decided by Simon in chat. Builds on [0017](0017-flockr-runs-on-cloudflare-through-platform-adapters.md). Supersedes in part [0008](0008-pi-durable-is-the-built-in-agent-harness.md) (where a hosted agent's loop state lives).
+Status: accepted, 25 Nov 2026; its `pi_` row copy to Postgres superseded by [0032](0032-worker-sessions-are-saved-as-chunks-in-the-bucket-at-turn-end.md). Decided by Simon in chat. Builds on [0017](0017-flockr-runs-on-cloudflare-through-platform-adapters.md). Supersedes in part [0008](0008-pi-durable-is-the-built-in-agent-harness.md) (where a hosted agent's loop state lives).
 
 ## Problem
 

@@ -2,9 +2,10 @@ import { chmodSync, mkdirSync, readFileSync, writeFileSync } from "node:fs"
 import path from "node:path"
 import { connectLive, memberClient } from "@flockr/client"
 import { epochStore } from "@flockr/cli/epochs"
-import { boardClient, machineClient } from "./board"
+import { boardClient, machineClient, sessionsClient } from "./board"
 import {
   bridgeEntry,
+  agentsHome,
   bunBinary,
   claimsFile,
   cliEntry,
@@ -34,6 +35,7 @@ import { createRunner } from "./runner"
 import { runIn } from "./workspace/command"
 import { gitWorkspace } from "./workspace/git"
 import { createService, type Spawn } from "./service"
+import { sessionSaver } from "./sessions"
 import { emptyState, jsonStore, RunnerState, SessionMap } from "./store"
 
 function writeShims(): void {
@@ -109,6 +111,8 @@ function spawn(spec: Spawn) {
     problem: spec.problem,
     showRun: panes?.forAgent(spec.name),
     workspace: gitWorkspace({ root: worktreesHome, run: runIn }),
+    saver: sessionSaver({ dir: path.join(agentsHome, spec.name, "sessions"), board: sessionsClient({ member: spec.name, client: clientFor(spec.name) }), log }),
+    saveSessions: config.saveSessions,
   })
 }
 

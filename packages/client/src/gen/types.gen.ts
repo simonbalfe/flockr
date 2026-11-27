@@ -1891,6 +1891,120 @@ export type RunStep = {
     at: string;
 };
 
+export type SessionSummary = {
+    agent: string;
+    session: string;
+    /**
+     * The thread the session works in, when it belongs to one
+     */
+    thread: string | null;
+    /**
+     * The one fence that may save the next chunk
+     */
+    fence: string;
+    /**
+     * The session epoch; each open without a claim bumps it
+     */
+    epoch: number;
+    /**
+     * The task whose claim fences the session, when it works one
+     */
+    taskId: number | null;
+    turns: number;
+    bytes: number;
+    createdAt: string;
+    updatedAt: string;
+};
+
+export type SavedSession = {
+    agent: string;
+    session: string;
+    /**
+     * The thread the session works in, when it belongs to one
+     */
+    thread: string | null;
+    /**
+     * The one fence that may save the next chunk
+     */
+    fence: string;
+    /**
+     * The session epoch; each open without a claim bumps it
+     */
+    epoch: number;
+    /**
+     * The task whose claim fences the session, when it works one
+     */
+    taskId: number | null;
+    turns: number;
+    bytes: number;
+    /**
+     * Every saved chunk in turn order; a restore reads exactly these
+     */
+    chunks: Array<SessionChunkInfo>;
+    createdAt: string;
+    updatedAt: string;
+};
+
+export type SessionChunkInfo = {
+    turn: number;
+    /**
+     * The fence it was saved under, as in its object key
+     */
+    fence: string;
+    bytes: number;
+    sha256: string;
+    savedAt: string;
+};
+
+export type OpenSessionBody = {
+    /**
+     * The claim the session works under. Without one, opening bumps the session epoch so any older worker's saves are refused
+     */
+    claim?: {
+        task: number;
+        epoch: number;
+    } | null;
+    thread?: string | null;
+};
+
+export type SaveChunkResult = {
+    /**
+     * False when this exact chunk was already saved and nothing changed
+     */
+    saved: boolean;
+    session: SessionSummary;
+};
+
+export type SaveChunkBody = {
+    fence: SessionFence;
+    /**
+     * The session's next turn number; sending a saved turn again with the same content changes nothing
+     */
+    turn: number;
+    /**
+     * The chunk, base64; opaque to the board, at most 8388608 bytes
+     */
+    data: string;
+};
+
+/**
+ * claim: the task's claim epoch, for a session working a claimed task. session: the session epoch on the pointer, bumped by each open
+ */
+export type SessionFence = {
+    kind: 'claim';
+    task: number;
+    epoch: number;
+} | {
+    kind: 'session';
+    epoch: number;
+};
+
+export type SessionChunk = {
+    turn: number;
+    fence: string;
+    data: string;
+};
+
 export type SignInResult = {
     status: boolean;
     message: string;
@@ -6513,6 +6627,235 @@ export type GetFocusResponses = {
 };
 
 export type GetFocusResponse = GetFocusResponses[keyof GetFocusResponses];
+
+export type ListSavedSessionsData = {
+    body?: never;
+    path: {
+        name: string;
+    };
+    query?: {
+        /**
+         * Only the sessions working in this thread
+         */
+        thread?: string;
+        /**
+         * Newest first; at most 200
+         */
+        limit?: number;
+    };
+    url: '/api/agents/{name}/sessions';
+};
+
+export type ListSavedSessionsErrors = {
+    /**
+     * The input is not valid
+     */
+    400: Error;
+    /**
+     * Sign-in is on and the request has no session or key
+     */
+    401: Error;
+    /**
+     * The acting member is not on this board, or may not do this
+     */
+    403: Error;
+    /**
+     * Not found
+     */
+    404: Error;
+    /**
+     * The task or message is in another state, or the claim epoch is stale
+     */
+    409: Error;
+};
+
+export type ListSavedSessionsError = ListSavedSessionsErrors[keyof ListSavedSessionsErrors];
+
+export type ListSavedSessionsResponses = {
+    /**
+     * OK
+     */
+    200: Array<SessionSummary>;
+};
+
+export type ListSavedSessionsResponse = ListSavedSessionsResponses[keyof ListSavedSessionsResponses];
+
+export type GetSavedSessionData = {
+    body?: never;
+    path: {
+        name: string;
+        session: string;
+    };
+    query?: never;
+    url: '/api/agents/{name}/sessions/{session}';
+};
+
+export type GetSavedSessionErrors = {
+    /**
+     * The input is not valid
+     */
+    400: Error;
+    /**
+     * Sign-in is on and the request has no session or key
+     */
+    401: Error;
+    /**
+     * The acting member is not on this board, or may not do this
+     */
+    403: Error;
+    /**
+     * Not found
+     */
+    404: Error;
+    /**
+     * The task or message is in another state, or the claim epoch is stale
+     */
+    409: Error;
+};
+
+export type GetSavedSessionError = GetSavedSessionErrors[keyof GetSavedSessionErrors];
+
+export type GetSavedSessionResponses = {
+    /**
+     * OK
+     */
+    200: SavedSession;
+};
+
+export type GetSavedSessionResponse = GetSavedSessionResponses[keyof GetSavedSessionResponses];
+
+export type OpenSavedSessionData = {
+    body: OpenSessionBody;
+    path: {
+        name: string;
+        session: string;
+    };
+    query?: never;
+    url: '/api/agents/{name}/sessions/{session}/open';
+};
+
+export type OpenSavedSessionErrors = {
+    /**
+     * The input is not valid
+     */
+    400: Error;
+    /**
+     * Sign-in is on and the request has no session or key
+     */
+    401: Error;
+    /**
+     * The acting member is not on this board, or may not do this
+     */
+    403: Error;
+    /**
+     * Not found
+     */
+    404: Error;
+    /**
+     * The task or message is in another state, or the claim epoch is stale
+     */
+    409: Error;
+};
+
+export type OpenSavedSessionError = OpenSavedSessionErrors[keyof OpenSavedSessionErrors];
+
+export type OpenSavedSessionResponses = {
+    /**
+     * OK
+     */
+    200: SavedSession;
+};
+
+export type OpenSavedSessionResponse = OpenSavedSessionResponses[keyof OpenSavedSessionResponses];
+
+export type SaveSessionChunkData = {
+    body: SaveChunkBody;
+    path: {
+        name: string;
+        session: string;
+    };
+    query?: never;
+    url: '/api/agents/{name}/sessions/{session}/chunks';
+};
+
+export type SaveSessionChunkErrors = {
+    /**
+     * The input is not valid
+     */
+    400: Error;
+    /**
+     * Sign-in is on and the request has no session or key
+     */
+    401: Error;
+    /**
+     * The acting member is not on this board, or may not do this
+     */
+    403: Error;
+    /**
+     * Not found
+     */
+    404: Error;
+    /**
+     * The task or message is in another state, or the claim epoch is stale
+     */
+    409: Error;
+};
+
+export type SaveSessionChunkError = SaveSessionChunkErrors[keyof SaveSessionChunkErrors];
+
+export type SaveSessionChunkResponses = {
+    /**
+     * OK
+     */
+    200: SaveChunkResult;
+};
+
+export type SaveSessionChunkResponse = SaveSessionChunkResponses[keyof SaveSessionChunkResponses];
+
+export type ReadSessionChunkData = {
+    body?: never;
+    path: {
+        name: string;
+        session: string;
+        turn: number;
+    };
+    query?: never;
+    url: '/api/agents/{name}/sessions/{session}/chunks/{turn}';
+};
+
+export type ReadSessionChunkErrors = {
+    /**
+     * The input is not valid
+     */
+    400: Error;
+    /**
+     * Sign-in is on and the request has no session or key
+     */
+    401: Error;
+    /**
+     * The acting member is not on this board, or may not do this
+     */
+    403: Error;
+    /**
+     * Not found
+     */
+    404: Error;
+    /**
+     * The task or message is in another state, or the claim epoch is stale
+     */
+    409: Error;
+};
+
+export type ReadSessionChunkError = ReadSessionChunkErrors[keyof ReadSessionChunkErrors];
+
+export type ReadSessionChunkResponses = {
+    /**
+     * OK
+     */
+    200: SessionChunk;
+};
+
+export type ReadSessionChunkResponse = ReadSessionChunkResponses[keyof ReadSessionChunkResponses];
 
 export type RequestSignInLinkData = {
     body: SignInBody;

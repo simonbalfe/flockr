@@ -1,7 +1,7 @@
 import * as sdk from "@flockr/client"
 import { callTimeoutMs } from "./config"
 import type { MemoryContext } from "./memory"
-import type { ActionKind, ActivityUpdate, Agent, AgentDetail, ApprovalVerdict, Client, CreateAgentBody, HeartbeatBody, RegisterMachineBody, RunEndStatus, Task, TaskState, Thread, ThreadQuestion } from "@flockr/client"
+import type { ActionKind, ActivityUpdate, Agent, AgentDetail, ApprovalVerdict, Client, CreateAgentBody, HeartbeatBody, OpenSessionBody, RegisterMachineBody, RunEndStatus, SavedSession, SaveChunkBody, Task, TaskState, Thread, ThreadQuestion } from "@flockr/client"
 
 export type AskResult = { kind: "asked"; question: ThreadQuestion } | { kind: "refused"; reason: string }
 
@@ -34,12 +34,17 @@ export class BoardFailure extends Error {
   constructor(
     readonly status: number,
     message: string,
+    readonly kind: string | null = null,
   ) {
     super(message)
   }
 }
 
 type Result<T> = ({ data: T; error: undefined } | { data: undefined; error: unknown }) & { response?: Response }
+
+function kindOf(error: unknown): string | null {
+  return typeof error === "object" && error !== null && "kind" in error && typeof error.kind === "string" ? error.kind : null
+}
 
 function messageOf(error: unknown, status: number): string {
   if (typeof error === "object" && error !== null && "error" in error && typeof error.error === "string") return error.error
@@ -50,7 +55,7 @@ export async function call<T>(promise: Promise<Result<T>>): Promise<NonNullable<
   const result = await promise
   const data = result.data
   const status = result.response?.status ?? 0
-  if (result.error !== undefined || data === undefined || data === null) throw new BoardFailure(status, messageOf(result.error, status))
+  if (result.error !== undefined || data === undefined || data === null) throw new BoardFailure(status, messageOf(result.error, status), kindOf(result.error))
   return data
 }
 
@@ -152,5 +157,38 @@ export function machineClient(options: { client: Client; forMember: (member: str
       }
     },
     createAgent: (asMember, body) => call(sdk.createAgent({ client: options.forMember(asMember), body, signal: AbortSignal.timeout(callTimeoutMs) })),
+  }
+}
+
+export type ChunkSaved = { kind: "saved" } | { kind: "stale"; reason: string } | { kind: "conflict"; reason: string }
+
+export interface SessionsPort {
+  open: (session: string, body: OpenSessionBody) => Promise<SavedSession>
+  save: (session: string, body: SaveChunkBody) => Promise<ChunkSaved>
+  chunk: (session: string, turn: number) => Promise<Uint8Array>
+  latest: (thread: string) => Promise<string | null>
+}
+
+const refusals = { stale_claim: "stale", already_exists: "conflict", wrong_state: "conflict" } as const satisfies Record<string, ChunkSaved["kind"]>
+
+const refusalOf = (kind: string | null): "stale" | "conflict" | null => Object.entries(refusals).find(([known]) => known === kind)?.[1] ?? null
+
+export function sessionsClient(options: { member: string; client: Client }): SessionsPort {
+  const on = () => ({ client: options.client, signal: AbortSignal.timeout(callTimeoutMs) })
+  const at = (session: string) => ({ name: options.member, session })
+  return {
+    open: (session, body) => call(sdk.openSavedSession({ ...on(), path: at(session), body })),
+    async save(session, body) {
+      try {
+        await call(sdk.saveSessionChunk({ ...on(), path: at(session), body }))
+        return { kind: "saved" }
+      } catch (error) {
+        const refusal = error instanceof BoardFailure && error.status === conflict ? refusalOf(error.kind) : null
+        if (refusal) return { kind: refusal, reason: error instanceof Error ? error.message : String(error) }
+        throw error
+      }
+    },
+    chunk: async (session, turn) => Uint8Array.from(Buffer.from((await call(sdk.readSessionChunk({ ...on(), path: { ...at(session), turn } }))).data, "base64")),
+    latest: async (thread) => (await call(sdk.listSavedSessions({ ...on(), path: { name: options.member }, query: { thread, limit: 1 } })))[0]?.session ?? null,
   }
 }

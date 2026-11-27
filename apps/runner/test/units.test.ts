@@ -32,7 +32,7 @@ describe("config", () => {
 
   test("a relative folder is refused; an empty file is all defaults", () => {
     expect(() => parseConfig({ ...valid, channels: { general: "relative/path" } }, () => true)).toThrow("absolute path")
-    expect(parseConfig({}, () => true)).toEqual({ board: "http://localhost:5173", channels: {}, maxSessions: 2, maxMinutes: 30 })
+    expect(parseConfig({}, () => true)).toEqual({ board: "http://localhost:5173", channels: {}, maxSessions: 2, maxMinutes: 30, saveSessions: false })
   })
 
   test("a channel with no folder has none", () => {
@@ -142,7 +142,7 @@ describe("the claude-code adapter", () => {
   })
 
   test("its flags ask about commands through the bridge and never skip permissions", () => {
-    const spec = { title: "flockr m10", prompt: "hi", instructions: "be brief", folder: "/tmp", env: {}, resumeId: null, bridge: { command: "bun", args: ["bridge.ts"], env: {} }, timeLimitMs: 60_000, rule: defaultRule, thread: "m10", personality: null, model: null, activity: () => undefined }
+    const spec = { title: "flockr m10", prompt: "hi", instructions: "be brief", folder: "/tmp", env: {}, resumeId: null, bridge: { command: "bun", args: ["bridge.ts"], env: {} }, timeLimitMs: 60_000, rule: defaultRule, thread: "m10", personality: null, model: null, activity: () => undefined, claim: null, saver: null }
     const flags = claudeArgs(spec, "abc")
     expect(flags).toContain("--permission-prompt-tool")
     expect(flags[flags.indexOf("--permission-prompt-tool") + 1]).toBe("mcp__flockr__approve")
