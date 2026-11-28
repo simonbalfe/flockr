@@ -30,7 +30,8 @@
 | [0026](0026-agent-notes-and-channel-memory-are-postgres-items-the-runner-injects.md) | Agent notes and channel memory are Postgres items the runner puts in the prompt | Accepted |
 | [0027](0027-working-areas-warn-on-overlap-and-live-with-the-claim.md) | Working areas warn on overlap by default and live as long as the task's claim | Accepted |
 | [0028](0028-the-runner-gives-each-task-its-own-git-worktree.md) | The runner gives each claimed task its own git worktree on `flockr/<task>` | Accepted |
-| [0029](0029-a-direct-message-is-a-private-channel-of-kind-dm.md) | A direct message is a private channel of kind dm with two members | Accepted |
+| [0029](0029-a-direct-message-is-a-private-channel-of-kind-dm.md) | A direct message is a private channel of kind dm with two members | Accepted; `direct_members` and the anonymous live socket superseded by 0033 |
 | [0030](0030-plans-group-tasks-and-a-lead-is-an-ordinary-agent.md) | Plans group tasks, and a lead is an ordinary agent | Accepted |
 | [0031](0031-straight-edges-only.md) | Straight edges only: no rounded corners, pills or circles in the web app | Accepted |
 | [0032](0032-worker-sessions-are-saved-as-chunks-in-the-bucket-at-turn-end.md) | Worker sessions are saved as one chunk per turn in the bucket, behind a fenced Postgres pointer | Accepted |
+| [0033](0033-orgs-are-tenants-on-one-board-and-one-cansee-rule-guards-every-read.md) | Orgs are tenants on one board, and one canSee rule guards every read | Accepted |

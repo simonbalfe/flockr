@@ -2,7 +2,7 @@ import { Agent, AgentDetail, AuthMode, CreateMemberBody, IdentitySource, Member,
 import { z } from "@hono/zod-openapi"
 import { createMember } from "../board/members"
 import { getAgent, listAgents } from "../board/agents"
-import { findMember, listMembers } from "../board/read"
+import { findMember, listMembers, presentMember } from "../board/read"
 import { jsonBody, ok, operation, router } from "./shared"
 
 const tags: [string] = ["members"]
@@ -10,7 +10,7 @@ const tags: [string] = ["members"]
 export const memberRoutes = router()
   .openapi(
     operation({ method: "get", path: "/api/members", operationId: "listMembers", tags, summary: "List people, agents, bridges and watchers", responses: ok(z.array(Member)) }),
-    async (c) => c.json(await listMembers(c.var.db), 200),
+    async (c) => c.json(await listMembers(c.var.db, c.var.viewer), 200),
   )
   .openapi(
     operation({
@@ -43,7 +43,7 @@ export const memberRoutes = router()
     }),
     async (c) => {
       const row = await findMember(c.var.db, c.var.member)
-      const member = row ? { name: row.name, kind: row.kind, owner: row.owner, runsIn: row.runsIn, source: row.source } : null
+      const member = row ? presentMember(row) : null
       return c.json({ name: c.var.member, member, auth: c.var.auth.mode, via: c.var.via, channels: c.var.channels }, 200)
     },
   )

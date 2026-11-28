@@ -111,5 +111,5 @@ export const routineRoutes = router()
       summary: "The morning brief as of now: tasks finished in the last 24 hours, every blocked task with its reason, and the questions and reviews waiting for a person, plus the text the brief action posts",
       responses: ok(Brief),
     }),
-    async (c) => c.json(await buildBrief(c.var.db), 200),
+    async (c) => c.json(await buildBrief(c.var.db, c.var.viewer), 200),
   )

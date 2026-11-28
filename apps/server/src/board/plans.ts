@@ -14,20 +14,16 @@ import type { z } from "@hono/zod-openapi"
 import { and, asc, desc, eq, inArray, isNotNull, isNull, sql, type SQL } from "drizzle-orm"
 import type { Database, Executor, Tx } from "../db/client"
 import { plans, tasks, type PlanRow, type TaskRow } from "../db/schema"
-import { requireChannelAccess } from "./direct"
 import { notFound, wrongState } from "./errors"
 import { mutate, type Emit } from "./events"
 import { requireActor } from "./members"
 import { getTask, presentTasks, requireChannel } from "./read"
 import { emitTask, lockTask, updateTask } from "./write"
-import { visibleTo } from "./visibility"
+import { requireSees, viewerOf, visibleTo, type Viewer } from "./visibility"
 
 type PlanListQuery = z.infer<typeof ListPlansQuery>
 
-export interface PlanViewer {
-  member: string
-  channels: string[] | null
-}
+export type PlanViewer = Viewer
 
 const stateOf = (row: PlanRow): PlanState => (row.closedAt === null ? "open" : "closed")
 
@@ -82,7 +78,7 @@ async function lockPlan(tx: Tx, id: number, actor: string, mode: "update" | "sha
   const [row] = await tx
     .select()
     .from(plans)
-    .where(and(eq(plans.id, id), visibleTo(plans.channel, actor)))
+    .where(and(eq(plans.id, id), visibleTo(plans.channel, viewerOf(actor))))
     .for(mode)
   if (!row) throw missing(id)
   return row
@@ -105,7 +101,7 @@ async function requireRoomFor(tx: Tx, channel: string): Promise<void> {
 const channelLock = (tx: Tx, channel: string) => tx.execute(sql`select pg_advisory_xact_lock(hashtext(${`plans:${channel}`}))`)
 
 export async function listPlans(db: Executor, viewer: PlanViewer, query: PlanListQuery): Promise<Plan[]> {
-  const filters: SQL[] = [visibleTo(plans.channel, viewer.member)]
+  const filters: SQL[] = [visibleTo(plans.channel, viewer)]
   if (query.channel) filters.push(eq(plans.channel, query.channel))
   if (viewer.channels !== null) filters.push(inArray(plans.channel, viewer.channels.length ? viewer.channels : [""]))
   filters.push((query.state ?? "open") === "open" ? isNull(plans.closedAt) : isNotNull(plans.closedAt))
@@ -121,7 +117,7 @@ export async function getPlan(db: Executor, viewer: PlanViewer, id: number): Pro
   const [row] = await db
     .select()
     .from(plans)
-    .where(and(eq(plans.id, id), visibleTo(plans.channel, viewer.member)))
+    .where(and(eq(plans.id, id), visibleTo(plans.channel, viewer)))
   if (!row) throw missing(id)
   const taskRows = await db.select().from(tasks).where(eq(tasks.planId, id)).orderBy(asc(tasks.createdAt), asc(tasks.id))
   const [plan] = await presentPlans(db, [row])
@@ -133,7 +129,7 @@ export async function createPlan(db: Database, actor: string, body: CreatePlanBo
   const row = await mutate(db, async (tx, emit) => {
     await requireActor(tx, actor)
     await requireChannel(tx, body.channel)
-    await requireChannelAccess(tx, actor, body.channel)
+    await requireSees(tx, viewerOf(actor), body.channel)
     await channelLock(tx, body.channel)
     if (body.key !== undefined) {
       const [same] = await tx
@@ -183,7 +179,7 @@ export async function setPlanClosed(db: Database, actor: string, id: number, clo
     const [peek] = await tx
       .select({ channel: plans.channel })
       .from(plans)
-      .where(and(eq(plans.id, id), visibleTo(plans.channel, actor)))
+      .where(and(eq(plans.id, id), visibleTo(plans.channel, viewerOf(actor))))
     if (!peek) throw missing(id)
     if (!closed) await channelLock(tx, peek.channel)
     const current = await lockPlan(tx, id, actor, "update")

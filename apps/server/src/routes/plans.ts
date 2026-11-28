@@ -18,7 +18,7 @@ export const planRoutes = router()
       request: { query: ListPlansQuery },
       responses: ok(z.array(Plan)),
     }),
-    async (c) => c.json(await listPlans(c.var.db, { member: c.var.member, channels: c.var.channels }, c.req.valid("query")), 200),
+    async (c) => c.json(await listPlans(c.var.db, c.var.viewer, c.req.valid("query")), 200),
   )
   .openapi(
     operation({
@@ -42,7 +42,7 @@ export const planRoutes = router()
       request: { params: PlanParams },
       responses: ok(PlanDetail),
     }),
-    async (c) => c.json(await getPlan(c.var.db, { member: c.var.member, channels: c.var.channels }, c.req.valid("param").id), 200),
+    async (c) => c.json(await getPlan(c.var.db, c.var.viewer, c.req.valid("param").id), 200),
   )
   .openapi(
     operation({

@@ -33,6 +33,8 @@ export const flags = {
   owner: { type: "string" },
   "runs-in": { type: "string" },
   topic: { type: "string" },
+  visibility: { type: "string" },
+  org: { type: "string" },
   keep: { type: "boolean" },
   clear: { type: "boolean" },
   part: { type: "string", multiple: true },

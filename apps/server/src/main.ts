@@ -1,7 +1,8 @@
 import path from "node:path"
 import { livePath } from "@flockr/contracts"
 import { createApp } from "./app"
-import { refuseLive } from "./auth/identity"
+import { liveViewer } from "./auth/identity"
+import type { Viewer } from "./board/visibility"
 import { localAuthSettings } from "./auth/local"
 import { databaseUrl, host, objectsDir, port } from "./config"
 import { localObjectStore } from "./storage/local"
@@ -33,15 +34,15 @@ async function staticFile(pathname: string): Promise<Response> {
   return new Response(index, { headers: { "content-type": "text/html; charset=utf-8" } })
 }
 
-const server = Bun.serve<{ since: number | null; socket?: LiveSocket }>({
+const server = Bun.serve<{ since: number | null; viewer: Viewer; socket?: LiveSocket }>({
   hostname: host,
   port,
   async fetch(request, srv) {
     const url = new URL(request.url)
     if (url.pathname === livePath) {
-      const refused = await refuseLive(app.authenticator, request.headers)
-      if (refused) return refused
-      if (srv.upgrade(request, { data: { since: parseSince(url) } })) return undefined
+      const viewer = await liveViewer(app.authenticator, { headers: request.headers, url })
+      if (viewer instanceof Response) return viewer
+      if (srv.upgrade(request, { data: { since: parseSince(url), viewer } })) return undefined
       return new Response("Expected a WebSocket upgrade", { status: 426 })
     }
     if (url.pathname.startsWith("/api/") || url.pathname === "/mcp") return app.fetch(request)
@@ -51,7 +52,7 @@ const server = Bun.serve<{ since: number | null; socket?: LiveSocket }>({
     open(ws) {
       const socket: LiveSocket = { send: (text) => void ws.send(text) }
       ws.data.socket = socket
-      live.hub.attach(socket, ws.data.since).catch((error: unknown) => {
+      live.hub.attach(socket, ws.data.since, ws.data.viewer).catch((error: unknown) => {
         console.error("live attach failed", error)
         ws.close(1011, "attach failed")
       })

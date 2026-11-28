@@ -17,12 +17,20 @@
           "kind": {
             "$ref": "#/components/schemas/ChannelKind"
           },
+          "org": {
+            "type": "string",
+            "example": "home",
+            "description": "The org that owns the channel"
+          },
+          "visibility": {
+            "$ref": "#/components/schemas/ChannelVisibility"
+          },
           "members": {
             "type": "array",
             "items": {
               "type": "string"
             },
-            "description": "The two members of a dm; empty for a channel",
+            "description": "The listed members: the two of a dm, or those added to a private or shared channel (listChannelMembers); everyone in the owning org also sees an org or shared channel",
             "example": [
               "simon",
               "claude"
@@ -47,6 +55,8 @@
         "required": [
           "id",
           "kind",
+          "org",
+          "visibility",
           "members",
           "topic",
           "repo",
@@ -59,7 +69,16 @@
           "channel",
           "dm"
         ],
-        "description": "channel is open to every member; dm is a private conversation between its two members"
+        "description": "channel is a room; dm is a private conversation between its two members"
+      },
+      "ChannelVisibility": {
+        "type": "string",
+        "enum": [
+          "org",
+          "private",
+          "shared"
+        ],
+        "description": "org: everyone in the owning org; private: only the channel's listed members; shared: everyone in the owning org plus listed members of other orgs"
       },
       "Error": {
         "type": "object",
@@ -115,6 +134,9 @@
               }
             ],
             "default": null
+          },
+          "visibility": {
+            "$ref": "#/components/schemas/ChannelVisibility"
           }
         },
         "required": [
@@ -140,8 +162,47 @@
               }
             ],
             "description": "Set the channel's repo, or null to clear it"
+          },
+          "visibility": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ChannelVisibility"
+              },
+              {
+                "description": "Share the channel with other orgs (shared), keep it to the owning org (org) or to its listed members (private)"
+              }
+            ]
           }
         }
+      },
+      "ChannelMember": {
+        "type": "object",
+        "properties": {
+          "member": {
+            "type": "string",
+            "example": "ana"
+          },
+          "org": {
+            "type": "string",
+            "example": "acme"
+          },
+          "addedBy": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "addedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "member",
+          "org",
+          "addedBy",
+          "addedAt"
+        ]
       },
       "FeedItem": {
         "oneOf": [
@@ -1781,6 +1842,11 @@
           "kind": {
             "$ref": "#/components/schemas/MemberKind"
           },
+          "org": {
+            "type": "string",
+            "example": "home",
+            "description": "The org the member belongs to"
+          },
           "owner": {
             "type": [
               "string",
@@ -1804,6 +1870,7 @@
         "required": [
           "name",
           "kind",
+          "org",
           "owner",
           "runsIn",
           "source"
@@ -1828,6 +1895,12 @@
           },
           "kind": {
             "$ref": "#/components/schemas/MemberKind"
+          },
+          "org": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9-]*$",
+            "default": "home",
+            "description": "The org the member belongs to; fixed once made"
           },
           "owner": {
             "type": [
@@ -2039,6 +2112,49 @@
               "tasks"
             ]
           }
+        ]
+      },
+      "Org": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9-]*$",
+            "example": "acme"
+          },
+          "name": {
+            "type": "string",
+            "example": "Acme"
+          },
+          "host": {
+            "type": "boolean",
+            "description": "True for the org that runs the board; board-wide settings belong to it"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "host"
+        ]
+      },
+      "CreateOrgBody": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9-]*$",
+            "example": "acme"
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80,
+            "example": "Acme"
+          }
+        },
+        "required": [
+          "id",
+          "name"
         ]
       },
       "ClaimResult": {
@@ -6224,7 +6340,7 @@
         "tags": [
           "channels"
         ],
-        "summary": "Change a channel's topic or repo. The repo (github.com/owner/name) turns its tasks' commits into links; null clears it.",
+        "summary": "Change a channel's topic, repo or visibility (share it with other orgs, or keep it to the owning org or its listed members). The repo (github.com/owner/name) turns its tasks' commits into links; null clears it.",
         "parameters": [
           {
             "schema": {
@@ -6343,6 +6459,277 @@
                   "required": [
                     "lastReadId"
                   ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The input is not valid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sign-in is on and the request has no session or key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The acting member is not on this board, or may not do this",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The task or message is in another state, or the claim epoch is stale",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/channels/{channel}/members": {
+      "get": {
+        "operationId": "listChannelMembers",
+        "tags": [
+          "channels"
+        ],
+        "summary": "List a channel's listed members with their org: the two of a DM, or those added to a private or shared channel. Everyone in the owning org also sees an org or shared channel.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "example": "backend"
+            },
+            "required": true,
+            "name": "channel",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ChannelMember"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The input is not valid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sign-in is on and the request has no session or key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The acting member is not on this board, or may not do this",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The task or message is in another state, or the claim epoch is stale",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/channels/{channel}/members/{name}": {
+      "put": {
+        "operationId": "addChannelMember",
+        "tags": [
+          "channels"
+        ],
+        "summary": "Add a member to a channel. A member of another org joins only a shared channel; only members of the owning org add anyone. Adding a member already listed changes nothing.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "example": "acme-site"
+            },
+            "required": true,
+            "name": "channel",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "example": "ana"
+            },
+            "required": true,
+            "name": "name",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ChannelMember"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The input is not valid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sign-in is on and the request has no session or key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The acting member is not on this board, or may not do this",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The task or message is in another state, or the claim epoch is stale",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "operationId": "removeChannelMember",
+        "tags": [
+          "channels"
+        ],
+        "summary": "Remove a listed member from a channel; they stop seeing it at once. Removing one not listed changes nothing.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "example": "acme-site"
+            },
+            "required": true,
+            "name": "channel",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "example": "ana"
+            },
+            "required": true,
+            "name": "name",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ChannelMember"
+                  }
                 }
               }
             }
@@ -7720,6 +8107,159 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/DeletedAgent"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The input is not valid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sign-in is on and the request has no session or key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The acting member is not on this board, or may not do this",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The task or message is in another state, or the claim epoch is stale",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/orgs": {
+      "get": {
+        "operationId": "listOrgs",
+        "tags": [
+          "orgs"
+        ],
+        "summary": "List the orgs you can see: your own, and those of members who share a channel with you",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Org"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The input is not valid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sign-in is on and the request has no session or key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The acting member is not on this board, or may not do this",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The task or message is in another state, or the claim epoch is stale",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "createOrg",
+        "tags": [
+          "orgs"
+        ],
+        "summary": "Add a client org. Its members see only the channels shared with them. Only the org that runs the board can add one.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateOrgBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Org"
                 }
               }
             }

@@ -27,7 +27,7 @@ import { alreadyExists, forbidden, invalid, notFound, wrongState } from "./error
 import { mutate, type Emit } from "./events"
 import { requireActor } from "./members"
 import { activityEntryOf, findAnyMember, presentMember, presentTasks } from "./read"
-import { visibleTo } from "./visibility"
+import { visibleTo, type Viewer } from "./visibility"
 
 const Harnesses = z.array(HarnessInfo).catch([])
 
@@ -123,7 +123,7 @@ export async function getAgent(db: Executor, name: string, now = new Date()): Pr
   return { ...present(presentMember(row), rows, served, now), tasks: await presentTasks(db, rows) }
 }
 
-export async function listAgentActivity(db: Executor, name: string, limit: number, viewer: string | null): Promise<ActivityEntry[]> {
+export async function listAgentActivity(db: Executor, name: string, limit: number, viewer: Viewer): Promise<ActivityEntry[]> {
   await liveAgentMember(db, name)
   const rows = await db
     .select()

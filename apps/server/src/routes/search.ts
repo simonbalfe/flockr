@@ -14,5 +14,5 @@ export const searchRoutes = router().openapi(
     request: { query: SearchQuery },
     responses: ok(SearchResult),
   }),
-  async (c) => c.json(await searchBoard(c.var.db, c.req.valid("query"), c.var.member), 200),
+  async (c) => c.json(await searchBoard(c.var.db, c.req.valid("query"), c.var.viewer), 200),
 )

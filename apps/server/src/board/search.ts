@@ -3,7 +3,7 @@ import { and, desc, eq, isNull, sql, type SQL } from "drizzle-orm"
 import type { Executor } from "../db/client"
 import { messageSearchVector, messages, taskSearchVector, tasks } from "../db/schema"
 import { messageKey, requireChannel, threadKeyOf } from "./read"
-import { visibleTo } from "./visibility"
+import { visibleTo, type Viewer } from "./visibility"
 
 const startMark = "\u0002"
 const stopMark = "\u0003"
@@ -37,7 +37,7 @@ interface Search {
   phrase: string
   channel: string | undefined
   limit: number
-  viewer: string | null
+  viewer: Viewer
 }
 
 const phraseBonus = (phrase: string, text: SQL) => sql`case when position(${phrase} in lower(${text})) > 0 then 1 else 0 end`
@@ -102,7 +102,7 @@ async function taskHits(db: Executor, search: Search): Promise<TaskHit[]> {
 
 const byRank = (a: SearchHit, b: SearchHit) => b.rank - a.rank || Date.parse(b.at) - Date.parse(a.at)
 
-export async function searchBoard(db: Executor, input: SearchQuery, viewer: string | null): Promise<SearchResult> {
+export async function searchBoard(db: Executor, input: SearchQuery, viewer: Viewer): Promise<SearchResult> {
   if (input.channel !== undefined) await requireChannel(db, input.channel)
   const query = searchQuery(input.q)
   if (query === null) return { query: input.q, hits: [] }

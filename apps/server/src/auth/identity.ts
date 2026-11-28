@@ -1,6 +1,7 @@
 import { authBasePath, authorizationHeader, defaultMember, memberHeader, publicApiPaths, type AuthMode, type IdentitySource } from "@flockr/contracts"
 import { findLiveKey } from "../board/keys"
 import { findMember } from "../board/read"
+import { viewerOf, type Viewer } from "../board/visibility"
 import type { Database } from "../db/client"
 import { createBetterAuth, memberFor, type BetterAuth } from "./better-auth"
 import type { AuthSettings } from "./settings"
@@ -32,12 +33,16 @@ async function actingAs(db: Database, identity: Identity, requested: string | un
 
 export const signInNeeded = "Sign in, or send a key as Authorization: Bearer <key> (flockr keys create)"
 
-export async function refuseLive(auth: Authenticator, headers: Headers): Promise<Response | null> {
-  if (auth.mode === "off") return null
-  const identity = await auth.identify(headers)
+export const liveAsParam = "as"
+
+export async function liveViewer(auth: Authenticator, request: { headers: Headers; url: URL }): Promise<Viewer | Response> {
+  if (auth.mode === "off") {
+    const named = request.url.searchParams.get(liveAsParam)?.trim()
+    return named ? viewerOf(named) : viewerOf(headerIdentity(request.headers).member)
+  }
+  const identity = await auth.identify(request.headers)
   if (!identity) return Response.json({ error: signInNeeded, kind: "unauthenticated" }, { status: 401 })
-  if (identity.channels !== null) return Response.json({ error: "A key limited to channels cannot open the live feed", kind: "forbidden" }, { status: 403 })
-  return null
+  return viewerOf(identity.member, identity.channels)
 }
 
 export function createAuthenticator(db: Database, settings: AuthSettings): Authenticator {

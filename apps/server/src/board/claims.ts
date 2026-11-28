@@ -1,5 +1,6 @@
 import { leaseMinutes, type ClaimNextBody, type ReleaseBody, type Task } from "@flockr/contracts"
-import { and, arrayContains, asc, eq, inArray, isNull, lt, or, type SQL } from "drizzle-orm"
+import { and, arrayContains, asc, eq, isNull, lt, or, type SQL } from "drizzle-orm"
+import { viewerOf, visibleTo } from "./visibility"
 import type { Database, Tx } from "../db/client"
 import { tasks, type TaskRow } from "../db/schema"
 import { releaseTaskAreas } from "./areas"
@@ -33,7 +34,7 @@ export async function claimNext(db: Database, actor: string, body: ClaimNextBody
     const open = body.mine ? eq(tasks.assignee, actor) : or(isNull(tasks.assignee), eq(tasks.assignee, actor))
     if (open) filters.push(open)
     if (body.labels.length) filters.push(arrayContains(tasks.labels, body.labels))
-    if (body.channels) filters.push(inArray(tasks.channel, body.channels))
+    filters.push(visibleTo(tasks.channel, viewerOf(actor, body.channels ?? null)))
     const [candidate] = await tx
       .select()
       .from(tasks)

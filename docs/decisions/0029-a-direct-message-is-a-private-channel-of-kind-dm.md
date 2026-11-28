@@ -1,6 +1,6 @@
 # 0029: A direct message is a private channel of kind dm
 
-Status: accepted, 25 Nov 2026. Work: 2g-slack-navigation.
+Status: accepted, 25 Nov 2026. Work: 2g-slack-navigation. Its `direct_members` table and the live socket without identity are superseded by 0033.
 
 ## Problem
 

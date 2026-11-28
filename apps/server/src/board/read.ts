@@ -25,8 +25,8 @@ import { and, asc, eq, inArray, isNotNull, isNull, or, sql, type SQL } from "dri
 import type { Executor } from "../db/client"
 import { channels, members, messages, messageVersions, taskCommits, tasks, type MemberRow, type MessageRow, type TaskRow } from "../db/schema"
 import { notFound } from "./errors"
-import { directMembersOf } from "./direct"
-import { visibleTo } from "./visibility"
+import { listedMembersOf } from "./direct"
+import { readableBy, seesMember, visibleTo, type Reader, type Viewer } from "./visibility"
 
 export const messageKey = (id: number) => `m${id}`
 
@@ -41,7 +41,7 @@ export function parseThreadId(raw: string): ThreadRef {
 }
 
 export function presentMember(row: MemberRow): Member {
-  return { name: row.name, kind: row.kind, owner: row.owner, runsIn: row.runsIn, source: row.source }
+  return { name: row.name, kind: row.kind, org: row.org, owner: row.owner, runsIn: row.runsIn, source: row.source }
 }
 
 async function replyCounts(db: Executor, ids: number[]): Promise<Map<number, number>> {
@@ -121,7 +121,7 @@ export async function getTask(db: Executor, id: number): Promise<Task> {
   return task
 }
 
-export async function listTasks(db: Executor, query: ListTasksQuery, viewer: string | null): Promise<Task[]> {
+export async function listTasks(db: Executor, query: ListTasksQuery, viewer: Viewer): Promise<Task[]> {
   const filters: SQL[] = [visibleTo(tasks.channel, viewer)]
   if (query.channel) filters.push(eq(tasks.channel, query.channel))
   if (query.state) filters.push(eq(tasks.state, query.state))
@@ -138,8 +138,11 @@ export async function listTasks(db: Executor, query: ListTasksQuery, viewer: str
   return presentTasks(db, rows)
 }
 
-export async function listMembers(db: Executor): Promise<Member[]> {
-  const rows = await db.select().from(members).where(isNull(members.removedAt)).orderBy(asc(members.createdAt), asc(members.name))
+export async function listMembers(db: Executor, viewer: Viewer): Promise<Member[]> {
+  const rows = await db
+    .select()
+    .from(members)
+    .where(and(isNull(members.removedAt), seesMember(members.name, viewer))).orderBy(asc(members.createdAt), asc(members.name))
   return rows.map(presentMember)
 }
 
@@ -156,11 +159,14 @@ export async function findAnyMember(db: Executor, name: string): Promise<MemberR
   return row
 }
 
-export async function listChannels(db: Executor, member: string, options: { direct: boolean } = { direct: true }): Promise<Channel[]> {
+export async function listChannels(db: Executor, viewer: Viewer): Promise<Channel[]> {
+  const member = viewer.member
   const rows = await db
     .select({
       id: channels.id,
       kind: channels.kind,
+      org: channels.org,
+      visibility: channels.visibility,
       topic: channels.topic,
       repo: channels.repo,
       unread: sql<number>`(
@@ -170,11 +176,11 @@ export async function listChannels(db: Executor, member: string, options: { dire
       )`,
     })
     .from(channels)
-    .where(options.direct ? visibleTo(channels.id, member) : eq(channels.kind, "channel"))
+    .where(visibleTo(channels.id, viewer))
     .orderBy(asc(channels.createdAt), asc(channels.id))
-  const people = await directMembersOf(
+  const people = await listedMembersOf(
     db,
-    rows.filter((r) => r.kind === "dm").map((r) => r.id),
+    rows.map((r) => r.id),
   )
   return rows.map((row) => ({ ...row, members: people.get(row.id) ?? [] }))
 }
@@ -368,17 +374,17 @@ export async function getMessageVersions(db: Executor, raw: string): Promise<Mes
   }
 }
 
-export async function getInbox(db: Executor, viewer: string | null): Promise<Inbox> {
+export async function getInbox(db: Executor, reader: Reader): Promise<Inbox> {
   const questionRows = await db
     .select()
     .from(tasks)
-    .where(and(isNotNull(tasks.question), eq(tasks.state, "claimed"), visibleTo(tasks.channel, viewer)))
+    .where(and(isNotNull(tasks.question), eq(tasks.state, "claimed"), readableBy(tasks.channel, reader)))
     .orderBy(asc(tasks.id))
-  const reviewRows = await db.select().from(tasks).where(and(eq(tasks.state, "review"), visibleTo(tasks.channel, viewer))).orderBy(asc(tasks.id))
+  const reviewRows = await db.select().from(tasks).where(and(eq(tasks.state, "review"), readableBy(tasks.channel, reader))).orderBy(asc(tasks.id))
   const asked = await db
     .select()
     .from(messages)
-    .where(and(eq(messages.kind, "question"), isNull(messages.answer), isNull(messages.deletedAt), visibleTo(messages.channel, viewer)))
+    .where(and(eq(messages.kind, "question"), isNull(messages.answer), isNull(messages.deletedAt), readableBy(messages.channel, reader)))
     .orderBy(asc(messages.id))
   return {
     questions: await presentTasks(db, questionRows),

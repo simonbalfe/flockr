@@ -2,6 +2,7 @@ import { z } from "@hono/zod-openapi"
 import { ActivityEntry, ApprovalAction } from "./activity"
 import { AgentConfig, AgentStatusSchema, Machine } from "./agents"
 import { agentStates, channelKinds, errorKinds, memberKinds, messageLimits, taskStates } from "./constants"
+import { ChannelVisibility } from "./orgs"
 
 export const TaskState = z.enum(taskStates).openapi("TaskState")
 export const MemberKind = z.enum(memberKinds).openapi("MemberKind")
@@ -28,8 +29,10 @@ export const ChannelKind = z.enum(channelKinds).openapi("ChannelKind")
 export const Channel = z
   .object({
     id: z.string().openapi({ example: "backend" }),
-    kind: ChannelKind.openapi({ description: "channel is open to every member; dm is a private conversation between its two members" }),
-    members: z.array(z.string()).openapi({ description: "The two members of a dm; empty for a channel", example: ["simon", "claude"] }),
+    kind: ChannelKind.openapi({ description: "channel is a room; dm is a private conversation between its two members" }),
+    org: z.string().openapi({ example: "home", description: "The org that owns the channel" }),
+    visibility: ChannelVisibility,
+    members: z.array(z.string()).openapi({ description: "The listed members: the two of a dm, or those added to a private or shared channel (listChannelMembers); everyone in the owning org also sees an org or shared channel", example: ["simon", "claude"] }),
     topic: z.string(),
     repo: z.string().nullable().openapi({ example: "github.com/simonbalfe/flockr", description: "Where the channel's code lives; null when none is set" }),
     unread: z.number().int().openapi({ description: "Feed items since the acting member last read the channel" }),
@@ -40,6 +43,7 @@ export const Member = z
   .object({
     name: z.string().openapi({ example: "reviewer" }),
     kind: MemberKind,
+    org: z.string().openapi({ example: "home", description: "The org the member belongs to" }),
     owner: z.string().nullable().openapi({ description: "The person an agent acts for" }),
     runsIn: z.string().nullable(),
     source: z.string().nullable(),

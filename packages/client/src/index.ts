@@ -7,7 +7,7 @@ export { client } from "./gen/client.gen"
 export type { Client } from "./gen/client"
 export { connectLive, liveUrl, type LiveConnection, type LiveOptions } from "./live"
 export { authBasePath, keyLimits, signInWording } from "@flockr/contracts/auth"
-export { activitySeconds, authorizationHeader, bearerAuth, defaultMember, errorKinds, leaseMinutes, memberHeader, memberKinds, messageLimits, taskStates } from "@flockr/contracts/constants"
+export { activitySeconds, authorizationHeader, bearerAuth, channelVisibilities, defaultMember, hostOrg, errorKinds, leaseMinutes, memberHeader, memberKinds, messageLimits, taskStates } from "@flockr/contracts/constants"
 export {
   labelSet,
   mayDeleteMessage,

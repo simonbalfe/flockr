@@ -88,6 +88,8 @@ export interface RestoreResult {
   rows: number
 }
 
+const writtenByMigrations = new Set(["orgs"])
+
 export async function restoreDatabase(sql: postgres.Sql, backup: Backup): Promise<RestoreResult> {
   const { hashes } = await migrationState(sql)
   if (backup.migrations.last && !hashes.includes(backup.migrations.last)) {
@@ -96,6 +98,7 @@ export async function restoreDatabase(sql: postgres.Sql, backup: Backup): Promis
   return sql.begin(async (tx) => {
     const tables = await tableNames(tx)
     for (const table of tables) {
+      if (writtenByMigrations.has(table)) continue
       const used = await tx.unsafe<{ used: boolean }[]>(`select exists (select 1 from ${ident(table)}) as used`)
       if (used[0]?.used) throw new Error(`The target database is not empty (${table} has rows); restore only into a new database`)
     }
@@ -105,6 +108,7 @@ export async function restoreDatabase(sql: postgres.Sql, backup: Backup): Promis
     for (const table of await loadOrder(tx, tables)) {
       const rows = byName.get(table) ?? []
       if (!rows.length) continue
+      if (writtenByMigrations.has(table)) await tx.unsafe(`delete from ${ident(table)}`)
       const present = new Set(rows.flatMap((row) => Object.keys(row)))
       const own = columns.filter((column) => column.table === table && present.has(column.name))
       const list = own.map((column) => ident(column.name)).join(", ")

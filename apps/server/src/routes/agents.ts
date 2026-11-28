@@ -100,5 +100,5 @@ export const agentRoutes = router()
       request: { params: AgentParams, query: AgentActivityQuery },
       responses: ok(z.array(ActivityEntry)),
     }),
-    async (c) => c.json(await listAgentActivity(c.var.db, c.req.valid("param").name, c.req.valid("query").limit, c.var.member), 200),
+    async (c) => c.json(await listAgentActivity(c.var.db, c.req.valid("param").name, c.req.valid("query").limit, c.var.viewer), 200),
   )

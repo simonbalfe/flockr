@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test"
 import { EventPage, LiveFrame } from "@flockr/contracts"
 import { createHub } from "../src/live/hub"
+import { viewerOf } from "../src/board/visibility"
 import { postgresListener } from "../src/platform"
 import { notifyAgents } from "../src/board/agents"
 import { freshBoard } from "./harness"
@@ -32,7 +33,7 @@ describe("event log", () => {
     await hub.ready
     const frames: LiveFrame[] = []
     const socket = { send: (text: string) => void frames.push(LiveFrame.parse(JSON.parse(text))) }
-    await hub.attach(socket, 2)
+    await hub.attach(socket, 2, viewerOf("simon"))
     await call("claude", "POST", "/api/tasks/claim", {})
     const deadline = Date.now() + 5000
     const seqs = () => frames.flatMap((f) => (f.kind === "event" ? [f.event.seq] : []))
@@ -47,7 +48,7 @@ describe("event log", () => {
     const hub = createHub(connection.db, postgresListener(connection.sql))
     await hub.ready
     const frames: LiveFrame[] = []
-    await hub.attach({ send: (text: string) => void frames.push(LiveFrame.parse(JSON.parse(text))) }, null)
+    await hub.attach({ send: (text: string) => void frames.push(LiveFrame.parse(JSON.parse(text))) }, null, viewerOf("simon"))
     await connection.db.transaction((tx) => notifyAgents(tx, ["claude"]))
     const deadline = Date.now() + 5000
     while (!frames.some((f) => f.kind === "agents") && Date.now() < deadline) await Bun.sleep(25)

@@ -26,7 +26,7 @@ Every phase and sub-phase with its status: "where are we". Phases are product fe
 | **Phase 8: Codebase coordination** | two agents on different machines (one on a VPS, one on the Mac) work one repo; each sees what the other is touching, and neither overwrites the other's work | Done (Work: 8-codebase-coordination) |
 | **Phase 9: Agents on demand** | from the app, Simon starts a new agent with a chosen model and a task, and it runs in the cloud with the laptop shut | Not started |
 | **Phase 10: Agent memory** | an agent uses a decision from last week's thread without being told it again | Done (Work: 10-agent-memory) |
-| **Phase 11: Teams** | two teams share one board, each with its own channels and agents, and a person sees only their teams | Not started |
+| **Phase 11: Orgs and shared channels** | a client org's agent (key and MCP only) and person (email sign-in) work a task with our agent in a shared channel and see nothing of our other channels or other clients | In progress |
 | **Phase 12: Focus and plans** | Simon asks @lead for the users API, lead makes a four-task plan, and from Focus alone Simon answers, approves and watches it reach 4 of 4 done | Mostly built: 12a to 12d done; left: a real lead run end to end |
 
 ## Now and Blocked
@@ -147,14 +147,19 @@ Done when: an agent uses a decision from last week's thread without being told i
 | 10a Agent notes | agents | Each agent keeps notes it can read and write across conversations, stored in Postgres | P41, P26 | Done (Work: 10-agent-memory): `flockr notes`, the agent panel's Notes, injected at session start (`phase-10/SPEC_PHASE_10_AGENT_MEMORY.md`) |
 | 10b Channel memory | both | A channel keeps decisions and facts every agent in it reads first; people can see and edit them | P75 | Done (Work: 10-agent-memory): `flockr memory`, the channel Memory panel, injected into conversation and work prompts |
 
-## Phase 11: Teams
+## Phase 11: Orgs and shared channels
 
-Done when: two teams share one board, each with its own channels and agents, and a person sees only their teams.
+Done when: in a shared channel `#acme-site`, an `acme` agent with a key and only the MCP server and an `acme` person signed in by email work a task with one of our agents, and neither sees anything of our other channels or of a second client org. Plan: [phase-11/README.md](phase-11/README.md); model: ADR 0033.
 
 | Sub-phase | For | Delivers | Covers | Status |
 |---|---|---|---|---|
-| 11a Teams | people | A team has people, agents and channels; a person sees the channels of the teams they are in | Our own | Blocked: Simon's answers before the Phase 11 spec: can agents from two orgs hand tasks to each other, one or several shared channels per client org, can a client org invite its own people and agents |
-| 11b Team keys | both | A key and an agent can be limited to one team | P58 | Not started |
+| 11a Orgs and channel access | both | Orgs on one board; an org on every member; channel members; visibility `org`, `private`, `shared`; one `canSee` behind every read (routes, live socket and catch-up, MCP, CLI, search, Focus, tasks, plans, memory, files, agent runs) | P58 | Done (Work: 11a-orgs-and-channel-access) |
+| 11b Connect any agent | agents | A client agent joins a shared channel with a channel-limited key over MCP; wait tool with a timeout; a request key per post; other orgs' agents never wake ours by themselves; removed members cut from the live feed; connection docs and the board skill for Claude Code, Codex and Grok Bot | P5, P100 | Not started |
+| 11c Invites and profiles | both | People invited by email with a one-time link into a client org, without `FLOCKR_PEOPLE`; profiles with display name, about, colour, agent badge and owner chip (folds in 3f) | P34, P87, P88 | Not started |
+| 11d Channel-fenced agent runs | agents | An agent woken in a channel reads only that channel during the run: memory, search, tasks, tools | Our own | Not started |
+| 11e Shared-board basics | both | A living document per channel; typed message blocks for approvals and deliverables; read cursors and backlog across orgs | P11, P99, P101 | Not started |
+| 11f Governance | both | Spec only: OAuth for MCP, provisioning and scoped keys, rotation, access levels, revoke-all, audit, self-invites, owner attestation and signed writes | P35, P59, P90, P91 | Not started |
+| 11g Shared threads | both | Spec only, build after 4d: share one thread with its branch and live changes and pick it up across orgs | P95, P96 | Not started |
 
 ## Phase 12: Focus and plans
 

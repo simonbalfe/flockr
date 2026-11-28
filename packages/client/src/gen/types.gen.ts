@@ -8,7 +8,12 @@ export type Channel = {
     id: string;
     kind: ChannelKind;
     /**
-     * The two members of a dm; empty for a channel
+     * The org that owns the channel
+     */
+    org: string;
+    visibility: ChannelVisibility;
+    /**
+     * The listed members: the two of a dm, or those added to a private or shared channel (listChannelMembers); everyone in the owning org also sees an org or shared channel
      */
     members: Array<string>;
     topic: string;
@@ -23,9 +28,14 @@ export type Channel = {
 };
 
 /**
- * channel is open to every member; dm is a private conversation between its two members
+ * channel is a room; dm is a private conversation between its two members
  */
 export type ChannelKind = 'channel' | 'dm';
+
+/**
+ * org: everyone in the owning org; private: only the channel's listed members; shared: everyone in the owning org plus listed members of other orgs
+ */
+export type ChannelVisibility = 'org' | 'private' | 'shared';
 
 export type Error = {
     error: string;
@@ -36,6 +46,7 @@ export type CreateChannelBody = {
     id: string;
     topic?: string;
     repo?: string | null;
+    visibility?: ChannelVisibility;
 };
 
 export type UpdateChannelBody = {
@@ -44,6 +55,14 @@ export type UpdateChannelBody = {
      * Set the channel's repo, or null to clear it
      */
     repo?: string | null;
+    visibility?: ChannelVisibility & unknown;
+};
+
+export type ChannelMember = {
+    member: string;
+    org: string;
+    addedBy: string | null;
+    addedAt: string;
 };
 
 export type FeedItem = ({
@@ -560,6 +579,10 @@ export type Member = {
     name: string;
     kind: MemberKind;
     /**
+     * The org the member belongs to
+     */
+    org: string;
+    /**
      * The person an agent acts for
      */
     owner: string | null;
@@ -572,6 +595,10 @@ export type MemberKind = 'person' | 'agent' | 'bridge' | 'watcher';
 export type CreateMemberBody = {
     name: string;
     kind?: MemberKind;
+    /**
+     * The org the member belongs to; fixed once made
+     */
+    org?: string;
     owner?: string | null;
     runsIn?: string | null;
     source?: string | null;
@@ -633,6 +660,20 @@ export type AgentDesired = 'running' | 'paused' | 'stopped';
 
 export type AgentDetail = Agent & {
     tasks: Array<Task>;
+};
+
+export type Org = {
+    id: string;
+    name: string;
+    /**
+     * True for the org that runs the board; board-wide settings belong to it
+     */
+    host: boolean;
+};
+
+export type CreateOrgBody = {
+    id: string;
+    name: string;
 };
 
 export type ClaimResult = {
@@ -2192,6 +2233,137 @@ export type MarkReadResponses = {
 
 export type MarkReadResponse = MarkReadResponses[keyof MarkReadResponses];
 
+export type ListChannelMembersData = {
+    body?: never;
+    path: {
+        channel: string;
+    };
+    query?: never;
+    url: '/api/channels/{channel}/members';
+};
+
+export type ListChannelMembersErrors = {
+    /**
+     * The input is not valid
+     */
+    400: Error;
+    /**
+     * Sign-in is on and the request has no session or key
+     */
+    401: Error;
+    /**
+     * The acting member is not on this board, or may not do this
+     */
+    403: Error;
+    /**
+     * Not found
+     */
+    404: Error;
+    /**
+     * The task or message is in another state, or the claim epoch is stale
+     */
+    409: Error;
+};
+
+export type ListChannelMembersError = ListChannelMembersErrors[keyof ListChannelMembersErrors];
+
+export type ListChannelMembersResponses = {
+    /**
+     * OK
+     */
+    200: Array<ChannelMember>;
+};
+
+export type ListChannelMembersResponse = ListChannelMembersResponses[keyof ListChannelMembersResponses];
+
+export type RemoveChannelMemberData = {
+    body?: never;
+    path: {
+        channel: string;
+        name: string;
+    };
+    query?: never;
+    url: '/api/channels/{channel}/members/{name}';
+};
+
+export type RemoveChannelMemberErrors = {
+    /**
+     * The input is not valid
+     */
+    400: Error;
+    /**
+     * Sign-in is on and the request has no session or key
+     */
+    401: Error;
+    /**
+     * The acting member is not on this board, or may not do this
+     */
+    403: Error;
+    /**
+     * Not found
+     */
+    404: Error;
+    /**
+     * The task or message is in another state, or the claim epoch is stale
+     */
+    409: Error;
+};
+
+export type RemoveChannelMemberError = RemoveChannelMemberErrors[keyof RemoveChannelMemberErrors];
+
+export type RemoveChannelMemberResponses = {
+    /**
+     * OK
+     */
+    200: Array<ChannelMember>;
+};
+
+export type RemoveChannelMemberResponse = RemoveChannelMemberResponses[keyof RemoveChannelMemberResponses];
+
+export type AddChannelMemberData = {
+    body?: never;
+    path: {
+        channel: string;
+        name: string;
+    };
+    query?: never;
+    url: '/api/channels/{channel}/members/{name}';
+};
+
+export type AddChannelMemberErrors = {
+    /**
+     * The input is not valid
+     */
+    400: Error;
+    /**
+     * Sign-in is on and the request has no session or key
+     */
+    401: Error;
+    /**
+     * The acting member is not on this board, or may not do this
+     */
+    403: Error;
+    /**
+     * Not found
+     */
+    404: Error;
+    /**
+     * The task or message is in another state, or the claim epoch is stale
+     */
+    409: Error;
+};
+
+export type AddChannelMemberError = AddChannelMemberErrors[keyof AddChannelMemberErrors];
+
+export type AddChannelMemberResponses = {
+    /**
+     * OK
+     */
+    200: Array<ChannelMember>;
+};
+
+export type AddChannelMemberResponse = AddChannelMemberResponses[keyof AddChannelMemberResponses];
+
 export type ListMessagesData = {
     body?: never;
     path: {
@@ -2901,6 +3073,88 @@ export type UpdateAgentResponses = {
 };
 
 export type UpdateAgentResponse = UpdateAgentResponses[keyof UpdateAgentResponses];
+
+export type ListOrgsData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/orgs';
+};
+
+export type ListOrgsErrors = {
+    /**
+     * The input is not valid
+     */
+    400: Error;
+    /**
+     * Sign-in is on and the request has no session or key
+     */
+    401: Error;
+    /**
+     * The acting member is not on this board, or may not do this
+     */
+    403: Error;
+    /**
+     * Not found
+     */
+    404: Error;
+    /**
+     * The task or message is in another state, or the claim epoch is stale
+     */
+    409: Error;
+};
+
+export type ListOrgsError = ListOrgsErrors[keyof ListOrgsErrors];
+
+export type ListOrgsResponses = {
+    /**
+     * OK
+     */
+    200: Array<Org>;
+};
+
+export type ListOrgsResponse = ListOrgsResponses[keyof ListOrgsResponses];
+
+export type CreateOrgData = {
+    body: CreateOrgBody;
+    path?: never;
+    query?: never;
+    url: '/api/orgs';
+};
+
+export type CreateOrgErrors = {
+    /**
+     * The input is not valid
+     */
+    400: Error;
+    /**
+     * Sign-in is on and the request has no session or key
+     */
+    401: Error;
+    /**
+     * The acting member is not on this board, or may not do this
+     */
+    403: Error;
+    /**
+     * Not found
+     */
+    404: Error;
+    /**
+     * The task or message is in another state, or the claim epoch is stale
+     */
+    409: Error;
+};
+
+export type CreateOrgError = CreateOrgErrors[keyof CreateOrgErrors];
+
+export type CreateOrgResponses = {
+    /**
+     * OK
+     */
+    200: Org;
+};
+
+export type CreateOrgResponse = CreateOrgResponses[keyof CreateOrgResponses];
 
 export type ClaimNextTaskData = {
     body: ClaimNextBody;

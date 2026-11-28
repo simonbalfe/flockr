@@ -2,10 +2,11 @@ import { authBasePath, defaultMember, memberHeader } from "@flockr/contracts"
 import { swaggerUI } from "@hono/swagger-ui"
 import type { MiddlewareHandler } from "hono"
 import { createAuthenticator, headerIdentity, isPublicApiPath, signInNeeded } from "./auth/identity"
-import { requireDirectAccess, requireInScope } from "./auth/scope"
+import { requireInScope, requireReach } from "./auth/scope"
 import { authOff, type AuthSettings } from "./auth/settings"
 import { BoardError, notFound, unauthenticated } from "./board/errors"
 import { hooksPath, receiveHook, type HookSettings } from "./board/hook-route"
+import { viewerOf } from "./board/visibility"
 import type { Database } from "./db/client"
 import type { ObjectStore } from "./storage/store"
 import { mcpHandler } from "./mcp/server"
@@ -28,6 +29,7 @@ import { memberRoutes } from "./routes/members"
 import { memoryRoutes } from "./routes/memory"
 import { messageRoutes } from "./routes/messages"
 import { navigationRoutes } from "./routes/navigation"
+import { orgRoutes } from "./routes/orgs"
 import { planRoutes } from "./routes/plans"
 import { questionRoutes } from "./routes/questions"
 import { reviewRoutes } from "./routes/review"
@@ -66,10 +68,12 @@ export function createApp(db: Database, options: AppOptions = {}) {
     c.set("member", identity.member)
     c.set("via", identity.via)
     c.set("channels", identity.channels)
+    const viewer = viewerOf(identity.member, identity.channels)
+    c.set("viewer", viewer)
     const request = c.req.raw
     const scoped = { method: request.method, pathname: c.req.path, query: new URL(request.url).searchParams, body: () => request.clone().json().catch(() => null) }
     await requireInScope(db, identity.channels, scoped)
-    await requireDirectAccess(db, identity.member, scoped)
+    await requireReach(db, viewer, scoped)
     await next()
   }
 
@@ -87,6 +91,7 @@ export function createApp(db: Database, options: AppOptions = {}) {
     .route("/", messageRoutes)
     .route("/", threadRoutes)
     .route("/", memberRoutes)
+    .route("/", orgRoutes)
     .route("/", claimRoutes)
     .route("/", taskRoutes)
     .route("/", areaRoutes)

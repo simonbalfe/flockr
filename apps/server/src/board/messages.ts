@@ -14,7 +14,7 @@ import {
 import { count, eq, isNull } from "drizzle-orm"
 import type { Database, Tx } from "../db/client"
 import { members, messages, messageVersions, type MemberRow, type MessageRow } from "../db/schema"
-import { addressedIn } from "./direct"
+import { addressedIn, seenIn } from "./direct"
 import { clearDraft } from "./drafts"
 import { forbidden, invalid, wrongState } from "./errors"
 import { mutate, type Emit } from "./events"
@@ -130,7 +130,7 @@ async function editText(tx: Tx, emit: Emit, options: { actor: MemberRow; message
   const [earlier] = await tx.select({ n: count() }).from(messageVersions).where(eq(messageVersions.messageId, message.id))
   const replaced = (earlier?.n ?? 0) + 1
   await tx.insert(messageVersions).values({ messageId: message.id, version: replaced, body: message.body, mentions: message.mentions, writtenAt: message.editedAt ?? message.createdAt })
-  const mentions = await mentionsOf(tx, text)
+  const mentions = await seenIn(tx, message.channel, await mentionsOf(tx, text))
   const [edited] = await tx.update(messages).set({ body: text, mentions, editedAt: new Date() }).where(eq(messages.id, message.id)).returning()
   if (!edited) throw new Error("Message update returned nothing")
   emitMessage(emit, "message.edited", edited, actor.name, threadKeyOf(edited), { text, mentions, version: replaced + 1 })

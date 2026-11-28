@@ -11,6 +11,7 @@ import { mutate } from "./events"
 import { requireActor } from "./members"
 import { findMember, getTask } from "./read"
 import { channelEvent, emitTask, lockTask, requireHolder, requireLiveLease, requireState, taskReply, threadEvent, updateTask } from "./write"
+import { requireSeesTask } from "./tasks"
 
 function handoffCard(id: number, body: HandoffBody): string {
   const lines = [`Hand-off to ${body.to}: ${body.note ?? "no summary"}`, `Branch: \`${taskBranch(id)}\``]
@@ -36,6 +37,7 @@ export async function handOffTask(db: Database, actor: string, id: number, body:
     const member = await requireActor(tx, actor)
     if (!(await findMember(tx, body.to))) throw invalid(`Member ${body.to} does not exist`)
     const task = await lockTask(tx, id)
+    await requireSeesTask(tx, body.to, task.channel)
     if (body.epoch !== undefined && body.epoch === task.claimEpoch - 1 && task.holder === body.to && (await alreadyHandedOff(tx, { id, from: actor, to: body.to, epoch: body.epoch }))) return
     requireState(task, "claimed")
     requireHolder(task, member, body.epoch)

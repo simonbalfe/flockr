@@ -1,6 +1,7 @@
 import type { LiveFrame } from "@flockr/contracts"
 import type { Database } from "../db/client"
 import { eventsSince, headSeq } from "../board/events"
+import { canSee, isHostMember, type Viewer } from "../board/visibility"
 import type { LiveListener, LiveSignal } from "../platform"
 
 export interface LiveSocket {
@@ -10,6 +11,8 @@ export interface LiveSocket {
 export interface SocketStore {
   list: () => Iterable<LiveSocket>
   seqOf: (socket: LiveSocket) => number | undefined
+  viewerOf: (socket: LiveSocket) => Viewer | undefined
+  start: (socket: LiveSocket, seq: number, viewer: Viewer) => void
   setSeq: (socket: LiveSocket, seq: number) => void
   remove: (socket: LiveSocket) => void
   clear: () => void
@@ -22,11 +25,16 @@ interface Pumping {
 }
 
 export function memorySockets(): SocketStore {
-  const seqs = new Map<LiveSocket, number>()
+  const seqs = new Map<LiveSocket, { seq: number; viewer: Viewer }>()
   return {
     list: () => seqs.keys(),
-    seqOf: (socket) => seqs.get(socket),
-    setSeq: (socket, seq) => void seqs.set(socket, seq),
+    seqOf: (socket) => seqs.get(socket)?.seq,
+    viewerOf: (socket) => seqs.get(socket)?.viewer,
+    start: (socket, seq, viewer) => void seqs.set(socket, { seq, viewer }),
+    setSeq: (socket, seq) => {
+      const current = seqs.get(socket)
+      if (current) seqs.set(socket, { ...current, seq })
+    },
     remove: (socket) => void seqs.delete(socket),
     clear: () => seqs.clear(),
     size: () => seqs.size,
@@ -60,8 +68,9 @@ export function createHub(db: Database, listener: LiveListener, sockets: SocketS
       for (;;) {
         state.dirty = false
         const seq = sockets.seqOf(socket)
-        if (seq === undefined) return
-        const events = await eventsSince(db, seq, pageSize, { kind: "live" })
+        const viewer = sockets.viewerOf(socket)
+        if (seq === undefined || viewer === undefined) return
+        const events = await eventsSince(db, seq, pageSize, { kind: "live", viewer })
         if (sockets.seqOf(socket) === undefined) return
         for (const event of events) send(socket, { kind: "event", event })
         const last = events[events.length - 1]
@@ -77,8 +86,32 @@ export function createHub(db: Database, listener: LiveListener, sockets: SocketS
     for (const socket of sockets.list()) void pump(socket).catch((error: unknown) => console.error("live pump failed", error))
   }
 
+  const mayReceive = async (viewer: Viewer, frame: LiveFrame): Promise<boolean> => {
+    switch (frame.kind) {
+      case "activity":
+        return canSee(db, viewer, frame.activity.channel)
+      case "agents":
+        return isHostMember(db, viewer)
+      case "hello":
+      case "event":
+        return true
+      default: {
+        const unknownFrame: never = frame
+        throw new Error(`Unknown live frame ${JSON.stringify(unknownFrame)}`)
+      }
+    }
+  }
+
   const broadcast = (frame: LiveFrame) => {
-    for (const socket of sockets.list()) send(socket, frame)
+    for (const socket of sockets.list()) {
+      const viewer = sockets.viewerOf(socket)
+      if (!viewer) continue
+      void mayReceive(viewer, frame)
+        .then((allowed) => {
+          if (allowed) send(socket, frame)
+        })
+        .catch((error: unknown) => console.error("live frame check failed", error))
+    }
   }
 
   const onSignal = (signal: LiveSignal) => {
@@ -100,9 +133,9 @@ export function createHub(db: Database, listener: LiveListener, sockets: SocketS
 
   return {
     ready: listening.then(() => undefined),
-    async attach(socket: LiveSocket, since: number | null): Promise<void> {
+    async attach(socket: LiveSocket, since: number | null, viewer: Viewer): Promise<void> {
       const head = await headSeq(db)
-      sockets.setSeq(socket, since === null ? head : Math.min(since, head))
+      sockets.start(socket, since === null ? head : Math.min(since, head), viewer)
       send(socket, { kind: "hello", head })
       await pump(socket)
     },

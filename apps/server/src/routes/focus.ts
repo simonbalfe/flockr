@@ -12,5 +12,5 @@ export const focusRoutes = router().openapi(
       "Everything a person should look at now, on one page: questions, thread questions, reviews and blocked tasks waiting on a person (oldest first), open plans with their progress, agent runs in progress with their last steps, and tasks done since 00:00 UTC",
     responses: ok(Focus),
   }),
-  async (c) => c.json(await getFocus(c.var.db, c.var.member), 200),
+  async (c) => c.json(await getFocus(c.var.db, c.var.viewer), 200),
 )

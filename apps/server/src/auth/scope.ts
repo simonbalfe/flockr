@@ -1,12 +1,12 @@
 import { eq } from "drizzle-orm"
 import { z } from "zod"
-import { requireChannelAccess } from "../board/direct"
 import { forbidden } from "../board/errors"
 import { parseThreadId, type ThreadRef } from "../board/read"
 import type { Database } from "../db/client"
 import { messages, plans, tasks } from "../db/schema"
+import { isHostMember, requireSees, type Viewer } from "../board/visibility"
 
-type Target = { kind: "channel"; channel: string | null } | { kind: "thread"; ref: ThreadRef } | { kind: "plan"; id: number } | { kind: "open" } | { kind: "board" }
+type Target = { kind: "channel"; channel: string | null } | { kind: "thread"; ref: ThreadRef } | { kind: "plan"; id: number } | { kind: "open" } | { kind: "viewer" } | { kind: "board" }
 
 interface ScopedRequest {
   method: string
@@ -43,6 +43,10 @@ const rules: Rule[] = [
   { pattern: /^\/api\/channels\/([^/]+)(\/.*)?$/, target: (match) => ({ kind: "channel", channel: segment(match) }) },
   { pattern: /^\/api\/tasks\/(\d+)(\/.*)?$/, target: (match) => ({ kind: "thread", ref: { kind: "task", id: Number(match[1]) } }) },
   { pattern: /^\/api\/(?:threads|messages|activity-entries)\/([^/]+)(\/.*)?$/, target: (match) => threadOf(segment(match)) },
+  { method: "GET", pattern: /^\/api\/(events|focus|inbox|activity)$/, target: () => ({ kind: "viewer" }) },
+  { pattern: /^\/api\/me\/[a-z]+$/, target: () => ({ kind: "viewer" }) },
+  { method: "POST", pattern: /^\/api\/(dms|members)$/, target: () => ({ kind: "viewer" }) },
+  { method: "GET", pattern: /^\/api\/orgs$/, target: () => ({ kind: "open" }) },
 ]
 
 async function channelOfThread(db: Database, ref: ThreadRef): Promise<string | null> {
@@ -74,6 +78,7 @@ export async function requireInScope(db: Database, limit: string[] | null, reque
   switch (target.kind) {
     case "open":
       return
+    case "viewer":
     case "board":
       throw refuse()
     case "channel":
@@ -96,18 +101,21 @@ export async function requireInScope(db: Database, limit: string[] | null, reque
   }
 }
 
-export async function requireDirectAccess(db: Database, member: string, request: ScopedRequest): Promise<void> {
+export async function requireReach(db: Database, viewer: Viewer, request: ScopedRequest): Promise<void> {
   const target = await targetOf(request)
   switch (target.kind) {
     case "channel":
-      return requireChannelAccess(db, member, target.channel)
+      return requireSees(db, viewer, target.channel)
     case "thread":
-      return requireChannelAccess(db, member, await channelOfThread(db, target.ref))
+      return requireSees(db, viewer, await channelOfThread(db, target.ref))
     case "plan":
-      return requireChannelAccess(db, member, await channelOfPlan(db, target.id))
+      return requireSees(db, viewer, await channelOfPlan(db, target.id))
     case "open":
-    case "board":
+    case "viewer":
       return
+    case "board":
+      if (await isHostMember(db, viewer)) return
+      throw forbidden(`${viewer.member} is in a client org; only the org that runs the board can do this`)
     default: {
       const unhandled: never = target
       throw new Error(`Unhandled scope target ${JSON.stringify(unhandled)}`)

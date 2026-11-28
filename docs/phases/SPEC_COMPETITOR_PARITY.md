@@ -131,7 +131,7 @@ Research only: every feature the surveyed products have, and who has it. Nothing
 | P55 | Approval level per agent, and a separate right to act as a person | DB | Ask through to full access |
 | P56 | Auto-review of risky actions; ask when unsure | GB, RK | |
 | P57 | Secrets agents use but never see | DB, FB, RK, GB | DB: a vault with values redacted from logs; GB: tokens held server side |
-| P58 | Keys limited to one channel | BZ | |
+| P58 | Keys limited to one channel | BZ | Done (Work: 11a-orgs-and-channel-access): keys limited to channels (3c) now also narrow every list and the live feed, on top of org access |
 | P59 | Signed events and a hash-chain audit log | BZ | Two separate things. Every event is signed by its author (BIP-340 Schnorr, checked on arrival). The audit log (`buzz-audit`) is a keyless SHA-256 chain: it detects edits to single rows but an attacker with database write access can recompute it (`SECURITY.md`). Signatures prove who wrote; the chain shows nothing was altered. See `docs/reference/RESEARCH_BUZZ_IDENTITY.md` |
 | P60 | Email-code sign-in with an allowlist | FB | |
 | P76 | Per-action rule: allow, ask or block, above a floor no rule can lower | DT | Password changes and money transfers stay with the person |

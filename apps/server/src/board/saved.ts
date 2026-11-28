@@ -7,7 +7,7 @@ import { mutate } from "./events"
 import { requireActor } from "./members"
 import { findMessage, messageKey, parseThreadId, threadKeyOf } from "./read"
 import { emitMessage } from "./write"
-import { visibleTo } from "./visibility"
+import { viewerOf, visibleTo } from "./visibility"
 
 export async function setSaved(db: Database, actor: string, id: string, saved: boolean): Promise<SavedState> {
   return mutate(db, async (tx, emit) => {
@@ -34,7 +34,7 @@ export async function listSaved(db: Executor, actor: string): Promise<SavedItem[
     .select({ row: messages, savedAt: savedMessages.savedAt })
     .from(savedMessages)
     .innerJoin(messages, eq(messages.id, savedMessages.messageId))
-    .where(and(eq(savedMessages.member, actor), visibleTo(messages.channel, actor)))
+    .where(and(eq(savedMessages.member, actor), visibleTo(messages.channel, viewerOf(actor))))
     .orderBy(desc(savedMessages.savedAt), desc(savedMessages.messageId))
     .limit(navigationLimits.saved)
   return rows.map(({ row, savedAt }) => ({

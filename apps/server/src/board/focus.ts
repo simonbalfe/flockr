@@ -5,7 +5,7 @@ import { boardId } from "../config"
 import { events, members, messages, tasks, type MessageRow, type TaskRow } from "../db/schema"
 import { listPlans } from "./plans"
 import { activityEntryOf, getInbox, presentTasks } from "./read"
-import { visibleTo } from "./visibility"
+import { visibleTo, type Viewer } from "./visibility"
 
 const runningEntry = sql`${messages.activity}->>'status' = 'running'`
 
@@ -21,7 +21,7 @@ const stepOf = (entry: ActivityEntry, part: ActivityPart): RunStep => ({
 
 const snippet = (text: string) => (text.length > 80 ? `${text.slice(0, 77)}...` : text)
 
-async function claimedByAgents(db: Executor, viewer: string): Promise<TaskRow[]> {
+async function claimedByAgents(db: Executor, viewer: Viewer): Promise<TaskRow[]> {
   return db
     .select({ task: tasks })
     .from(tasks)
@@ -41,7 +41,7 @@ async function claimTimes(db: Executor, ids: number[]): Promise<Map<number, Date
   return new Map(rows.flatMap((r) => (r.task === null ? [] : [[r.task, new Date(r.at)]])))
 }
 
-async function runsInProgress(db: Executor, viewer: string): Promise<FocusRun[]> {
+async function runsInProgress(db: Executor, viewer: Viewer): Promise<FocusRun[]> {
   const running = (
     await db
       .select()
@@ -121,7 +121,7 @@ async function runsInProgress(db: Executor, viewer: string): Promise<FocusRun[]>
   return [...holding, ...others].sort((a, b) => Date.parse(a.startedAt) - Date.parse(b.startedAt))
 }
 
-export async function getFocus(db: Executor, viewer: string, now = new Date()): Promise<Focus> {
+export async function getFocus(db: Executor, viewer: Viewer, now = new Date()): Promise<Focus> {
   const inbox = await getInbox(db, viewer)
   const blockedRows = await db
     .select()
@@ -136,7 +136,7 @@ export async function getFocus(db: Executor, viewer: string, now = new Date()): 
     .limit(planLimits.focusDone)
   return {
     needsYou: { ...inbox, blocked: await presentTasks(db, blockedRows) },
-    plans: await listPlans(db, { member: viewer, channels: null }, { state: "open" }),
+    plans: await listPlans(db, viewer, { state: "open" }),
     running: await runsInProgress(db, viewer),
     doneToday: await presentTasks(db, doneRows),
   }

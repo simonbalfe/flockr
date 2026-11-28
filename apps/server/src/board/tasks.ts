@@ -7,6 +7,7 @@ import { mutate, type Emit } from "./events"
 import { requireActor } from "./members"
 import { requireJoinablePlan } from "./plans"
 import { findMember, findMessage, getTask, parseThreadId, requireChannel } from "./read"
+import { canSee, viewerOf } from "./visibility"
 import { emitTask, feedCard, lockTask, requireState, taskReply, threadEvent, updateTask } from "./write"
 
 interface NewTask {
@@ -31,6 +32,7 @@ async function stateForNeeds(tx: Tx, needs: number[]): Promise<"ready" | "waitin
 export async function insertTask(tx: Tx, emit: Emit, actor: string, values: NewTask): Promise<TaskRow> {
   await requireChannel(tx, values.channel)
   if (values.assignee !== null && !(await findMember(tx, values.assignee))) throw invalid(`Member ${values.assignee} does not exist`)
+  if (values.assignee !== null) await requireSeesTask(tx, values.assignee, values.channel)
   const planId = values.planId ?? null
   if (planId !== null) await requireJoinablePlan(tx, actor, planId, values.channel)
   const state = await stateForNeeds(tx, values.needs)
@@ -119,9 +121,14 @@ export async function giveTask(db: Database, actor: string, id: number, to: stri
     if (!target) throw invalid(`Member ${to} does not exist`)
     const task = await lockTask(tx, id)
     requireState(task, "ready", "waiting")
+    await requireSeesTask(tx, to, task.channel)
     const row = await updateTask(tx, id, { assignee: to })
     await threadEvent(tx, row, actor, `gave this task to ${to}`)
     emitTask(emit, "task.assigned", row, actor, { assignee: to })
   })
   return getTask(db, id)
+}
+
+export async function requireSeesTask(tx: Tx, member: string, channel: string): Promise<void> {
+  if (!(await canSee(tx, viewerOf(member), channel))) throw invalid(`${member} cannot see #${channel}; add them to it first`)
 }

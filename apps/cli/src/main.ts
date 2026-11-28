@@ -13,6 +13,7 @@ import { envKey, envMember, envUrl, stateFile } from "./config"
 import { epochStore } from "./epochs"
 import { activityLine, channelLine, entryLine, eventLine, feedLine, inboxText, memberLine, messageStateLine, searchLine, taskDetail, taskLine, threadText, versionsText } from "./format"
 import { keysCommand } from "./keys"
+import { channelSharingCommand, orgsCommand, visibilityOf } from "./orgs"
 import { channelMemoryCommand, notesCommand } from "./memory"
 import { sessionsCommand } from "./sessions"
 import { draftsCommand, dmCommand, savedCommand, sentCommand, threadsCommand } from "./navigation"
@@ -117,8 +118,15 @@ Agents served by a machine (a runner on that machine starts their sessions; a pe
   flockr keys create <member> [--channels a,b]   make a key that acts as that member; it prints once, keep it
   flockr keys revoke <id>             turn a key off for good; safe to repeat
   flockr machines                     machines with a runner, online or not, and the harnesses each can run
-  flockr channels create <id> [--topic text] [--repo github.com/owner/name]
-  flockr channels set <id> [--topic text] [--repo github.com/owner/name]   an empty --repo clears it; with a repo, commits print as links
+  flockr channels create <id> [--topic text] [--repo github.com/owner/name] [--visibility org|private|shared]
+  flockr channels set <id> [--topic text] [--repo github.com/owner/name] [--visibility org|private|shared]   an empty --repo clears it; with a repo, commits print as links
+
+Orgs and shared channels (every member is in one org; a client org sees only the channels shared with it)
+  flockr orgs [list] | flockr orgs create <id> <name>   the orgs you can see; add a client org (the org that runs the board only)
+  flockr join <name> --org <id> ...   add a member to a client org (default: the org that runs the board)
+  flockr channels share|unshare <id>  let members of other orgs be added (shared), or keep it to its org (org)
+  flockr channels members <id>        its listed members and their orgs
+  flockr channels add|remove <id> <member>   a member of another org joins only a shared channel
 
 Plans (one goal in a channel, grouping its tasks; progress is counted from the tasks' states)
   flockr plans [list] [--channel c] [--closed]   open plans, newest first, with "n of m done"; --closed lists the closed ones
@@ -379,18 +387,19 @@ async function main(): Promise<number> {
   switch (command) {
     case "channels": {
       if (positionals[1] === "create") {
-        const body = { id: need(positionals[2], "channel id").replace(/^#/, ""), topic: values.topic ?? "", repo: values.repo || null }
+        const body = { id: need(positionals[2], "channel id").replace(/^#/, ""), topic: values.topic ?? "", repo: values.repo || null, visibility: visibilityOf(values.visibility) ?? "org" }
         const channel = await run(sdk.createChannel({ body }))
         print(channel, () => channelLine(channel))
         return 0
       }
       if (positionals[1] === "set") {
-        const body = { topic: values.topic, repo: values.repo === undefined ? undefined : values.repo || null }
-        if (body.topic === undefined && body.repo === undefined) throw new UsageError("Give --topic or --repo")
+        const body = { topic: values.topic, repo: values.repo === undefined ? undefined : values.repo || null, visibility: visibilityOf(values.visibility) }
+        if (body.topic === undefined && body.repo === undefined && body.visibility === undefined) throw new UsageError("Give --topic, --repo or --visibility")
         const channel = await run(sdk.updateChannel({ path: { channel: need(positionals[2], "channel id").replace(/^#/, "") }, body }))
         print(channel, () => channelLine(channel))
         return 0
       }
+      if (["share", "unshare", "members", "add", "remove"].some((sub) => sub === positionals[1])) return channelSharingCommand({ positionals, values, print }, positionals[1] ?? "")
       const list = await run(sdk.listChannels())
       print(list, () => list.map(channelLine).join("\n"))
       return 0
@@ -500,6 +509,8 @@ async function main(): Promise<number> {
       print(inbox, () => inboxText(inbox))
       return 0
     }
+    case "orgs":
+      return orgsCommand({ positionals, values, print })
     case "members": {
       const list = await run(sdk.listMembers())
       print(list, () => list.map(memberLine).join("\n"))
@@ -550,7 +561,7 @@ async function main(): Promise<number> {
     case "join": {
       const kind = memberKinds.find((k) => k === (values.kind ?? "agent"))
       if (!kind) throw new UsageError(`--kind must be one of ${memberKinds.join(", ")}`)
-      const body = { name: need(positionals[1], "name"), kind, owner: values.owner ?? null, runsIn: values["runs-in"] ?? null }
+      const body = { name: need(positionals[1], "name"), kind, org: values.org, owner: values.owner ?? null, runsIn: values["runs-in"] ?? null }
       const joined = await run(sdk.createMember({ body }))
       print(joined, () => `Joined as ${memberLine(joined)}`)
       return 0

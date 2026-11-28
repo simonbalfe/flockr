@@ -2,10 +2,9 @@ import type { Draft, DraftKind, SaveDraftBody, SaveDraftResult } from "@flockr/c
 import { and, desc, eq } from "drizzle-orm"
 import type { Database, Executor, Tx } from "../db/client"
 import { drafts, type DraftRow } from "../db/schema"
-import { requireChannelAccess } from "./direct"
 import { requireActor } from "./members"
 import { findMessage, findTask, messageKey, parseThreadId, requireChannel } from "./read"
-import { visibleTo } from "./visibility"
+import { requireSees, viewerOf, visibleTo } from "./visibility"
 
 interface DraftKey {
   member: string
@@ -35,7 +34,7 @@ export async function saveDraft(db: Database, actor: string, body: SaveDraftBody
   return db.transaction(async (tx) => {
     await requireActor(tx, actor)
     const place = await placeOf(tx, body)
-    await requireChannelAccess(tx, actor, place.channel)
+    await requireSees(tx, viewerOf(actor), place.channel)
     if (body.text.trim() === "") {
       await clearDraft(tx, { member: actor, kind: body.kind, target: place.target })
       return { draft: null }
@@ -54,7 +53,7 @@ export async function listDrafts(db: Executor, actor: string): Promise<Draft[]> 
   const rows = await db
     .select()
     .from(drafts)
-    .where(and(eq(drafts.member, actor), visibleTo(drafts.channel, actor)))
+    .where(and(eq(drafts.member, actor), visibleTo(drafts.channel, viewerOf(actor))))
     .orderBy(desc(drafts.updatedAt))
   return rows.map(present)
 }

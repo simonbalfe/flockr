@@ -2,10 +2,11 @@ import { ErrorBody } from "@flockr/contracts"
 import { createRoute, OpenAPIHono, type RouteConfig, type z } from "@hono/zod-openapi"
 import type { IdentitySource } from "@flockr/contracts"
 import type { Authenticator } from "../auth/identity"
+import type { Viewer } from "../board/visibility"
 import type { Database } from "../db/client"
 
 export interface AppEnv {
-  Variables: { db: Database; auth: Authenticator; member: string; via: IdentitySource; channels: string[] | null }
+  Variables: { db: Database; auth: Authenticator; member: string; via: IdentitySource; channels: string[] | null; viewer: Viewer }
 }
 
 export function router() {

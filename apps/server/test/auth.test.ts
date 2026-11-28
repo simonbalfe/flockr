@@ -5,7 +5,7 @@ import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/
 import { sql } from "drizzle-orm"
 import { z } from "zod"
 import { createApp } from "../src/app"
-import { refuseLive } from "../src/auth/identity"
+import { liveViewer } from "../src/auth/identity"
 import { createKey } from "../src/board/keys"
 import { logEmail } from "../src/email/log"
 import { resetBoard, seedBoard } from "../src/seed/seed"
@@ -13,6 +13,7 @@ import { freshBoard, testConnection } from "./harness"
 
 const Me = z.object({ name: z.string(), via: z.string(), channels: z.array(z.string()).nullable() })
 const origin = "http://localhost"
+const liveUrl = new URL("http://localhost/ws")
 
 async function signInBoard() {
   const connection = await testConnection()
@@ -98,8 +99,8 @@ describe("sign-in (1d)", () => {
     expect(Me.parse((await board.call("/api/me", { headers: { cookie, [memberHeader]: "simon" } })).json).name).toBe("tim")
     expect(Me.parse((await board.call("/api/me", { headers: { cookie, [memberHeader]: "claude" } })).json).name).toBe("tim")
     expect(Me.parse((await board.call("/api/me", { headers: { cookie, [memberHeader]: "gemini" } })).json).name).toBe("gemini")
-    expect(await refuseLive(board.app.authenticator, new Headers({ [memberHeader]: "simon" }))).toMatchObject({ status: 401 })
-    expect(await refuseLive(board.app.authenticator, new Headers({ cookie }))).toBeNull()
+    expect(await liveViewer(board.app.authenticator, { headers: new Headers({ [memberHeader]: "simon" }), url: liveUrl })).toMatchObject({ status: 401 })
+    expect(await liveViewer(board.app.authenticator, { headers: new Headers({ cookie }), url: liveUrl })).toEqual({ member: "tim", channels: null })
   })
 })
 
@@ -112,7 +113,7 @@ describe("member keys (3c)", () => {
     const posted = await board.call("/api/channels/backend/messages", { method: "POST", headers: bearer, body: { text: "From a key" } })
     expect(posted.status).toBe(200)
     expect(z.object({ message: z.object({ who: z.string() }) }).parse(posted.json).message.who).toBe("claude")
-    expect(await refuseLive(board.app.authenticator, new Headers(bearer))).toBeNull()
+    expect(await liveViewer(board.app.authenticator, { headers: new Headers(bearer), url: liveUrl })).toEqual({ member: "claude", channels: null })
 
     const transport = new StreamableHTTPClientTransport(new URL("http://localhost/mcp"), {
       fetch: (input, init) => Promise.resolve(board.app.request(input instanceof Request ? input : String(input), init)),
@@ -139,7 +140,7 @@ describe("member keys (3c)", () => {
     expect((await board.call(`/api/keys/${created.key.id}/revoke`, { method: "POST", headers: { cookie } })).status).toBe(200)
     expect((await board.call(`/api/keys/${created.key.id}/revoke`, { method: "POST", headers: { cookie } })).status).toBe(200)
     expect((await board.call("/api/me", { headers: bearer })).status).toBe(401)
-    expect(await refuseLive(board.app.authenticator, new Headers(bearer))).toMatchObject({ status: 401 })
+    expect(await liveViewer(board.app.authenticator, { headers: new Headers(bearer), url: liveUrl })).toMatchObject({ status: 401 })
     expect((await board.call("/api/keys", { method: "POST", headers: bearer, body: { member: "gemini" } })).status).toBe(401)
   })
 
@@ -155,7 +156,7 @@ describe("member keys (3c)", () => {
     expect((await board.call("/api/tasks", { headers: bearer })).status).toBe(403)
     expect((await board.call("/api/events", { headers: bearer })).status).toBe(403)
     expect((await board.call("/api/keys", { headers: bearer })).status).toBe(403)
-    expect(await refuseLive(board.app.authenticator, new Headers(bearer))).toMatchObject({ status: 403 })
+    expect(await liveViewer(board.app.authenticator, { headers: new Headers(bearer), url: liveUrl })).toEqual({ member: "codex", channels: ["backend"] })
 
     const tasks = z.array(z.object({ id: z.number(), channel: z.string() })).parse((await board.call("/api/tasks?channel=backend", { headers: bearer })).json)
     const elsewhere = await board.db.execute(sql`select id from tasks where channel <> 'backend' limit 1`)

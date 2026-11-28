@@ -1,5 +1,6 @@
 import type { ReactNode } from "react"
 import { useMembers, useTasks } from "@/api/hooks"
+import { currentUser } from "@/api/session"
 import type { ActivityEntry, Event, FeedItem, Member, Reply, Task, ThreadQuestion } from "@/api/types"
 import { WorkBlock } from "@/components/agent/work-block"
 import { MemberAvatar } from "@/components/member-avatar"
@@ -42,12 +43,17 @@ function toBlocks(entries: Entry[]): Block[] {
 
 const shownGone = (entry: Entry): boolean => (entry.kind === "text" || entry.kind === "reply") && entry.deleted
 
-function subLabel(member: Member | undefined): string {
-  if (!member) return ""
+function kindLabel(member: Member): string {
   if (member.kind === "agent") return `via ${member.owner}`
   if (member.kind === "bridge") return `from ${member.source}`
   if (member.kind === "watcher") return "watcher"
   return ""
+}
+
+function subLabel(member: Member | undefined, myOrg: string | undefined): string {
+  if (!member) return ""
+  const outside = myOrg !== undefined && member.org !== myOrg ? member.org : ""
+  return [kindLabel(member), outside].filter(Boolean).join(" · ")
 }
 
 function EventRow({ event }: { event: Event }) {
@@ -98,6 +104,7 @@ function GroupBody({ group, inThread, tasks, subThreads }: { group: Group; inThr
 
 export function Feed({ entries, inThread = false, subThreads = null }: { entries: Entry[]; inThread?: boolean; subThreads?: SubThreadMap | null }) {
   const members = useMembers()
+  const myOrg = members.data?.find((m) => m.name === currentUser)?.org
   const taskList = useTasks()
   const tasks = new Map((taskList.data ?? []).map((t) => [t.id, t]))
   return (
@@ -105,7 +112,7 @@ export function Feed({ entries, inThread = false, subThreads = null }: { entries
       {toBlocks(entries.filter((entry) => !shownGone(entry))).map((block) => {
         if (block.kind === "event") return <EventRow key={block.event.id} event={block.event} />
         const { group } = block
-        const sub = subLabel(members.data?.find((m) => m.name === group.who))
+        const sub = subLabel(members.data?.find((m) => m.name === group.who), myOrg)
         return (
           <div key={group.items[0]?.id} data-entry={group.items[0]?.id} className={`group grid grid-cols-[30px_minmax(0,1fr)] gap-3 py-[7px] ${inThread ? "" : "hover:bg-sidebar"}`}>
             <MemberAvatar name={group.who} />

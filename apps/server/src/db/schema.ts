@@ -1,4 +1,5 @@
-import type { ActionKind, ChannelKind, DraftKind, AreaEndReason, ActivityState, AgentDesired, AgentPermissions, AgentReport, ApprovalVerdict, HarnessInfo, JobKind, JobState, MemberKind, MemoryKind, MemoryScope, Question, RoutineTriggerKind, TaskState } from "@flockr/contracts"
+import { hostOrg } from "@flockr/contracts"
+import type { ActionKind, ChannelKind, ChannelVisibility, DraftKind, AreaEndReason, ActivityState, AgentDesired, AgentPermissions, AgentReport, ApprovalVerdict, HarnessInfo, JobKind, JobState, MemberKind, MemoryKind, MemoryScope, Question, RoutineTriggerKind, TaskState } from "@flockr/contracts"
 import { sql } from "drizzle-orm"
 import { bigint, boolean, check, index, integer, jsonb, pgTable, primaryKey, text, timestamp, unique, uniqueIndex, type AnyPgColumn } from "drizzle-orm/pg-core"
 
@@ -13,18 +14,33 @@ export const boards = pgTable("boards", {
   lastSeq: bigint("last_seq", { mode: "number" }).notNull().default(0),
 })
 
+export const orgs = pgTable(
+  "orgs",
+  {
+    id: text("id").primaryKey(),
+    name: text("name").notNull(),
+    host: boolean("host").notNull().default(false),
+    createdAt: createdAt(),
+  },
+  (t) => [uniqueIndex("orgs_one_host").on(t.host).where(sql`${t.host}`)],
+)
+
 export const members = pgTable(
   "members",
   {
     name: text("name").primaryKey(),
     kind: text("kind").$type<MemberKind>().notNull(),
+    org: text("org")
+      .notNull()
+      .default(hostOrg)
+      .references(() => orgs.id),
     owner: text("owner").references((): AnyPgColumn => members.name),
     runsIn: text("runs_in"),
     source: text("source"),
     removedAt: timestamp("removed_at", { withTimezone: true }),
     createdAt: createdAt(),
   },
-  (t) => [check("members_kind", sql`${t.kind} in ('person', 'agent', 'bridge', 'watcher')`)],
+  (t) => [check("members_kind", sql`${t.kind} in ('person', 'agent', 'bridge', 'watcher')`), index("members_org").on(t.org)],
 )
 
 export const machines = pgTable("machines", {
@@ -70,15 +86,24 @@ export const channels = pgTable(
   {
     id: text("id").primaryKey(),
     kind: text("kind").$type<ChannelKind>().notNull().default("channel"),
+    org: text("org")
+      .notNull()
+      .default(hostOrg)
+      .references(() => orgs.id),
+    visibility: text("visibility").$type<ChannelVisibility>().notNull().default("org"),
     topic: text("topic").notNull().default(""),
     repo: text("repo"),
     createdAt: createdAt(),
   },
-  (t) => [check("channels_kind", sql`${t.kind} in ('channel', 'dm')`)],
+  (t) => [
+    check("channels_kind", sql`${t.kind} in ('channel', 'dm')`),
+    check("channels_visibility", sql`${t.visibility} in ('org', 'private', 'shared')`),
+    index("channels_org").on(t.org),
+  ],
 )
 
-export const directMembers = pgTable(
-  "direct_members",
+export const channelMembers = pgTable(
+  "channel_members",
   {
     channel: text("channel")
       .notNull()
@@ -86,8 +111,10 @@ export const directMembers = pgTable(
     member: text("member")
       .notNull()
       .references(() => members.name),
+    addedBy: text("added_by"),
+    addedAt: timestamp("added_at", { withTimezone: true }).notNull().defaultNow(),
   },
-  (t) => [primaryKey({ columns: [t.channel, t.member] }), index("direct_members_member").on(t.member)],
+  (t) => [primaryKey({ columns: [t.channel, t.member] }), index("channel_members_member").on(t.member)],
 )
 
 export const savedMessages = pgTable(
@@ -527,6 +554,8 @@ export const authVerifications = pgTable(
   (t) => [index("auth_verifications_identifier").on(t.identifier)],
 )
 
+export type OrgRow = typeof orgs.$inferSelect
+export type ChannelMemberRow = typeof channelMembers.$inferSelect
 export type TaskRow = typeof tasks.$inferSelect
 export type PlanRow = typeof plans.$inferSelect
 export type WorkingAreaRow = typeof workingAreas.$inferSelect

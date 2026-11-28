@@ -31,7 +31,7 @@ export const navigationRoutes = router()
       summary: "Every thread the acting member started or replied in, newest activity first, with the replies by others since the member last wrote in it",
       responses: ok(z.array(MyThread)),
     }),
-    async (c) => c.json(await listMyThreads(c.var.db, c.var.member), 200),
+    async (c) => c.json(await listMyThreads(c.var.db, c.var.viewer), 200),
   )
   .openapi(
     operation({
@@ -42,7 +42,7 @@ export const navigationRoutes = router()
       summary: "The acting member's recent messages and replies, newest first. Deleted ones are left out.",
       responses: ok(z.array(SentItem)),
     }),
-    async (c) => c.json(await listSent(c.var.db, c.var.member), 200),
+    async (c) => c.json(await listSent(c.var.db, c.var.viewer), 200),
   )
   .openapi(
     operation({

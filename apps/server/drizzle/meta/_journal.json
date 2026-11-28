@@ -134,6 +134,20 @@
       "when": 1795748886210,
       "tag": "0018_session_pointers",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1795834137326,
+      "tag": "0019_orgs_and_channel_members",
+      "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1795834152183,
+      "tag": "0020_drop_direct_members",
+      "breakpoints": true
     }
   ]
 }

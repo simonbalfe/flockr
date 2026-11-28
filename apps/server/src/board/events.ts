@@ -5,7 +5,7 @@ import type { Database, Executor, Tx } from "../db/client"
 import { boards, events } from "../db/schema"
 import { liveSignals } from "../platform"
 import { enqueueWatchers } from "./watchers"
-import { visibleTo } from "./visibility"
+import { sameOrgChannel, visibleTo, type Viewer } from "./visibility"
 
 export interface EventDraft {
   type: string
@@ -59,23 +59,22 @@ export async function headSeq(db: Executor): Promise<number> {
 
 const routingFields = ["mentions", "direct", "member", "state"] as const
 
-export type EventViewer = { kind: "member"; name: string } | { kind: "live" }
+export type EventViewer = { kind: "member"; viewer: Viewer } | { kind: "live"; viewer: Viewer }
 
-export async function eventsSince(db: Executor, since: number, limit: number, viewer: EventViewer): Promise<BoardEvent[]> {
-  const name = viewer.kind === "member" ? viewer.name : null
+export async function eventsSince(db: Executor, since: number, limit: number, reader: EventViewer): Promise<BoardEvent[]> {
   const rows = await db
     .select({
       row: events,
-      direct: sql<boolean>`exists (select 1 from channels c where c.id = ${events.channel} and c.kind = 'dm')`,
-      allowed: sql<boolean>`${visibleTo(events.channel, name)}`,
+      allowed: sql<boolean>`${visibleTo(events.channel, reader.viewer)}`,
+      ownOrg: sql<boolean>`${sameOrgChannel(events.channel, reader.viewer)}`,
     })
     .from(events)
     .where(and(eq(events.boardId, boardId), gt(events.seq, since)))
     .orderBy(asc(events.seq))
     .limit(limit)
-  return rows.flatMap(({ row, direct, allowed }): BoardEvent[] => {
-    if (direct && !allowed && viewer.kind === "member") return []
-    const data = direct && viewer.kind === "live" ? Object.fromEntries(routingFields.flatMap((key) => (key in row.data ? [[key, row.data[key]]] : []))) : row.data
+  return rows.flatMap(({ row, allowed, ownOrg }): BoardEvent[] => {
+    if (!allowed && !(reader.kind === "live" && ownOrg)) return []
+    const data = allowed ? row.data : Object.fromEntries(routingFields.flatMap((key) => (key in row.data ? [[key, row.data[key]]] : [])))
     return [{ seq: row.seq, type: row.type, at: row.at.toISOString(), actor: row.actor, channel: row.channel, taskId: row.taskId, threadId: row.threadId, messageId: row.messageId, data }]
   })
 }

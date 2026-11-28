@@ -22,6 +22,7 @@ import type { Database, Executor, Tx } from "../db/client"
 import { jobs, members, routines, type JobRow, type MemberRow, type RoutineRow } from "../db/schema"
 import { allowedOnce, askApproval, verdictFor } from "./approvals"
 import { buildBrief } from "./brief"
+import { seenIn } from "./direct"
 import { forbidden, invalid, notFound } from "./errors"
 import { mutate, type Emit } from "./events"
 import { enqueueJob, finishJob, lockClaimedJob, type JobOutcome } from "./jobs"
@@ -252,7 +253,7 @@ async function ensureRoutineActor(tx: Tx, emit: Emit): Promise<void> {
 }
 
 async function post(tx: Tx, emit: Emit, channel: string, text: string): Promise<string> {
-  const mentions = await mentionsOf(tx, text)
+  const mentions = await seenIn(tx, channel, await mentionsOf(tx, text))
   const row = await insertMessage(tx, { channel, kind: "text", who: routineActor, body: text, mentions })
   emitMessage(emit, "message.posted", row, routineActor, messageKey(row.id), { mentions })
   return messageKey(row.id)
@@ -273,7 +274,7 @@ async function act(tx: Tx, emit: Emit, routine: RoutineRow, now: Date): Promise<
       return `mentioned ${action.agent} in ${await post(tx, emit, routine.channel, `@${action.agent} ${action.text}`)}`
     }
     case "brief": {
-      const brief = await buildBrief(tx, now)
+      const brief = await buildBrief(tx, { audience: routine.channel }, now)
       return `posted the brief as ${await post(tx, emit, routine.channel, brief.text)}`
     }
     default: {

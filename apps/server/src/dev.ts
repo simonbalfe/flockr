@@ -5,7 +5,7 @@ import { livePath } from "@flockr/contracts"
 import devServer from "@hono/vite-dev-server"
 import type { Plugin } from "vite"
 import { WebSocketServer } from "ws"
-import { createAuthenticator, refuseLive } from "./auth/identity"
+import { createAuthenticator, liveViewer } from "./auth/identity"
 import { localAuthSettings } from "./auth/local"
 import { databaseUrl } from "./config"
 import { devConnection } from "./dev-connection"
@@ -27,15 +27,15 @@ function liveSocketPlugin(): Plugin {
         const url = new URL(request.url ?? "/", "http://localhost")
         const headers = new Headers()
         for (const [name, value] of Object.entries(request.headers)) if (typeof value === "string") headers.set(name, value)
-        const refused = await refuseLive(auth, headers)
-        if (refused) {
-          socket.end(`HTTP/1.1 ${refused.status} ${refused.statusText || "Refused"}\r\nConnection: close\r\n\r\n`)
+        const viewer = await liveViewer(auth, { headers, url })
+        if (viewer instanceof Response) {
+          socket.end(`HTTP/1.1 ${viewer.status} ${viewer.statusText || "Refused"}\r\nConnection: close\r\n\r\n`)
           return
         }
         wss.handleUpgrade(request, socket, head, (ws) => {
           const liveSocket: LiveSocket = { send: (text) => ws.send(text) }
           ws.on("close", () => live.hub.detach(liveSocket))
-          live.hub.attach(liveSocket, parseSince(url)).catch((error: unknown) => {
+          live.hub.attach(liveSocket, parseSince(url), viewer).catch((error: unknown) => {
             console.error("live attach failed", error)
             ws.close(1011, "attach failed")
           })

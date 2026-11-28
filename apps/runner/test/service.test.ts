@@ -17,6 +17,7 @@ function agent(name: string, config: Partial<AgentConfig> = {}): Agent {
   return {
     name,
     kind: "agent",
+    org: "home",
     owner: "simon",
     runsIn: null,
     source: null,

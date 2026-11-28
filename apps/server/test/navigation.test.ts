@@ -3,6 +3,7 @@ import { authorizationHeader, bearerAuth, Channel, CreatedKey, Draft, EventPage,
 import { z } from "zod"
 import { createApp } from "../src/app"
 import { eventsSince } from "../src/board/events"
+import { viewerOf } from "../src/board/visibility"
 import { createKey } from "../src/board/keys"
 import { logEmail } from "../src/email/log"
 import { freshBoard } from "./harness"
@@ -88,7 +89,7 @@ describe("the live feed", () => {
   test("shows that something happened in a direct conversation, never what was said", async () => {
     const { db, call, dm, posted } = await directBoard()
     await call("simon", "PATCH", `/api/messages/${posted.message.id}`, { text: "a secret edit" })
-    const seen = (await eventsSince(db, 0, 1000, { kind: "live" })).filter((e) => e.channel === dm.id)
+    const seen = (await eventsSince(db, 0, 1000, { kind: "live", viewer: viewerOf("tim") })).filter((e) => e.channel === dm.id)
     expect(seen.map((e) => e.type)).toEqual(["channel.created", "message.posted", "message.edited"])
     expect(JSON.stringify(seen)).not.toContain("secret")
     expect(seen[1]?.data).toEqual({ mentions: ["claude"], direct: true })

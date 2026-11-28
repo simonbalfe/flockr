@@ -4,6 +4,8 @@ import { AreaPolicySchema, areaLimits } from "./areas"
 import { Activity, Label, Labels, MemberKind, orNull, Task, TaskState, TextMessage } from "./board"
 import { checklistLimits, checklistSkipReasons } from "./checklist"
 import { commitMessageChars, Repo, Sha } from "./commits"
+import { hostOrg } from "./constants"
+import { ChannelVisibility, orgId } from "./orgs"
 
 const text = z.string().trim().min(1)
 const epoch = z.number().int().optional().openapi({ description: "The claimEpoch from your claim. A stale value is refused with 409." })
@@ -19,13 +21,19 @@ export const MessageParams = z.object({
 export const MemberParams = z.object({ name: z.string().openapi({ param: { name: "name", in: "path" }, example: "reviewer" }) })
 
 export const CreateChannelBody = z
-  .object({ id: z.string().regex(/^[a-z0-9][a-z0-9-]*$/).openapi({ example: "frontend" }), topic: z.string().default(""), repo: orNull(Repo).default(null) })
+  .object({
+    id: z.string().regex(/^[a-z0-9][a-z0-9-]*$/).openapi({ example: "frontend" }),
+    topic: z.string().default(""),
+    repo: orNull(Repo).default(null),
+    visibility: ChannelVisibility.default("org"),
+  })
   .openapi("CreateChannelBody")
 
 export const UpdateChannelBody = z
   .object({
     topic: z.string().optional(),
     repo: orNull(Repo).optional().openapi({ description: "Set the channel's repo, or null to clear it" }),
+    visibility: ChannelVisibility.optional().openapi({ description: "Share the channel with other orgs (shared), keep it to the owning org (org) or to its listed members (private)" }),
   })
   .openapi("UpdateChannelBody")
 
@@ -33,6 +41,7 @@ export const CreateMemberBody = z
   .object({
     name: z.string().regex(/^[a-z][a-z0-9-]*$/).openapi({ example: "reviewer" }),
     kind: MemberKind.default("agent"),
+    org: orgId.default(hostOrg).openapi({ description: "The org the member belongs to; fixed once made" }),
     owner: z.string().nullable().default(null),
     runsIn: z.string().nullable().default(null),
     source: z.string().nullable().default(null),

@@ -1,4 +1,4 @@
-import { authBasePath, signInWording } from "@flockr/contracts"
+import { authBasePath, hostOrg, signInWording } from "@flockr/contracts"
 import { betterAuth } from "better-auth/minimal"
 import { drizzleAdapter } from "better-auth/adapters/drizzle"
 import { createAuthMiddleware } from "better-auth/api"
@@ -18,7 +18,7 @@ export const memberFor = (settings: AuthSettings, email: string): string | undef
 
 async function ensurePerson(db: Database, name: string): Promise<void> {
   if (await findAnyMember(db, name)) return
-  await createMember(db, name, { name, kind: "person", owner: null, runsIn: null, source: null })
+  await createMember(db, name, { name, kind: "person", org: hostOrg, owner: null, runsIn: null, source: null })
 }
 
 export function createBetterAuth(db: Database, settings: AuthSettings) {

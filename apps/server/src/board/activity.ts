@@ -5,7 +5,7 @@ import { activity, type ActivityRow } from "../db/schema"
 import { liveSignals } from "../platform"
 import { requireActor } from "./members"
 import { findMessage, parseThreadId, findTask, messageKey } from "./read"
-import { visibleTo } from "./visibility"
+import { visibleTo, type Viewer } from "./visibility"
 
 function present(row: ActivityRow): Activity {
   return { member: row.member, threadId: row.threadId, channel: row.channel, since: row.since.toISOString(), expiresAt: row.expiresAt.toISOString() }
@@ -42,7 +42,7 @@ export async function setActivity(db: Database, actor: string, threadId: string,
   })
 }
 
-export async function listActivity(db: Executor, viewer: string | null, now = new Date()): Promise<Activity[]> {
+export async function listActivity(db: Executor, viewer: Viewer, now = new Date()): Promise<Activity[]> {
   const rows = await db.select().from(activity).where(and(gt(activity.expiresAt, now), visibleTo(activity.channel, viewer))).orderBy(asc(activity.since))
   return rows.map(present)
 }

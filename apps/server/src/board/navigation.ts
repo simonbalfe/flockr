@@ -3,14 +3,14 @@ import { and, desc, eq, gt, inArray, isNull, or, sql } from "drizzle-orm"
 import type { Executor } from "../db/client"
 import { activity, messages, tasks, type MessageRow, type TaskRow } from "../db/schema"
 import { messageKey, threadKeyOf } from "./read"
-import { visibleTo } from "./visibility"
+import { visibleTo, type Viewer } from "./visibility"
 
 const candidateThreads = 200
 const ownScanLimit = 2000
 
 const snippet = (text: string) => (text.length > navigationLimits.snippetChars ? `${text.slice(0, navigationLimits.snippetChars - 1)}...` : text)
 const isReply = (row: MessageRow) => row.parentId !== null || row.threadTaskId !== null
-const alive = (viewer: string) => and(eq(messages.kind, "text"), isNull(messages.deletedAt), visibleTo(messages.channel, viewer))
+const alive = (viewer: Viewer) => and(eq(messages.kind, "text"), isNull(messages.deletedAt), visibleTo(messages.channel, viewer))
 
 interface ThreadFacts {
   task: TaskRow | undefined
@@ -50,15 +50,16 @@ async function threadSignals(db: Executor, roots: number[], taskIds: number[], n
   return { asked: new Set(asked.map(threadKeyOf)), working: new Set([...runs.map(threadKeyOf), ...presence.map((p) => p.threadId)]) }
 }
 
-export async function listMyThreads(db: Executor, actor: string, now = new Date()): Promise<MyThread[]> {
+export async function listMyThreads(db: Executor, viewer: Viewer, now = new Date()): Promise<MyThread[]> {
+  const actor = viewer.member
   const mine = await db
     .select()
     .from(messages)
-    .where(and(eq(messages.who, actor), alive(actor)))
+    .where(and(eq(messages.who, actor), alive(viewer)))
     .orderBy(desc(messages.id))
     .limit(ownScanLimit)
   const rootIds = mine.filter((row) => !isReply(row)).map((row) => row.id)
-  const answered = rootIds.length ? await db.selectDistinct({ id: messages.parentId }).from(messages).where(and(inArray(messages.parentId, rootIds), alive(actor))) : []
+  const answered = rootIds.length ? await db.selectDistinct({ id: messages.parentId }).from(messages).where(and(inArray(messages.parentId, rootIds), alive(viewer))) : []
   const rootsWithReplies = new Set(answered.map((r) => r.id))
   const lastOwn = new Map<string, number>()
   for (const row of mine) {
@@ -73,7 +74,7 @@ export async function listMyThreads(db: Executor, actor: string, now = new Date(
   const entries = await db
     .select()
     .from(messages)
-    .where(and(alive(actor), or(threadRoots.length ? inArray(messages.parentId, threadRoots) : undefined, threadTasks.length ? inArray(messages.threadTaskId, threadTasks) : undefined)))
+    .where(and(alive(viewer), or(threadRoots.length ? inArray(messages.parentId, threadRoots) : undefined, threadTasks.length ? inArray(messages.threadTaskId, threadTasks) : undefined)))
     .orderBy(messages.id)
   const roots = threadRoots.length ? await db.select().from(messages).where(inArray(messages.id, threadRoots)) : []
   const taskRows = threadTasks.length ? await db.select().from(tasks).where(inArray(tasks.id, threadTasks)) : []
@@ -109,8 +110,9 @@ export async function listMyThreads(db: Executor, actor: string, now = new Date(
   return threads.sort((a, b) => Date.parse(b.lastAt) - Date.parse(a.lastAt) || b.threadId.localeCompare(a.threadId)).slice(0, navigationLimits.threads)
 }
 
-export async function listSent(db: Executor, actor: string): Promise<SentItem[]> {
-  const rows = await db.select().from(messages).where(and(eq(messages.who, actor), alive(actor))).orderBy(desc(messages.id)).limit(navigationLimits.sent)
+export async function listSent(db: Executor, viewer: Viewer): Promise<SentItem[]> {
+  const actor = viewer.member
+  const rows = await db.select().from(messages).where(and(eq(messages.who, actor), alive(viewer))).orderBy(desc(messages.id)).limit(navigationLimits.sent)
   return rows.map((row) => ({
     id: messageKey(row.id),
     kind: isReply(row) ? "reply" : "message",

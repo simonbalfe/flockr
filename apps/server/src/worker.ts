@@ -1,6 +1,8 @@
 import { livePath } from "@flockr/contracts"
 import { createApp } from "./app"
-import { createAuthenticator, refuseLive } from "./auth/identity"
+import { createAuthenticator, headerIdentity, liveAsParam, liveViewer } from "./auth/identity"
+import { viewerOf } from "./board/visibility"
+import { viewerHeader } from "./platform/cloudflare/board-room"
 import { backUp } from "./backup/backup"
 import { drainJobs } from "./board/drain"
 import { sweepOnce } from "./live/sweeper"
@@ -64,8 +66,11 @@ export default {
     const url = new URL(request.url)
     const auth = workerAuth(env, request)
     if (url.pathname === livePath) {
-      const refused = auth.mode === "on" ? await onBoard(env, ctx, { run: (db) => refuseLive(createAuthenticator(db, auth), request.headers), delivered: () => false }) : null
-      return refused ?? boardRoom(env).fetch(request)
+      const viewer = auth.mode === "on" ? await onBoard(env, ctx, { run: (db) => liveViewer(createAuthenticator(db, auth), { headers: request.headers, url }), delivered: () => false }) : viewerOf(url.searchParams.get(liveAsParam)?.trim() || headerIdentity(request.headers).member)
+      if (viewer instanceof Response) return viewer
+      const headers = new Headers(request.headers)
+      headers.set(viewerHeader, JSON.stringify(viewer))
+      return boardRoom(env).fetch(new Request(request, { headers }))
     }
     if (!url.pathname.startsWith("/api/") && url.pathname !== "/mcp") return new Response("Not found", { status: 404 })
     return onBoard(env, ctx, { run: async (db) => createApp(db, { auth, modelProxy: modelProxySettingsFrom(env, auth.secret), hooks: hookSettingsFrom(env), objects: bucketOf(env) }).fetch(request), delivered: (response) => response.ok })

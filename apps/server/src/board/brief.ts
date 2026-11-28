@@ -3,7 +3,7 @@ import { and, asc, eq, gte } from "drizzle-orm"
 import type { Executor } from "../db/client"
 import { tasks } from "../db/schema"
 import { getInbox, presentTasks } from "./read"
-import { visibleTo } from "./visibility"
+import { readableBy, type Reader } from "./visibility"
 
 const taskRef = (t: Task) => `#${t.id} ${t.title}`
 
@@ -25,15 +25,15 @@ export function briefText(parts: { finished: Task[]; blocked: Task[]; questions:
   ].join("\n\n")
 }
 
-export async function buildBrief(db: Executor, now = new Date()): Promise<Brief> {
+export async function buildBrief(db: Executor, reader: Reader, now = new Date()): Promise<Brief> {
   const since = new Date(now.getTime() - routineLimits.briefHours * 3_600_000)
   const finishedRows = await db
     .select()
     .from(tasks)
-    .where(and(eq(tasks.state, "done"), gte(tasks.updatedAt, since), visibleTo(tasks.channel, null)))
+    .where(and(eq(tasks.state, "done"), gte(tasks.updatedAt, since), readableBy(tasks.channel, reader)))
     .orderBy(asc(tasks.updatedAt), asc(tasks.id))
-  const blockedRows = await db.select().from(tasks).where(and(eq(tasks.state, "blocked"), visibleTo(tasks.channel, null))).orderBy(asc(tasks.id))
-  const [finished, blocked, inbox] = await Promise.all([presentTasks(db, finishedRows), presentTasks(db, blockedRows), getInbox(db, null)])
+  const blockedRows = await db.select().from(tasks).where(and(eq(tasks.state, "blocked"), readableBy(tasks.channel, reader))).orderBy(asc(tasks.id))
+  const [finished, blocked, inbox] = await Promise.all([presentTasks(db, finishedRows), presentTasks(db, blockedRows), getInbox(db, reader)])
   const parts = { finished, blocked, questions: inbox.questions, threadQuestions: inbox.threadQuestions, reviews: inbox.reviews }
   return { since: since.toISOString(), until: now.toISOString(), text: briefText(parts), ...parts }
 }
