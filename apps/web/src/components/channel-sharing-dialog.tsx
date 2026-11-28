@@ -2,7 +2,8 @@ import type { Channel, ChannelVisibility } from "@flockr/client"
 import { useState } from "react"
 import { toast } from "sonner"
 import { errorText, useMembers } from "@/api/hooks"
-import { useAddChannelMember, useChannelMembers, useRemoveChannelMember, useSetVisibility } from "@/api/sharing"
+import { useAddChannelMember, useChannelMembers, useRemoveChannelMember, useSetReviewNeedsPerson, useSetVisibility } from "@/api/sharing"
+import { Switch } from "@/components/ui/switch"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -22,6 +23,7 @@ export function ChannelSharingDialog({ channel }: { channel: Channel }) {
   const setVisibility = useSetVisibility()
   const add = useAddChannelMember()
   const remove = useRemoveChannelMember()
+  const review = useSetReviewNeedsPerson()
   const fail = { onError: (error: unknown) => toast(errorText(error)) }
   const names = new Set((listed.data ?? []).map((m) => m.member))
   const addable = (members.data ?? []).filter((m) => !names.has(m.name) && (m.org === channel.org || channel.visibility === "shared"))
@@ -80,6 +82,18 @@ export function ChannelSharingDialog({ channel }: { channel: Channel }) {
               </SelectContent>
             </Select>
           )}
+          <label className="flex items-center justify-between gap-3 text-sm">
+            <span>
+              Only a person approves tasks
+              <span className="block text-[13px] text-muted-foreground">Off: the agent named as reviewer may approve. It never approves its own work.</span>
+            </span>
+            <Switch
+              checked={channel.reviewNeedsPerson}
+              disabled={review.isPending}
+              onCheckedChange={(next) => review.mutate({ channel: channel.id, reviewNeedsPerson: next }, fail)}
+              aria-label="Only a person approves tasks"
+            />
+          </label>
         </div>
       </DialogContent>
     </Dialog>

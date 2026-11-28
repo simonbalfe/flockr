@@ -22,6 +22,10 @@ export type Channel = {
      */
     repo: string | null;
     /**
+     * When true only a person approves a task here; a named reviewer agent may still ask for changes
+     */
+    reviewNeedsPerson: boolean;
+    /**
      * Feed items since the acting member last read the channel
      */
     unread: number;
@@ -39,7 +43,7 @@ export type ChannelVisibility = 'org' | 'private' | 'shared';
 
 export type Error = {
     error: string;
-    kind: 'invalid' | 'unauthenticated' | 'not_member' | 'forbidden' | 'not_found' | 'already_exists' | 'wrong_state' | 'stale_claim' | 'not_holder' | 'lease_expired' | 'area_overlap' | 'internal';
+    kind: 'invalid' | 'unauthenticated' | 'not_member' | 'forbidden' | 'not_found' | 'already_exists' | 'wrong_state' | 'stale_claim' | 'not_holder' | 'lease_expired' | 'area_overlap' | 'stale_review' | 'review_full' | 'internal';
 };
 
 export type CreateChannelBody = {
@@ -55,6 +59,10 @@ export type UpdateChannelBody = {
      * Set the channel's repo, or null to clear it
      */
     repo?: string | null;
+    /**
+     * true: only a person approves tasks here; false (the default): the named reviewer agent may approve
+     */
+    reviewNeedsPerson?: boolean;
     visibility?: ChannelVisibility & unknown;
 };
 
@@ -559,6 +567,14 @@ export type Task = {
      * The commits that did this task, oldest first
      */
     commits: Array<TaskCommit>;
+    /**
+     * The member asked to review it; with a reviewer named the task reaches done only by approval
+     */
+    reviewer: string | null;
+    /**
+     * The commit the task is in review at; an approval naming an older one is refused (stale_review)
+     */
+    reviewCommit: string | null;
     reason: string | null;
     question: Question | null;
     replyCount: number;
@@ -730,6 +746,10 @@ export type CreateTaskBody = {
      */
     text?: string;
     /**
+     * The member asked to review it; the task then reaches done only by approval
+     */
+    reviewer?: string | null;
+    /**
      * Put the new task in this plan; it must be open and in the same channel
      */
     plan?: number | null;
@@ -889,6 +909,13 @@ export type CompleteBody = {
     note?: string;
 };
 
+export type SubmitBody = CompleteBody & {
+    /**
+     * Ask this member to review it; omit to keep the reviewer the task names
+     */
+    reviewer?: string;
+};
+
 export type ReasonBody = {
     reason: string;
     /**
@@ -897,8 +924,22 @@ export type ReasonBody = {
     epoch?: number;
 };
 
+export type ApproveBody = {
+    /**
+     * The commit you reviewed; refused with 409 stale_review when the task has moved past it
+     */
+    commit?: string;
+};
+
 export type ChangesBody = {
     note?: string;
+};
+
+export type SetReviewerBody = {
+    /**
+     * The member asked to review the task, or null for none
+     */
+    reviewer: string | null;
 };
 
 export type AskBody = {
@@ -3357,6 +3398,10 @@ export type ListTasksData = {
          * Only tasks this member holds or is assigned
          */
         member?: string;
+        /**
+         * Only tasks this member is asked to review
+         */
+        reviewer?: string;
     };
     url: '/api/tasks';
 };
@@ -3869,7 +3914,7 @@ export type CompleteTaskResponses = {
 export type CompleteTaskResponse = CompleteTaskResponses[keyof CompleteTaskResponses];
 
 export type SubmitForReviewData = {
-    body: CompleteBody;
+    body: SubmitBody;
     path: {
         id: number;
     };
@@ -4041,7 +4086,7 @@ export type UnblockTaskResponses = {
 export type UnblockTaskResponse = UnblockTaskResponses[keyof UnblockTaskResponses];
 
 export type ApproveTaskData = {
-    body?: never;
+    body: ApproveBody;
     path: {
         id: number;
     };
@@ -4125,6 +4170,49 @@ export type RequestChangesResponses = {
 };
 
 export type RequestChangesResponse = RequestChangesResponses[keyof RequestChangesResponses];
+
+export type SetTaskReviewerData = {
+    body: SetReviewerBody;
+    path: {
+        id: number;
+    };
+    query?: never;
+    url: '/api/tasks/{id}/reviewer';
+};
+
+export type SetTaskReviewerErrors = {
+    /**
+     * The input is not valid
+     */
+    400: Error;
+    /**
+     * Sign-in is on and the request has no session or key
+     */
+    401: Error;
+    /**
+     * The acting member is not on this board, or may not do this
+     */
+    403: Error;
+    /**
+     * Not found
+     */
+    404: Error;
+    /**
+     * The task or message is in another state, or the claim epoch is stale
+     */
+    409: Error;
+};
+
+export type SetTaskReviewerError = SetTaskReviewerErrors[keyof SetTaskReviewerErrors];
+
+export type SetTaskReviewerResponses = {
+    /**
+     * OK
+     */
+    200: Task;
+};
+
+export type SetTaskReviewerResponse = SetTaskReviewerResponses[keyof SetTaskReviewerResponses];
 
 export type AskQuestionData = {
     body: AskBody;

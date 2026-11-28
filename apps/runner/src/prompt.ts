@@ -100,3 +100,26 @@ export const missingFolderText = (folder: string) => `My folder ${folder} does n
 export const timeLimitText = (minutes: number) => `Stopped after ${minutes} minutes, the runner's time limit for one run.`
 export const stoppedText = "Stopped because a person asked to stop the run."
 export const failedText = (error: string) => `The run failed: ${error}`
+
+export function reviewPrompt(options: { task: Task; thread: Thread; memory?: string }): string {
+  const { task, thread, memory } = options
+  const commit = task.reviewCommit
+  const approve = commit ? `flockr tasks approve ${task.id} --commit ${commit}` : `flockr tasks approve ${task.id}`
+  return [
+    ...(memory ? [memory, ""] : []),
+    `You are asked to review task #${task.id} in #${task.channel}, held by ${task.holder ?? "nobody"}.`,
+    "",
+    `Title: ${task.title}`,
+    `Spec: ${task.spec ?? "none"}`,
+    `Under review: ${commit ? `commit ${commit} on branch ${task.branch}` : `branch ${task.branch}, no commit named`}`,
+    "",
+    "Thread so far:",
+    threadLines(thread) || "(empty)",
+    "",
+    `Read the thread and the change (git fetch, then git log and git diff on ${task.branch}${commit ? ` up to ${commit}` : ""}). Do not edit the code yourself.`,
+    `- If it does what the task asks, approve exactly what you read: ${approve}. If the approval is refused as stale_review, a newer commit landed: read it and approve again.`,
+    `- If it needs work, send it back with what to change: flockr tasks changes ${task.id} --note "..."`,
+    "- If the channel needs a person to approve, your approval is refused: say in your final message whether a person should approve it, and why.",
+    `Your final message is posted as your reply in thread ${task.id}.`,
+  ].join("\n")
+}

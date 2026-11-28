@@ -31,6 +31,8 @@ function task(id: number, state: Task["state"]): Task {
     question: null,
     replyCount: 0,
     planId: null,
+    reviewer: null,
+    reviewCommit: null,
     createdAt: at(0),
   }
 }

@@ -98,6 +98,8 @@ export class FakePiBoard implements PiBoard {
       question: null,
       replyCount: 0,
       planId: null,
+      reviewer: null,
+      reviewCommit: null,
       createdAt: at,
     }
   }

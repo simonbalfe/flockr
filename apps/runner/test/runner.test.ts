@@ -337,3 +337,32 @@ describe("other orgs (11b)", () => {
     expect(started).toHaveLength(1)
   })
 })
+
+describe("reviews (13a)", () => {
+  const submitted = (taskId: number, reviewer: string, values: { actor?: string; data?: Record<string, unknown> } = {}) =>
+    event({ type: "task.submitted", actor: values.actor ?? "codex", taskId, threadId: String(taskId), data: { state: "review", reviewer, commit: "a1b2c3d", ...values.data } })
+
+  test("a submit naming this agent as reviewer starts one review session at that commit; one naming another starts none", async () => {
+    const { runner, board, started } = setup()
+    board.tasks.set(812, task({ id: 812, state: "review", holder: "codex", assignee: "codex", reviewer: member, reviewCommit: "a1b2c3d" }))
+    board.tasks.set(814, task({ id: 814, state: "review", holder: "codex", assignee: "codex", reviewer: "gemini", reviewCommit: "a1b2c3d" }))
+    await runner.receive(submitted(814, "gemini"))
+    expect(started).toHaveLength(0)
+    await runner.receive(submitted(812, member))
+    expect(started).toHaveLength(1)
+    expect(started[0]?.spec.prompt).toContain("flockr tasks approve 812 --commit a1b2c3d")
+    expect(started[0]?.spec.claim).toBeNull()
+    started[0]?.end({ kind: "finished", text: "Looks right; approved." })
+    await runner.idle()
+    await runner.idle()
+    await runner.receive(submitted(812, member))
+    expect(started).toHaveLength(1)
+  })
+
+  test("a submit from another org's agent never wakes our reviewer", async () => {
+    const { runner, board, started } = setup()
+    board.tasks.set(812, task({ id: 812, state: "review", holder: "acme-bot", reviewer: member, reviewCommit: "a1b2c3d" }))
+    await runner.receive(submitted(812, member, { actor: "acme-bot", data: { actorOrg: "acme", actorKind: "agent" } }))
+    expect(started).toHaveLength(0)
+  })
+})

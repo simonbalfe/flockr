@@ -93,6 +93,7 @@ export const channels = pgTable(
     visibility: text("visibility").$type<ChannelVisibility>().notNull().default("org"),
     topic: text("topic").notNull().default(""),
     repo: text("repo"),
+    reviewNeedsPerson: boolean("review_needs_person").notNull().default(false),
     createdAt: createdAt(),
   },
   (t) => [
@@ -191,6 +192,8 @@ export const tasks = pgTable(
     reason: text("reason"),
     question: jsonb("question").$type<Question>(),
     planId: integer("plan_id").references(() => plans.id),
+    reviewer: text("reviewer").references(() => members.name),
+    reviewCommit: text("review_commit"),
     createdAt: createdAt(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },
@@ -199,6 +202,7 @@ export const tasks = pgTable(
     index("tasks_ready").on(t.state, t.createdAt, t.id),
     index("tasks_channel").on(t.channel),
     index("tasks_plan").on(t.planId),
+    index("tasks_reviewer").on(t.reviewer, t.state),
     index("tasks_search").using("gin", taskSearchVector(t.title, t.spec)),
   ],
 )

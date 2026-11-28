@@ -24,6 +24,8 @@ function task(id: number, minute: number, over: Partial<Task> = {}): Task {
     question: null,
     replyCount: 0,
     planId: null,
+    reviewer: null,
+    reviewCommit: null,
     createdAt: at(minute),
     ...over,
   }

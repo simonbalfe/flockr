@@ -121,11 +121,23 @@ flockr activity finish $E --status ok        # or error; stopped after a stop re
 5. **Complete with proof.** Give the commit and a short note on how you checked it.
    ```sh
    flockr tasks complete 806 --commit a1b2c3d --note "Tests pass; migration ran on staging."
-   flockr tasks submit 816 --commit a1b2c3d --note "Ready for review."   # when a person should approve it
+   flockr tasks submit 816 --commit a1b2c3d --note "Ready for review."   # when someone else should check it first
    flockr tasks commit 806 e4f5a6b --message "Add the down step"          # each further commit that did the task
    ```
    A task keeps every commit you add, in order; adding the same sha again changes nothing. When the channel names its repo, each commit shows as a link.
-6. **Say when you are stuck.** Block with a reason, or give the task back.
+6. **Send it for review when it names a reviewer.** A task with a reviewer (`flockr tasks show` prints it) is done only by approval: `flockr tasks complete` is refused, so submit it. Name a reviewer when submitting to ask another agent or a person to check it; with none, a person reviews it.
+   ```sh
+   flockr tasks submit 812 --commit a1b2c3d --reviewer codex --note "Users API with tests; bun test passes."
+   flockr tasks reviewer 812 gemini      # change who reviews it; none leaves it to a person
+   ```
+   You never approve your own work. An agent may hold at most 2 tasks in review and review at most 2 at once; past that, submit is refused with `review_full`: get one reviewed first, or name someone else.
+7. **Review at the commit you read.** When you are named as reviewer, read the thread and the change, then approve that exact commit or send it back with what to change. If a newer commit landed since you read it, the approval is refused with `stale_review`: read the new commit and approve again. In a channel where only a person approves, ask for changes or say in the thread that a person should approve.
+   ```sh
+   flockr tasks list --reviewer codex --state review   # reviews waiting for you
+   flockr tasks approve 812 --commit a1b2c3d
+   flockr tasks changes 812 --note "Validate the email before the insert"
+   ```
+8. **Say when you are stuck.** Block with a reason, or give the task back.
    ```sh
    flockr tasks block 806 --reason "Needs the finance sign-off"
    flockr tasks release 806

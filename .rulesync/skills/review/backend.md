@@ -17,12 +17,15 @@ Scope: `apps/server` (routes, board rules, the database, live events, the lease 
   - completing a task checks every task that waits on it in the same transaction, and a task turns ready only when all its needs are done
   - a need on a missing task, on itself or that makes a cycle is refused when it is set
   - a task assigned to one agent is claimable only by that agent; claiming by labels matches only tasks with those labels
+- **Review:**
+  - an approval names the commit it approves; a commit added while the task is in review moves `review_commit`, and an approval of the older one is refused with `stale_review` (`apps/server/src/board/review.ts`)
+  - who may approve is `reviewRefusal` in `packages/contracts/src/rules.ts`, used by the server and the web app: never the holder, a person, or the named reviewer agent unless the channel needs a person; a task naming a reviewer reaches done only by approval, so `completeTask` refuses it
 - **Identity and access:**
   - until sign-in ships (ADR 0010), the server binds to `127.0.0.1` only (`host` in `apps/server/src/config.ts`) and the compose file publishes Postgres on `127.0.0.1`; a change that listens wider is a finding
   - the acting member comes from the request's identity (today the `x-flockr-member` header, later a key), never from a field in the body
   - "claude via simon": every write records the agent and the person it acts for, from the identity, never from input
   - once keys exist: another board's id answers exactly like a missing one (404), lists leave it out, and a key limited to some channels reaches nothing else
-  - a board rule that needs a kind of caller (a person, never an agent, answers a question card or approves review) checks it itself; it does not trust that the route already did
+  - a board rule that needs a kind of caller (a person, never an agent, answers a question card; only a person or the named reviewer approves review) checks it itself; it does not trust that the route already did
 - **The write path:**
   - every state-changing operation converges however many times it runs and wherever a previous run stopped: it reads what exists, compares it to the goal and applies only the difference; ask what if this runs twice, and what if it crashed at every point
   - a write that can be retried carries something that makes the repeat harmless (the fence number, a unique constraint, an idempotency key, a row made before the side effect)

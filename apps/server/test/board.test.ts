@@ -42,7 +42,7 @@ describe("board reads and writes", () => {
     const changed = Task.parse((await call("simon", "POST", "/api/tasks/816/changes", { note: "Add a test" })).json)
     expect(changed).toMatchObject({ state: "claimed", holder: "claude" })
     await call("claude", "POST", "/api/tasks/816/submit", { commit: "e4f5a6b" })
-    const approved = Task.parse((await call("simon", "POST", "/api/tasks/816/approve")).json)
+    const approved = Task.parse((await call("simon", "POST", "/api/tasks/816/approve", {})).json)
     expect(approved).toMatchObject({ state: "done" })
     expect(approved.commits.map((c) => c.sha)).toEqual(["a1b2c3d", "e4f5a6b"])
   })

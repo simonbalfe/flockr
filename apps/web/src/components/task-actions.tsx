@@ -3,7 +3,7 @@ import { useAgents } from "@/api/hooks"
 import type { Task } from "@/api/types"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { useTaskActions } from "@/lib/use-task-actions"
+import { useReviewRefusal, useTaskActions } from "@/lib/use-task-actions"
 
 function BlockForm({ task, onDone }: { task: Task; onDone: () => void }) {
   const actions = useTaskActions()
@@ -35,6 +35,8 @@ export function TaskActions({ task }: { task: Task }) {
   const actions = useTaskActions()
   const agents = useAgents()
   const [blocking, setBlocking] = useState(false)
+  const approveRefusal = useReviewRefusal(task, "approve")
+  const changesRefusal = useReviewRefusal(task, "changes")
   const helper = agents.data?.[0]?.name
 
   if (blocking) return <BlockForm task={task} onDone={() => setBlocking(false)} />
@@ -62,7 +64,7 @@ export function TaskActions({ task }: { task: Task }) {
     case "claimed":
       return (
         <>
-          {!task.question && <Button onClick={() => actions.complete(task.id)}>Mark done</Button>}
+          {!task.question && (task.reviewer ? <Button onClick={() => actions.submit(task.id)}>Send to {task.reviewer}</Button> : <Button onClick={() => actions.complete(task.id)}>Mark done</Button>)}
           <Button variant="secondary" onClick={() => actions.release(task.id)}>
             Release
           </Button>
@@ -72,12 +74,15 @@ export function TaskActions({ task }: { task: Task }) {
     case "blocked":
       return <Button onClick={() => actions.unblock(task.id)}>Unblock</Button>
     case "review":
+      if (approveRefusal && changesRefusal) return hint(`Waiting for ${task.reviewer ?? "a person"} to review${task.reviewCommit ? ` ${task.reviewCommit.slice(0, 7)}` : ""}.`)
       return (
         <>
-          <Button onClick={() => actions.approve(task.id)}>Approve</Button>
-          <Button variant="secondary" onClick={() => actions.requestChanges(task)}>
-            Ask for changes
-          </Button>
+          {!approveRefusal && <Button onClick={() => actions.approve(task)}>{task.reviewCommit ? `Approve ${task.reviewCommit.slice(0, 7)}` : "Approve"}</Button>}
+          {!changesRefusal && (
+            <Button variant="secondary" onClick={() => actions.requestChanges(task)}>
+              Ask for changes
+            </Button>
+          )}
         </>
       )
     case "waiting":

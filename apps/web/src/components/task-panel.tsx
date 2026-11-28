@@ -7,6 +7,7 @@ import { KeyValueList, PanelFrame, PanelHeading } from "@/components/panel-frame
 import { ChatItem } from "@/components/agent/chat-scroll"
 import { AgentWorkingLine, ThreadWorking } from "@/components/agent/working-line"
 import { QuestionCard } from "@/components/question-card"
+import { ReviewerPicker } from "@/components/reviewer-picker"
 import { ReplyBox } from "@/components/reply-box"
 import { StateDot } from "@/components/state-dot"
 import { TaskActions } from "@/components/task-actions"
@@ -58,6 +59,8 @@ export function TaskPanel({ id }: { id: number }) {
       }),
     })
   }
+  if (current.state !== "done" || current.reviewer) rows.push({ label: "Reviewer", value: <ReviewerPicker task={current} /> })
+  if (current.state === "review" && current.reviewCommit) rows.push({ label: "In review at", value: <span className="font-mono text-[12.5px]">{current.reviewCommit.slice(0, 7)}</span> })
   if (current.reason) rows.push({ label: "Reason", value: <span className="text-destructive">{current.reason}</span> })
   if (current.spec) rows.push({ label: "Spec", value: <span className="font-mono text-[12.5px]">{current.spec}</span> })
   if (current.commits.length) {

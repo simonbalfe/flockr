@@ -3,7 +3,7 @@ import type { Task, ThreadQuestion } from "@/api/types"
 import { QuestionPrompt } from "@/components/agent/question-prompt"
 import { Button } from "@/components/ui/button"
 import { usePanel } from "@/lib/panel"
-import { useTaskActions } from "@/lib/use-task-actions"
+import { useReviewRefusal, useTaskActions } from "@/lib/use-task-actions"
 import { toast } from "sonner"
 
 export function QuestionCard({ task, showDetails = true }: { task: Task; showDetails?: boolean }) {
@@ -30,20 +30,26 @@ export function QuestionCard({ task, showDetails = true }: { task: Task; showDet
 export function ReviewCard({ task }: { task: Task }) {
   const { openTask } = usePanel()
   const actions = useTaskActions()
+  const refused = useReviewRefusal(task, "approve") !== null
   return (
     <div className="mt-1.5 max-w-[640px] bg-muted px-3.5 pt-[13px] pb-3">
       <div className="font-semibold">{task.title}</div>
       <div className="mt-[3px] mb-3 text-[13px] text-muted-foreground">
         #{task.id}
-        {task.commits.length ? ` · ${task.commits.map((c) => c.short).join(", ")}` : ""}
+        {task.reviewCommit ? ` · in review at ${task.reviewCommit.slice(0, 7)}` : task.commits.length ? ` · ${task.commits.map((c) => c.short).join(", ")}` : ""}
+        {task.reviewer ? ` · reviewer ${task.reviewer}` : ""}
       </div>
       <div className="flex flex-wrap items-center gap-2">
-        <Button size="sm" onClick={() => actions.approve(task.id)}>
-          Approve
-        </Button>
-        <Button size="sm" variant="outline" onClick={() => actions.requestChanges(task)}>
-          Ask for changes
-        </Button>
+        {!refused && (
+          <>
+            <Button size="sm" onClick={() => actions.approve(task)}>
+              Approve
+            </Button>
+            <Button size="sm" variant="outline" onClick={() => actions.requestChanges(task)}>
+              Ask for changes
+            </Button>
+          </>
+        )}
         <Button size="sm" variant="ghost" onClick={() => openTask(task.id)}>
           Details
         </Button>

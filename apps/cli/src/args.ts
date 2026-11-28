@@ -78,6 +78,8 @@ export const flags = {
   task: { type: "string" },
   refuse: { type: "boolean" },
   tests: { type: "string" },
+  reviewer: { type: "string" },
+  "review-needs-person": { type: "string" },
   next: { type: "string", multiple: true },
   closed: { type: "boolean" },
   goal: { type: "string" },
@@ -113,4 +115,11 @@ export function seconds(value: string | undefined): number | null {
   const n = Number(value)
   if (!Number.isFinite(n) || n < 0) throw new UsageError(`--timeout must be seconds, got ${value}`)
   return n
+}
+
+export function yesNoOf(value: string | undefined, what: string): boolean | undefined {
+  if (value === undefined) return undefined
+  if (value === "yes") return true
+  if (value === "no") return false
+  throw new UsageError(`${what} must be yes or no, got ${value}`)
 }

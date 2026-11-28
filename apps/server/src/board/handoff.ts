@@ -43,6 +43,7 @@ export async function handOffTask(db: Database, actor: string, id: number, body:
     requireHolder(task, member, body.epoch)
     requireLiveLease(task)
     if (body.to === task.holder) throw invalid(`${body.to} already holds #${id}`)
+    if (body.to === task.reviewer) throw invalid(`${body.to} reviews #${id}; the one who reviews it cannot also hold it`)
     const row = await updateTask(tx, id, { holder: body.to, assignee: body.to, claimEpoch: task.claimEpoch + 1, leaseExpiresAt: leaseFromNow() })
     if (body.lastCommit) await recordCommit(tx, emit, row, actor, { sha: body.lastCommit })
     await taskReply(tx, row, actor, handoffCard(row.id, body))

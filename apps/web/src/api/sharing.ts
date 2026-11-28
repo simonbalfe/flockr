@@ -8,6 +8,9 @@ export const useChannelMembers = (channel: string, enabled: boolean) => useQuery
 export const useSetVisibility = () =>
   useBoardMutation(updateChannelMutation(), (a: { channel: string; visibility: ChannelVisibility }) => ({ path: { channel: a.channel }, body: { visibility: a.visibility } }))
 
+export const useSetReviewNeedsPerson = () =>
+  useBoardMutation(updateChannelMutation(), (a: { channel: string; reviewNeedsPerson: boolean }) => ({ path: { channel: a.channel }, body: { reviewNeedsPerson: a.reviewNeedsPerson } }))
+
 export const useAddChannelMember = () => useBoardMutation(addChannelMemberMutation(), (a: { channel: string; name: string }) => ({ path: { channel: a.channel, name: a.name } }))
 
 export const useRemoveChannelMember = () => useBoardMutation(removeChannelMemberMutation(), (a: { channel: string; name: string }) => ({ path: { channel: a.channel, name: a.name } }))

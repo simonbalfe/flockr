@@ -35,6 +35,7 @@ export const Channel = z
     members: z.array(z.string()).openapi({ description: "The listed members: the two of a dm, or those added to a private or shared channel (listChannelMembers); everyone in the owning org also sees an org or shared channel", example: ["simon", "claude"] }),
     topic: z.string(),
     repo: z.string().nullable().openapi({ example: "github.com/simonbalfe/flockr", description: "Where the channel's code lives; null when none is set" }),
+    reviewNeedsPerson: z.boolean().openapi({ description: "When true only a person approves a task here; a named reviewer agent may still ask for changes" }),
     unread: z.number().int().openapi({ description: "Feed items since the acting member last read the channel" }),
   })
   .openapi("Channel")
@@ -86,6 +87,8 @@ export const Task = z
     spec: z.string().nullable(),
     branch: z.string().openapi({ example: "flockr/806", description: "Where this task's work goes: flockr/<id>. Merged only after review" }),
     commits: z.array(TaskCommit).openapi({ description: "The commits that did this task, oldest first" }),
+    reviewer: z.string().nullable().openapi({ example: "codex", description: "The member asked to review it; with a reviewer named the task reaches done only by approval" }),
+    reviewCommit: z.string().nullable().openapi({ example: "a1b2c3d", description: "The commit the task is in review at; an approval naming an older one is refused (stale_review)" }),
     reason: z.string().nullable(),
     question: orNull(Question),
     replyCount: z.number().int(),

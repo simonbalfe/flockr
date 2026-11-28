@@ -54,6 +54,7 @@ export async function seedBoard(db: Database, now = new Date()): Promise<boolean
         spec: t.spec ?? null,
         reason: t.reason ?? null,
         question: t.question ?? null,
+        reviewCommit: t.state === "review" ? (t.commit ?? null) : null,
         createdAt: at(t.at),
         updatedAt: at(t.at),
       })

@@ -98,6 +98,8 @@ function presentTaskRow(row: TaskRow, replyCount: number, commits: TaskCommit[])
     reason: row.reason,
     question: row.question,
     replyCount,
+    reviewer: row.reviewer,
+    reviewCommit: row.reviewCommit,
     planId: row.planId,
     createdAt: row.createdAt.toISOString(),
   }
@@ -126,6 +128,7 @@ export async function listTasks(db: Executor, query: ListTasksQuery, viewer: Vie
   if (query.channel) filters.push(eq(tasks.channel, query.channel))
   if (query.state) filters.push(eq(tasks.state, query.state))
   if (query.assignee) filters.push(eq(tasks.assignee, query.assignee))
+  if (query.reviewer) filters.push(eq(tasks.reviewer, query.reviewer))
   if (query.member) {
     const involved = or(eq(tasks.assignee, query.member), eq(tasks.holder, query.member))
     if (involved) filters.push(involved)
@@ -169,6 +172,7 @@ export async function listChannels(db: Executor, viewer: Viewer): Promise<Channe
       visibility: channels.visibility,
       topic: channels.topic,
       repo: channels.repo,
+      reviewNeedsPerson: channels.reviewNeedsPerson,
       unread: sql<number>`(
         select count(*)::int from messages m
         where m.channel = "channels"."id" and m.parent_id is null and m.thread_task_id is null and m.who <> ${member}

@@ -85,6 +85,8 @@ export function task(values: Partial<Task> & { id: number }): Task {
     question: null,
     replyCount: 0,
     planId: null,
+    reviewer: null,
+    reviewCommit: null,
     createdAt: "2026-11-24T10:00:00.000Z",
     ...values,
   }
@@ -123,7 +125,7 @@ export function fakeBoard() {
       return found
     },
     tasks: async (query) =>
-      [...tasks.values()].filter((t) => (query.state === undefined || t.state === query.state) && (query.assignee === undefined || t.assignee === query.assignee) && (query.member === undefined || t.holder === query.member || t.assignee === query.member)),
+      [...tasks.values()].filter((t) => (query.state === undefined || t.state === query.state) && (query.assignee === undefined || t.assignee === query.assignee) && (query.member === undefined || t.holder === query.member || t.assignee === query.member) && (query.reviewer === undefined || t.reviewer === query.reviewer)),
     async thread(id) {
       const found = threads.get(id) ?? (tasks.has(Number(id)) ? { id, channel: tasks.get(Number(id))?.channel ?? "general", taskId: Number(id), root: null, entries: [] } : undefined)
       if (!found) throw new Error(`no thread ${id}`)

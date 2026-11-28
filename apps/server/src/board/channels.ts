@@ -2,7 +2,7 @@ import type { Channel, CreateChannelBody, UpdateChannelBody } from "@flockr/cont
 import { and, eq, isNull, max } from "drizzle-orm"
 import type { Database } from "../db/client"
 import { channelMembers, channels, messages, reads } from "../db/schema"
-import { alreadyExists, notFound } from "./errors"
+import { alreadyExists, forbidden, notFound } from "./errors"
 import { mutate } from "./events"
 import { requireActor } from "./members"
 import { requireVisibilityChange } from "./orgs"
@@ -19,7 +19,7 @@ export async function createChannel(db: Database, actor: string, body: CreateCha
     const listed = visibility === "private" ? [me.name] : []
     if (listed.length) await tx.insert(channelMembers).values(listed.map((member) => ({ channel: id, member, addedBy: actor })))
     emit({ type: "channel.created", actor, channel: id, data: { topic, repo, org: me.org, visibility } })
-    return { id, kind: "channel", org: me.org, visibility, members: listed, topic, repo, unread: 0 }
+    return { id, kind: "channel", org: me.org, visibility, members: listed, topic, repo, reviewNeedsPerson: false, unread: 0 }
   })
 }
 
@@ -28,9 +28,17 @@ export async function updateChannel(db: Database, actor: string, id: string, bod
     const me = await requireActor(tx, actor)
     const [current] = await tx.select().from(channels).where(eq(channels.id, id)).for("no key update")
     if (!current) throw notFound(`Channel ${id} does not exist`)
-    const next = { topic: body.topic ?? current.topic, repo: body.repo === undefined ? current.repo : body.repo, visibility: body.visibility ?? current.visibility }
+    const next = {
+      topic: body.topic ?? current.topic,
+      repo: body.repo === undefined ? current.repo : body.repo,
+      visibility: body.visibility ?? current.visibility,
+      reviewNeedsPerson: body.reviewNeedsPerson ?? current.reviewNeedsPerson,
+    }
     await requireVisibilityChange(tx, current, me, next.visibility)
-    if (next.topic !== current.topic || next.repo !== current.repo || next.visibility !== current.visibility) {
+    if (next.reviewNeedsPerson !== current.reviewNeedsPerson && (me.kind !== "person" || me.org !== current.org)) {
+      throw forbidden(`Only a person in org ${current.org} decides who approves tasks in #${id}`)
+    }
+    if (next.topic !== current.topic || next.repo !== current.repo || next.visibility !== current.visibility || next.reviewNeedsPerson !== current.reviewNeedsPerson) {
       await tx.update(channels).set(next).where(eq(channels.id, id))
       emit({ type: "channel.updated", actor, channel: id, data: next })
     }

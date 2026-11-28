@@ -5,7 +5,7 @@ import { taskCommits, type TaskRow } from "../db/schema"
 import { mutate, type Emit } from "./events"
 import { requireActor } from "./members"
 import { getTask } from "./read"
-import { checkEpoch, emitTask, lockTask, threadEvent } from "./write"
+import { checkEpoch, emitTask, lockTask, threadEvent, updateTask } from "./write"
 
 export interface NewCommit {
   sha: string
@@ -29,12 +29,19 @@ export async function latestCommit(tx: Tx, taskId: number): Promise<string | nul
   return row?.sha ?? null
 }
 
+async function moveReview(tx: Tx, emit: Emit, task: TaskRow, actor: string, sha: string): Promise<void> {
+  if (task.state !== "review") return
+  const row = await updateTask(tx, task.id, { reviewCommit: sha })
+  await threadEvent(tx, row, actor, `moved the review to \`${shortSha(sha)}\`; an approval of an older commit is refused`)
+  emitTask(emit, "task.review_moved", row, actor, { commit: sha, reviewer: row.reviewer })
+}
+
 export async function addTaskCommit(db: Database, actor: string, id: number, body: AddCommitBody): Promise<Task> {
   await mutate(db, async (tx, emit) => {
     await requireActor(tx, actor)
     const task = await lockTask(tx, id)
     checkEpoch(task, body.epoch)
-    await recordCommit(tx, emit, task, actor, body)
+    if (await recordCommit(tx, emit, task, actor, body)) await moveReview(tx, emit, task, actor, body.sha)
   })
   return getTask(db, id)
 }

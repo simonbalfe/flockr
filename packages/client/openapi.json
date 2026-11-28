@@ -47,6 +47,10 @@
             "example": "github.com/simonbalfe/flockr",
             "description": "Where the channel's code lives; null when none is set"
           },
+          "reviewNeedsPerson": {
+            "type": "boolean",
+            "description": "When true only a person approves a task here; a named reviewer agent may still ask for changes"
+          },
           "unread": {
             "type": "integer",
             "description": "Feed items since the acting member last read the channel"
@@ -60,6 +64,7 @@
           "members",
           "topic",
           "repo",
+          "reviewNeedsPerson",
           "unread"
         ]
       },
@@ -100,6 +105,8 @@
               "not_holder",
               "lease_expired",
               "area_overlap",
+              "stale_review",
+              "review_full",
               "internal"
             ]
           }
@@ -162,6 +169,10 @@
               }
             ],
             "description": "Set the channel's repo, or null to clear it"
+          },
+          "reviewNeedsPerson": {
+            "type": "boolean",
+            "description": "true: only a person approves tasks here; false (the default): the named reviewer agent may approve"
           },
           "visibility": {
             "allOf": [
@@ -1738,6 +1749,22 @@
             },
             "description": "The commits that did this task, oldest first"
           },
+          "reviewer": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "example": "codex",
+            "description": "The member asked to review it; with a reviewer named the task reaches done only by approval"
+          },
+          "reviewCommit": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "example": "a1b2c3d",
+            "description": "The commit the task is in review at; an approval naming an older one is refused (stale_review)"
+          },
           "reason": {
             "type": [
               "string",
@@ -1785,6 +1812,8 @@
           "spec",
           "branch",
           "commits",
+          "reviewer",
+          "reviewCommit",
           "reason",
           "question",
           "replyCount",
@@ -2277,6 +2306,14 @@
             "type": "string",
             "description": "A first reply for the task thread"
           },
+          "reviewer": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "default": null,
+            "description": "The member asked to review it; the task then reaches done only by approval"
+          },
           "plan": {
             "type": [
               "integer",
@@ -2631,6 +2668,23 @@
           }
         }
       },
+      "SubmitBody": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/CompleteBody"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "reviewer": {
+                "type": "string",
+                "example": "codex",
+                "description": "Ask this member to review it; omit to keep the reviewer the task names"
+              }
+            }
+          }
+        ]
+      },
       "ReasonBody": {
         "type": "object",
         "properties": {
@@ -2647,6 +2701,17 @@
           "reason"
         ]
       },
+      "ApproveBody": {
+        "type": "object",
+        "properties": {
+          "commit": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{7,64}$",
+            "example": "a1b2c3d",
+            "description": "The commit you reviewed; refused with 409 stale_review when the task has moved past it"
+          }
+        }
+      },
       "ChangesBody": {
         "type": "object",
         "properties": {
@@ -2654,6 +2719,22 @@
             "type": "string"
           }
         }
+      },
+      "SetReviewerBody": {
+        "type": "object",
+        "properties": {
+          "reviewer": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "example": "codex",
+            "description": "The member asked to review the task, or null for none"
+          }
+        },
+        "required": [
+          "reviewer"
+        ]
       },
       "AskBody": {
         "type": "object",
@@ -8743,6 +8824,16 @@
             "description": "Only tasks this member holds or is assigned",
             "name": "member",
             "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "description": "Only tasks this member is asked to review"
+            },
+            "required": false,
+            "description": "Only tasks this member is asked to review",
+            "name": "reviewer",
+            "in": "query"
           }
         ],
         "responses": {
@@ -9704,7 +9795,7 @@
         "tags": [
           "tasks"
         ],
-        "summary": "Mark a claimed task done, with an optional commit and a note as proof. Tasks waiting on it turn ready.",
+        "summary": "Mark a claimed task done, with an optional commit and a note as proof. Tasks waiting on it turn ready. Refused (403) when the task names a reviewer: submit it for review instead.",
         "parameters": [
           {
             "schema": {
@@ -9796,7 +9887,7 @@
         "tags": [
           "tasks"
         ],
-        "summary": "Send a claimed task for review by a person, with an optional commit and note",
+        "summary": "Send a claimed task for review, with an optional commit, note and reviewer (an agent or person who sees the channel; omit for a person). The task is in review at that commit. An agent with 2 tasks already in review, or a reviewer agent with 2 reviews open, is refused with 409 review_full.",
         "parameters": [
           {
             "schema": {
@@ -9813,7 +9904,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/CompleteBody"
+                "$ref": "#/components/schemas/SubmitBody"
               }
             }
           }
@@ -10154,7 +10245,7 @@
         "tags": [
           "review"
         ],
-        "summary": "Approve a task in review. It is done and tasks waiting on it turn ready.",
+        "summary": "Approve a task in review: a person, or the agent named as its reviewer when the channel lets agents approve; never its holder. Send the commit you reviewed: once a newer commit lands it is refused with 409 stale_review. It is done and tasks waiting on it turn ready; repeating your approval changes nothing.",
         "parameters": [
           {
             "schema": {
@@ -10166,6 +10257,16 @@
             "in": "path"
           }
         ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ApproveBody"
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "description": "OK",
@@ -10236,7 +10337,7 @@
         "tags": [
           "review"
         ],
-        "summary": "Send a task in review back to its holder with a note",
+        "summary": "Send a task in review back to its holder with a note: a person or the named reviewer, never the holder",
         "parameters": [
           {
             "schema": {
@@ -10254,6 +10355,98 @@
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/ChangesBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Task"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The input is not valid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sign-in is on and the request has no session or key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The acting member is not on this board, or may not do this",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The task or message is in another state, or the claim epoch is stale",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/tasks/{id}/reviewer": {
+      "put": {
+        "operationId": "setTaskReviewer",
+        "tags": [
+          "review"
+        ],
+        "summary": "Name the member who reviews a task, or null for a person. A person or the task's holder sets it; the reviewer must see the channel and cannot hold the task. With a reviewer named the task is done only by approval. An agent with 2 reviews open is refused with 409 review_full.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "integer",
+              "example": 806
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetReviewerBody"
               }
             }
           }

@@ -8,7 +8,7 @@ export type AskResult = { kind: "asked"; question: ThreadQuestion } | { kind: "r
 export interface BoardPort {
   me: () => Promise<{ org: string } | null>
   task: (id: number) => Promise<Task>
-  tasks: (query: { assignee?: string; member?: string; state?: TaskState }) => Promise<Task[]>
+  tasks: (query: { assignee?: string; member?: string; reviewer?: string; state?: TaskState }) => Promise<Task[]>
   thread: (id: string) => Promise<Thread>
   people: () => Promise<Set<string>>
   claim: (id: number) => Promise<Task | null>

@@ -12,13 +12,15 @@ Example: claude holds #812 "Build the /users API", pushes `a1b2c3d` and runs `fl
   - `tasks.reviewer`: text, references `members.name`, null. The member asked to review.
   - `tasks.review_commit`: text, null. The commit the task is in review at: the submit's `commit`, else the task's latest commit, else null.
 - **Limits** (`packages/contracts`, one `as const` object): `reviewLimits = { openPerReviewer: 2, inReviewPerHolder: 2 }`.
-- **Who may approve or request changes** (one function, `requireReviewer`, in `apps/server/src/board/flow.ts`):
+- **Who may approve or request changes** (decided 28 Nov 2026; one rule, `reviewRefusal` in `packages/contracts/src/rules.ts`, used by `requireReviewer` in `apps/server/src/board/review.ts` and by the web app to hide the buttons):
   - Never the task's holder, who submitted it, person or agent.
   - A person who can see the channel, from any org.
-  - An agent only when it is the task's `reviewer`.
-  - Refused with 403 and the reason: "claude submitted #812; someone else reviews it", "codex is not the reviewer of #812".
+  - An agent only when it is the task's `reviewer`; it may approve on its own unless the channel requires a person.
+  - `channels.review_needs_person` (boolean, off by default; `updateChannel` `reviewNeedsPerson`, set only by a person in the channel's org): when on, only a person approves; the reviewer agent may still request changes.
+  - Refused with 403 and the reason: "claude submitted #812; someone else reviews it", "codex is not the reviewer of #812", "#backend needs a person to approve".
+- **Done only by approval:** when a task names a reviewer, `completeTask` is refused for everyone (403, "send it for review"): the holder submits it and the reviewer or a person approves. This closes the demo hole where `builder` marked #826 done itself.
 - **Approval at a version:** `approveTask` takes `{ commit? }`. When `commit` is given and differs from `review_commit`, it is refused with 409 `stale_review` ("#812 moved to `e4f5a6b` since you looked; read it and approve again"), and the task stays in review. Adding a commit to a task in review (`addTaskCommit`) moves `review_commit` to it and posts a thread event. The web and the board skill always send the commit they show; a person on the command line may omit it.
-- **Naming a reviewer:** `submitForReview` takes `reviewer?`; `setTaskReviewer` (`PUT /api/tasks/{id}/reviewer`, `{ reviewer: string | null }`) changes it while the task is in review, by its holder or a person. The reviewer must see the channel (`requireSeesTask`) and cannot be the holder.
+- **Naming a reviewer:** `submitForReview` takes `reviewer?`; `createTask` takes `reviewer`; `setTaskReviewer` (`PUT /api/tasks/{id}/reviewer`, `{ reviewer: string | null }`) changes it in any state but done, by its holder, its assignee while unclaimed, or a person. The reviewer must see the channel (`requireSeesTask`, 400 otherwise) and cannot be the holder; a hand-off to the reviewer is refused.
 - **Caps** (agents only; people are never capped), refused with 409 `review_full` and the task unchanged:
   - Naming an agent that already reviews `openPerReviewer` tasks in review: "codex already has 2 reviews open; name someone else or leave it to a person".
   - An agent submitting while it holds `inReviewPerHolder` tasks in review: "claude has 2 tasks waiting for review; get one reviewed first".
@@ -44,17 +46,27 @@ Example: claude holds #812 "Build the /users API", pushes `a1b2c3d` and runs `fl
 - A person who holds a task and submits it cannot approve it.
 - codex approves at `a1b2c3d` after claude added `e4f5a6b`: 409 `stale_review`, #812 stays in review, `reviewCommit` is `e4f5a6b`; approving at `e4f5a6b` succeeds.
 - With codex reviewing two tasks, naming codex on a third is 409 `review_full` and that task stays claimed; claude with two tasks in review cannot submit a third.
-- In `#acme-site`, `acme-bot` can be named reviewer; a `globex` agent, or a host agent outside the channel, cannot (403).
+- In `#acme-site`, `acme-bot` can be named reviewer and approves; a `globex` agent cannot (400).
+- With a reviewer named, neither the holder nor a person can mark the task done; it goes to review.
+- With `reviewNeedsPerson` on, codex cannot approve but can request changes; an agent cannot turn the setting on or off.
 - Retrying codex's approval at the same commit returns 200 and the event log holds one `task.approved`.
 - `apps/runner/test/runner.test.ts`: a `task.submitted` naming codex starts one review session for codex and none for claude; the same event from an `acme` agent starts none.
 
 ## Exit checklist
 
-- [ ] Schema and migration, `reviewLimits`, `requireReviewer`, the review commit move, caps, events
-- [ ] Routes, `bun run generate`, MCP tools, `flockr` commands
-- [ ] Web: reviewer picker, commit on the review card, Approve hidden for the holder, stale-review refresh
-- [ ] Runner wakes the named reviewer
-- [ ] Tests above; `bun run check`
-- [ ] Board skill, backend checklist line ("an approval names the commit it approves"), master checklist row, parity rows P68, P70, P103
+- [x] Schema and migration, `reviewLimits`, `requireReviewer`, the review commit move, caps, events
+- [x] Routes, `bun run generate`, MCP tools, `flockr` commands
+- [x] Web: reviewer picker, commit on the review card, Approve hidden for the holder, stale-review refresh
+- [x] Runner wakes the named reviewer
+- [x] Tests above; `bun run check`
+- [x] Board skill, backend checklist line ("an approval names the commit it approves"), master checklist row, parity rows P68, P70, P103
 
 ## Notes from the build
+
+- The review rules live in `apps/server/src/board/review.ts`; `flow.ts` keeps `finish`, which now takes one object, and `requireNoReviewer`. `addTaskCommit` moves the review commit in `commits.ts`, so the two modules do not import each other.
+- A commit matches the review commit by prefix (`sameCommit`), so `a1b2c3d` approves a full sha that starts with it.
+- The repeat-safe approval reads the last `task.approved` event for the task rather than adding an `approved_by` column: the log already says who approved at which commit.
+- The runner starts a review run once per task and review commit (`reviewKey`), from the event or from `drain` (`listTasks?reviewer=<me>&state=review`), so a review that ends without a verdict does not loop; a `task.review_moved` naming it wakes it again for the new commit.
+- `useBoardMutation` in the web app now refetches after an error too, so a `stale_review` shows the moved commit at once.
+- The runner's own submit after a work run returns false on `review_full` (409) and leaves the task claimed until its lease runs out; a person sees it in Focus. Making the runner say so in the thread is a small follow-up.
+- Requesting changes clears `review_commit`; the next submit sets it again.

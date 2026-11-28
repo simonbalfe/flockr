@@ -8,6 +8,9 @@ export const eventTypes = {
   answered: "question.answered",
   taskAsked: "task.asked",
   handedOff: "task.handed_off",
+  submitted: "task.submitted",
+  reviewerSet: "task.reviewer_set",
+  reviewMoved: "task.review_moved",
   stopRequested: activityEventTypes.stopRequested,
 } as const
 
@@ -21,6 +24,7 @@ const EventData = z.object({
   member: z.string().optional().catch(undefined),
   from: z.string().nullable().optional().catch(undefined),
   to: z.string().optional().catch(undefined),
+  reviewer: z.string().nullable().optional().catch(undefined),
   actorOrg: z.string().optional().catch(undefined),
   actorKind: z.string().optional().catch(undefined),
 })
@@ -31,6 +35,17 @@ export function wakes(event: BoardEvent, org: string): boolean {
   const data = eventData(event)
   return wakesAgent({ kind: data.actorKind, org: data.actorOrg }, { org })
 }
+
+const reviewEvents: ReadonlySet<string> = new Set([eventTypes.submitted, eventTypes.reviewerSet, eventTypes.reviewMoved])
+
+export function asksReview(event: BoardEvent, member: string): boolean {
+  const data = eventData(event)
+  return reviewEvents.has(event.type) && event.actor !== member && event.taskId !== null && data.state === "review" && data.reviewer === member
+}
+
+export const reviewKey = (task: Task) => `${task.id}@${task.reviewCommit ?? "none"}`
+
+export const awaitsReview = (task: Task, member: string) => task.state === "review" && task.reviewer === member
 
 export const isTaskEvent = (event: BoardEvent) => event.taskId !== null && event.type.startsWith("task.")
 

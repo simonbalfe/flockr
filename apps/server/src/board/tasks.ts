@@ -19,6 +19,7 @@ interface NewTask {
   kind: string
   spec: string | null
   planId?: number | null
+  reviewer?: string | null
 }
 
 async function stateForNeeds(tx: Tx, needs: number[]): Promise<"ready" | "waiting"> {
@@ -33,16 +34,22 @@ export async function insertTask(tx: Tx, emit: Emit, actor: string, values: NewT
   await requireChannel(tx, values.channel)
   if (values.assignee !== null && !(await findMember(tx, values.assignee))) throw invalid(`Member ${values.assignee} does not exist`)
   if (values.assignee !== null) await requireSeesTask(tx, values.assignee, values.channel)
+  const reviewer = values.reviewer ?? null
+  if (reviewer !== null) {
+    if (!(await findMember(tx, reviewer))) throw invalid(`Member ${reviewer} does not exist`)
+    if (reviewer === values.assignee) throw invalid(`${reviewer} is the task's assignee; name someone else to review it`)
+    await requireSeesTask(tx, reviewer, values.channel)
+  }
   const planId = values.planId ?? null
   if (planId !== null) await requireJoinablePlan(tx, actor, planId, values.channel)
   const state = await stateForNeeds(tx, values.needs)
   const [row] = await tx
     .insert(tasks)
-    .values({ ...values, planId, state })
+    .values({ ...values, planId, reviewer, state })
     .returning()
   if (!row) throw new Error("Task insert returned nothing")
   await feedCard(tx, row, actor, "task")
-  emitTask(emit, "task.created", row, actor, { title: row.title, assignee: row.assignee, plan: row.planId })
+  emitTask(emit, "task.created", row, actor, { title: row.title, assignee: row.assignee, plan: row.planId, reviewer: row.reviewer })
   return row
 }
 
@@ -58,6 +65,7 @@ export async function createTask(db: Database, actor: string, body: CreateTaskBo
       kind: body.kind,
       spec: body.spec,
       planId: body.plan,
+      reviewer: body.reviewer,
     })
     if (body.text?.trim()) await taskReply(tx, row, actor, body.text.trim())
     return row.id

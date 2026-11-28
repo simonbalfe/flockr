@@ -33,6 +33,7 @@ export const UpdateChannelBody = z
   .object({
     topic: z.string().optional(),
     repo: orNull(Repo).optional().openapi({ description: "Set the channel's repo, or null to clear it" }),
+    reviewNeedsPerson: z.boolean().optional().openapi({ description: "true: only a person approves tasks here; false (the default): the named reviewer agent may approve" }),
     visibility: ChannelVisibility.optional().openapi({ description: "Share the channel with other orgs (shared), keep it to the owning org (org) or to its listed members (private)" }),
   })
   .openapi("UpdateChannelBody")
@@ -74,6 +75,7 @@ export const ListTasksQuery = z.object({
   state: TaskState.optional(),
   assignee: z.string().optional(),
   member: z.string().optional().openapi({ description: "Only tasks this member holds or is assigned" }),
+  reviewer: z.string().optional().openapi({ description: "Only tasks this member is asked to review" }),
 })
 
 export const CreateTaskBody = z
@@ -86,6 +88,7 @@ export const CreateTaskBody = z
     kind: z.string().min(1).default("build"),
     spec: z.string().nullable().default(null),
     text: z.string().optional().openapi({ description: "A first reply for the task thread" }),
+    reviewer: z.string().nullable().default(null).openapi({ description: "The member asked to review it; the task then reaches done only by approval" }),
     plan: z.number().int().nullable().default(null).openapi({ description: "Put the new task in this plan; it must be open and in the same channel" }),
   })
   .openapi("CreateTaskBody")
@@ -116,6 +119,15 @@ export const CompleteBody = z
     note: z.string().optional().openapi({ description: "Proof of the work, posted in the thread" }),
   })
   .openapi("CompleteBody")
+export const SubmitBody = CompleteBody.extend({
+  reviewer: z.string().optional().openapi({ example: "codex", description: "Ask this member to review it; omit to keep the reviewer the task names" }),
+}).openapi("SubmitBody")
+export const ApproveBody = z
+  .object({ commit: Sha.optional().openapi({ description: "The commit you reviewed; refused with 409 stale_review when the task has moved past it" }) })
+  .openapi("ApproveBody")
+export const SetReviewerBody = z
+  .object({ reviewer: z.string().nullable().openapi({ example: "codex", description: "The member asked to review the task, or null for none" }) })
+  .openapi("SetReviewerBody")
 export const AddCommitBody = z
   .object({
     sha: Sha,
@@ -215,6 +227,9 @@ export type CreateTaskBody = z.infer<typeof CreateTaskBody>
 export type CreateMemberBody = z.infer<typeof CreateMemberBody>
 export type AskBody = z.infer<typeof AskBody>
 export type CompleteBody = z.infer<typeof CompleteBody>
+export type SubmitBody = z.infer<typeof SubmitBody>
+export type ApproveBody = z.infer<typeof ApproveBody>
+export type SetReviewerBody = z.infer<typeof SetReviewerBody>
 export type AddCommitBody = z.infer<typeof AddCommitBody>
 export type CreateChannelBody = z.infer<typeof CreateChannelBody>
 export type UpdateChannelBody = z.infer<typeof UpdateChannelBody>

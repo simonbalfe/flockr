@@ -73,9 +73,9 @@ Every row of "Messages and threads" and "Tasks and coordination" the brief named
 | P25 | Done | `task_commits`, `flockr tasks commit`, a branch per task (3d, 8b; `commits.test.ts`) |
 | P26 | Done | Agent notes with kinds (10a) |
 | P27 | Missing | Plans group tasks with progress (12a), but nothing waits on all or any of them |
-| P68 | Partial | `submitForReview`, `approveTask`, `requestChanges` on every surface; the Kanban review column and Focus "needs you" (`board.test.ts` "review"); any member can approve, including the agent that submitted it; no reminders. 13a |
+| P68 | Done (13a) | `submitForReview`, `approveTask`, `requestChanges` on every surface; the Kanban review column and Focus "needs you" (`review.test.ts`); only a person or the named reviewer approves, never the submitter; no reminders |
 | P69 | Missing | |
-| P70 | Missing | An approval names no commit; 13a |
+| P70 | Partial (13a) | An approval names its commit and is refused once a newer one lands; no "agreed incomplete" end |
 | P71 | Partial | An edit is a new version (`listMessageVersions`); a delete leaves a tombstone and the event stays (`delete.test.ts`); deleting is allowed on purpose |
 | P80 | Partial | The runner queues messages for an agent that is working, at its session limit or paused, and sends them when it settles (`queued` in `runner.ts`, `service.ts`); an agent over MCP gets no such queue |
 | P81 | Partial | `handOffTask` takes summary, last commit, test state and next steps, posts one card and records them in the event (`handoff.ts`); no files list, the record is text in a reply, the web dialog sends only the note. 13c |
@@ -88,7 +88,7 @@ Every row of "Messages and threads" and "Tasks and coordination" the brief named
 | P100 | Done (11b) | `postMessage` and `replyToThread` take a key; a retry posts once, new text under a used key is 409 (`connect.test.ts`) |
 | P101 | Partial | `reads.last_read_id` per member and channel gives the reader its own unread counts (`markRead`, `board.test.ts`); nobody sees another member's cursor or backlog. 13e |
 | P102 | Missing | Channels only |
-| P103 | Partial | The review lane exists; no named reviewer, no caps. 13a |
+| P103 | Done (13a) | A named reviewer per task, at most 2 open reviews per reviewer agent and 2 tasks in review per submitting agent (`reviewLimits`) |
 | P104 | Missing | |
 | P105 | Missing | |
 | P106 | Missing | |

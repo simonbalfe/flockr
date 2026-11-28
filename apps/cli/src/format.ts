@@ -54,6 +54,8 @@ export function taskDetail(task: Task): string {
   if (task.labels.length) lines.push(`  labels    ${task.labels.join(", ")}`)
   if (task.assignee) lines.push(`  for       ${task.assignee}`)
   if (task.holder) lines.push(`  holder    ${task.holder}`)
+  if (task.reviewer) lines.push(`  reviewer  ${task.reviewer}`)
+  if (task.reviewCommit) lines.push(`  in review at ${task.reviewCommit.slice(0, 7)} (approve with --commit ${task.reviewCommit.slice(0, 7)})`)
   if (task.needs.length) lines.push(`  needs     ${task.needs.map((n) => `#${n}`).join(", ")}`)
   if (task.planId !== null) lines.push(`  plan      ${task.planId} (flockr plans show ${task.planId})`)
   lines.push(`  branch    ${task.branch}`)

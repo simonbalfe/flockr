@@ -72,11 +72,11 @@ export async function openDirect(db: Database, actor: string, other: string): Pr
     const pair = [me.name, them.name].sort()
     await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${`dm:${pair.join(":")}`}))`)
     const existing = await findDirect(tx, me.name, them.name)
-    if (existing) return { id: existing, kind: "dm", org: me.org, visibility: "private", members: pair, topic: "", repo: null, unread: 0 }
+    if (existing) return { id: existing, kind: "dm", org: me.org, visibility: "private", members: pair, topic: "", repo: null, reviewNeedsPerson: false, unread: 0 }
     const id = await freeId(tx, `dm-${pair.join("-")}`)
     await tx.insert(channels).values({ id, kind: "dm", org: me.org, visibility: "private", topic: "" })
     await tx.insert(channelMembers).values(pair.map((member) => ({ channel: id, member })))
     emit({ type: "channel.created", actor, channel: id, data: { kind: "dm", members: pair } })
-    return { id, kind: "dm", org: me.org, visibility: "private", members: pair, topic: "", repo: null, unread: 0 }
+    return { id, kind: "dm", org: me.org, visibility: "private", members: pair, topic: "", repo: null, reviewNeedsPerson: false, unread: 0 }
   })
 }

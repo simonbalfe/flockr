@@ -1,15 +1,15 @@
-import { shortSha, type AskBody, type CompleteBody, type Task } from "@flockr/contracts"
+import { type AskBody, type CompleteBody, type Task } from "@flockr/contracts"
 import { and, arrayContains, asc, eq, inArray } from "drizzle-orm"
 import type { Database, Tx } from "../db/client"
 import { tasks, type TaskRow } from "../db/schema"
 import { latestCommit, recordCommit } from "./commits"
-import { invalid } from "./errors"
+import { forbidden, invalid } from "./errors"
 import { leaseFromNow } from "./claims"
 import { releaseTaskAreas } from "./areas"
 import { mutate, type Emit } from "./events"
 import { requireActor } from "./members"
 import { getTask } from "./read"
-import { channelEvent, emitTask, feedCard, feedText, lockTask, requireHolder, requireState, taskReply, threadEvent, updateTask } from "./write"
+import { channelEvent, emitTask, feedCard, lockTask, requireHolder, requireState, taskReply, threadEvent, updateTask } from "./write"
 
 async function startReadyTasks(tx: Tx, emit: Emit, finished: TaskRow, actor: string): Promise<void> {
   const waiting = await tx
@@ -27,13 +27,22 @@ async function startReadyTasks(tx: Tx, emit: Emit, finished: TaskRow, actor: str
   }
 }
 
-async function finish(tx: Tx, emit: Emit, task: TaskRow, actor: string, type: string, threadText: string, channelText: string, commit?: string): Promise<void> {
+interface Finish {
+  type: "task.completed" | "task.approved"
+  threadText: string
+  channelText: string
+  commit?: string
+  reviewed?: string | null
+}
+
+export async function finish(tx: Tx, emit: Emit, task: TaskRow, actor: string, how: Finish): Promise<void> {
+  const { type, threadText, channelText, commit } = how
   if (commit) await recordCommit(tx, emit, task, actor, { sha: commit })
   const row = await updateTask(tx, task.id, { state: "done", leaseExpiresAt: null, question: null, reason: null })
   await releaseTaskAreas(tx, emit, row, actor)
   await threadEvent(tx, row, actor, threadText)
   await channelEvent(tx, row.channel, actor, channelText)
-  emitTask(emit, type, row, actor, { commit: commit ?? (await latestCommit(tx, row.id)) })
+  emitTask(emit, type, row, actor, { commit: commit ?? how.reviewed ?? (await latestCommit(tx, row.id)) })
   await startReadyTasks(tx, emit, row, actor)
 }
 
@@ -43,50 +52,15 @@ export async function completeTask(db: Database, actor: string, id: number, body
     const task = await lockTask(tx, id)
     requireState(task, "claimed")
     requireHolder(task, member, body.epoch)
+    requireNoReviewer(task)
     if (body.note?.trim()) await taskReply(tx, task, actor, body.note.trim())
-    await finish(tx, emit, task, actor, "task.completed", "completed this task", `completed #${id}`, body.commit)
+    await finish(tx, emit, task, actor, { type: "task.completed", threadText: "completed this task", channelText: `completed #${id}`, commit: body.commit })
   })
   return getTask(db, id)
 }
 
-export async function submitForReview(db: Database, actor: string, id: number, body: CompleteBody): Promise<Task> {
-  await mutate(db, async (tx, emit) => {
-    const member = await requireActor(tx, actor)
-    const task = await lockTask(tx, id)
-    requireState(task, "claimed")
-    requireHolder(task, member, body.epoch)
-    if (body.commit) await recordCommit(tx, emit, task, actor, { sha: body.commit })
-    const commit = body.commit ?? (await latestCommit(tx, id))
-    const note = body.note?.trim() || (commit ? `Done in \`${shortSha(commit)}\`. Ready for review.` : "Done. Ready for review.")
-    await taskReply(tx, task, actor, note)
-    const row = await updateTask(tx, id, { state: "review", leaseExpiresAt: null, question: null })
-    await releaseTaskAreas(tx, emit, row, actor)
-    await feedText(tx, row.channel, actor, `Finished #${id}, ready for review.`, id)
-    emitTask(emit, "task.submitted", row, actor, { commit })
-  })
-  return getTask(db, id)
-}
-
-export async function approveTask(db: Database, actor: string, id: number): Promise<Task> {
-  await mutate(db, async (tx, emit) => {
-    await requireActor(tx, actor)
-    const task = await lockTask(tx, id)
-    requireState(task, "review")
-    await finish(tx, emit, task, actor, "task.approved", "approved and completed this task", `approved #${id}`)
-  })
-  return getTask(db, id)
-}
-
-export async function requestChanges(db: Database, actor: string, id: number, note: string | undefined): Promise<Task> {
-  await mutate(db, async (tx, emit) => {
-    await requireActor(tx, actor)
-    const task = await lockTask(tx, id)
-    requireState(task, "review")
-    const row = await updateTask(tx, id, { state: "claimed", leaseExpiresAt: leaseFromNow() })
-    await taskReply(tx, row, actor, note?.trim() || "A couple of changes, see the thread.")
-    emitTask(emit, "task.changes_requested", row, actor, { holder: row.holder })
-  })
-  return getTask(db, id)
+export function requireNoReviewer(task: TaskRow): void {
+  if (task.reviewer !== null) throw forbidden(`#${task.id} names ${task.reviewer} as reviewer; send it for review (flockr tasks submit ${task.id}) instead of marking it done`)
 }
 
 export async function failTask(db: Database, actor: string, id: number, reason: string, epoch: number | undefined): Promise<Task> {

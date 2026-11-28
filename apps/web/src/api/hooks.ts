@@ -4,6 +4,8 @@ import {
   answerInThreadMutation,
   answerQuestionMutation,
   approveTaskMutation,
+  setTaskReviewerMutation,
+  submitForReviewMutation,
   blockTaskMutation,
   claimTaskMutation,
   completeTaskMutation,
@@ -142,7 +144,7 @@ export function useBoardSync(onNotice: (text: string) => void): void {
 
 export function useBoardMutation<Data, Err, Vars, Args>(options: UseMutationOptions<Data, Err, Vars>, toVars: (args: Args) => Vars) {
   const client = useQueryClient()
-  const mutation = useMutation({ ...options, onSuccess: () => client.invalidateQueries() })
+  const mutation = useMutation({ ...options, onSettled: () => client.invalidateQueries() })
   return {
     ...mutation,
     mutate: (args: Args, opts?: MutateOptions<Data, Err, Vars>) => mutation.mutate(toVars(args), opts),
@@ -168,7 +170,10 @@ export const useCompleteTask = () => useBoardMutation(completeTaskMutation(), (i
 export const useReleaseTask = () => useBoardMutation(releaseTaskMutation(), (id: number) => ({ ...onTask(id), body: {} }))
 export const useBlockTask = () => useBoardMutation(blockTaskMutation(), (a: { id: number; reason: string }) => ({ ...onTask(a.id), body: { reason: a.reason } }))
 export const useUnblockTask = () => useBoardMutation(unblockTaskMutation(), onTask)
-export const useApproveTask = () => useBoardMutation(approveTaskMutation(), onTask)
+export const useApproveTask = () => useBoardMutation(approveTaskMutation(), (a: { id: number; commit: string | null }) => ({ ...onTask(a.id), body: { commit: a.commit ?? undefined } }))
+export const useSubmitTask = () => useBoardMutation(submitForReviewMutation(), (id: number) => ({ ...onTask(id), body: {} }))
+export const useSetTaskReviewer = () =>
+  useBoardMutation(setTaskReviewerMutation(), (a: { id: number; reviewer: string | null }) => ({ ...onTask(a.id), body: { reviewer: a.reviewer } }))
 export const useRequestChanges = () => useBoardMutation(requestChangesMutation(), (id: number) => ({ ...onTask(id), body: {} }))
 export const useAnswerQuestion = () => useBoardMutation(answerQuestionMutation(), (a: { id: number; option: string }) => ({ ...onTask(a.id), body: { option: a.option } }))
 export const useAnswerInThread = () =>

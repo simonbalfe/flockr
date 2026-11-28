@@ -56,3 +56,21 @@ export const actorFields = { org: "actorOrg", kind: "actorKind" } as const
 
 export const wakesAgent = (actor: { kind: string | undefined; org: string | undefined }, agent: { org: string }): boolean =>
   actor.kind !== "agent" || actor.org === undefined || actor.org === agent.org
+
+export const reviewActs = ["approve", "changes"] as const
+export type ReviewAct = (typeof reviewActs)[number]
+
+export interface ReviewCheck {
+  actor: { name: string; kind: MemberKind }
+  task: { id: number; channel: string; holder: string | null; reviewer: string | null }
+  reviewNeedsPerson: boolean
+  act: ReviewAct
+}
+
+export function reviewRefusal({ actor, task, reviewNeedsPerson, act }: ReviewCheck): string | null {
+  if (task.holder === actor.name) return `${actor.name} submitted #${task.id}; someone else reviews it`
+  if (actor.kind === "person") return null
+  if (task.reviewer !== actor.name) return `${actor.name} is not the reviewer of #${task.id}${task.reviewer ? `; ${task.reviewer} is` : "; a person reviews it"}`
+  if (act === "approve" && reviewNeedsPerson) return `#${task.channel} needs a person to approve; ${actor.name} can ask for changes or leave a note`
+  return null
+}

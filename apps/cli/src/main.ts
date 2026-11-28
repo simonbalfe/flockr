@@ -8,7 +8,7 @@ import { ApiFailure, callOperation, loadOperations, run } from "./api"
 import { checklistCommand } from "./checklist"
 import { briefCommand, routinesCommand } from "./routines"
 import { rulesCommand } from "./rules"
-import { int, need, optionalInt, readArgs, seconds, UsageError, type Values } from "./args"
+import { int, need, optionalInt, readArgs, seconds, UsageError, yesNoOf, type Values } from "./args"
 import { envKey, envMember, envUrl, stateFile } from "./config"
 import { epochStore } from "./epochs"
 import { activityLine, channelLine, entryLine, eventLine, feedLine, inboxText, memberLine, messageStateLine, searchLine, taskDetail, taskLine, threadText, versionsText } from "./format"
@@ -34,7 +34,7 @@ Reading
   flockr read <channel> [--label x]   read a channel; --label keeps messages and task cards carrying it
   flockr thread <id>                  read a thread (message id m12 or task id 806); sub-threads are indented
   flockr versions <message-id>        every version of a message's text, oldest first
-  flockr tasks list [--channel c] [--state s] [--mine] [--assignee m]
+  flockr tasks list [--channel c] [--state s] [--mine] [--assignee m] [--reviewer m]
   flockr tasks show <id>
   flockr inbox                        questions and work waiting for a person
   flockr focus                        what needs you (questions, reviews, blocked tasks), open plans, agent runs in progress, done today
@@ -54,13 +54,17 @@ Writing
                                       an agent answers a direct message without an @mention; nobody else can read it
   flockr save <message-id> | flockr unsave <message-id>   keep a message or reply in your saved list; safe to repeat
   flockr draft <channel|thread-id> <text> | flockr draft <channel|thread-id> --clear   keep unsent text so it follows you to another device
-  flockr tasks create <channel> <title> [--for member] [--needs 806,808] [--label x] [--kind k] [--spec file] [--text first reply] [--plan id]
+  flockr tasks create <channel> <title> [--for member] [--reviewer member] [--needs 806,808] [--label x] [--kind k] [--spec file] [--text first reply] [--plan id]
   flockr tasks plan <task> <plan|none>   put a task in an open plan of its channel, or take it out
   flockr tasks claim [<id>] [--ready] [--label x] [--mine] [--wait [--timeout s]]
-  flockr tasks renew|unblock|approve <id>
+  flockr tasks renew|unblock <id>
+  flockr tasks approve <id> [--commit sha]   a person, or the agent named as reviewer; never the holder. --commit is the one you
+                                      reviewed: once a newer commit lands the approval is refused (stale_review); read it and approve again
   flockr tasks release <id> [--keep]  give it back; if it is assigned to you this also declines it (--keep stays assigned)
-  flockr tasks complete <id> [--commit sha] [--note proof]
-  flockr tasks submit <id> [--commit sha] [--note proof] send for review
+  flockr tasks complete <id> [--commit sha] [--note proof]   refused when the task names a reviewer: submit it instead
+  flockr tasks submit <id> [--commit sha] [--note proof] [--reviewer member]   send for review, by the reviewer or a person;
+                                      an agent with 2 tasks in review, or a reviewer agent with 2 open, is refused (review_full)
+  flockr tasks reviewer <id> <member|none>   name who reviews it (the holder or a person); none leaves it to a person
   flockr tasks commit <id> <sha> [--message subject]   add a commit that did the task; the same sha twice changes nothing
   flockr tasks fail|block <id> --reason <text>
   flockr tasks changes <id> [--note text]
@@ -119,7 +123,8 @@ Agents served by a machine (a runner on that machine starts their sessions; a pe
   flockr keys revoke <id>             turn a key off for good; safe to repeat
   flockr machines                     machines with a runner, online or not, and the harnesses each can run
   flockr channels create <id> [--topic text] [--repo github.com/owner/name] [--visibility org|private|shared]
-  flockr channels set <id> [--topic text] [--repo github.com/owner/name] [--visibility org|private|shared]   an empty --repo clears it; with a repo, commits print as links
+  flockr channels set <id> [--topic text] [--repo github.com/owner/name] [--visibility org|private|shared] [--review-needs-person yes|no]   an empty --repo clears it; with a repo, commits print as links;
+                                      --review-needs-person yes: only a person approves tasks there (a person in the owning org sets it)
 
 Orgs and shared channels (every member is in one org; a client org sees only the channels shared with it)
   flockr orgs [list] | flockr orgs create <id> <name>   the orgs you can see; add a client org (the org that runs the board only)
@@ -305,7 +310,7 @@ async function tasks(v: Values): Promise<number> {
     case "list": {
       const state = v.state === undefined ? undefined : taskStates.find((s) => s === v.state)
       if (v.state !== undefined && !state) throw new UsageError(`--state must be one of ${taskStates.join(", ")}`)
-      const query = { channel: v.channel, state, assignee: v.assignee, member: v.mine ? member : undefined }
+      const query = { channel: v.channel, state, assignee: v.assignee, reviewer: v.reviewer, member: v.mine ? member : undefined }
       const list = await run(sdk.listTasks({ query }))
       print(list, () => (list.length ? list.map(taskLine).join("\n") : "No tasks."))
       return 0
@@ -325,6 +330,7 @@ async function tasks(v: Values): Promise<number> {
         spec: v.spec ?? null,
         ...(v.text ? { text: v.text } : {}),
         plan: planOf(v.plan),
+        reviewer: v.reviewer ?? null,
       }
       printTask(await run(sdk.createTask({ body })))
       return 0
@@ -345,7 +351,7 @@ async function tasks(v: Values): Promise<number> {
     case "submit": {
       const id = idArg()
       const body = { epoch: epochFor(id, v), commit: v.commit, note: v.note }
-      const call = sub === "complete" ? sdk.completeTask({ path: { id }, body }) : sdk.submitForReview({ path: { id }, body })
+      const call = sub === "complete" ? sdk.completeTask({ path: { id }, body }) : sdk.submitForReview({ path: { id }, body: { ...body, reviewer: v.reviewer } })
       printTask(remember(await run(call)))
       return 0
     }
@@ -361,8 +367,13 @@ async function tasks(v: Values): Promise<number> {
       printTask(remember(await run(sdk.unblockTask({ path: { id: idArg() } }))))
       return 0
     case "approve":
-      printTask(remember(await run(sdk.approveTask({ path: { id: idArg() } }))))
+      printTask(remember(await run(sdk.approveTask({ path: { id: idArg() }, body: { commit: v.commit } }))))
       return 0
+    case "reviewer": {
+      const name = need(positionals[3], "member, or none")
+      printTask(await run(sdk.setTaskReviewer({ path: { id: idArg() }, body: { reviewer: name === "none" ? null : name } })))
+      return 0
+    }
     case "changes":
       printTask(await run(sdk.requestChanges({ path: { id: idArg() }, body: { note: v.note } })))
       return 0
@@ -404,8 +415,8 @@ async function main(): Promise<number> {
         return 0
       }
       if (positionals[1] === "set") {
-        const body = { topic: values.topic, repo: values.repo === undefined ? undefined : values.repo || null, visibility: visibilityOf(values.visibility) }
-        if (body.topic === undefined && body.repo === undefined && body.visibility === undefined) throw new UsageError("Give --topic, --repo or --visibility")
+        const body = { topic: values.topic, repo: values.repo === undefined ? undefined : values.repo || null, visibility: visibilityOf(values.visibility), reviewNeedsPerson: yesNoOf(values["review-needs-person"], "--review-needs-person") }
+        if (Object.values(body).every((value) => value === undefined)) throw new UsageError("Give --topic, --repo, --visibility or --review-needs-person")
         const channel = await run(sdk.updateChannel({ path: { channel: need(positionals[2], "channel id").replace(/^#/, "") }, body }))
         print(channel, () => channelLine(channel))
         return 0

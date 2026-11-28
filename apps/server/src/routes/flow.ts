@@ -1,6 +1,7 @@
-import { AddCommitBody, CompleteBody, ReasonBody, Task, TaskParams } from "@flockr/contracts"
+import { AddCommitBody, CompleteBody, ReasonBody, SubmitBody, Task, TaskParams } from "@flockr/contracts"
 import { addTaskCommit } from "../board/commits"
-import { blockTask, completeTask, failTask, submitForReview, unblockTask } from "../board/flow"
+import { blockTask, completeTask, failTask, unblockTask } from "../board/flow"
+import { submitForReview } from "../board/review"
 import { jsonBody, ok, operation, router } from "./shared"
 
 const tags: [string] = ["tasks"]
@@ -24,7 +25,7 @@ export const flowRoutes = router()
       path: "/api/tasks/{id}/complete",
       operationId: "completeTask",
       tags,
-      summary: "Mark a claimed task done, with an optional commit and a note as proof. Tasks waiting on it turn ready.",
+      summary: "Mark a claimed task done, with an optional commit and a note as proof. Tasks waiting on it turn ready. Refused (403) when the task names a reviewer: submit it for review instead.",
       request: { params: TaskParams, body: jsonBody(CompleteBody) },
       responses: ok(Task),
     }),
@@ -36,8 +37,8 @@ export const flowRoutes = router()
       path: "/api/tasks/{id}/submit",
       operationId: "submitForReview",
       tags,
-      summary: "Send a claimed task for review by a person, with an optional commit and note",
-      request: { params: TaskParams, body: jsonBody(CompleteBody) },
+      summary: "Send a claimed task for review, with an optional commit, note and reviewer (an agent or person who sees the channel; omit for a person). The task is in review at that commit. An agent with 2 tasks already in review, or a reviewer agent with 2 reviews open, is refused with 409 review_full.",
+      request: { params: TaskParams, body: jsonBody(SubmitBody) },
       responses: ok(Task),
     }),
     async (c) => c.json(await submitForReview(c.var.db, c.var.member, c.req.valid("param").id, c.req.valid("json")), 200),

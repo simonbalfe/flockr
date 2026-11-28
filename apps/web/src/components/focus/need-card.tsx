@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { useNow } from "@/lib/now"
 import { usePanel } from "@/lib/panel"
+import { useReviewRefusal } from "@/lib/use-task-actions"
 import { ago } from "@/lib/time"
 import { cn } from "@/lib/utils"
 
@@ -93,23 +94,28 @@ function ReviewBody({ item }: { item: Extract<NeedItem, { kind: "review" }> }) {
   const approve = useApproveTask()
   const changes = useRequestChanges()
   const { task } = item
+  const refused = useReviewRefusal(task, "approve") !== null
   const commits = task.commits.length
   return (
     <Body>
       <div className="text-sm text-muted-foreground">
-        Ready for review{commits > 0 ? ` · ${commits} ${commits === 1 ? "commit" : "commits"}` : ""}
+        Ready for review{task.reviewCommit ? ` at ${task.reviewCommit.slice(0, 7)}` : ""}{commits > 0 ? ` · ${commits} ${commits === 1 ? "commit" : "commits"}` : ""}{task.reviewer ? ` · reviewer ${task.reviewer}` : ""}
       </div>
       <div className="mt-3 flex flex-wrap items-center gap-2">
-        <Button size="sm" onClick={() => hideWithUndo({ key: item.key, done: `Approved #${task.id}`, run: () => approve.mutateAsync(task.id) })}>
-          Approve
-        </Button>
-        <Button
-          size="sm"
-          variant="outline"
-          onClick={() => hideWithUndo({ key: item.key, done: `Sent #${task.id} back to ${task.holder ?? "the holder"}`, run: () => changes.mutateAsync(task.id) })}
-        >
-          Ask for changes
-        </Button>
+        {!refused && (
+          <>
+            <Button size="sm" onClick={() => hideWithUndo({ key: item.key, done: `Approved #${task.id}`, run: () => approve.mutateAsync({ id: task.id, commit: task.reviewCommit }) })}>
+              Approve
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => hideWithUndo({ key: item.key, done: `Sent #${task.id} back to ${task.holder ?? "the holder"}`, run: () => changes.mutateAsync(task.id) })}
+            >
+              Ask for changes
+            </Button>
+          </>
+        )}
         <OpenThread item={item} />
       </div>
     </Body>
