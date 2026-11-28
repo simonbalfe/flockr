@@ -66,6 +66,7 @@
   <li><b>Closest to Pi Durable: TanStack AI (78%), then the Vercel AI SDK (70%).</b> All three are libraries you embed, with any model, the loop outside the box and crash recovery. TanStack's recovery is built in; the AI SDK's needs Vercel Workflow.</li>
   <li><b>Eve and Mastra are a pair (88%).</b> Both are whole agent frameworks with sandboxes, approvals, schedules and evals. Those are Flockr's product, so they overlap Flockr more than they overlap Pi Durable (62 to 63%).</li>
   <li><b>Closest to Flockr itself: Eve.</b> It also has channels (Slack, Discord, GitHub), so it is part rival and part framework.</li>
+  <li><b>Think (Cloudflare, added 2026-11-28) is closest to Pi Durable (71%).</b> Both are durable agents in Durable Objects with the loop outside the box. Think runs on the AI SDK, works only on Cloudflare, has a virtual file system so files need no box, and its own docs rate it below the Pi harness on resuming after an interruption.</li>
   <li><b>Furthest from everything: Claude Code.</b> The only finished coding agent, tuned by Anthropic, but Claude only, no crash recovery, and it has to live inside the box.</li>
   <li><b>Pi Durable vs TanStack AI on crashes:</b> about equal on paper. Both rerun only tools marked safe and tell the model when a call was cut off. Pi Durable ships SQLite and file stores and saves your own state in the same write; TanStack ships only a memory store (you write the store for your database) but adds a lease and fence per thread for several servers. TanStack has an open bug where a reconnect during a long tool call writes the run twice (issue 2035).</li>
 </ul>
@@ -77,55 +78,603 @@
   <li>TanStack AI: <a href="https://tanstack.com/blog/tanstack-ai-1-0">1.0 announcement</a>, <a href="https://tanstack.com/ai/latest/docs">docs</a>, <a href="https://tanstack.com/ai/latest/docs/harness/durable-sessions">Durable sessions</a>, <a href="https://tanstack.com/ai/latest/docs/sandbox/journal">Run journal</a>, <a href="https://github.com/TanStack/ai/issues/2035">issue 2035</a></li>
   <li>Mastra: <a href="https://mastra.ai/docs">docs</a>, <a href="https://mastra.ai/docs/harness/durable-agents.md">Durable agents</a>, <a href="https://mastra.ai/llms.txt">llms.txt</a></li>
   <li>Vercel AI SDK: <a href="https://ai-sdk.dev/docs/agents/overview">Agents overview</a></li>
+  <li>Think: <a href="https://blog.cloudflare.com/project-think/">Project Think</a>, <a href="https://developers.cloudflare.com/agents/harnesses/">Cloudflare Agents harnesses</a></li>
   <li>Claude Code: Anthropic's CLI docs and Flockr's own adapter</li>
 </ul>
 
 <script id="data" type="application/json">
 {
-  "frameworks": ["Pi Durable", "Eve", "TanStack AI", "Mastra", "Vercel AI SDK", "Claude Code"],
+  "frameworks": [
+    "Pi Durable",
+    "Eve",
+    "TanStack AI",
+    "Mastra",
+    "Vercel AI SDK",
+    "Claude Code",
+    "Think (Cloudflare)"
+  ],
   "groups": [
-    { "name": "The loop", "rows": [
-      { "feature": "Any model", "cells": [
-        ["y", "pi-ai providers"], ["y", "AI SDK models or AI Gateway"], ["y", "23 adapters"], ["y", "provider/model strings"], ["y", ""], ["n", "Claude only"] ] },
-      { "feature": "Survives a crash mid-turn", "cells": [
-        ["y", "every step committed first"], ["y", "event log replayed (Workflow SDK)"], ["y", "session log per thread, lease and fence per host"], ["p", "DurableAgent, beta, off by default"], ["p", "WorkflowAgent only, on Vercel Workflow"], ["n", "turn lost"] ] },
-      { "feature": "Resumes without repeating a shell command", "cells": [
-        ["y", "reruns only tools marked safe"], ["u", ""], ["y", "replay safe or never, default never; harness 0.x"], ["n", "unsaved tool calls run again"], ["p", "per tool, with use step"], ["n", "no resume"] ] },
-      { "feature": "Subagents", "cells": [
-        ["y", "child conversations"], ["y", "delegation"], ["y", "subagents, coding agents"], ["u", ""], ["u", ""], ["y", ""] ] },
-      { "feature": "Embeds in your own process", "cells": [
-        ["y", "a library"], ["n", "its own Node server app"], ["y", ""], ["y", ""], ["y", ""], ["n", "a CLI process"] ] }
-    ]},
-    { "name": "Tools and sandbox", "rows": [
-      { "feature": "Built-in shell and file tools", "cells": [
-        ["y", "read, write, edit, bash"], ["y", "bash, read, write, edit"], ["p", "through Claude Code, Codex or OpenCode"], ["y", "files, shell, search, LSP"], ["n", ""], ["y", "tuned by Anthropic"] ] },
-      { "feature": "Sandbox providers included", "cells": [
-        ["p", "none; you plug in where tools run"], ["y", "Docker, Vercel Sandbox, custom"], ["y", "12, incl. Docker, Docker Sandboxes, E2B, Blaxel, Daytona"], ["y", "E2B, Daytona, Modal, Cloudflare, Blaxel, Docker"], ["p", "experimental, bring your own"], ["n", "it runs inside one"] ] },
-      { "feature": "Loop outside the box, box only for tools", "cells": [
-        ["y", ""], ["y", ""], ["y", ""], ["y", ""], ["y", ""], ["n", ""] ] },
-      { "feature": "Drives Claude Code or Codex as a worker", "cells": [
-        ["n", ""], ["u", ""], ["y", "codingAgents plugin"], ["u", ""], ["y", "HarnessAgent"], ["n", "it is one"] ] },
-      { "feature": "Tuned coding prompts", "cells": [
-        ["n", ""], ["n", ""], ["p", "through Claude Code"], ["n", ""], ["n", ""], ["y", ""] ] }
-    ]},
-    { "name": "Product features", "rows": [
-      { "feature": "Channels (Slack and others)", "cells": [
-        ["n", ""], ["y", "Slack, Discord, iMessage, GitHub"], ["n", ""], ["u", ""], ["n", ""], ["n", ""] ] },
-      { "feature": "Approvals, waiting on a person", "cells": [
-        ["p", "hooks can block a tool"], ["y", "durable approvals"], ["y", "interrupts kept in the log"], ["y", "suspend and resume"], ["u", ""], ["p", "permission prompts"] ] },
-      { "feature": "Schedules", "cells": [
-        ["n", ""], ["y", ""], ["n", ""], ["y", "recurring schedules"], ["n", ""], ["n", ""] ] },
-      { "feature": "Evals", "cells": [
-        ["n", ""], ["y", "eval runner"], ["u", ""], ["y", "scorers, CI"], ["n", ""], ["n", ""] ] }
-    ]},
-    { "name": "Status", "rows": [
-      { "feature": "Open source", "cells": [
-        ["y", "MIT"], ["y", "Apache-2.0"], ["y", ""], ["u", "licence not checked"], ["y", "Apache-2.0"], ["n", ""] ] },
-      { "feature": "Self-host with no vendor", "cells": [
-        ["y", ""], ["y", "Node server, Postgres store"], ["y", ""], ["y", ""], ["p", "durable agent needs Workflow"], ["p", "local, Anthropic models"] ] },
-      { "feature": "Stable API", "cells": [
-        ["n", "experimental"], ["p", "public preview"], ["p", "core 1.0; agent framework experimental"], ["p", "core stable; durable agent beta"], ["y", ""], ["y", ""] ] }
-    ]}
+    {
+      "name": "The loop",
+      "rows": [
+        {
+          "feature": "Any model",
+          "cells": [
+            [
+              "y",
+              "pi-ai providers"
+            ],
+            [
+              "y",
+              "AI SDK models or AI Gateway"
+            ],
+            [
+              "y",
+              "23 adapters"
+            ],
+            [
+              "y",
+              "provider/model strings"
+            ],
+            [
+              "y",
+              ""
+            ],
+            [
+              "n",
+              "Claude only"
+            ],
+            [
+              "y",
+              "AI SDK models"
+            ]
+          ]
+        },
+        {
+          "feature": "Survives a crash mid-turn",
+          "cells": [
+            [
+              "y",
+              "every step committed first"
+            ],
+            [
+              "y",
+              "event log replayed (Workflow SDK)"
+            ],
+            [
+              "y",
+              "session log per thread, lease and fence per host"
+            ],
+            [
+              "p",
+              "DurableAgent, beta, off by default"
+            ],
+            [
+              "p",
+              "WorkflowAgent only, on Vercel Workflow"
+            ],
+            [
+              "n",
+              "turn lost"
+            ],
+            [
+              "p",
+              "fibers checkpoint; continues from saved output"
+            ]
+          ]
+        },
+        {
+          "feature": "Resumes without repeating a shell command",
+          "cells": [
+            [
+              "y",
+              "reruns only tools marked safe"
+            ],
+            [
+              "u",
+              ""
+            ],
+            [
+              "y",
+              "replay safe or never, default never; harness 0.x"
+            ],
+            [
+              "n",
+              "unsaved tool calls run again"
+            ],
+            [
+              "p",
+              "per tool, with use step"
+            ],
+            [
+              "n",
+              "no resume"
+            ],
+            [
+              "u",
+              ""
+            ]
+          ]
+        },
+        {
+          "feature": "Subagents",
+          "cells": [
+            [
+              "y",
+              "child conversations"
+            ],
+            [
+              "y",
+              "delegation"
+            ],
+            [
+              "y",
+              "subagents, coding agents"
+            ],
+            [
+              "u",
+              ""
+            ],
+            [
+              "u",
+              ""
+            ],
+            [
+              "y",
+              ""
+            ],
+            [
+              "y",
+              "child Durable Objects (Facets)"
+            ]
+          ]
+        },
+        {
+          "feature": "Embeds in your own process",
+          "cells": [
+            [
+              "y",
+              "a library"
+            ],
+            [
+              "n",
+              "its own Node server app"
+            ],
+            [
+              "y",
+              ""
+            ],
+            [
+              "y",
+              ""
+            ],
+            [
+              "y",
+              ""
+            ],
+            [
+              "n",
+              "a CLI process"
+            ],
+            [
+              "p",
+              "a base class, Cloudflare only"
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Tools and sandbox",
+      "rows": [
+        {
+          "feature": "Built-in shell and file tools",
+          "cells": [
+            [
+              "y",
+              "read, write, edit, bash"
+            ],
+            [
+              "y",
+              "bash, read, write, edit"
+            ],
+            [
+              "p",
+              "through Claude Code, Codex or OpenCode"
+            ],
+            [
+              "y",
+              "files, shell, search, LSP"
+            ],
+            [
+              "n",
+              ""
+            ],
+            [
+              "y",
+              "tuned by Anthropic"
+            ],
+            [
+              "p",
+              "Workspace files, grep, diff; shell in a Sandbox"
+            ]
+          ]
+        },
+        {
+          "feature": "Sandbox providers included",
+          "cells": [
+            [
+              "p",
+              "none; you plug in where tools run"
+            ],
+            [
+              "y",
+              "Docker, Vercel Sandbox, custom"
+            ],
+            [
+              "y",
+              "12, incl. Docker, Docker Sandboxes, E2B, Blaxel, Daytona"
+            ],
+            [
+              "y",
+              "E2B, Daytona, Modal, Cloudflare, Blaxel, Docker"
+            ],
+            [
+              "p",
+              "experimental, bring your own"
+            ],
+            [
+              "n",
+              "it runs inside one"
+            ],
+            [
+              "p",
+              "Cloudflare Sandbox only"
+            ]
+          ]
+        },
+        {
+          "feature": "Loop outside the box, box only for tools",
+          "cells": [
+            [
+              "y",
+              ""
+            ],
+            [
+              "y",
+              ""
+            ],
+            [
+              "y",
+              ""
+            ],
+            [
+              "y",
+              ""
+            ],
+            [
+              "y",
+              ""
+            ],
+            [
+              "n",
+              ""
+            ],
+            [
+              "y",
+              "execution ladder, tiers 0 to 4"
+            ]
+          ]
+        },
+        {
+          "feature": "Drives Claude Code or Codex as a worker",
+          "cells": [
+            [
+              "n",
+              ""
+            ],
+            [
+              "u",
+              ""
+            ],
+            [
+              "y",
+              "codingAgents plugin"
+            ],
+            [
+              "u",
+              ""
+            ],
+            [
+              "y",
+              "HarnessAgent"
+            ],
+            [
+              "n",
+              "it is one"
+            ],
+            [
+              "u",
+              ""
+            ]
+          ]
+        },
+        {
+          "feature": "Tuned coding prompts",
+          "cells": [
+            [
+              "n",
+              ""
+            ],
+            [
+              "n",
+              ""
+            ],
+            [
+              "p",
+              "through Claude Code"
+            ],
+            [
+              "n",
+              ""
+            ],
+            [
+              "n",
+              ""
+            ],
+            [
+              "y",
+              ""
+            ],
+            [
+              "n",
+              ""
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Product features",
+      "rows": [
+        {
+          "feature": "Channels (Slack and others)",
+          "cells": [
+            [
+              "n",
+              ""
+            ],
+            [
+              "y",
+              "Slack, Discord, iMessage, GitHub"
+            ],
+            [
+              "n",
+              ""
+            ],
+            [
+              "u",
+              ""
+            ],
+            [
+              "n",
+              ""
+            ],
+            [
+              "n",
+              ""
+            ],
+            [
+              "n",
+              "wakes on email only"
+            ]
+          ]
+        },
+        {
+          "feature": "Approvals, waiting on a person",
+          "cells": [
+            [
+              "p",
+              "hooks can block a tool"
+            ],
+            [
+              "y",
+              "durable approvals"
+            ],
+            [
+              "y",
+              "interrupts kept in the log"
+            ],
+            [
+              "y",
+              "suspend and resume"
+            ],
+            [
+              "u",
+              ""
+            ],
+            [
+              "p",
+              "permission prompts"
+            ],
+            [
+              "u",
+              ""
+            ]
+          ]
+        },
+        {
+          "feature": "Schedules",
+          "cells": [
+            [
+              "n",
+              ""
+            ],
+            [
+              "y",
+              ""
+            ],
+            [
+              "n",
+              ""
+            ],
+            [
+              "y",
+              "recurring schedules"
+            ],
+            [
+              "n",
+              ""
+            ],
+            [
+              "n",
+              ""
+            ],
+            [
+              "y",
+              "alarms and fibers"
+            ]
+          ]
+        },
+        {
+          "feature": "Evals",
+          "cells": [
+            [
+              "n",
+              ""
+            ],
+            [
+              "y",
+              "eval runner"
+            ],
+            [
+              "u",
+              ""
+            ],
+            [
+              "y",
+              "scorers, CI"
+            ],
+            [
+              "n",
+              ""
+            ],
+            [
+              "n",
+              ""
+            ],
+            [
+              "u",
+              ""
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Status",
+      "rows": [
+        {
+          "feature": "Open source",
+          "cells": [
+            [
+              "y",
+              "MIT"
+            ],
+            [
+              "y",
+              "Apache-2.0"
+            ],
+            [
+              "y",
+              ""
+            ],
+            [
+              "u",
+              "licence not checked"
+            ],
+            [
+              "y",
+              "Apache-2.0"
+            ],
+            [
+              "n",
+              ""
+            ],
+            [
+              "u",
+              ""
+            ]
+          ]
+        },
+        {
+          "feature": "Self-host with no vendor",
+          "cells": [
+            [
+              "y",
+              ""
+            ],
+            [
+              "y",
+              "Node server, Postgres store"
+            ],
+            [
+              "y",
+              ""
+            ],
+            [
+              "y",
+              ""
+            ],
+            [
+              "p",
+              "durable agent needs Workflow"
+            ],
+            [
+              "p",
+              "local, Anthropic models"
+            ],
+            [
+              "n",
+              "Cloudflare only"
+            ]
+          ]
+        },
+        {
+          "feature": "Stable API",
+          "cells": [
+            [
+              "n",
+              "experimental"
+            ],
+            [
+              "p",
+              "public preview"
+            ],
+            [
+              "p",
+              "core 1.0; agent framework experimental"
+            ],
+            [
+              "p",
+              "core stable; durable agent beta"
+            ],
+            [
+              "y",
+              ""
+            ],
+            [
+              "y",
+              ""
+            ],
+            [
+              "n",
+              "experimental preview"
+            ]
+          ]
+        }
+      ]
+    }
   ]
 }
 </script>
@@ -183,7 +732,3 @@ names.forEach((n, a) => {
     return `<td style="background:color-mix(in srgb, var(--ink) ${a === b ? 0 : Math.max(0, (s - 0.4) * 60)}%, transparent);color:${a !== b && s > 0.75 ? "var(--paper)" : "var(--ink)"}">${a === b ? "" : shade + "%"}</td>`
   }).join("")
 })
-</script>
-</main>
-</body>
-</html>
