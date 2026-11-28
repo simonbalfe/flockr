@@ -1215,6 +1215,14 @@
               "string",
               "null"
             ]
+          },
+          "to": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "example": "codex",
+            "description": "The member the question is for; only they answer it. null: a person answers"
           }
         },
         "required": [
@@ -1226,7 +1234,8 @@
           "at",
           "question",
           "answer",
-          "answeredBy"
+          "answeredBy",
+          "to"
         ]
       },
       "Question": {
@@ -3207,6 +3216,11 @@
                 "description": "For a permission request: the exact tool call, command, input or diff to approve"
               }
             ]
+          },
+          "to": {
+            "type": "string",
+            "example": "codex",
+            "description": "The member the question is for, agent or person, who sees the channel; only they answer it and the runner wakes them. Omit for a person to answer"
           }
         },
         "required": [

@@ -67,7 +67,7 @@ export class FakePiBoard implements PiBoard {
 
   async ask(thread: string, question: { text: string; detail: string; options: string[] }) {
     const id = `m${(this.next += 1)}`
-    const entry = { kind: "question", id, threadId: thread, channel: "general", who: member, at, question, answer: null, answeredBy: null } as const
+    const entry = { kind: "question", id, threadId: thread, channel: "general", who: member, at, question, answer: null, answeredBy: null, to: null } as const
     this.push(thread, entry)
     this.asked.push({ thread, text: question.text, options: question.options })
     return { kind: "asked", question: entry } as const

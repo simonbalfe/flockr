@@ -155,6 +155,7 @@ export const ThreadAskBody = z
     detail: z.string().default(""),
     options: z.array(text).min(2).openapi({ example: ["Allow once", "Deny"] }),
     action: ApprovalAction.optional().openapi({ description: "For a permission request: the exact tool call, command, input or diff to approve" }),
+    to: z.string().optional().openapi({ example: "codex", description: "The member the question is for, agent or person, who sees the channel; only they answer it and the runner wakes them. Omit for a person to answer" }),
   })
   .openapi("ThreadAskBody")
 export const ActivityBody = z

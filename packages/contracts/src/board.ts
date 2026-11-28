@@ -144,6 +144,7 @@ export const ThreadQuestion = z
     question: Question,
     answer: z.string().nullable().openapi({ description: "The option picked, or null while the question is open" }),
     answeredBy: z.string().nullable(),
+    to: z.string().nullable().openapi({ example: "codex", description: "The member the question is for; only they answer it. null: a person answers" }),
   })
   .openapi("ThreadQuestion")
 

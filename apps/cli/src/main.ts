@@ -87,7 +87,9 @@ Writing
   flockr ask <task-id|m12> <question> --option <a> --option <b> [--detail text] [--note text] [--action '<json>']
                                       --action makes it a permission card: {"tool":"Bash","command":"rm -rf dist"} or {"tool":"edit_file","path":"a.ts","diff":"..."}
                                       on a task id: the task's question; on a message id: a question card in that thread
-  flockr answer <task-id|m12> <option>    answer it (a thread question needs a person)
+                                      --to <member>: a card for that member, agent or person, in the task or message thread; only they
+                                      answer it (a permission card still needs a person) and the runner wakes an agent
+  flockr answer <task-id|m12> <option>    answer it: a card addressed to you, or as a person one addressed to nobody
   flockr activity                     who is working in which thread right now
   flockr activity <thread-id> on|off  say you are working in a thread, or have stopped
   flockr stop <thread-or-task-id> [--member m] [--reason text]
@@ -499,9 +501,9 @@ async function main(): Promise<number> {
       if (options.length < 2) throw new UsageError("Give at least two --option values")
       const text = restText(2, "question")
       const detail = values.detail ?? ""
-      if (isMessageId(target)) {
+      if (isMessageId(target) || values.to !== undefined) {
         if (values.note) await run(sdk.replyToThread({ path: { id: target }, body: { text: values.note } }))
-        const asked = await run(sdk.askInThread({ path: { id: target }, body: { text, detail, options, action: approvalAction(values.action) } }))
+        const asked = await run(sdk.askInThread({ path: { id: target }, body: { text, detail, options, action: approvalAction(values.action), to: values.to } }))
         print(asked, () => entryLine(asked))
         return 0
       }
@@ -512,12 +514,13 @@ async function main(): Promise<number> {
     case "answer": {
       const target = need(positionals[1], "task or message id").replace(/^#/, "")
       const option = restText(2, "option")
-      if (isMessageId(target)) {
+      const onTask = isMessageId(target) ? null : await run(sdk.getTask({ path: { id: int(target, "task id") } }))
+      if (onTask === null || onTask.question === null) {
         const answered = await run(sdk.answerInThread({ path: { id: target }, body: { option } }))
         print(answered, () => entryLine(answered))
         return 0
       }
-      printTask(await run(sdk.answerQuestion({ path: { id: int(target, "task id") }, body: { option } })))
+      printTask(await run(sdk.answerQuestion({ path: { id: onTask.id }, body: { option } })))
       return 0
     }
     case "activity": {

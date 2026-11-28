@@ -1,4 +1,4 @@
-import { blockSummary, type Block, type Task, type Thread, type ThreadEntry } from "@flockr/client"
+import { blockSummary, type Block, type Task, type Thread, type ThreadEntry, type ThreadQuestion } from "@flockr/client"
 import type { AgentPermissions } from "@flockr/contracts/agents"
 
 const maxEntries = 40
@@ -123,5 +123,22 @@ export function reviewPrompt(options: { task: Task; thread: Thread; memory?: str
     `- If it needs work, send it back with what to change: flockr tasks changes ${task.id} --note "..."`,
     "- If the channel needs a person to approve, your approval is refused: say in your final message whether a person should approve it, and why.",
     `Your final message is posted as your reply in thread ${task.id}.`,
+  ].join("\n")
+}
+
+export function questionPrompt(options: { thread: Thread; question: ThreadQuestion; memory?: string }): string {
+  const { thread, question, memory } = options
+  return [
+    ...(memory ? [memory, ""] : []),
+    `${question.who} asked you a question in #${thread.channel}, thread ${thread.id}. Only you can answer it; it stays open until you do.`,
+    "",
+    "Thread so far:",
+    threadLines(thread) || "(empty)",
+    "",
+    `Question: ${question.question.text}`,
+    ...(question.question.detail ? [`Detail: ${question.question.detail}`] : []),
+    `Options: ${question.question.options.join(" / ")}`,
+    "",
+    `Find out what you need (read the thread, the code, the channel document), then answer with one option: flockr answer ${thread.id} "<option>". Your final message is posted as your reply in thread ${thread.id}; say there in one or two lines why you picked it.`,
   ].join("\n")
 }

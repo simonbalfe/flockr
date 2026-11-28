@@ -11,6 +11,7 @@ export interface BoardPort {
   tasks: (query: { assignee?: string; member?: string; reviewer?: string; state?: TaskState }) => Promise<Task[]>
   thread: (id: string) => Promise<Thread>
   people: () => Promise<Set<string>>
+  questions: () => Promise<ThreadQuestion[]>
   claim: (id: number) => Promise<Task | null>
   renew: (claim: Claim) => Promise<boolean>
   release: (claim: Claim, keepAssignee: boolean) => Promise<boolean>
@@ -82,6 +83,7 @@ export function boardClient(options: { member: string; client: Client }): BoardP
     tasks: (query) => call(sdk.listTasks({ ...on(), query })),
     thread: (id) => call(sdk.getThread({ ...on(), path: { id } })),
     people: async () => new Set((await call(sdk.listMembers(on()))).filter((m) => m.kind === "person").map((m) => m.name)),
+    questions: async () => (await call(sdk.getInbox(on()))).threadQuestions,
     async claim(id) {
       try {
         return await call(sdk.claimTask({ ...on(), path: { id } }))

@@ -1,4 +1,4 @@
-import { hostOrg, type BoardEvent, type RunEndStatus, type Task, type Thread } from "@flockr/client"
+import { hostOrg, type BoardEvent, type RunEndStatus, type Task, type Thread, type ThreadQuestion } from "@flockr/client"
 import type { AgentPermissions } from "@flockr/contracts/agents"
 import type { EpochStore } from "@flockr/cli/epochs"
 import { activitySink, type ActivitySink } from "./activity"
@@ -7,8 +7,8 @@ import { folderFor, isFolder, leaseRenewMs } from "./config"
 import type { Harness, PermissionBridge, Session, SessionExit, SessionSaver, SessionSpec } from "./harness/types"
 import { memoryBlock, noMemory } from "./memory"
 import { ruleFor } from "./permissions"
-import { conversationPrompt, failedText, followUpPrompt, missingFolderText, resumeWorkPrompt, reviewPrompt, stoppedText, timeLimitText, workPrompt } from "./prompt"
-import { addressedDirectly, agentChain, agentChainLimit, asksReview, awaitsReview, claimable, eventData, eventTypes, holds, isTaskEvent, reviewKey, routeReply, startsConversation, waitsFor, wakes } from "./routing"
+import { conversationPrompt, failedText, followUpPrompt, missingFolderText, questionPrompt, resumeWorkPrompt, reviewPrompt, stoppedText, timeLimitText, workPrompt } from "./prompt"
+import { addressedDirectly, agentChain, agentChainLimit, askedOf, asksReview, awaitsReview, claimable, eventData, eventTypes, holds, isTaskEvent, reviewKey, routeReply, startsConversation, waitsFor, wakes } from "./routing"
 import type { Workspace } from "./workspace/types"
 import { sessionKey, type JsonStore, type SessionMap } from "./store"
 
@@ -102,6 +102,7 @@ export function createRunner(deps: RunnerDeps) {
   const toldMissing = new Set<string>()
   const queued = new Map<string, { channel: string; texts: string[] }>()
   const reviewed = new Set<string>()
+  const answering = new Set<string>()
   let chain: Promise<void> = Promise.resolve()
   let closing = false
   let org = hostOrg
@@ -337,6 +338,10 @@ export function createRunner(deps: RunnerDeps) {
       if (!hasRoom()) return
       await review(task)
     }
+    for (const question of await board.questions()) {
+      if (!hasRoom()) return
+      await answer(question)
+    }
   }
 
   async function work(task: Task): Promise<void> {
@@ -372,6 +377,32 @@ export function createRunner(deps: RunnerDeps) {
     const history = await board.thread(thread)
     const memory = await memoryText(task.channel)
     await launch({ thread, channel: task.channel, purpose: "talk", claim: null, prompt: () => reviewPrompt({ task, thread: history, memory }) }, folder)
+  }
+
+  async function answer(question: ThreadQuestion): Promise<void> {
+    const thread = question.threadId
+    if (closing || runs.has(thread) || question.to !== member || question.answer !== null || answering.has(question.id)) return
+    const folder = await folderOrNotice(thread, question.channel)
+    if (!folder || !hasRoom()) return
+    answering.add(question.id)
+    const history = await board.thread(thread)
+    const memory = await memoryText(question.channel)
+    await launch({ thread, channel: question.channel, purpose: "talk", claim: null, prompt: () => questionPrompt({ thread: history, question, memory }) }, folder)
+  }
+
+  async function onQuestion(event: BoardEvent): Promise<void> {
+    const threadId = event.threadId
+    if (threadId === null) return
+    const history = await board.thread(threadId)
+    if (await chainTooLong(event, history)) return
+    const question = history.entries.find((e) => e.kind === "question" && e.id === event.messageId)
+    if (!question || question.kind !== "question") return
+    const live = runs.get(threadId)
+    if (live) {
+      await converse({ thread: threadId, channel: history.channel, message: questionPrompt({ thread: history, question }) })
+      return
+    }
+    await answer(question)
   }
 
   async function onReview(event: BoardEvent): Promise<void> {
@@ -516,6 +547,7 @@ export function createRunner(deps: RunnerDeps) {
     else if (event.type === eventTypes.replied) await onReply(event)
     else if (event.type === eventTypes.stopRequested) onStopRequest(event)
     else if (event.type === eventTypes.answered && runs.has(event.threadId ?? "")) log(`${member}: answer in ${event.threadId}: ${eventData(event).option ?? "?"} by ${event.actor}`)
+    else if (askedOf(event, member)) await onQuestion(event)
     else if (asksReview(event, member)) await onReview(event)
     else if (isTaskEvent(event)) await onTaskEvent(event)
   }

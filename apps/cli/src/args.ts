@@ -79,6 +79,7 @@ export const flags = {
   refuse: { type: "boolean" },
   tests: { type: "string" },
   reviewer: { type: "string" },
+  to: { type: "string" },
   file: { type: "string" },
   files: { type: "string" },
   block: { type: "string", multiple: true },

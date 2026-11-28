@@ -210,6 +210,7 @@ export function questionOf(row: MessageRow): ThreadQuestion | null {
     question: row.question,
     answer: row.answer,
     answeredBy: row.answeredBy,
+    to: row.askedTo,
   }
 }
 
@@ -381,17 +382,25 @@ export async function getMessageVersions(db: Executor, raw: string): Promise<Mes
   }
 }
 
+async function inboxScope(db: Executor, reader: Reader): Promise<{ questions: SQL | undefined; reviews: SQL | undefined; taskQuestions: SQL | undefined }> {
+  if ("audience" in reader) return { questions: undefined, reviews: undefined, taskQuestions: undefined }
+  const me = await findMember(db, reader.member)
+  if (me?.kind === "person") return { questions: or(eq(messages.askedTo, me.name), isNull(messages.askedTo)), reviews: undefined, taskQuestions: undefined }
+  return { questions: eq(messages.askedTo, reader.member), reviews: eq(tasks.reviewer, reader.member), taskQuestions: sql`false` }
+}
+
 export async function getInbox(db: Executor, reader: Reader): Promise<Inbox> {
+  const scope = await inboxScope(db, reader)
   const questionRows = await db
     .select()
     .from(tasks)
-    .where(and(isNotNull(tasks.question), eq(tasks.state, "claimed"), readableBy(tasks.channel, reader)))
+    .where(and(isNotNull(tasks.question), eq(tasks.state, "claimed"), readableBy(tasks.channel, reader), scope.taskQuestions))
     .orderBy(asc(tasks.id))
-  const reviewRows = await db.select().from(tasks).where(and(eq(tasks.state, "review"), readableBy(tasks.channel, reader))).orderBy(asc(tasks.id))
+  const reviewRows = await db.select().from(tasks).where(and(eq(tasks.state, "review"), readableBy(tasks.channel, reader), scope.reviews)).orderBy(asc(tasks.id))
   const asked = await db
     .select()
     .from(messages)
-    .where(and(eq(messages.kind, "question"), isNull(messages.answer), isNull(messages.deletedAt), readableBy(messages.channel, reader)))
+    .where(and(eq(messages.kind, "question"), isNull(messages.answer), isNull(messages.deletedAt), readableBy(messages.channel, reader), scope.questions))
     .orderBy(asc(messages.id))
   return {
     questions: await presentTasks(db, questionRows),

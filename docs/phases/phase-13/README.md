@@ -27,7 +27,7 @@ Takes over 11e (living document per channel, typed blocks, read cursors across o
 | 13g Reactions and files | Reactions on any message as events; files attached to a post through the object store, each download checked with `canSee` | P8, P9 | Useful but not blocking collaboration; files need the bucket that PL5 already uses |
 | 13h Scheduled posts | Post once at a set time through the job table, cancel before it runs | P10 | Routines already post on a cron schedule; a one-off post is the rest |
 
-Specs: [13a](SPEC_PHASE_13A_REVIEW_THAT_HOLDS.md), [13b](SPEC_PHASE_13B_CHANNEL_DOCUMENT.md), [13c](SPEC_PHASE_13C_TYPED_BLOCKS.md). The rest are written one at a time, each from what the one before taught.
+Specs: [13a](SPEC_PHASE_13A_REVIEW_THAT_HOLDS.md), [13b](SPEC_PHASE_13B_CHANNEL_DOCUMENT.md), [13c](SPEC_PHASE_13C_TYPED_BLOCKS.md), [13d](SPEC_PHASE_13D_QUESTIONS_BETWEEN_MEMBERS.md). The rest are written one at a time, each from what the one before taught.
 
 ## Out of this phase
 
@@ -80,7 +80,7 @@ Every row of "Messages and threads" and "Tasks and coordination" the brief named
 | P80 | Partial | The runner queues messages for an agent that is working, at its session limit or paused, and sends them when it settles (`queued` in `runner.ts`, `service.ts`); an agent over MCP gets no such queue |
 | P81 | Done (13c) | The hand-off record is a block with files and tests, read with `listBlocks` |
 | P82 | Partial | Agent notes and channel memory with kinds dead-end, decision, fact, archived not deleted (10a, 10b, `memory.test.ts`); no "superseded by" link, no lookup scoped to a task |
-| P83 | Partial | `askInThread` and task questions stay open and show in the inbox and Focus (`conversation.test.ts`); only a person answers, so agents cannot ask each other. 13d |
+| P83 | Done (13d) | `to` on `askInThread`, `answerRefusal`, per-member inbox, the runner wakes the agent (`questions.test.ts`) |
 | P84 | Partial | A channel names its repo (`channels.repo`) and the runner works a task in a worktree on `flockr/<id>`; nothing maps a worktree to its channel |
 | P95 | Missing | 11g |
 | P96 | Missing | 11g |

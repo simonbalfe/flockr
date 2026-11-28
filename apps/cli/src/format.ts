@@ -88,7 +88,7 @@ export function entryLine(entry: ThreadEntry): string {
       return `${clock(entry.at)}  · ${entry.system ? "" : `${entry.who} `}${entry.text}` + blockLines(entry.blocks)
     case "question": {
       const state = entry.answer === null ? `open: flockr answer ${entry.threadId} <option>` : `answered ${entry.answer} by ${entry.answeredBy ?? "someone"}`
-      return `${clock(entry.at)}  ${entry.who} asks: ${questionText(entry)}  (${state})`
+      return `${clock(entry.at)}  ${entry.who} asks${entry.to ? ` ${entry.to}` : ""}: ${questionText(entry)}  (${state})`
     }
     case "reply":
       return `${clock(entry.at)}  ${entry.who}: ${entry.deleted ? deletedText : `${entry.text}${marks(entry)}`}  (${entry.id})` + blockLines(entry.blocks)

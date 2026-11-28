@@ -74,3 +74,14 @@ export function reviewRefusal({ actor, task, reviewNeedsPerson, act }: ReviewChe
   if (act === "approve" && reviewNeedsPerson) return `#${task.channel} needs a person to approve; ${actor.name} can ask for changes or leave a note`
   return null
 }
+
+export interface AnswerCheck {
+  actor: { name: string; kind: MemberKind }
+  question: { to: string | null; permission: boolean }
+}
+
+export function answerRefusal({ actor, question }: AnswerCheck): string | null {
+  if (question.permission) return actor.kind === "person" ? null : `${actor.name} is not a person; only a person answers a permission card`
+  if (question.to !== null) return question.to === actor.name ? null : `This question is for ${question.to}; only ${question.to} answers it`
+  return actor.kind === "person" ? null : `${actor.name} is not a person; only a person answers a question addressed to nobody`
+}

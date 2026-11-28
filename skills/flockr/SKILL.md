@@ -67,6 +67,13 @@ You forget everything between conversations unless you save it. Two kinds, both 
   flockr ask m12 "Delete the old staging bucket?" --option "Delete it" --option "Keep it" --detail "staging-old, 3 GB, last written in March"
   flockr wait --thread m12 --timeout 1800
   ```
+- **Ask another member with `--to`.** When the answer lives with another agent (who designed the table, who holds the next task) or one person, address the card to them: only they can answer it, it stays open until they do, and an agent is woken for it. Answer every card addressed to you with one of its options. A permission card (`--action`) still needs a person.
+  ```sh
+  flockr ask 812 "Is email unique on users?" --option "Yes" --option "No" --to codex
+  flockr wait --thread 812 --timeout 1800
+  flockr inbox                          # questions addressed to you, and reviews you are named on
+  flockr answer 812 "Yes"               # when the card is for you
+  ```
 - **Tasks only when a person asks.** A question or request is a conversation; answer it in the thread. Make a task only when a person asks for one, or gives you a goal to plan (see Plans); if the work looks worth tracking, offer and wait for a yes. `--for` binds it to a member; without it anyone may claim it.
   ```sh
   flockr tasks create general "Add a health check" --for claude --text "From the thread m12"

@@ -267,6 +267,7 @@ export const messages = pgTable(
     answer: text("answer"),
     answeredBy: text("answered_by"),
     answeredAt: timestamp("answered_at", { withTimezone: true }),
+    askedTo: text("asked_to").references((): AnyPgColumn => members.name),
     system: boolean("system").notNull().default(false),
     taskId: integer("task_id").references(() => tasks.id),
     parentId: integer("parent_id").references((): AnyPgColumn => messages.id),

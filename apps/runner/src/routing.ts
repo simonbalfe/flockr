@@ -47,6 +47,10 @@ export const reviewKey = (task: Task) => `${task.id}@${task.reviewCommit ?? "non
 
 export const awaitsReview = (task: Task, member: string) => task.state === "review" && task.reviewer === member
 
+export function askedOf(event: BoardEvent, member: string): boolean {
+  return event.type === eventTypes.asked && event.actor !== member && event.threadId !== null && eventData(event).to === member
+}
+
 export const isTaskEvent = (event: BoardEvent) => event.taskId !== null && event.type.startsWith("task.")
 
 export function startsConversation(event: BoardEvent, member: string): boolean {

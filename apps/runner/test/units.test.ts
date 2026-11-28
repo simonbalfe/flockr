@@ -78,7 +78,7 @@ describe("permission gate", () => {
     ...base,
     ask: async (thread, question) => {
       asked.push(`${thread}: ${question.text}`)
-      return { kind: "asked", question: { kind: "question", id: "m40", threadId: thread, channel: "general", who: member, at: "", question, answer: null, answeredBy: null } }
+      return { kind: "asked", question: { kind: "question", id: "m40", threadId: thread, channel: "general", who: member, at: "", question, answer: null, answeredBy: null, to: null } }
     },
   })
   const args = (command: string) => ({ tool_name: "Bash", input: { command } })

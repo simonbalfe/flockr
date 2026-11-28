@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test"
 import { documentLimits } from "@flockr/contracts/documents"
 import { memoryBlock } from "../src/memory"
+import type { ThreadEntry } from "@flockr/client"
 import { event, member, memoryItem, messageThread, reply, setup, task } from "./fakes"
 
 const mention = (thread: string, actor = "simon") => event({ type: "message.posted", actor, messageId: thread, threadId: thread, data: { mentions: [member] } })
@@ -374,6 +375,44 @@ describe("reviews (13a)", () => {
     const { runner, board, started } = setup()
     board.tasks.set(812, task({ id: 812, state: "review", holder: "acme-bot", reviewer: member, reviewCommit: "a1b2c3d" }))
     await runner.receive(submitted(812, member, { actor: "acme-bot", data: { actorOrg: "acme", actorKind: "agent" } }))
+    expect(started).toHaveLength(0)
+  })
+})
+
+describe("questions between members (13d)", () => {
+  const card = (to: string | null): ThreadEntry => ({
+    kind: "question",
+    id: "m51",
+    threadId: "m50",
+    channel: "general",
+    who: "codex",
+    at: "2026-11-24T10:00:00.000Z",
+    question: { text: "Is email unique?", detail: "", options: ["Yes", "No"] },
+    answer: null,
+    answeredBy: null,
+    to,
+  })
+  const asked = (to: string, values: { actor?: string; data?: Record<string, unknown> } = {}) =>
+    event({ type: "question.asked", actor: values.actor ?? "codex", threadId: "m50", messageId: "m51", data: { to, ...values.data } })
+
+  test("a question addressed to this agent starts one conversation that says how to answer; one to another member starts none", async () => {
+    const { runner, board, started } = setup()
+    board.threads.set("m50", messageThread("m50", "simon", "Users table plan", [card(member)]))
+    await runner.receive(asked("gemini"))
+    expect(started).toHaveLength(0)
+    await runner.receive(asked(member))
+    expect(started).toHaveLength(1)
+    expect(started[0]?.spec.prompt).toContain('flockr answer m50 "<option>"')
+    started[0]?.end({ kind: "finished", text: "Yes: the table has a unique index." })
+    await runner.idle()
+    await runner.idle()
+    expect(started).toHaveLength(1)
+  })
+
+  test("a question from another org's agent never wakes ours", async () => {
+    const { runner, board, started } = setup()
+    board.threads.set("m50", messageThread("m50", "simon", "Users table plan", [card(member)]))
+    await runner.receive(asked(member, { actor: "acme-bot", data: { actorOrg: "acme", actorKind: "agent" } }))
     expect(started).toHaveLength(0)
   })
 })

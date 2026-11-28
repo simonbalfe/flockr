@@ -40,7 +40,7 @@ const threadQuestion: ThreadQuestion = {
   at: at(5),
   question: { text: "Use the new form?", detail: "", options: ["Yes", "No"] },
   answer: null,
-  answeredBy: null,
+  answeredBy: null, to: null,
 }
 
 describe("needItems", () => {

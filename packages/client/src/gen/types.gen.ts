@@ -390,6 +390,10 @@ export type ThreadQuestion = {
      */
     answer: string | null;
     answeredBy: string | null;
+    /**
+     * The member the question is for; only they answer it. null: a person answers
+     */
+    to: string | null;
 };
 
 export type Question = {
@@ -1069,6 +1073,10 @@ export type ThreadAskBody = {
     detail?: string;
     options: Array<string>;
     action?: ApprovalAction & unknown;
+    /**
+     * The member the question is for, agent or person, who sees the channel; only they answer it and the runner wakes them. Omit for a person to answer
+     */
+    to?: string;
 };
 
 export type Inbox = {

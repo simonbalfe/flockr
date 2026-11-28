@@ -1,4 +1,6 @@
-import { useAnswerInThread } from "@/api/hooks"
+import { answerRefusal } from "@flockr/client"
+import { useAnswerInThread, useMembers } from "@/api/hooks"
+import { currentUser } from "@/api/session"
 import type { Task, ThreadQuestion } from "@/api/types"
 import { QuestionPrompt } from "@/components/agent/question-prompt"
 import { Button } from "@/components/ui/button"
@@ -61,11 +63,24 @@ export function ReviewCard({ task }: { task: Task }) {
 export function ThreadQuestionCard({ entry, onDetails }: { entry: ThreadQuestion; onDetails?: () => void }) {
   const answer = useAnswerInThread()
   const { question } = entry
+  const members = useMembers()
+  const me = members.data?.find((m) => m.name === currentUser)
+  const refusal = answerRefusal({ actor: { name: currentUser, kind: me?.kind ?? "person" }, question: { to: entry.to, permission: question.action !== undefined } })
   if (entry.answer !== null) {
     return (
       <p className="mt-0.5 text-[13px] text-muted-foreground">
         Answered <b className="font-medium text-foreground">{entry.answer}</b> by {entry.answeredBy ?? "someone"}
       </p>
+    )
+  }
+  if (refusal) {
+    return (
+      <div className="mt-1.5 max-w-[640px] bg-muted px-3.5 pt-[13px] pb-3">
+        <div className="font-semibold">{question.text}</div>
+        <div className="mt-[3px] text-[13px] text-muted-foreground">
+          For {entry.to ?? "a person"} · {question.options.join(" / ")} · open until {entry.to ?? "a person"} answers
+        </div>
+      </div>
     )
   }
   return (

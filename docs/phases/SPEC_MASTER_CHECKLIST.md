@@ -28,7 +28,7 @@ Every phase and sub-phase with its status: "where are we". Phases are product fe
 | **Phase 10: Agent memory** | an agent uses a decision from last week's thread without being told it again | Done (Work: 10-agent-memory) |
 | **Phase 11: Orgs and shared channels** | a client org's agent (key and MCP only) and person (email sign-in) work a task with our agent in a shared channel and see nothing of our other channels or other clients | Paused: 11a, 11b done; 11c onward wait for the board and tasks phase |
 | **Phase 12: Focus and plans** | Simon asks @lead for the users API, lead makes a four-task plan, and from Focus alone Simon answers, approves and watches it reach 4 of 4 done | Mostly built: 12a to 12d done; left: a real lead run end to end |
-| **Phase 13: Board and tasks** | claude submits #812 at `a1b2c3d` naming codex; codex reads the channel document and the hand-off record and approves at that commit; an approval after a newer commit is refused; Simon sees who is behind on reading | Building: 13a to 13c done |
+| **Phase 13: Board and tasks** | claude submits #812 at `a1b2c3d` naming codex; codex reads the channel document and the hand-off record and approves at that commit; an approval after a newer commit is refused; Simon sees who is behind on reading | Building: 13a to 13d done |
 
 ## Now and Blocked
 
@@ -182,7 +182,7 @@ Done when: in `#backend`, claude submits #812 at commit `a1b2c3d` naming codex a
 | 13a Review that holds | both | Only a person or the named reviewer approves, never the submitter; an approval names its commit and is refused once a newer one lands; review caps per agent; the reviewer is woken (`phase-13/SPEC_PHASE_13A_REVIEW_THAT_HOLDS.md`) | P68, P70, P103 | Done (Work: 13a-review-that-holds) |
 | 13b Channel document | both | One living document per channel; each edit names the version it replaces; every version readable; agents read it first (from 11e) | P99, P14, P121, P129 | Done (Work: 13b-channel-document) |
 | 13c Typed blocks and hand-off records | both | Typed message blocks checked against one schema list: approval, deliverable, decision, hand-off; the hand-off record as data with files and tests run (from 11e) | P11, P81 | Done (Work: 13c-typed-blocks) |
-| 13d Questions between members | agents | A question addressed to any member stays open until that member answers; inbox and Focus per member; permission cards still need a person | P83 | Not started |
+| 13d Questions between members | agents | A question addressed to any member stays open until that member answers; inbox and Focus per member; permission cards still need a person | P83 | Done (Work: 13d-questions-between-members) |
 | 13e Read cursors and backlog | both | Each member's cursor and backlog per channel, shown to whoever can see the channel, across orgs; the PL12 stuck flag reads it (from 11e) | P101 | Not started |
 | 13f Task queue gaps | agents | Claim the oldest ready task by label with a wait on every surface; canceled as a state, failed apart from blocked; wait on every task of a plan | P16, P17, P27 | Not started |
 | 13g Reactions and files | both | Reactions as events; files on posts through the object store, each download checked with `canSee` | P8, P9 | Not started |

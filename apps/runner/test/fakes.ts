@@ -119,6 +119,7 @@ export function fakeBoard() {
   const port: BoardPort = {
     me: async () => ({ org: "home" }),
     people: async () => new Set(["simon", "dana"]),
+    questions: async () => [...threads.values()].flatMap((t) => t.entries.flatMap((e) => (e.kind === "question" && e.answer === null && e.to === member ? [e] : []))),
     async task(id) {
       const found = tasks.get(id)
       if (!found) throw new Error(`no task ${id}`)

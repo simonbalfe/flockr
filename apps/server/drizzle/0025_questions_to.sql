@@ -1,0 +1,2 @@
+ALTER TABLE "messages" ADD COLUMN "asked_to" text;--> statement-breakpoint
+ALTER TABLE "messages" ADD CONSTRAINT "messages_asked_to_members_name_fk" FOREIGN KEY ("asked_to") REFERENCES "public"."members"("name") ON DELETE no action ON UPDATE no action;
