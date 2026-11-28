@@ -41,6 +41,7 @@ Research only: every feature the surveyed products have, and who has it. Nothing
 | P14 | Shared canvas per channel | BZ | Agents edit it through the command line |
 | P15 | Full-text search | BZ, VB | BZ: Postgres search; VB: inspector filters by text |
 | P80 | Delivery follows the agent's status: idle, working or done get the message; blocked or absent agents queue it until they settle | CT | Event hooks flush the queue when an agent's status changes; text is cleaned of terminal control codes |
+| P120 | A live stream that is never silently incomplete: when the server loses a live event or cannot check access, it ends the stream with "resync" and the client reloads | BZ | NIP-AR sync rules: `CLOSED "resync: ..."`; the client replaces its copy only at `EOSE`, then backs off with jitter. See `docs/reference/RESEARCH_BUZZ_ARCHITECTURE.md` |
 
 ## Tasks and coordination
 
@@ -66,6 +67,7 @@ Research only: every feature the surveyed products have, and who has it. Nothing
 | P82 | Typed shared notes: decision, discovery, dead end; old ones are superseded, not deleted | CT | Task-scoped lookup shows dead ends first, then decisions, then discoveries |
 | P83 | Open questions between agents that stay open until someone answers | CT | `chatter ask codex "..."`, `chatter answer 7 "..."` |
 | P84 | One shared space per Git repository, whatever the worktree | CT | Every worktree of a repo sees the same agents, chat, tasks and notes; other repos stay separate |
+| P121 | Typed records in a channel (a task, a project) that anyone who may post can edit; each edit names the version it replaces, so two edits never both win | BZ | NIP-AR artifacts, `kind:45010`, `prev` checked under a lock (`buzz-db/src/store/artifact.rs`); the relay defines no task schema and has no claims |
 
 ## People's view
 
@@ -103,6 +105,8 @@ Research only: every feature the surveyed products have, and who has it. Nothing
 | P89 | Same agent key in several workspaces, with separate membership, profile and presence in each | BZ | `VISION_AGENT.md`: state is community-local |
 | P93 | Agent definitions (name pool, avatar, prompt, model) as shareable blueprints a new agent is made from | BZ | NIP-AP persona events, `kind:30175`; overlaps P42 |
 | P94 | Per-turn token and cost record, readable only by the agent's owner | BZ | NIP-AM, `kind:44200`, encrypted to the owner |
+| P122 | An agent answers only its owner unless set otherwise: owner only, an allowlist, anyone, or nobody | BZ | `buzz-acp --respond-to`, default `owner-only` (`crates/buzz-acp/src/config.rs`) |
+| P123 | An agent proposes a new agent or channel as a draft its owner reviews and saves | BZ | `buzz agents draft-create`, `buzz projects add-channel` open owner-reviewed drafts in desktop |
 
 ## Triggers, routines and sync
 
@@ -137,6 +141,9 @@ Research only: every feature the surveyed products have, and who has it. Nothing
 | P90 | Agent joins a workspace through its owner: the owner's membership is the agent's access, so removing the owner cuts every agent | BZ | NIP-AA: the agent shows an owner-signed credential when it connects; no separate enrolment |
 | P91 | Owner-signed proof that an agent belongs to them, carried on the agent's events and profile, limited by event kind and time | BZ | NIP-OA `auth` tag; the agent's key stays the only author; republishing the profile without the tag withdraws it |
 | P92 | Archive an agent: hidden from member lists and autocomplete, history kept, owner or admin can undo | BZ | NIP-IA, kinds 9035 and 9036 |
+| P124 | Read-only guest role per channel; a channel can make everyone who joins a guest | BZ | `member_role` `guest` may not post (`buzz-core/src/channel.rs`, `can_post`); `channels.join_role` |
+| P125 | Invite links with a required expiry, a use limit and revoke, stored hashed | BZ | `relay_invites`: `max_uses` 1 to 10,000, `expires_at`, `revoked_at`; grants workspace member only |
+| P126 | Removing a member cuts their live stream for that channel at once | BZ | Their channel subscriptions are evicted on every connection and their workflows there disabled (`handlers/side_effects.rs`) |
 
 ## Hosting and storage
 
@@ -149,6 +156,7 @@ Research only: every feature the surveyed products have, and who has it. Nothing
 | P65 | SQLite per agent in a Durable Object, asleep when idle | FB | Rumoured for ZD, unconfirmed |
 | P66 | Live code sync between machines | ZD | CRDT worktrees |
 | P67 | Many communities on one host | BZ | Scoped by host name |
+| P127 | Git hosting inside the workspace on object storage, push rights from channel roles, branch protections | BZ | Smart HTTP; packs in S3, refs in one manifest swapped by conditional write (`docs/git-on-object-storage.md`); `no-force-push`, `no-delete`, `push:admin` |
 
 ## Lessons from the research
 
