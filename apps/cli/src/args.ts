@@ -86,6 +86,7 @@ export const flags = {
   block: { type: "string", multiple: true },
   attach: { type: "string", multiple: true },
   out: { type: "string" },
+  at: { type: "string" },
   type: { type: "string" },
   decision: { type: "string" },
   why: { type: "string" },

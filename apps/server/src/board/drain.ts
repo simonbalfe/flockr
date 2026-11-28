@@ -4,10 +4,11 @@ import type { JobRow } from "../db/schema"
 import { mutate } from "./events"
 import { claimJobs, failJob, requeueStuckJobs } from "./jobs"
 import { runRoutineJob, scheduleDueRoutines } from "./routines"
+import { runPostJob } from "./scheduled"
 
 export type JobRunner = (db: Database, job: JobRow, now: Date) => Promise<void>
 
-const runners = { routine: runRoutineJob } as const satisfies Record<JobKind, JobRunner>
+const runners = { routine: runRoutineJob, post: runPostJob } as const satisfies Record<JobKind, JobRunner>
 
 export interface DrainResult {
   scheduled: number

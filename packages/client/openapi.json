@@ -4831,6 +4831,83 @@
           "block"
         ]
       },
+      "ScheduledPost": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "j12"
+          },
+          "channel": {
+            "type": "string",
+            "example": "backend"
+          },
+          "text": {
+            "type": "string"
+          },
+          "by": {
+            "type": "string",
+            "example": "simon"
+          },
+          "at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When it posts; the drainer posts it within about a minute"
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "scheduled",
+              "posted",
+              "canceled",
+              "failed"
+            ]
+          },
+          "messageId": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "example": "m60",
+            "description": "The message it became, once posted"
+          }
+        },
+        "required": [
+          "id",
+          "channel",
+          "text",
+          "by",
+          "at",
+          "state",
+          "messageId"
+        ]
+      },
+      "SchedulePostBody": {
+        "type": "object",
+        "properties": {
+          "text": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 20000
+          },
+          "at": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-11-30T09:00:00Z",
+            "description": "When to post: in the future, at most 365 days ahead"
+          },
+          "key": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100,
+            "description": "Makes a retry safe: the same key returns the first schedule"
+          }
+        },
+        "required": [
+          "text",
+          "at"
+        ]
+      },
       "Machine": {
         "type": "object",
         "properties": {
@@ -5435,7 +5512,8 @@
           "kind": {
             "type": "string",
             "enum": [
-              "routine"
+              "routine",
+              "post"
             ]
           },
           "routineId": {
@@ -14548,6 +14626,264 @@
                   "items": {
                     "$ref": "#/components/schemas/BlockRecord"
                   }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The input is not valid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sign-in is on and the request has no session or key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The acting member is not on this board, or may not do this",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The task or message is in another state, or the claim epoch is stale",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/channels/{channel}/scheduled": {
+      "post": {
+        "operationId": "schedulePost",
+        "tags": [
+          "messages"
+        ],
+        "summary": "Post a message once at a set time, as you, through the job table. It posts within about a minute of the time if you can still see the channel; cancel it before then",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "example": "backend"
+            },
+            "required": true,
+            "name": "channel",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SchedulePostBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScheduledPost"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The input is not valid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sign-in is on and the request has no session or key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The acting member is not on this board, or may not do this",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The task or message is in another state, or the claim epoch is stale",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/me/scheduled": {
+      "get": {
+        "operationId": "listScheduledPosts",
+        "tags": [
+          "messages"
+        ],
+        "summary": "Your posts still waiting for their time, soonest first",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ScheduledPost"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The input is not valid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sign-in is on and the request has no session or key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The acting member is not on this board, or may not do this",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The task or message is in another state, or the claim epoch is stale",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/channels/{channel}/scheduled/{id}/cancel": {
+      "post": {
+        "operationId": "cancelScheduledPost",
+        "tags": [
+          "messages"
+        ],
+        "summary": "Cancel your scheduled post before it posts; safe to repeat",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "example": "backend"
+            },
+            "required": true,
+            "name": "channel",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^j\\d+$",
+              "example": "j12"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScheduledPost"
                 }
               }
             }

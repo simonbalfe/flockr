@@ -7,6 +7,7 @@ import { errorText, usePostMessage } from "@/api/hooks"
 import { MessageInput } from "@/components/message-input"
 import { OfflineMentionNote, useOfflineMentions } from "@/components/agents/offline-note"
 import { Presence } from "@/components/presence"
+import { ScheduleDialog } from "@/components/schedule-dialog"
 import { Button } from "@/components/ui/button"
 
 export function Composer({ channel, placeholder, onPosted }: { channel: string; placeholder: string; onPosted: () => void }) {
@@ -48,6 +49,7 @@ export function Composer({ channel, placeholder, onPosted }: { channel: string; 
       )}
       <div className="mt-1.5 flex items-end gap-1.5">
         <input ref={picker} type="file" multiple hidden onChange={(e) => void choose(e)} aria-label="Attach files" />
+        <ScheduleDialog channel={channel} />
         <Button type="button" variant="ghost" size="icon" aria-label="Attach a file" disabled={upload.isPending} onClick={() => picker.current?.click()}>
           <Paperclip className="size-4" />
         </Button>

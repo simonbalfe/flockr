@@ -18,6 +18,7 @@ import { channelMemoryCommand, notesCommand } from "./memory"
 import { documentCommand } from "./documents"
 import { blocksCommand, blocksFrom } from "./blocks"
 import { attachmentsFor, downloadCommand, reactCommand, uploadCommand } from "./attachments"
+import { scheduleCommand, scheduledCommand } from "./scheduled"
 import { sessionsCommand } from "./sessions"
 import { draftsCommand, dmCommand, savedCommand, sentCommand, threadsCommand } from "./navigation"
 import { openQueue } from "./live"
@@ -54,6 +55,8 @@ Writing
   flockr reply <thread-or-task-id> <text> [--label x]... [--key k]   reply in a thread; --key makes a retry reply once
   flockr post|reply ... --decision <text> [--why text]   carry a decision block with the message (readable as data)
   flockr post|reply ... --block '{"kind":"deliverable","summary":"Users API","commit":"a1b2c3d"}'   a typed block: deliverable or decision
+  flockr schedule <channel> <text> --at <time|+30m|+2h|+1d> [--key k]   post once at that time, as you (within about a minute)
+  flockr scheduled [cancel <channel> <j12>]   your posts still waiting for their time; cancel one before it posts
   flockr react|unreact <message-id> <+1|-1|eyes|check|heart|question>   react to a message or reply; safe to repeat
   flockr upload <channel> <path> [--name n] [--type mime]   upload a file (5 MB at most); prints its id (f3)
   flockr post|reply ... --attach <f3|path>...   attach files you uploaded to that channel, or upload a path and attach it
@@ -616,6 +619,10 @@ async function main(): Promise<number> {
       return channelMemoryCommand({ positionals, values, print })
     case "blocks":
       return blocksCommand({ positionals, values, print })
+    case "schedule":
+      return scheduleCommand({ positionals, values, print })
+    case "scheduled":
+      return scheduledCommand({ positionals, values, print })
     case "react":
       return reactCommand({ positionals, values, print }, true)
     case "unreact":

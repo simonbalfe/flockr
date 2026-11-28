@@ -52,19 +52,24 @@ async function priorPost(tx: Tx, actor: string, said: Said): Promise<MessageRow 
   return prior
 }
 
+export async function postIn(tx: Tx, emit: Emit, options: { actor: string; channel: string; said: Said }): Promise<MessageRow> {
+  const { actor, channel, said } = options
+  const { mentions, direct } = await addressedIn(tx, { channel, actor, mentions: await mentionsOf(tx, said.text) })
+  const labels = labelSet(said.labels)
+  const created = await insertMessage(tx, { channel, kind: "text", who: actor, body: said.text, mentions, labels, requestKey: said.key ?? null, blocks: said.blocks ?? [] })
+  await attachFiles(tx, { actor, channel, messageId: created.id, ids: said.files ?? [] })
+  emitMessage(emit, "message.posted", created, actor, messageKey(created.id), { mentions, labels, ...(direct ? { direct } : {}) })
+  await clearDraft(tx, { member: actor, kind: "channel", target: channel })
+  return created
+}
+
 export async function postMessage(db: Database, actor: string, channel: string, said: Said): Promise<{ message: TextMessage }> {
   const row = await mutate(db, async (tx, emit) => {
     await requireActor(tx, actor)
     await requireChannel(tx, channel)
     const prior = await priorPost(tx, actor, said)
     if (prior) return prior
-    const { mentions, direct } = await addressedIn(tx, { channel, actor, mentions: await mentionsOf(tx, said.text) })
-    const labels = labelSet(said.labels)
-    const created = await insertMessage(tx, { channel, kind: "text", who: actor, body: said.text, mentions, labels, requestKey: said.key ?? null, blocks: said.blocks ?? [] })
-    await attachFiles(tx, { actor, channel, messageId: created.id, ids: said.files ?? [] })
-    emitMessage(emit, "message.posted", created, actor, messageKey(created.id), { mentions, labels, ...(direct ? { direct } : {}) })
-    await clearDraft(tx, { member: actor, kind: "channel", target: channel })
-    return created
+    return postIn(tx, emit, { actor, channel, said })
   })
   const thread = await getThread(db, messageKey(row.id))
   if (!thread.root) throw new Error("Posted message has no root")

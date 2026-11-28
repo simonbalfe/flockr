@@ -1,7 +1,9 @@
 import { useNavigate } from "@tanstack/react-router"
 import { X } from "lucide-react"
 import { useState } from "react"
-import { useChannels, useDrafts, useSaveDraft, useSent } from "@/api/hooks"
+import { toast } from "sonner"
+import { errorText, useChannels, useDrafts, useSaveDraft, useSent } from "@/api/hooks"
+import { useCancelScheduled, useScheduledPosts } from "@/api/scheduled"
 import { currentUser } from "@/api/session"
 import { NavList, NavRow } from "@/components/nav-list"
 import { PageHeader } from "@/components/page-header"
@@ -65,6 +67,32 @@ function SentList() {
   )
 }
 
+function ScheduledList() {
+  const scheduled = useScheduledPosts()
+  const channels = useChannels()
+  const cancel = useCancelScheduled()
+  const list = scheduled.data ?? []
+  return (
+    <NavList empty={scheduled.isSuccess && list.length === 0 ? "Nothing scheduled. The clock in the message box schedules a post." : null}>
+      {list.map((item) => (
+        <NavRow
+          key={item.id}
+          who={currentUser}
+          place={placeOf(channels.data ?? [], item.channel)}
+          when={new Date(item.at).toLocaleString()}
+          text={item.text}
+          onOpen={() => undefined}
+          actions={
+            <Button variant="ghost" size="icon-sm" aria-label="Cancel scheduled post" disabled={cancel.isPending} onClick={() => cancel.mutate({ channel: item.channel, id: item.id }, { onError: (error) => toast.error(errorText(error)) })}>
+              <X />
+            </Button>
+          }
+        />
+      ))}
+    </NavList>
+  )
+}
+
 export function DraftsView() {
   const [tab, setTab] = useState("drafts")
   return (
@@ -74,11 +102,12 @@ export function DraftsView() {
           <TabsList>
             <TabsTrigger value="drafts">Drafts</TabsTrigger>
             <TabsTrigger value="sent">Sent</TabsTrigger>
+            <TabsTrigger value="scheduled">Scheduled</TabsTrigger>
           </TabsList>
         </Tabs>
       </PageHeader>
       <ScrollArea className="min-h-0 flex-1">
-        <div className="max-w-[720px] px-4 pt-3 pb-6 nav:pl-6">{tab === "drafts" ? <DraftList /> : <SentList />}</div>
+        <div className="max-w-[720px] px-4 pt-3 pb-6 nav:pl-6">{tab === "drafts" ? <DraftList /> : tab === "sent" ? <SentList /> : <ScheduledList />}</div>
       </ScrollArea>
     </>
   )

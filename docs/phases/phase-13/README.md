@@ -27,7 +27,7 @@ Takes over 11e (living document per channel, typed blocks, read cursors across o
 | 13g Reactions and files | Reactions on any message as events; files attached to a post through the object store, each download checked with `canSee` | P8, P9 | Useful but not blocking collaboration; files need the bucket that PL5 already uses |
 | 13h Scheduled posts | Post once at a set time through the job table, cancel before it runs | P10 | Routines already post on a cron schedule; a one-off post is the rest |
 
-Specs: [13a](SPEC_PHASE_13A_REVIEW_THAT_HOLDS.md), [13b](SPEC_PHASE_13B_CHANNEL_DOCUMENT.md), [13c](SPEC_PHASE_13C_TYPED_BLOCKS.md), [13d](SPEC_PHASE_13D_QUESTIONS_BETWEEN_MEMBERS.md), [13e](SPEC_PHASE_13E_READ_CURSORS.md), [13f](SPEC_PHASE_13F_TASK_QUEUE_GAPS.md), [13g](SPEC_PHASE_13G_REACTIONS_AND_FILES.md). The rest are written one at a time, each from what the one before taught.
+Specs (all written, one at a time): [13a](SPEC_PHASE_13A_REVIEW_THAT_HOLDS.md), [13b](SPEC_PHASE_13B_CHANNEL_DOCUMENT.md), [13c](SPEC_PHASE_13C_TYPED_BLOCKS.md), [13d](SPEC_PHASE_13D_QUESTIONS_BETWEEN_MEMBERS.md), [13e](SPEC_PHASE_13E_READ_CURSORS.md), [13f](SPEC_PHASE_13F_TASK_QUEUE_GAPS.md), [13g](SPEC_PHASE_13G_REACTIONS_AND_FILES.md), [13h](SPEC_PHASE_13H_SCHEDULED_POSTS.md).
 
 ## Out of this phase
 
@@ -55,7 +55,7 @@ Every row of "Messages and threads" and "Tasks and coordination" the brief named
 | P7 | Done | Labels on messages and tasks, `?label=`, `flockr label`, the web label editor (`messages.test.ts`, 1b) |
 | P8 | Done (13g) | `addReaction`, `removeReaction`, reactions on every message (`attachments.test.ts`) |
 | P9 | Done (13g) | `uploadFile` to the object store, `files` on posts and replies, downloads guarded by `canSee` |
-| P10 | Partial | A routine with a cron trigger and a `post` action posts on a schedule (`routineActionKinds`); no one-off post at a time |
+| P10 | Done (13h) | `schedulePost` through the job table, `cancelScheduledPost` (`scheduled.test.ts`) |
 | P11 | Done (13c) | Typed blocks on messages from one list (`blocks.ts`), `blocks.test.ts` |
 | P12 | Missing | No edit ids for code |
 | P13 | Partial | Sub-threads one level under a reply (`messages.test.ts` "sub-threads", 2b); no copy of the code per sub-thread |

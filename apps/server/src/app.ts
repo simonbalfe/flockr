@@ -29,6 +29,7 @@ import { memberRoutes } from "./routes/members"
 import { memoryRoutes } from "./routes/memory"
 import { documentRoutes } from "./routes/documents"
 import { blockRoutes } from "./routes/blocks"
+import { scheduledRoutes } from "./routes/scheduled"
 import { attachmentRoutes } from "./routes/attachments"
 import { messageRoutes } from "./routes/messages"
 import { navigationRoutes } from "./routes/navigation"
@@ -112,6 +113,7 @@ export function createApp(db: Database, options: AppOptions = {}) {
     .route("/", memoryRoutes)
     .route("/", documentRoutes)
     .route("/", blockRoutes)
+    .route("/", scheduledRoutes)
     .route("/", machineRoutes)
     .route("/", searchRoutes)
     .route("/", routineRoutes)

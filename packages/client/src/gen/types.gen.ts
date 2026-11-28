@@ -1628,6 +1628,34 @@ export type BlockRecord = {
     block: Block;
 };
 
+export type ScheduledPost = {
+    id: string;
+    channel: string;
+    text: string;
+    by: string;
+    /**
+     * When it posts; the drainer posts it within about a minute
+     */
+    at: string;
+    state: 'scheduled' | 'posted' | 'canceled' | 'failed';
+    /**
+     * The message it became, once posted
+     */
+    messageId: string | null;
+};
+
+export type SchedulePostBody = {
+    text: string;
+    /**
+     * When to post: in the future, at most 365 days ahead
+     */
+    at: string;
+    /**
+     * Makes a retry safe: the same key returns the first schedule
+     */
+    key?: string;
+};
+
 export type Machine = {
     id: string;
     name: string;
@@ -1834,7 +1862,7 @@ export type BriefAction = {
 
 export type Job = {
     id: number;
-    kind: 'routine';
+    kind: 'routine' | 'post';
     routineId: number | null;
     state: JobState;
     cause: JobCause;
@@ -6075,6 +6103,134 @@ export type ListBlocksResponses = {
 };
 
 export type ListBlocksResponse = ListBlocksResponses[keyof ListBlocksResponses];
+
+export type SchedulePostData = {
+    body: SchedulePostBody;
+    path: {
+        channel: string;
+    };
+    query?: never;
+    url: '/api/channels/{channel}/scheduled';
+};
+
+export type SchedulePostErrors = {
+    /**
+     * The input is not valid
+     */
+    400: Error;
+    /**
+     * Sign-in is on and the request has no session or key
+     */
+    401: Error;
+    /**
+     * The acting member is not on this board, or may not do this
+     */
+    403: Error;
+    /**
+     * Not found
+     */
+    404: Error;
+    /**
+     * The task or message is in another state, or the claim epoch is stale
+     */
+    409: Error;
+};
+
+export type SchedulePostError = SchedulePostErrors[keyof SchedulePostErrors];
+
+export type SchedulePostResponses = {
+    /**
+     * OK
+     */
+    200: ScheduledPost;
+};
+
+export type SchedulePostResponse = SchedulePostResponses[keyof SchedulePostResponses];
+
+export type ListScheduledPostsData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/me/scheduled';
+};
+
+export type ListScheduledPostsErrors = {
+    /**
+     * The input is not valid
+     */
+    400: Error;
+    /**
+     * Sign-in is on and the request has no session or key
+     */
+    401: Error;
+    /**
+     * The acting member is not on this board, or may not do this
+     */
+    403: Error;
+    /**
+     * Not found
+     */
+    404: Error;
+    /**
+     * The task or message is in another state, or the claim epoch is stale
+     */
+    409: Error;
+};
+
+export type ListScheduledPostsError = ListScheduledPostsErrors[keyof ListScheduledPostsErrors];
+
+export type ListScheduledPostsResponses = {
+    /**
+     * OK
+     */
+    200: Array<ScheduledPost>;
+};
+
+export type ListScheduledPostsResponse = ListScheduledPostsResponses[keyof ListScheduledPostsResponses];
+
+export type CancelScheduledPostData = {
+    body?: never;
+    path: {
+        channel: string;
+        id: string;
+    };
+    query?: never;
+    url: '/api/channels/{channel}/scheduled/{id}/cancel';
+};
+
+export type CancelScheduledPostErrors = {
+    /**
+     * The input is not valid
+     */
+    400: Error;
+    /**
+     * Sign-in is on and the request has no session or key
+     */
+    401: Error;
+    /**
+     * The acting member is not on this board, or may not do this
+     */
+    403: Error;
+    /**
+     * Not found
+     */
+    404: Error;
+    /**
+     * The task or message is in another state, or the claim epoch is stale
+     */
+    409: Error;
+};
+
+export type CancelScheduledPostError = CancelScheduledPostErrors[keyof CancelScheduledPostErrors];
+
+export type CancelScheduledPostResponses = {
+    /**
+     * OK
+     */
+    200: ScheduledPost;
+};
+
+export type CancelScheduledPostResponse = CancelScheduledPostResponses[keyof CancelScheduledPostResponses];
 
 export type ListMachinesData = {
     body?: never;
