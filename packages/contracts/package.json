@@ -15,6 +15,7 @@
     "./checklist": "./src/checklist.ts",
     "./cron": "./src/cron.ts",
     "./memory": "./src/memory.ts",
+    "./documents": "./src/documents.ts",
     "./routines": "./src/routines.ts",
     "./sessions": "./src/sessions.ts",
     "./presets": "./src/presets.ts"

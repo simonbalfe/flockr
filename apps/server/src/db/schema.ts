@@ -618,3 +618,22 @@ export const sessionPointers = pgTable(
 )
 
 export type SessionPointerRow = typeof sessionPointers.$inferSelect
+
+export const channelDocumentVersions = pgTable(
+  "channel_document_versions",
+  {
+    channel: text("channel")
+      .notNull()
+      .references(() => channels.id),
+    version: integer("version").notNull(),
+    body: text("body").notNull(),
+    note: text("note"),
+    writtenBy: text("written_by")
+      .notNull()
+      .references(() => members.name),
+    writtenAt: timestamp("written_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [primaryKey({ columns: [t.channel, t.version] }), check("channel_document_versions_version", sql`${t.version} > 0`)],
+)
+
+export type ChannelDocumentVersionRow = typeof channelDocumentVersions.$inferSelect

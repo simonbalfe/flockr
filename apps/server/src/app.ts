@@ -27,6 +27,7 @@ import { keyRoutes } from "./routes/keys"
 import { machineRoutes } from "./routes/machines"
 import { memberRoutes } from "./routes/members"
 import { memoryRoutes } from "./routes/memory"
+import { documentRoutes } from "./routes/documents"
 import { messageRoutes } from "./routes/messages"
 import { navigationRoutes } from "./routes/navigation"
 import { orgRoutes } from "./routes/orgs"
@@ -107,6 +108,7 @@ export function createApp(db: Database, options: AppOptions = {}) {
     .route("/", activityEntryRoutes)
     .route("/", agentRoutes)
     .route("/", memoryRoutes)
+    .route("/", documentRoutes)
     .route("/", machineRoutes)
     .route("/", searchRoutes)
     .route("/", routineRoutes)

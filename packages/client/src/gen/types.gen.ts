@@ -43,7 +43,7 @@ export type ChannelVisibility = 'org' | 'private' | 'shared';
 
 export type Error = {
     error: string;
-    kind: 'invalid' | 'unauthenticated' | 'not_member' | 'forbidden' | 'not_found' | 'already_exists' | 'wrong_state' | 'stale_claim' | 'not_holder' | 'lease_expired' | 'area_overlap' | 'stale_review' | 'review_full' | 'internal';
+    kind: 'invalid' | 'unauthenticated' | 'not_member' | 'forbidden' | 'not_found' | 'already_exists' | 'wrong_state' | 'stale_claim' | 'not_holder' | 'lease_expired' | 'area_overlap' | 'stale_review' | 'review_full' | 'stale_version' | 'internal';
 };
 
 export type CreateChannelBody = {
@@ -1395,6 +1395,45 @@ export type UpdateMemoryBody = {
     kind?: MemoryKind;
     tags?: Array<string>;
     sourceThread?: string | null;
+};
+
+export type ChannelDocument = {
+    channel: string;
+    /**
+     * 0 before the first edit. Send it as replaces when you edit
+     */
+    version: number;
+    text: string;
+    editedBy: string | null;
+    editedAt: string | null;
+    /**
+     * Why the editor changed it, in a few words
+     */
+    note: string | null;
+    /**
+     * false when this is an earlier version read with ?version=
+     */
+    current: boolean;
+};
+
+export type EditDocumentBody = {
+    /**
+     * The whole new document, Markdown, at most 20000 characters
+     */
+    text: string;
+    /**
+     * The version you read. When the document has moved past it the edit is refused with 409 stale_version: read it and edit again
+     */
+    replaces: number;
+    note?: string;
+};
+
+export type DocumentVersion = {
+    version: number;
+    editedBy: string;
+    editedAt: string;
+    note: string | null;
+    chars: number;
 };
 
 export type Machine = {
@@ -5497,6 +5536,140 @@ export type RestoreChannelMemoryResponses = {
 };
 
 export type RestoreChannelMemoryResponse = RestoreChannelMemoryResponses[keyof RestoreChannelMemoryResponses];
+
+export type GetChannelDocumentData = {
+    body?: never;
+    path: {
+        channel: string;
+    };
+    query?: {
+        /**
+         * Read this earlier version instead of the current one
+         */
+        version?: number;
+    };
+    url: '/api/channels/{channel}/document';
+};
+
+export type GetChannelDocumentErrors = {
+    /**
+     * The input is not valid
+     */
+    400: Error;
+    /**
+     * Sign-in is on and the request has no session or key
+     */
+    401: Error;
+    /**
+     * The acting member is not on this board, or may not do this
+     */
+    403: Error;
+    /**
+     * Not found
+     */
+    404: Error;
+    /**
+     * The task or message is in another state, or the claim epoch is stale
+     */
+    409: Error;
+};
+
+export type GetChannelDocumentError = GetChannelDocumentErrors[keyof GetChannelDocumentErrors];
+
+export type GetChannelDocumentResponses = {
+    /**
+     * OK
+     */
+    200: ChannelDocument;
+};
+
+export type GetChannelDocumentResponse = GetChannelDocumentResponses[keyof GetChannelDocumentResponses];
+
+export type EditChannelDocumentData = {
+    body: EditDocumentBody;
+    path: {
+        channel: string;
+    };
+    query?: never;
+    url: '/api/channels/{channel}/document';
+};
+
+export type EditChannelDocumentErrors = {
+    /**
+     * The input is not valid
+     */
+    400: Error;
+    /**
+     * Sign-in is on and the request has no session or key
+     */
+    401: Error;
+    /**
+     * The acting member is not on this board, or may not do this
+     */
+    403: Error;
+    /**
+     * Not found
+     */
+    404: Error;
+    /**
+     * The task or message is in another state, or the claim epoch is stale
+     */
+    409: Error;
+};
+
+export type EditChannelDocumentError = EditChannelDocumentErrors[keyof EditChannelDocumentErrors];
+
+export type EditChannelDocumentResponses = {
+    /**
+     * OK
+     */
+    200: ChannelDocument;
+};
+
+export type EditChannelDocumentResponse = EditChannelDocumentResponses[keyof EditChannelDocumentResponses];
+
+export type ListDocumentVersionsData = {
+    body?: never;
+    path: {
+        channel: string;
+    };
+    query?: never;
+    url: '/api/channels/{channel}/document/versions';
+};
+
+export type ListDocumentVersionsErrors = {
+    /**
+     * The input is not valid
+     */
+    400: Error;
+    /**
+     * Sign-in is on and the request has no session or key
+     */
+    401: Error;
+    /**
+     * The acting member is not on this board, or may not do this
+     */
+    403: Error;
+    /**
+     * Not found
+     */
+    404: Error;
+    /**
+     * The task or message is in another state, or the claim epoch is stale
+     */
+    409: Error;
+};
+
+export type ListDocumentVersionsError = ListDocumentVersionsErrors[keyof ListDocumentVersionsErrors];
+
+export type ListDocumentVersionsResponses = {
+    /**
+     * OK
+     */
+    200: Array<DocumentVersion>;
+};
+
+export type ListDocumentVersionsResponse = ListDocumentVersionsResponses[keyof ListDocumentVersionsResponses];
 
 export type ListMachinesData = {
     body?: never;

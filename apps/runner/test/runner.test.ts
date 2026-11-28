@@ -1,4 +1,5 @@
 import { describe, expect, test } from "bun:test"
+import { documentLimits } from "@flockr/contracts/documents"
 import { memoryBlock } from "../src/memory"
 import { event, member, memoryItem, messageThread, reply, setup, task } from "./fakes"
 
@@ -321,6 +322,16 @@ describe("memory in prompts (10a, 10b)", () => {
     expect(block.length).toBeLessThan(1000 + 300)
     expect(block).toMatch(/\(\d+ more; flockr memory list --channel general\)/)
     expect(memoryBlock("general", { notes: [], channel: [] })).toBe("")
+  })
+
+  test("the channel document heads the block, cut at the prompt limit with a pointer to the rest (13b)", () => {
+    const document = { channel: "general", version: 4, text: `Plan: ${"y".repeat(9000)}`, editedBy: "simon", editedAt: "2026-11-28T10:00:00.000Z", note: null, current: true }
+    const block = memoryBlock("general", { notes: [], channel: [memoryItem(1, "Use uuid keys")], document })
+    expect(block.startsWith("The #general document, version 4 by simon")).toBe(true)
+    expect(block).toContain("flockr doc show general")
+    expect(block.indexOf("Plan:")).toBeLessThan(block.indexOf("Use uuid keys"))
+    expect(block.length).toBeLessThan(documentLimits.promptChars + 1000)
+    expect(memoryBlock("general", { notes: [], channel: [], document: { ...document, version: 0, text: "" } })).toBe("")
   })
 })
 

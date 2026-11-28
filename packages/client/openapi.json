@@ -107,6 +107,7 @@
               "area_overlap",
               "stale_review",
               "review_full",
+              "stale_version",
               "internal"
             ]
           }
@@ -4070,6 +4071,117 @@
             "pattern": "^(m\\d+|\\d+)$"
           }
         }
+      },
+      "ChannelDocument": {
+        "type": "object",
+        "properties": {
+          "channel": {
+            "type": "string",
+            "example": "backend"
+          },
+          "version": {
+            "type": "integer",
+            "example": 4,
+            "description": "0 before the first edit. Send it as replaces when you edit"
+          },
+          "text": {
+            "type": "string",
+            "example": "## Users API\n\nTable first, then the migration, then the API."
+          },
+          "editedBy": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "example": "simon"
+          },
+          "editedAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "example": "2026-11-28T10:40:02.000Z"
+          },
+          "note": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Why the editor changed it, in a few words"
+          },
+          "current": {
+            "type": "boolean",
+            "description": "false when this is an earlier version read with ?version="
+          }
+        },
+        "required": [
+          "channel",
+          "version",
+          "text",
+          "editedBy",
+          "editedAt",
+          "note",
+          "current"
+        ]
+      },
+      "EditDocumentBody": {
+        "type": "object",
+        "properties": {
+          "text": {
+            "type": "string",
+            "maxLength": 20000,
+            "description": "The whole new document, Markdown, at most 20000 characters"
+          },
+          "replaces": {
+            "type": "integer",
+            "minimum": 0,
+            "example": 4,
+            "description": "The version you read. When the document has moved past it the edit is refused with 409 stale_version: read it and edit again"
+          },
+          "note": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200,
+            "example": "Sign-up waits for the email plan"
+          }
+        },
+        "required": [
+          "text",
+          "replaces"
+        ]
+      },
+      "DocumentVersion": {
+        "type": "object",
+        "properties": {
+          "version": {
+            "type": "integer"
+          },
+          "editedBy": {
+            "type": "string"
+          },
+          "editedAt": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-11-28T10:40:02.000Z"
+          },
+          "note": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "chars": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "version",
+          "editedBy",
+          "editedAt",
+          "note",
+          "chars"
+        ]
       },
       "Machine": {
         "type": "object",
@@ -13067,6 +13179,273 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/MemoryItem"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The input is not valid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sign-in is on and the request has no session or key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The acting member is not on this board, or may not do this",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The task or message is in another state, or the claim epoch is stale",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/channels/{channel}/document": {
+      "get": {
+        "operationId": "getChannelDocument",
+        "tags": [
+          "channel document"
+        ],
+        "summary": "The channel's living document: its current plan and shared notes, read first by every member. Version 0 and empty before the first edit; ?version=N reads an earlier one",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "example": "backend"
+            },
+            "required": true,
+            "name": "channel",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "description": "Read this earlier version instead of the current one"
+            },
+            "required": false,
+            "description": "Read this earlier version instead of the current one",
+            "name": "version",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChannelDocument"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The input is not valid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sign-in is on and the request has no session or key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The acting member is not on this board, or may not do this",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The task or message is in another state, or the claim epoch is stale",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "operationId": "editChannelDocument",
+        "tags": [
+          "channel document"
+        ],
+        "summary": "Replace the channel's document with new text, naming the version you read as replaces. If someone edited it since, the edit is refused with 409 stale_version: read it and edit again. A retry of your own edit writes nothing; every version stays readable",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "example": "backend"
+            },
+            "required": true,
+            "name": "channel",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EditDocumentBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChannelDocument"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The input is not valid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sign-in is on and the request has no session or key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The acting member is not on this board, or may not do this",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The task or message is in another state, or the claim epoch is stale",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/channels/{channel}/document/versions": {
+      "get": {
+        "operationId": "listDocumentVersions",
+        "tags": [
+          "channel document"
+        ],
+        "summary": "Every version of the channel's document, newest first: who, when, why and how long. Read one with getChannelDocument ?version=",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "example": "backend"
+            },
+            "required": true,
+            "name": "channel",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/DocumentVersion"
+                  }
                 }
               }
             }

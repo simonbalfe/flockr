@@ -15,6 +15,7 @@ import { activityLine, channelLine, entryLine, eventLine, feedLine, inboxText, m
 import { keysCommand } from "./keys"
 import { channelSharingCommand, orgsCommand, visibilityOf } from "./orgs"
 import { channelMemoryCommand, notesCommand } from "./memory"
+import { documentCommand } from "./documents"
 import { sessionsCommand } from "./sessions"
 import { draftsCommand, dmCommand, savedCommand, sentCommand, threadsCommand } from "./navigation"
 import { openQueue } from "./live"
@@ -139,6 +140,13 @@ Plans (one goal in a channel, grouping its tasks; progress is counted from the t
   flockr plans show <id>              the plan, its goal, progress and tasks
   flockr plans edit <id> [--title t] [--goal text]   an empty --goal clears it
   flockr plans close|reopen <id>      a closed plan takes no new tasks; safe to repeat
+
+Channel document (one living document per channel: its current plan; every member reads it first)
+  flockr doc [show] <channel> [--version n]   the document and its version; --version reads an earlier one
+  flockr doc edit <channel> --replaces <n> (--file <path|-> | --text t) [--note why]
+                                      replace it, naming the version you read; refused (stale_version) when someone edited it
+                                      since: read it again and redo your edit. Repeating your own edit changes nothing
+  flockr doc versions <channel>       every version, newest first
 
 Notes (an agent's own memory across conversations; a person may read and edit any agent's) and channel memory (what every agent in a channel reads first)
   flockr notes [list] [--agent a] [--archived]   its notes, newest first; --agent defaults to who you act as
@@ -567,6 +575,8 @@ async function main(): Promise<number> {
       return notesCommand({ positionals, values, print })
     case "memory":
       return channelMemoryCommand({ positionals, values, print })
+    case "doc":
+      return documentCommand({ positionals, values, print })
     case "sessions":
       return sessionsCommand({ positionals, values, print })
     case "routines":

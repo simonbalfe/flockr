@@ -115,11 +115,12 @@ export function boardClient(options: { member: string; client: Client }): BoardP
       }
     },
     async memory(channel) {
-      const [notes, shared] = await Promise.all([
+      const [notes, shared, document] = await Promise.all([
         call(sdk.listAgentNotes({ ...on(), path: { name: member }, query: { state: "active" } })),
         call(sdk.listChannelMemory({ ...on(), path: { channel }, query: { state: "active" } })),
+        call(sdk.getChannelDocument({ ...on(), path: { channel } })),
       ])
-      return { notes, channel: shared }
+      return { notes, channel: shared, document }
     },
     async approval(kind, channel) {
       try {

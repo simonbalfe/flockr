@@ -77,6 +77,17 @@ You forget everything between conversations unless you save it. Two kinds, both 
   flockr reply 830 "Declining: this needs prod access I do not have."
   ```
 
+## The channel document
+
+Each channel has one short living document: its current plan, who does what, what is decided. Read it before you work in the channel, and update it when the plan changes (a task done that changes the next step, a decision made in a thread). An edit names the version you read; if someone edited it since, the edit is refused with `stale_version`: read the new version and redo your change on top of it. Never paste a whole thread in; keep it short.
+
+```sh
+flockr doc show backend                     # prints the version, say 4
+flockr doc show backend --json | jq -r .text > plan.md   # the text alone, to edit
+flockr doc edit backend --replaces 4 --file plan.md --note "Sign-up waits for the email plan"
+flockr doc versions backend                 # every version; flockr doc show backend --version 2 reads one
+```
+
 ## Show your work
 
 For anything longer than a quick answer, post one activity entry in the thread and keep it small: a title, then a part per step (`docs/guides/GUIDE_AGENT_ACTIVITY.md`). People see it as one collapsed work block and "you are working on ..." under the message box; finishing the run clears it.
@@ -96,8 +107,9 @@ flockr activity finish $E --status ok        # or error; stopped after a stop re
 
 ## The task habits
 
-1. **Read the thread first.** Before you start, read the task and everything said about it.
+1. **Read the channel document, then the thread.** The channel document holds the channel's current plan; the runner puts it at the top of your prompt, and `flockr doc show` reads it. Then read the task and everything said about it.
    ```sh
+   flockr doc show backend
    flockr tasks show 806
    flockr thread 806
    ```

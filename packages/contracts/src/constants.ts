@@ -18,7 +18,7 @@ export const activitySeconds = 120
 export const messageLimits = { labels: 10, labelChars: 40 } as const
 export const reviewLimits = { openPerReviewer: 2, inReviewPerHolder: 2 } as const
 
-export const errorKinds = ["invalid", "unauthenticated", "not_member", "forbidden", "not_found", "already_exists", "wrong_state", "stale_claim", "not_holder", "lease_expired", "area_overlap", "stale_review", "review_full", "internal"] as const
+export const errorKinds = ["invalid", "unauthenticated", "not_member", "forbidden", "not_found", "already_exists", "wrong_state", "stale_claim", "not_holder", "lease_expired", "area_overlap", "stale_review", "review_full", "stale_version", "internal"] as const
 export type ErrorKind = (typeof errorKinds)[number]
 
 export const errorStatus = {
@@ -35,6 +35,7 @@ export const errorStatus = {
   area_overlap: 409,
   stale_review: 409,
   review_full: 409,
+  stale_version: 409,
   internal: 500,
 } as const satisfies Record<ErrorKind, number>
 

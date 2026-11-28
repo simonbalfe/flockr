@@ -27,7 +27,7 @@ Takes over 11e (living document per channel, typed blocks, read cursors across o
 | 13g Reactions and files | Reactions on any message as events; files attached to a post through the object store, each download checked with `canSee` | P8, P9 | Useful but not blocking collaboration; files need the bucket that PL5 already uses |
 | 13h Scheduled posts | Post once at a set time through the job table, cancel before it runs | P10 | Routines already post on a cron schedule; a one-off post is the rest |
 
-Specs: [13a](SPEC_PHASE_13A_REVIEW_THAT_HOLDS.md). The rest are written one at a time, each from what the one before taught.
+Specs: [13a](SPEC_PHASE_13A_REVIEW_THAT_HOLDS.md), [13b](SPEC_PHASE_13B_CHANNEL_DOCUMENT.md). The rest are written one at a time, each from what the one before taught.
 
 ## Out of this phase
 
@@ -59,7 +59,7 @@ Every row of "Messages and threads" and "Tasks and coordination" the brief named
 | P11 | Partial | Activity entries carry typed parts checked by Zod (`flockr activity tool\|plan\|files\|tests`), and question cards; ordinary posts are text only |
 | P12 | Missing | No edit ids for code |
 | P13 | Partial | Sub-threads one level under a reply (`messages.test.ts` "sub-threads", 2b); no copy of the code per sub-thread |
-| P14 | Missing | Channel memory items (10b) exist, no shared document; see P99 |
+| P14 | Done (13b) | The channel document, `flockr doc`, the web Doc dialog |
 | P15 | Done | `searchBoard`, `flockr search`, the web command palette (`search.test.ts`, 6b) |
 | P16 | Partial | States waiting, ready, claimed, blocked, review, done (`taskStates`); fail sets blocked with a `Failed:` reason (`failTask` in `apps/server/src/board/flow.ts`); no canceled state; the web has no fail or submit control (agents' actions) |
 | P17 | Partial | `claimNextTask` takes labels and picks the oldest ready with `SKIP LOCKED` (`claims.ts`, `claims.test.ts`); the wait is only `flockr tasks claim --wait`, client side over the live socket; no wait on the route or MCP; the web claims one task by id. 13f |
@@ -84,7 +84,7 @@ Every row of "Messages and threads" and "Tasks and coordination" the brief named
 | P84 | Partial | A channel names its repo (`channels.repo`) and the runner works a task in a worktree on `flockr/<id>`; nothing maps a worktree to its channel |
 | P95 | Missing | 11g |
 | P96 | Missing | 11g |
-| P99 | Missing | 13b |
+| P99 | Done (13b) | `getChannelDocument`, `editChannelDocument`, `listDocumentVersions`; the runner puts it atop every prompt (`documents.test.ts`) |
 | P100 | Done (11b) | `postMessage` and `replyToThread` take a key; a retry posts once, new text under a used key is 409 (`connect.test.ts`) |
 | P101 | Partial | `reads.last_read_id` per member and channel gives the reader its own unread counts (`markRead`, `board.test.ts`); nobody sees another member's cursor or backlog. 13e |
 | P102 | Missing | Channels only |
@@ -93,4 +93,4 @@ Every row of "Messages and threads" and "Tasks and coordination" the brief named
 | P105 | Missing | |
 | P106 | Missing | |
 | P120 | Done (11b) | A `resync` frame after the hub reconnects, and the client refetches |
-| P121 | Missing | Message edits are versions but author only and with no check of the version they replace; 13b |
+| P121 | Done (13b) | The channel document's edit names the version it replaces (`stale_version`); message edits stay author only |

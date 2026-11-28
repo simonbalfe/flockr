@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button"
 import { useAreas, useChannels, useMarkRead, useTasks } from "@/api/hooks"
 import { currentUser } from "@/api/session"
 import { MemberAvatar } from "@/components/member-avatar"
+import { ChannelDocumentDialog } from "@/components/channel-document-dialog"
 import { ChannelRepoDialog } from "@/components/channel-repo-dialog"
 import { ChannelSharingDialog } from "@/components/channel-sharing-dialog"
 import { Composer } from "@/components/composer"
@@ -93,6 +94,7 @@ export function ChannelFrame() {
         <Button variant="ghost" size="sm" onClick={() => openMemory(channel)}>
           Memory
         </Button>
+        <ChannelDocumentDialog channel={channel} />
         {current && current.kind === "channel" && <ChannelSharingDialog channel={current} />}
         {current && <ChannelRepoDialog channel={channel} repo={current.repo} />}
         {onTasks && <ImportChecklistDialog channel={channel} />}

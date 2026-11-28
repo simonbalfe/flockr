@@ -39,7 +39,7 @@ Research only: every feature the surveyed products have, and who has it. Nothing
 | P11 | Typed message blocks checked against a schema | VB | Partial: activity entries carry typed parts checked by Zod, and question cards; posts are text only (13c) |
 | P12 | Comments pinned to code edits, not line numbers | ZD | Each edit has a lasting ID, so a comment survives later edits |
 | P13 | Sub-threads for review in place of pull requests | ZD | Partial (2b): sub-threads one level under a reply, `messages.test.ts`; no copy of the code per sub-thread. Each sub-thread gets its own copy of the code |
-| P14 | Shared canvas per channel | BZ | Agents edit it through the command line |
+| P14 | Shared canvas per channel | BZ | Done (Work: 13b-channel-document): one living document per channel, `flockr doc`, read first by agents. Agents edit it through the command line |
 | P15 | Full-text search | BZ, VB | Done (6b): `searchBoard`, `flockr search`, the web command palette, `search.test.ts`. BZ: Postgres search; VB: inspector filters by text |
 | P80 | Delivery follows the agent's status: idle, working or done get the message; blocked or absent agents queue it until they settle | CT | Partial: the runner queues messages for an agent that is working, full or paused (`queued` in `runner.ts`); none for an agent over MCP. Event hooks flush the queue when an agent's status changes; text is cleaned of terminal control codes |
 | P120 | A live stream that is never silently incomplete: when the server loses a live event or cannot check access, it ends the stream with "resync" and the client reloads | BZ | NIP-AR sync rules: `CLOSED "resync: ..."`; the client replaces its copy only at `EOSE`, then backs off with jitter. See `docs/reference/RESEARCH_BUZZ_ARCHITECTURE.md`. Done (Work: 11b-connect-any-agent): a `resync` frame after the hub reconnects, and the client refetches |
@@ -69,7 +69,7 @@ Research only: every feature the surveyed products have, and who has it. Nothing
 | P82 | Typed shared notes: decision, discovery, dead end; old ones are superseded, not deleted | CT | Partial (10a, 10b): agent notes and channel memory with kinds, archived not deleted, `memory.test.ts`; no superseded-by link or task scope. Task-scoped lookup shows dead ends first, then decisions, then discoveries |
 | P83 | Open questions between agents that stay open until someone answers | CT | Partial: `askInThread` and task questions stay open in the inbox and Focus, `conversation.test.ts`; only a person answers (13d). `chatter ask codex "..."`, `chatter answer 7 "..."` |
 | P84 | One shared space per Git repository, whatever the worktree | CT | Partial (8b): a channel names its repo and the runner works a task in a worktree on `flockr/<id>`; nothing maps a worktree to its channel. Every worktree of a repo sees the same agents, chat, tasks and notes; other repos stay separate |
-| P121 | Typed records in a channel (a task, a project) that anyone who may post can edit; each edit names the version it replaces, so two edits never both win | BZ | NIP-AR artifacts, `kind:45010`, `prev` checked under a lock (`buzz-db/src/store/artifact.rs`); the relay defines no task schema and has no claims |
+| P121 | Typed records in a channel (a task, a project) that anyone who may post can edit; each edit names the version it replaces, so two edits never both win | BZ | Done (Work: 13b-channel-document) for the channel document: an edit names the version it replaces, `stale_version` otherwise. NIP-AR artifacts, `kind:45010`, `prev` checked under a lock (`buzz-db/src/store/artifact.rs`); the relay defines no task schema and has no claims |
 
 ## People's view
 
@@ -86,7 +86,7 @@ Research only: every feature the surveyed products have, and who has it. Nothing
 | P74 | A morning brief: one daily summary | DU, CT | CT: `chatter brief` with a time such as 2h summarises changes since the last look |
 | P75 | Channels share memory but keep separate conversations | DU | One channel per project. Done (Work: 10-agent-memory): channel memory |
 | P86 | Team metrics from an append-only ledger: delivery time, tasks done, dead ends, question response time | CT | `chatter stats` |
-| P129 | A shared wiki per channel that people edit and agents update | AD | Planned for 13b with P99 (11e moved to Phase 13) |
+| P129 | A shared wiki per channel that people edit and agents update | AD | Done (Work: 13b-channel-document) |
 
 ## Agents and identity
 
