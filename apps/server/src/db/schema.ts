@@ -1,5 +1,5 @@
 import { hostOrg } from "@flockr/contracts"
-import type { ActionKind, ChannelKind, ChannelVisibility, DraftKind, AreaEndReason, ActivityState, AgentDesired, AgentPermissions, AgentReport, ApprovalVerdict, HarnessInfo, JobKind, JobState, MemberKind, MemoryKind, MemoryScope, Question, RoutineTriggerKind, TaskState } from "@flockr/contracts"
+import type { ActionKind, Block, ChannelKind, ChannelVisibility, DraftKind, AreaEndReason, ActivityState, AgentDesired, AgentPermissions, AgentReport, ApprovalVerdict, HarnessInfo, JobKind, JobState, MemberKind, MemoryKind, MemoryScope, Question, RoutineTriggerKind, TaskState } from "@flockr/contracts"
 import { sql } from "drizzle-orm"
 import { bigint, boolean, check, index, integer, jsonb, pgTable, primaryKey, text, timestamp, unique, uniqueIndex, type AnyPgColumn } from "drizzle-orm/pg-core"
 
@@ -263,6 +263,7 @@ export const messages = pgTable(
     mentions: text("mentions").array().notNull().default(sql`'{}'::text[]`),
     question: jsonb("question").$type<Question>(),
     activity: jsonb("activity").$type<ActivityState>(),
+    blocks: jsonb("blocks").$type<Block[]>().notNull().default(sql`'[]'::jsonb`),
     answer: text("answer"),
     answeredBy: text("answered_by"),
     answeredAt: timestamp("answered_at", { withTimezone: true }),

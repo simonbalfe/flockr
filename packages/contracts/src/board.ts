@@ -3,6 +3,7 @@ import { ActivityEntry, ApprovalAction } from "./activity"
 import { AgentConfig, AgentStatusSchema, Machine } from "./agents"
 import { agentStates, channelKinds, errorKinds, memberKinds, messageLimits, taskStates } from "./constants"
 import { ChannelVisibility } from "./orgs"
+import { Block } from "./blocks"
 
 export const TaskState = z.enum(taskStates).openapi("TaskState")
 export const MemberKind = z.enum(memberKinds).openapi("MemberKind")
@@ -124,11 +125,12 @@ export const Reply = z
     labels: messageLabels,
     editedAt,
     replyTo: z.string().nullable().openapi({ example: "m20", description: "The reply whose sub-thread this reply is in; null for a reply in the thread itself" }),
+    blocks: z.array(Block).openapi({ description: "Typed blocks: approval, deliverable, decision, hand-off" }),
   })
   .openapi("Reply")
 
 export const Event = z
-  .object({ kind: z.literal("event"), id: z.string(), who: z.string(), at: timestamp, text: z.string(), system: z.boolean() })
+  .object({ kind: z.literal("event"), id: z.string(), who: z.string(), at: timestamp, text: z.string(), system: z.boolean(), blocks: z.array(Block) })
   .openapi("Event")
 
 export const ThreadQuestion = z
@@ -165,6 +167,7 @@ export const TextMessage = z
     editedAt,
     taskId: z.number().int().nullable(),
     threadId: z.string().nullable(),
+    blocks: z.array(Block),
     thread: orNull(ThreadSummary),
   })
   .openapi("TextMessage")

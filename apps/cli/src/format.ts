@@ -1,4 +1,4 @@
-import { currentStep, partHeadline, splitSubThreads, type ActivityEntry } from "@flockr/client"
+import { blockSummary, currentStep, partHeadline, splitSubThreads, type ActivityEntry, type Block } from "@flockr/client"
 import type {
   Activity,
   BoardEvent,
@@ -80,16 +80,18 @@ const marks = (m: { labels: string[]; editedAt: string | null }) => `${m.editedA
 
 const questionText = (q: ThreadQuestion) => `${q.question.text} [${q.question.options.join(" / ")}]`
 
+const blockLines = (blocks: Block[]) => blocks.map((b) => `\n         ${blockSummary(b)}`).join("")
+
 export function entryLine(entry: ThreadEntry): string {
   switch (entry.kind) {
     case "event":
-      return `${clock(entry.at)}  · ${entry.system ? "" : `${entry.who} `}${entry.text}`
+      return `${clock(entry.at)}  · ${entry.system ? "" : `${entry.who} `}${entry.text}` + blockLines(entry.blocks)
     case "question": {
       const state = entry.answer === null ? `open: flockr answer ${entry.threadId} <option>` : `answered ${entry.answer} by ${entry.answeredBy ?? "someone"}`
       return `${clock(entry.at)}  ${entry.who} asks: ${questionText(entry)}  (${state})`
     }
     case "reply":
-      return `${clock(entry.at)}  ${entry.who}: ${entry.deleted ? deletedText : `${entry.text}${marks(entry)}`}  (${entry.id})`
+      return `${clock(entry.at)}  ${entry.who}: ${entry.deleted ? deletedText : `${entry.text}${marks(entry)}`}  (${entry.id})` + blockLines(entry.blocks)
     case "activity":
       return activityEntryLine(entry)
   }

@@ -1,4 +1,4 @@
-import type { Task, Thread, ThreadEntry } from "@flockr/client"
+import { blockSummary, type Block, type Task, type Thread, type ThreadEntry } from "@flockr/client"
 import type { AgentPermissions } from "@flockr/contracts/agents"
 
 const maxEntries = 40
@@ -6,12 +6,14 @@ const maxText = 2000
 
 const clip = (text: string) => (text.length > maxText ? `${text.slice(0, maxText - 3)}...` : text)
 
+const blockText = (blocks: Block[]) => blocks.map((block) => `\n  ${blockSummary(block)}`).join("")
+
 function entryText(entry: ThreadEntry): string {
   switch (entry.kind) {
     case "reply":
-      return `${entry.who}: ${entry.deleted ? "(deleted)" : clip(entry.text)}`
+      return `${entry.who}: ${entry.deleted ? "(deleted)" : clip(entry.text)}` + blockText(entry.blocks)
     case "event":
-      return `(${entry.system ? "" : `${entry.who} `}${entry.text})`
+      return `(${entry.system ? "" : `${entry.who} `}${entry.text})` + blockText(entry.blocks)
     case "activity":
       return `(${entry.who} worked: ${entry.title}, ${entry.status})`
     case "question":

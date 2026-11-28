@@ -108,7 +108,69 @@ export type TextMessage = {
     editedAt: string | null;
     taskId: number | null;
     threadId: string | null;
+    blocks: Array<Block>;
     thread: ThreadSummary | null;
+};
+
+export type Block = ({
+    kind: 'approval';
+} & ApprovalBlock) | ({
+    kind: 'deliverable';
+} & DeliverableBlock) | ({
+    kind: 'decision';
+} & DecisionBlock) | ({
+    kind: 'handoff';
+} & HandoffBlock);
+
+/**
+ * Written by the board when a task is approved or sent back; never posted by hand
+ */
+export type ApprovalBlock = {
+    kind: 'approval';
+    task: number;
+    verdict: 'approved' | 'changes_requested';
+    /**
+     * The commit the verdict is about; null when the task named none
+     */
+    commit: string | null;
+};
+
+/**
+ * Something finished: what it is, and where (commit, branch or link)
+ */
+export type DeliverableBlock = {
+    kind: 'deliverable';
+    task: number | null;
+    summary: string;
+    commit: string | null;
+    branch: string | null;
+    url: string | null;
+};
+
+/**
+ * A decision made, and why
+ */
+export type DecisionBlock = {
+    kind: 'decision';
+    decision: string;
+    why: string | null;
+    task: number | null;
+};
+
+/**
+ * Written by the board when a task is handed off: the record the next holder starts from
+ */
+export type HandoffBlock = {
+    kind: 'handoff';
+    task: number;
+    from: string;
+    to: string;
+    summary: string | null;
+    branch: string;
+    commit: string | null;
+    files: Array<string>;
+    tests: string | null;
+    nextSteps: Array<string>;
 };
 
 export type ThreadSummary = {
@@ -142,6 +204,7 @@ export type Event = {
     at: string;
     text: string;
     system: boolean;
+    blocks: Array<Block>;
 };
 
 /**
@@ -163,6 +226,34 @@ export type PostMessageBody = {
      * Makes a retry safe: the same key again returns the first message and writes nothing; the same key with other text is refused (409)
      */
     key?: string;
+    /**
+     * Typed blocks carried with the text, at most 5: deliverable or decision. Approval and hand-off blocks are written by the board
+     */
+    blocks?: Array<PostableBlock>;
+};
+
+export type PostableBlock = ({
+    kind: 'deliverable';
+} & DeliverableInput) | ({
+    kind: 'decision';
+} & DecisionInput);
+
+/**
+ * Something finished: what it is, and where (commit, branch or link)
+ */
+export type DeliverableInput = DeliverableBlock & {
+    task?: number | null;
+    commit?: string | null;
+    branch?: string | null;
+    url?: string | null;
+};
+
+/**
+ * A decision made, and why
+ */
+export type DecisionInput = DecisionBlock & {
+    why?: string | null;
+    task?: number | null;
 };
 
 export type MessageState = {
@@ -274,6 +365,10 @@ export type Reply = {
      * The reply whose sub-thread this reply is in; null for a reply in the thread itself
      */
     replyTo: string | null;
+    /**
+     * Typed blocks: approval, deliverable, decision, hand-off
+     */
+    blocks: Array<Block>;
 };
 
 export type ThreadQuestion = {
@@ -541,6 +636,10 @@ export type ReplyBody = {
      * Makes a retry safe: the same key again returns the first message and writes nothing; the same key with other text is refused (409)
      */
     key?: string;
+    /**
+     * Typed blocks carried with the text, at most 5: deliverable or decision. Approval and hand-off blocks are written by the board
+     */
+    blocks?: Array<PostableBlock>;
 };
 
 export type Task = {
@@ -780,6 +879,10 @@ export type HandoffBody = {
      * What the next holder should do, in order
      */
     nextSteps?: Array<string>;
+    /**
+     * The files the work touched
+     */
+    files?: Array<string>;
     /**
      * The claimEpoch from your claim. A stale value is refused with 409.
      */
@@ -1434,6 +1537,14 @@ export type DocumentVersion = {
     editedAt: string;
     note: string | null;
     chars: number;
+};
+
+export type BlockRecord = {
+    messageId: string;
+    threadId: string;
+    who: string;
+    at: string;
+    block: Block;
 };
 
 export type Machine = {
@@ -5670,6 +5781,55 @@ export type ListDocumentVersionsResponses = {
 };
 
 export type ListDocumentVersionsResponse = ListDocumentVersionsResponses[keyof ListDocumentVersionsResponses];
+
+export type ListBlocksData = {
+    body?: never;
+    path: {
+        channel: string;
+    };
+    query?: {
+        kind?: 'approval' | 'deliverable' | 'decision' | 'handoff';
+        /**
+         * Only blocks about this task
+         */
+        task?: number;
+    };
+    url: '/api/channels/{channel}/blocks';
+};
+
+export type ListBlocksErrors = {
+    /**
+     * The input is not valid
+     */
+    400: Error;
+    /**
+     * Sign-in is on and the request has no session or key
+     */
+    401: Error;
+    /**
+     * The acting member is not on this board, or may not do this
+     */
+    403: Error;
+    /**
+     * Not found
+     */
+    404: Error;
+    /**
+     * The task or message is in another state, or the claim epoch is stale
+     */
+    409: Error;
+};
+
+export type ListBlocksError = ListBlocksErrors[keyof ListBlocksErrors];
+
+export type ListBlocksResponses = {
+    /**
+     * OK
+     */
+    200: Array<BlockRecord>;
+};
+
+export type ListBlocksResponse = ListBlocksResponses[keyof ListBlocksResponses];
 
 export type ListMachinesData = {
     body?: never;

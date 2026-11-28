@@ -169,6 +169,13 @@
       "when": 1795838142005,
       "tag": "0023_channel_documents",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1795838495578,
+      "tag": "0024_message_blocks",
+      "breakpoints": true
     }
   ]
 }

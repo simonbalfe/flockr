@@ -8,6 +8,7 @@ import { MessageItem } from "@/components/message-item"
 import { RichText } from "@/components/rich-text"
 import { splitWork } from "@/lib/work"
 import { QuestionCard, ThreadQuestionCard } from "@/components/question-card"
+import { BlockList } from "@/components/block-list"
 import { TaskList } from "@/components/task-row"
 import { clock } from "@/lib/time"
 
@@ -61,6 +62,11 @@ function EventRow({ event }: { event: Event }) {
     <div className="py-2 text-center text-[12.5px] text-muted-foreground" data-entry={event.id}>
       {!event.system && <b className="font-medium text-foreground">{event.who} </b>}
       <RichText text={event.text} /> <span className="text-faint tabular-nums">· {clock(event.at)}</span>
+      {event.blocks.length > 0 && (
+        <div className="mx-auto w-fit text-left">
+          <BlockList blocks={event.blocks} />
+        </div>
+      )}
     </div>
   )
 }

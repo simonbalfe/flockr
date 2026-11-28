@@ -39,6 +39,7 @@ export {
   memoryScopes,
 } from "@flockr/contracts/memory"
 export { nextRunOf, parseCron } from "@flockr/contracts/cron"
+export { blockKinds, blockSummary, postableBlockKinds, PostableBlock as PostableBlockSchema } from "@flockr/contracts/blocks"
 export {
   backoffSeconds,
   jobLimits,

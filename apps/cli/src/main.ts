@@ -16,6 +16,7 @@ import { keysCommand } from "./keys"
 import { channelSharingCommand, orgsCommand, visibilityOf } from "./orgs"
 import { channelMemoryCommand, notesCommand } from "./memory"
 import { documentCommand } from "./documents"
+import { blocksCommand, blocksFrom } from "./blocks"
 import { sessionsCommand } from "./sessions"
 import { draftsCommand, dmCommand, savedCommand, sentCommand, threadsCommand } from "./navigation"
 import { openQueue } from "./live"
@@ -47,6 +48,10 @@ Reading
 Writing
   flockr post <channel> <text> [--label x]... [--key k]   post a message; @name mentions a member (it starts a conversation, never a task); --key makes a retry post once
   flockr reply <thread-or-task-id> <text> [--label x]... [--key k]   reply in a thread; --key makes a retry reply once
+  flockr post|reply ... --decision <text> [--why text]   carry a decision block with the message (readable as data)
+  flockr post|reply ... --block '{"kind":"deliverable","summary":"Users API","commit":"a1b2c3d"}'   a typed block: deliverable or decision
+  flockr blocks <channel> [--kind approval|deliverable|decision|handoff] [--task id]   typed blocks as data, newest first:
+                                      who approved what at which commit, deliverables, decisions, hand-off records
   flockr reply <reply-id> <text>      reply to a reply (m20): it starts or continues that reply's sub-thread
   flockr edit <message-id> <text>     change your own message or reply; the old text stays readable (flockr versions)
   flockr label <message-id> [label...]    set a message's labels; none clears them
@@ -70,9 +75,10 @@ Writing
   flockr tasks fail|block <id> --reason <text>
   flockr tasks changes <id> [--note text]
   flockr tasks give <id> <member>
-  flockr tasks handoff <id> <member> [--note summary] [--commit sha] [--tests text] [--next step]...
+  flockr tasks handoff <id> <member> [--note summary] [--commit sha] [--tests text] [--files a.ts,b.ts] [--next step]...
                                       hand a task you hold to another member: they hold it under a new epoch, its
-                                      branch flockr/<id> and working areas move with it, the thread gets one card.
+                                      branch flockr/<id> and working areas move with it, the thread gets one hand-off record
+                                      (flockr blocks <channel> --kind handoff --task <id> reads it as data).
                                       Your old epoch is refused afterwards; repeating the same call changes nothing
   flockr checklist import <file> --channel <c>   rows of a SPEC_MASTER_CHECKLIST.md not yet Done become tasks, each
                                       needing the row before it in its phase; safe to repeat (rows with a task are skipped)
@@ -393,7 +399,8 @@ async function tasks(v: Values): Promise<number> {
     }
     case "handoff": {
       const id = idArg()
-      const body = { to: need(positionals[3], "member"), note: v.note, lastCommit: v.commit, testState: v.tests, nextSteps: v.next ?? [], epoch: epochFor(id, v) }
+      const files = v.files ? v.files.split(",").map((f) => f.trim()).filter(Boolean) : []
+      const body = { to: need(positionals[3], "member"), note: v.note, lastCommit: v.commit, testState: v.tests, nextSteps: v.next ?? [], files, epoch: epochFor(id, v) }
       printTask(remember(await run(sdk.handOffTask({ path: { id }, body }))))
       return 0
     }
@@ -448,14 +455,14 @@ async function main(): Promise<number> {
       return 0
     }
     case "post": {
-      const result = await run(sdk.postMessage({ path: { channel: need(positionals[1], "channel").replace(/^#/, "") }, body: { text: restText(2, "text"), labels: values.label ?? [], key: values.key } }))
+      const result = await run(sdk.postMessage({ path: { channel: need(positionals[1], "channel").replace(/^#/, "") }, body: { text: restText(2, "text"), labels: values.label ?? [], key: values.key, blocks: blocksFrom(values) } }))
       print(result, () => `Posted ${result.message.id}${result.message.mentions.length ? `, mentioning ${result.message.mentions.join(", ")}` : ""}`)
       return 0
     }
     case "reply": {
       const id = need(positionals[1], "thread or task id").replace(/^#/, "")
       const epoch = /^\d+$/.test(id) ? epochFor(Number(id), values) : undefined
-      const reply = await run(sdk.replyToThread({ path: { id }, body: { text: restText(2, "text"), epoch, labels: values.label ?? [], key: values.key } }))
+      const reply = await run(sdk.replyToThread({ path: { id }, body: { text: restText(2, "text"), epoch, labels: values.label ?? [], key: values.key, blocks: blocksFrom(values) } }))
       print(reply, () => `Replied ${reply.id} in ${id}${reply.replyTo ? `, in the sub-thread of ${reply.replyTo}` : ""}`)
       return 0
     }
@@ -575,6 +582,8 @@ async function main(): Promise<number> {
       return notesCommand({ positionals, values, print })
     case "memory":
       return channelMemoryCommand({ positionals, values, print })
+    case "blocks":
+      return blocksCommand({ positionals, values, print })
     case "doc":
       return documentCommand({ positionals, values, print })
     case "sessions":

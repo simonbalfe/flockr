@@ -133,7 +133,7 @@ describe("hand-offs", () => {
     expect((await live(call)).map((x) => [x.owner, x.taskId])).toEqual([["codex", a.id]])
     const thread = (await call("simon", "GET", `/api/threads/${a.id}`)).json
     expect(JSON.stringify(thread)).toContain("Routes done, tests left")
-    expect(JSON.stringify(thread)).toContain("Tests: bun test passes")
+    expect(JSON.stringify(thread)).toContain("\"tests\":\"bun test passes\"")
     expect(JSON.stringify(thread)).toContain("handed this task to codex")
     const page = EventPage.parse((await call("simon", "GET", "/api/events?since=0&limit=1000")).json)
     expect(page.events.find((e) => e.type === "task.handed_off")?.data).toMatchObject({ from: "claude", to: "codex", fromEpoch: a.claimEpoch, epoch: a.claimEpoch + 1, branch: `flockr/${a.id}` })

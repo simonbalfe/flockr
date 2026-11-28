@@ -1,5 +1,6 @@
 import {
   ActivityState,
+  Blocks,
   commitUrl,
   shortSha,
   taskBranch,
@@ -235,6 +236,7 @@ function entryOf(row: MessageRow): ThreadEntry {
     labels: row.labels,
     editedAt: row.editedAt?.toISOString() ?? null,
     replyTo: row.replyToId === null ? null : messageKey(row.replyToId),
+    blocks: row.deletedAt ? [] : Blocks.parse(row.blocks),
   }
   return reply
 }
@@ -246,7 +248,7 @@ export const replyOf = (row: MessageRow): Reply => {
 }
 
 function eventOf(row: MessageRow): Event {
-  return { kind: "event", id: messageKey(row.id), who: row.who, at: row.createdAt.toISOString(), text: row.body, system: row.system }
+  return { kind: "event", id: messageKey(row.id), who: row.who, at: row.createdAt.toISOString(), text: row.body, system: row.system, blocks: Blocks.parse(row.blocks) }
 }
 
 function summarize(replies: MessageRow[], known: Set<string>): ThreadSummary | null {
@@ -271,6 +273,7 @@ function textOf(row: MessageRow, replies: MessageRow[], known: Set<string>): Tex
     editedAt: row.editedAt?.toISOString() ?? null,
     taskId: row.taskId,
     threadId: row.taskId === null ? messageKey(row.id) : null,
+    blocks: row.deletedAt ? [] : Blocks.parse(row.blocks),
     thread: summarize(replies, known),
   }
 }

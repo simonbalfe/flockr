@@ -1,6 +1,7 @@
 import { z } from "@hono/zod-openapi"
 import { ApprovalAction } from "./activity"
 import { AreaPolicySchema, areaLimits } from "./areas"
+import { blockLimits, PostableBlocks } from "./blocks"
 import { Activity, Label, Labels, MemberKind, orNull, Task, TaskState, TextMessage } from "./board"
 import { checklistLimits, checklistSkipReasons } from "./checklist"
 import { commitMessageChars, Repo, Sha } from "./commits"
@@ -53,10 +54,10 @@ const labels = Labels.default([]).openapi({ example: ["review"], description: "L
 
 const requestKey = z.string().trim().min(1).max(100).optional().openapi({ description: "Makes a retry safe: the same key again returns the first message and writes nothing; the same key with other text is refused (409)", example: "acme-bot-run-41" })
 
-export const PostMessageBody = z.object({ text, labels, key: requestKey }).openapi("PostMessageBody")
+export const PostMessageBody = z.object({ text, labels, key: requestKey, blocks: PostableBlocks }).openapi("PostMessageBody")
 export const PostMessageResult = z.object({ message: TextMessage }).openapi("PostMessageResult")
 
-export const ReplyBody = z.object({ text, epoch, labels, key: requestKey }).openapi("ReplyBody")
+export const ReplyBody = z.object({ text, epoch, labels, key: requestKey, blocks: PostableBlocks }).openapi("ReplyBody")
 
 export const ListMessagesQuery = z.object({
   label: Label.optional().openapi({ description: "Only messages carrying this label, and task cards whose task carries it" }),
@@ -213,6 +214,7 @@ export const HandoffBody = z
     lastCommit: Sha.optional().openapi({ description: "The last commit on the task's branch; added to the task's commits" }),
     testState: z.string().trim().min(1).max(200).optional().openapi({ example: "bun test passes, e2e not run", description: "Where the tests stand" }),
     nextSteps: z.array(z.string().trim().min(1)).max(10).default([]).openapi({ description: "What the next holder should do, in order" }),
+    files: z.array(z.string().trim().min(1).max(blockLimits.fileChars)).max(blockLimits.files).default([]).openapi({ example: ["apps/server/src/users.ts"], description: "The files the work touched" }),
     epoch,
   })
   .openapi("HandoffBody")

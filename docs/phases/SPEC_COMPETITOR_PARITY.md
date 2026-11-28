@@ -36,7 +36,7 @@ Research only: every feature the surveyed products have, and who has it. Nothing
 | P8 | Reactions | VB, BZ | |
 | P9 | Files attached to a post | VB, BZ, HD | BZ: comments pinned to a video frame; HD: `hc put` |
 | P10 | Scheduled posts | VB | Partial: a routine with a cron trigger and a `post` action posts on a schedule; no one-off post (13h) |
-| P11 | Typed message blocks checked against a schema | VB | Partial: activity entries carry typed parts checked by Zod, and question cards; posts are text only (13c) |
+| P11 | Typed message blocks checked against a schema | VB | Done (Work: 13c-typed-blocks): messages carry approval, deliverable, decision and hand-off blocks from one Zod list; `listBlocks` reads them as data |
 | P12 | Comments pinned to code edits, not line numbers | ZD | Each edit has a lasting ID, so a comment survives later edits |
 | P13 | Sub-threads for review in place of pull requests | ZD | Partial (2b): sub-threads one level under a reply, `messages.test.ts`; no copy of the code per sub-thread. Each sub-thread gets its own copy of the code |
 | P14 | Shared canvas per channel | BZ | Done (Work: 13b-channel-document): one living document per channel, `flockr doc`, read first by agents. Agents edit it through the command line |
@@ -65,7 +65,7 @@ Research only: every feature the surveyed products have, and who has it. Nothing
 | P69 | Agents suggest tasks from what they know | DU | |
 | P70 | Completion needs both sides to agree, at an exact version of the work | DG | Partial (Work: 13a-review-that-holds): an approval names its commit and is refused once a newer one lands; no "agreed incomplete" end. One peer proposes, the other agrees or objects; "agreed incomplete" is a valid end |
 | P71 | Messages can never be edited or deleted | DG, DTM, BZ | Partial (1b): an edit is a new version; a delete leaves a tombstone and its event stays, `delete.test.ts`; deleting is allowed on purpose |
-| P81 | Structured hand-off record: summary, branch, commit, files, tests run, next steps | CT | Partial (8c): `handOffTask` takes summary, last commit, test state and next steps as one card and event; no files list, not readable as data (13c). The receiver gets a short pointer and reads the record; ownership and an audit entry change in one step |
+| P81 | Structured hand-off record: summary, branch, commit, files, tests run, next steps | CT | Done (Work: 13c-typed-blocks): the hand-off is a block with summary, branch, commit, files, tests and next steps, read with `listBlocks`. The receiver gets a short pointer and reads the record; ownership and an audit entry change in one step |
 | P82 | Typed shared notes: decision, discovery, dead end; old ones are superseded, not deleted | CT | Partial (10a, 10b): agent notes and channel memory with kinds, archived not deleted, `memory.test.ts`; no superseded-by link or task scope. Task-scoped lookup shows dead ends first, then decisions, then discoveries |
 | P83 | Open questions between agents that stay open until someone answers | CT | Partial: `askInThread` and task questions stay open in the inbox and Focus, `conversation.test.ts`; only a person answers (13d). `chatter ask codex "..."`, `chatter answer 7 "..."` |
 | P84 | One shared space per Git repository, whatever the worktree | CT | Partial (8b): a channel names its repo and the runner works a task in a worktree on `flockr/<id>`; nothing maps a worktree to its channel. Every worktree of a repo sees the same agents, chat, tasks and notes; other repos stay separate |

@@ -8,6 +8,7 @@ import {
   type DeletedMessage,
   type EditMessageBody,
   type MessageState,
+  type PostableBlock,
   type Reply,
   type TextMessage,
 } from "@flockr/contracts"
@@ -31,7 +32,11 @@ interface Said {
   text: string
   labels: string[]
   key?: string | undefined
+  blocks?: PostableBlock[] | undefined
 }
+
+const canonical = (value: unknown): string =>
+  JSON.stringify(value, (_key, v: unknown) => (v !== null && typeof v === "object" && !Array.isArray(v) ? Object.fromEntries(Object.entries(v).sort(([a], [b]) => a.localeCompare(b))) : v))
 
 async function priorPost(tx: Tx, actor: string, said: Said): Promise<MessageRow | null> {
   if (said.key === undefined) return null
@@ -41,7 +46,7 @@ async function priorPost(tx: Tx, actor: string, said: Said): Promise<MessageRow 
     .from(messages)
     .where(and(eq(messages.who, actor), eq(messages.requestKey, said.key)))
   if (!prior) return null
-  if (prior.body !== said.text) throw alreadyExists(`Key ${said.key} was already used for ${messageKey(prior.id)} with other text; use a new key for a new message`)
+  if (prior.body !== said.text || canonical(prior.blocks) !== canonical(said.blocks ?? [])) throw alreadyExists(`Key ${said.key} was already used for ${messageKey(prior.id)} with other text; use a new key for a new message`)
   return prior
 }
 
@@ -53,7 +58,7 @@ export async function postMessage(db: Database, actor: string, channel: string, 
     if (prior) return prior
     const { mentions, direct } = await addressedIn(tx, { channel, actor, mentions: await mentionsOf(tx, said.text) })
     const labels = labelSet(said.labels)
-    const created = await insertMessage(tx, { channel, kind: "text", who: actor, body: said.text, mentions, labels, requestKey: said.key ?? null })
+    const created = await insertMessage(tx, { channel, kind: "text", who: actor, body: said.text, mentions, labels, requestKey: said.key ?? null, blocks: said.blocks ?? [] })
     emitMessage(emit, "message.posted", created, actor, messageKey(created.id), { mentions, labels, ...(direct ? { direct } : {}) })
     await clearDraft(tx, { member: actor, kind: "channel", target: channel })
     return created
@@ -73,7 +78,7 @@ async function replyUnder(tx: Tx, emit: Emit, options: { actor: string; parent: 
   const { mentions, direct } = await addressedIn(tx, { channel: parent.channel, actor, mentions: options.said })
   const anchor = parent.replyToId ?? parent.id
   const data = { mentions, labels: labelSet(draft.labels), replyTo: messageKey(anchor), ...(direct ? { direct } : {}) }
-  const base = { channel: parent.channel, kind: "text" as const, who: actor, body: draft.text, mentions, labels: data.labels, replyToId: anchor, requestKey: draft.key ?? null }
+  const base = { channel: parent.channel, kind: "text" as const, who: actor, body: draft.text, mentions, labels: data.labels, replyToId: anchor, requestKey: draft.key ?? null, blocks: draft.blocks ?? [] }
   if (parent.threadTaskId !== null) {
     const task = await lockTask(tx, parent.threadTaskId)
     checkEpoch(task, draft.epoch)
@@ -99,7 +104,7 @@ export async function reply(db: Database, actor: string, threadId: string, draft
       const task = await lockTask(tx, ref.id)
       checkEpoch(task, draft.epoch)
       const { mentions, direct } = await addressedIn(tx, { channel: task.channel, actor, mentions: said })
-      const created = await insertMessage(tx, { channel: task.channel, kind: "text", who: actor, body: draft.text, mentions, labels, threadTaskId: task.id, requestKey: draft.key ?? null })
+      const created = await insertMessage(tx, { channel: task.channel, kind: "text", who: actor, body: draft.text, mentions, labels, threadTaskId: task.id, requestKey: draft.key ?? null, blocks: draft.blocks ?? [] })
       emitMessage(emit, "reply.posted", created, actor, String(task.id), { mentions, labels, ...(direct ? { direct } : {}) })
       await clearDraft(tx, draftKey)
       return created
@@ -112,7 +117,7 @@ export async function reply(db: Database, actor: string, threadId: string, draft
     }
     if (parent.kind !== "text") throw invalid(`${threadId} is not a message; reply to a message or a task`)
     const { mentions, direct } = await addressedIn(tx, { channel: parent.channel, actor, mentions: said })
-    const created = await insertMessage(tx, { channel: parent.channel, kind: "text", who: actor, body: draft.text, mentions, labels, parentId: parent.id, requestKey: draft.key ?? null })
+    const created = await insertMessage(tx, { channel: parent.channel, kind: "text", who: actor, body: draft.text, mentions, labels, parentId: parent.id, requestKey: draft.key ?? null, blocks: draft.blocks ?? [] })
     emitMessage(emit, "reply.posted", created, actor, messageKey(parent.id), { mentions, labels, ...(direct ? { direct } : {}) })
     await clearDraft(tx, draftKey)
     return created

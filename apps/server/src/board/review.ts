@@ -1,4 +1,4 @@
-import { reviewLimits, reviewRefusal, shortSha, type ReviewAct, type ApproveBody, type SetReviewerBody, type SubmitBody, type Task } from "@flockr/contracts"
+import { reviewLimits, reviewRefusal, shortSha, taskBranch, type Block, type ReviewAct, type ApproveBody, type SetReviewerBody, type SubmitBody, type Task } from "@flockr/contracts"
 import { and, desc, eq, ne, sql, type SQL } from "drizzle-orm"
 import type { Database, Tx } from "../db/client"
 import { channels, events, tasks, type MemberRow, type TaskRow } from "../db/schema"
@@ -11,7 +11,7 @@ import { finish } from "./flow"
 import { requireActor } from "./members"
 import { findMember, getTask } from "./read"
 import { requireSeesTask } from "./tasks"
-import { emitTask, feedText, lockTask, requireHolder, requireState, taskReply, threadEvent, updateTask } from "./write"
+import { emitTask, feedText, insertMessage, lockTask, requireHolder, requireState, threadEvent, updateTask } from "./write"
 
 const staleReview = (message: string) => new BoardError("stale_review", message)
 const reviewFull = (message: string) => new BoardError("review_full", message)
@@ -69,7 +69,8 @@ export async function submitForReview(db: Database, actor: string, id: number, b
     if (body.commit) await recordCommit(tx, emit, task, actor, { sha: body.commit })
     const commit = body.commit ?? (await latestCommit(tx, id))
     const note = body.note?.trim() || (commit ? `Done in \`${shortSha(commit)}\`. Ready for review.` : "Done. Ready for review.")
-    await taskReply(tx, task, actor, note)
+    const deliverable: Block = { kind: "deliverable", task: id, summary: note, commit, branch: taskBranch(id), url: null }
+    await insertMessage(tx, { channel: task.channel, kind: "text", who: actor, body: note, threadTaskId: id, blocks: [deliverable] })
     const row = await updateTask(tx, id, { state: "review", leaseExpiresAt: null, question: null, reviewer, reviewCommit: commit })
     await releaseTaskAreas(tx, emit, row, actor)
     await feedText(tx, row.channel, actor, `Finished #${id}, ready for review${reviewer ? ` by ${reviewer}` : ""}.`, id)
@@ -126,7 +127,8 @@ export async function approveTask(db: Database, actor: string, id: number, body:
     requireState(task, "review")
     await requireReviewer(tx, task, member, "approve")
     requireFresh(task, body.commit)
-    await finish(tx, emit, task, actor, { type: "task.approved", threadText: "approved and completed this task", channelText: `approved #${id}`, reviewed: task.reviewCommit })
+    const blocks: Block[] = [{ kind: "approval", task: id, verdict: "approved", commit: task.reviewCommit }]
+    await finish(tx, emit, task, actor, { type: "task.approved", threadText: "approved and completed this task", channelText: `approved #${id}`, reviewed: task.reviewCommit, blocks })
   })
   return getTask(db, id)
 }
@@ -138,7 +140,8 @@ export async function requestChanges(db: Database, actor: string, id: number, no
     requireState(task, "review")
     await requireReviewer(tx, task, member, "changes")
     const row = await updateTask(tx, id, { state: "claimed", leaseExpiresAt: leaseFromNow(), reviewCommit: null })
-    await taskReply(tx, row, actor, note?.trim() || "A couple of changes, see the thread.")
+    const blocks: Block[] = [{ kind: "approval", task: id, verdict: "changes_requested", commit: task.reviewCommit }]
+    await insertMessage(tx, { channel: row.channel, kind: "text", who: actor, body: note?.trim() || "A couple of changes, see the thread.", threadTaskId: id, blocks })
     emitTask(emit, "task.changes_requested", row, actor, { holder: row.holder })
   })
   return getTask(db, id)

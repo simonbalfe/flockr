@@ -1,4 +1,4 @@
-import { type AskBody, type CompleteBody, type Task } from "@flockr/contracts"
+import { type AskBody, type Block, type CompleteBody, type Task } from "@flockr/contracts"
 import { and, arrayContains, asc, eq, inArray } from "drizzle-orm"
 import type { Database, Tx } from "../db/client"
 import { tasks, type TaskRow } from "../db/schema"
@@ -9,7 +9,7 @@ import { releaseTaskAreas } from "./areas"
 import { mutate, type Emit } from "./events"
 import { requireActor } from "./members"
 import { getTask } from "./read"
-import { channelEvent, emitTask, feedCard, lockTask, requireHolder, requireState, taskReply, threadEvent, updateTask } from "./write"
+import { channelEvent, emitTask, feedCard, insertMessage, lockTask, requireHolder, requireState, taskReply, threadEvent, updateTask } from "./write"
 
 async function startReadyTasks(tx: Tx, emit: Emit, finished: TaskRow, actor: string): Promise<void> {
   const waiting = await tx
@@ -33,6 +33,7 @@ interface Finish {
   channelText: string
   commit?: string
   reviewed?: string | null
+  blocks?: Block[]
 }
 
 export async function finish(tx: Tx, emit: Emit, task: TaskRow, actor: string, how: Finish): Promise<void> {
@@ -40,7 +41,7 @@ export async function finish(tx: Tx, emit: Emit, task: TaskRow, actor: string, h
   if (commit) await recordCommit(tx, emit, task, actor, { sha: commit })
   const row = await updateTask(tx, task.id, { state: "done", leaseExpiresAt: null, question: null, reason: null })
   await releaseTaskAreas(tx, emit, row, actor)
-  await threadEvent(tx, row, actor, threadText)
+  await insertMessage(tx, { channel: row.channel, kind: "event", who: actor, body: threadText, threadTaskId: row.id, blocks: how.blocks ?? [] })
   await channelEvent(tx, row.channel, actor, channelText)
   emitTask(emit, type, row, actor, { commit: commit ?? how.reviewed ?? (await latestCommit(tx, row.id)) })
   await startReadyTasks(tx, emit, row, actor)

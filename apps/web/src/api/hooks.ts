@@ -197,7 +197,13 @@ export const useDeclareArea = () =>
   }))
 export const useReleaseArea = () => useBoardMutation(releaseAreaMutation(), (a: { channel: string; id: number }) => ({ path: { channel: a.channel, id: a.id } }))
 export const useHandOffTask = () =>
-  useBoardMutation(handOffTaskMutation(), (a: { id: number; to: string; note?: string; epoch: number }) => ({ ...onTask(a.id), body: { to: a.to, note: a.note, nextSteps: [], epoch: a.epoch } }))
+  useBoardMutation(
+    handOffTaskMutation(),
+    (a: { id: number; to: string; note?: string; epoch: number; lastCommit?: string; testState?: string; files: string[]; nextSteps: string[] }) => ({
+      ...onTask(a.id),
+      body: { to: a.to, note: a.note, lastCommit: a.lastCommit, testState: a.testState, files: a.files, nextSteps: a.nextSteps, epoch: a.epoch },
+    }),
+  )
 
 export const useSaveMessage = () => useBoardMutation(saveMessageMutation(), (id: string) => ({ path: { id } }))
 export const useUnsaveMessage = () => useBoardMutation(unsaveMessageMutation(), (id: string) => ({ path: { id } }))

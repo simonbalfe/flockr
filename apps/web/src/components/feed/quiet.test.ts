@@ -8,7 +8,7 @@ const at = (minute: number) => new Date(Date.UTC(2026, 10, 25, 9, minute)).toISO
 
 function text(id: string, who: string, body: string, over: Partial<TextMessage> = {}): TextMessage {
   const mentions = [...body.matchAll(/@([a-z]+)/g)].flatMap((m) => (m[1] ? [m[1]] : []))
-  return { kind: "text", id, channel: "backend", who, at: at(Number(id.slice(1))), text: body, deleted: false, mentions, labels: [], editedAt: null, taskId: null, threadId: id, thread: null, ...over }
+  return { kind: "text", id, channel: "backend", who, at: at(Number(id.slice(1))), text: body, deleted: false, mentions, labels: [], editedAt: null, taskId: null, threadId: id, thread: null, blocks: [], ...over }
 }
 
 function task(id: number, state: Task["state"]): Task {
@@ -73,7 +73,7 @@ describe("quietFeed", () => {
   test("questions stay, agent events and task cards that need nobody collapse", () => {
     const feed: FeedItem[] = [
       { kind: "ask", id: "m1", channel: "backend", who: "claude", at: at(1), taskId: 808 },
-      { kind: "event", id: "e2", who: "codex", at: at(2), text: "claimed #812", system: false },
+      { kind: "event", id: "e2", who: "codex", at: at(2), text: "claimed #812", system: false, blocks: [] },
       { kind: "task", id: "m3", channel: "backend", who: "lead", at: at(3), taskId: 812 },
       { kind: "task", id: "m4", channel: "backend", who: "lead", at: at(4), taskId: 815 },
       text("m5", "brief", "Morning brief"),
