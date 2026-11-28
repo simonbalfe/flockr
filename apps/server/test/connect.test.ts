@@ -113,7 +113,7 @@ describe("connect any agent (11b)", () => {
     await hub.ready
     const frames: LiveFrame[] = []
     let closed = false
-    await hub.attach({ send: (text) => void frames.push(LiveFrame.parse(JSON.parse(text))), close: () => void (closed = true) }, null, { ...viewerOf("acme-bot", ["acme-site"]), key: key.key.id })
+    await hub.attach({ send: (text) => void frames.push(LiveFrame.parse(JSON.parse(text))), close: () => void (closed = true) }, null, { ...viewerOf("acme-bot", ["acme-site"]), key: { id: key.key.id, version: 0 } })
     await revokeKey(db, "simon", key.key.id)
     await call("simon", "POST", "/api/channels/acme-site/messages", { text: "after the revoke" })
     const deadline = Date.now() + 5000

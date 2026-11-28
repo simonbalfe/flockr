@@ -8,6 +8,7 @@ const keyLine = (k: MemberKey) =>
   [
     k.id.padEnd(16),
     `${k.shown}...`.padEnd(12),
+    (k.kind === "provisioning" ? "provisioning" : "").padEnd(13),
     `${k.member}${k.owner ? ` via ${k.owner}` : ""}`.padEnd(20),
     (k.channels ? k.channels.map((c) => `#${c}`).join(",") : "all channels").padEnd(20),
     k.revokedAt ? `revoked ${k.revokedAt}` : k.lastUsedAt ? `last used ${k.lastUsedAt}` : "never used",
@@ -27,8 +28,22 @@ export async function keysCommand(context: CommandContext): Promise<number> {
     case "create": {
       const channels = channelsOf(values.channels)
       if (channels?.length === 0) throw new UsageError("--channels needs at least one channel: --channels backend,platform")
-      const created = await run(sdk.createKey({ body: { member: need(positionals[2], "member"), channels } }))
-      print(created, () => `${keyLine(created.key)}\n\n${created.secret}\n\nThis is the only time the key is shown. Give it to ${created.key.member} as FLOCKR_KEY, or as key in ~/.flockr/runner.json.`)
+      const kind = values.provisioning ? "provisioning" : "member"
+      const created = await run(sdk.createKey({ body: { member: need(positionals[2], "member"), channels, kind } }))
+      print(created, () => `${keyLine(created.key)}\n\n${created.secret}\n\n${kind === "provisioning" ? "This is the only time the key is shown. With it as FLOCKR_KEY, flockr keys create, list, rotate, rescope and revoke manage agent keys and nothing else." : `This is the only time the key is shown. Give it to ${created.key.member} as FLOCKR_KEY, or as key in ~/.flockr/runner.json.`}`)
+      return 0
+    }
+    case "rotate": {
+      const rotated = await run(sdk.rotateKey({ path: { id: need(positionals[2], "key id") } }))
+      print(rotated, () => `${keyLine(rotated.key)}\n\n${rotated.secret}\n\nThe old secret is refused from now on. This is the only time the new one is shown.`)
+      return 0
+    }
+    case "rescope": {
+      const limit = values.all ? null : channelsOf(values.channels)
+      if (limit === null && !values.all) throw new UsageError("Give --channels a,b to limit the key, or --all to open it to every channel its member can see")
+      if (limit?.length === 0) throw new UsageError("--channels needs at least one channel: --channels backend,platform")
+      const rescoped = await run(sdk.rescopeKey({ path: { id: need(positionals[2], "key id") }, body: { channels: limit } }))
+      print(rescoped, () => keyLine(rescoped))
       return 0
     }
     case "revoke": {
@@ -43,6 +58,6 @@ export async function keysCommand(context: CommandContext): Promise<number> {
       return 0
     }
     default:
-      throw new UsageError(`Unknown keys command ${sub}. Use flockr keys [list|create <member> [--channels a,b]|revoke <id>|revoke-all <member>]`)
+      throw new UsageError(`Unknown keys command ${sub}. Use flockr keys [list|create <member> [--channels a,b] [--provisioning]|rotate <id>|rescope <id> --channels a,b|--all|revoke <id>|revoke-all <member>]`)
   }
 }

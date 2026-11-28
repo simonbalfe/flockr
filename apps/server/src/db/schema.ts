@@ -1,5 +1,5 @@
 import { hostOrg } from "@flockr/contracts"
-import type { AccessGrant, AccessLevel, ActionKind, Block, ProfileColour, ReactionKind, ChannelKind, ChannelVisibility, DraftKind, AreaEndReason, ActivityState, AgentDesired, AgentPermissions, AgentReport, ApprovalVerdict, ChatBridgeName, HarnessInfo, JobKind, JobState, MemberKind, MemoryKind, MemoryScope, Question, RoutineTriggerKind, TaskState } from "@flockr/contracts"
+import type { AccessGrant, AccessLevel, ActionKind, KeyKind, Block, ProfileColour, ReactionKind, ChannelKind, ChannelVisibility, DraftKind, AreaEndReason, ActivityState, AgentDesired, AgentPermissions, AgentReport, ApprovalVerdict, ChatBridgeName, HarnessInfo, JobKind, JobState, MemberKind, MemoryKind, MemoryScope, Question, RoutineTriggerKind, TaskState } from "@flockr/contracts"
 import { sql } from "drizzle-orm"
 import { bigint, boolean, check, index, integer, jsonb, pgTable, primaryKey, text, timestamp, unique, uniqueIndex, type AnyPgColumn } from "drizzle-orm/pg-core"
 
@@ -496,17 +496,26 @@ export const memberKeys = pgTable(
     member: text("member")
       .notNull()
       .references(() => members.name),
+    kind: text("kind").$type<KeyKind>().notNull().default("member"),
     hash: text("hash").notNull(),
     shown: text("shown").notNull(),
     channels: text("channels").array(),
     createdBy: text("created_by")
       .notNull()
       .references(() => members.name),
+    madeByKey: text("made_by_key").references((): AnyPgColumn => memberKeys.id),
+    version: integer("version").notNull().default(0),
     createdAt: createdAt(),
+    rotatedAt: timestamp("rotated_at", { withTimezone: true }),
     lastUsedAt: timestamp("last_used_at", { withTimezone: true }),
     revokedAt: timestamp("revoked_at", { withTimezone: true }),
   },
-  (t) => [uniqueIndex("member_keys_hash").on(t.hash), index("member_keys_member").on(t.member)],
+  (t) => [
+    uniqueIndex("member_keys_hash").on(t.hash),
+    index("member_keys_member").on(t.member),
+    index("member_keys_made_by_key").on(t.madeByKey),
+    check("member_keys_kind", sql`${t.kind} in ('member', 'provisioning')`),
+  ],
 )
 
 const authTimestamp = (name: string) => timestamp(name, { withTimezone: true }).notNull().defaultNow()

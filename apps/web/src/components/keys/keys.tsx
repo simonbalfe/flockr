@@ -2,7 +2,8 @@ import type { MemberKey } from "@flockr/client"
 import { KeyRound } from "lucide-react"
 import { useState, type FormEvent } from "react"
 import { toast } from "sonner"
-import { useCreateKey, useKeys, useMayManageKeys, useRevokeKey, useRevokeMemberKeys } from "@/api/auth"
+import { useCreateKey, useKeys, useMayManageKeys, useRevokeKey, useRevokeMemberKeys, useRotateKey } from "@/api/auth"
+import { currentUser } from "@/api/session"
 import { useChannelList, useMembers } from "@/api/hooks"
 import { CopyCommand } from "@/components/agents/copy-command"
 import { Button } from "@/components/ui/button"
@@ -27,6 +28,39 @@ function RevokeButton({ id }: { id: string }) {
     >
       {confirming ? "Revoke? Click again" : "Revoke"}
     </Button>
+  )
+}
+
+function RotateButton({ id }: { id: string }) {
+  const rotate = useRotateKey()
+  const [confirming, setConfirming] = useState(false)
+  const [secret, setSecret] = useState<string | null>(null)
+  return (
+    <>
+      <Button
+        variant="ghost"
+        size="sm"
+        disabled={rotate.isPending}
+        onBlur={() => setConfirming(false)}
+        onClick={() => (confirming ? rotate.mutate({ path: { id } }, { onSuccess: (made) => setSecret(made.secret) }) : setConfirming(true))}
+      >
+        {confirming ? "Rotate? Click again" : "Rotate"}
+      </Button>
+      <Dialog open={secret !== null} onOpenChange={(open) => !open && setSecret(null)}>
+        <DialogContent className="sm:max-w-[440px]">
+          <DialogHeader>
+            <DialogTitle>New secret, same key</DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-3">
+            {secret && <CopyCommand command={secret} />}
+            <p className="text-[13px] text-muted-foreground">The old secret is refused now and its live feeds are closed. Copy this one: it is not shown again.</p>
+            <DialogFooter>
+              <Button onClick={() => setSecret(null)}>Done</Button>
+            </DialogFooter>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </>
   )
 }
 
@@ -65,11 +99,13 @@ function KeyRow({ entry, showMember, mayManage }: { entry: MemberKey; showMember
         <div className="truncate text-sm">
           <span className="font-mono text-[13px]">{entry.shown}…</span>
           {showMember && <span className="font-medium"> {entry.owner ? `${entry.member} via ${entry.owner}` : entry.member}</span>}
+          {entry.kind === "provisioning" && <span className="text-muted-foreground"> · provisioning</span>}
         </div>
         <div className="truncate text-xs text-muted-foreground">
           {limit} · {used} · made by {entry.createdBy}
         </div>
       </div>
+      {mayManage && !entry.revokedAt && <RotateButton id={entry.id} />}
       {mayManage && !entry.revokedAt && <RevokeButton id={entry.id} />}
     </li>
   )
@@ -97,20 +133,22 @@ export function NewKeyDialog({ member, size = "sm" }: { member?: string; size?: 
   const [open, setOpen] = useState(false)
   const [chosen, setChosen] = useState("")
   const [limited, setLimited] = useState<string[]>([])
+  const [provisioning, setProvisioning] = useState(false)
   const [secret, setSecret] = useState<string | null>(null)
   const owners = (members.data ?? []).filter((m) => m.kind === "person" || m.kind === "agent")
-  const target = member ?? (chosen || owners[0]?.name || "")
+  const target = provisioning ? currentUser : (member ?? (chosen || owners[0]?.name || ""))
 
   const reset = () => {
     setChosen("")
     setLimited([])
+    setProvisioning(false)
     setSecret(null)
   }
   const toggle = (id: string) => setLimited((list) => (list.includes(id) ? list.filter((c) => c !== id) : [...list, id]))
   const submit = (event: FormEvent) => {
     event.preventDefault()
     if (!target) return
-    create.mutate({ body: { member: target, channels: limited.length ? limited : null } }, { onSuccess: (made) => setSecret(made.secret) })
+    create.mutate({ body: { member: target, kind: provisioning ? "provisioning" : "member", channels: limited.length ? limited : null } }, { onSuccess: (made) => setSecret(made.secret) })
   }
 
   return (
@@ -142,6 +180,15 @@ export function NewKeyDialog({ member, size = "sm" }: { member?: string; size?: 
         ) : (
           <form onSubmit={submit} className="grid gap-4">
             {member === undefined && (
+              <label className="flex items-start gap-2 text-[13px]">
+                <input type="checkbox" className="mt-0.5" checked={provisioning} onChange={(event) => setProvisioning(event.target.checked)} />
+                <span>
+                  <span className="font-medium">Provisioning key</span>
+                  <span className="block text-xs text-muted-foreground">Acts as you, and only makes, rotates and revokes keys for agents, inside the channels picked below. For setup scripts and the CLI.</span>
+                </span>
+              </label>
+            )}
+            {member === undefined && !provisioning && (
               <label className="grid gap-1.5 text-[13px] font-medium">
                 Acts as
                 <select className={fieldClass} value={target} onChange={(event) => setChosen(event.target.value)}>

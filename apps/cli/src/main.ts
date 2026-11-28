@@ -146,6 +146,9 @@ Agents served by a machine (a runner on that machine starts their sessions; a pe
   flockr agents activity <name> [--limit n]   its recent runs across threads, newest first, with the thread each is in
   flockr keys [list]                  every key: whose, its owner, its channel limit, last used, revoked (a person only)
   flockr keys create <member> [--channels a,b]   make a key that acts as that member; it prints once, keep it
+  flockr keys create <you> --provisioning [--channels a,b]   an admin key that only makes, lists, rotates and revokes agent keys (a signed-in person makes it)
+  flockr keys rotate <id>             a new secret, same id, kind and channels; the old one is refused at once
+  flockr keys rescope <id> --channels a,b | --all   change the channels a key is limited to, same id and secret
   flockr keys revoke <id>             turn a key off for good; safe to repeat
   flockr keys revoke-all <member>     turn off every key a member has at once (pausing, stopping or deleting an agent does this too)
   flockr machines                     machines with a runner, online or not, and the harnesses each can run

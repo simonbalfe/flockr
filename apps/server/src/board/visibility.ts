@@ -5,7 +5,7 @@ import { forbidden } from "./errors"
 export interface Viewer {
   member: string
   channels: string[] | null
-  key?: string
+  key?: { id: string; version: number }
 }
 
 export const viewerOf = (member: string, channels: string[] | null = null): Viewer => ({ member, channels })
@@ -92,7 +92,7 @@ export async function canSeeMember(db: Executor, viewer: Viewer, member: string)
 }
 
 export async function stillLive(db: Executor, viewer: Viewer): Promise<boolean> {
-  const key = viewer.key === undefined ? sql`true` : sql`exists (select 1 from member_keys k where k.id = ${viewer.key} and k.revoked_at is null)`
+  const key = viewer.key === undefined ? sql`true` : sql`exists (select 1 from member_keys k where k.id = ${viewer.key.id} and k.version = ${viewer.key.version} and k.revoked_at is null)`
   const rows = await db.execute<{ live: boolean }>(sql`select (${key} and not exists (select 1 from members m where m.name = ${viewer.member} and m.removed_at is not null)) as live`)
   return [...rows].some((row) => row.live === true)
 }

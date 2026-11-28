@@ -2141,6 +2141,7 @@ export type ApprovalSource = 'channel' | 'board' | 'default';
 export type MemberKey = {
     id: string;
     member: string;
+    kind: KeyKind;
     /**
      * The person the key's member acts for, when it is an agent
      */
@@ -2154,10 +2155,23 @@ export type MemberKey = {
      */
     channels: Array<string> | null;
     createdBy: string;
+    /**
+     * The provisioning key that made it, when one did
+     */
+    madeByKey: string | null;
     createdAt: string;
+    /**
+     * When its secret was last replaced; the id, kind and channels stay
+     */
+    rotatedAt: string | null;
     lastUsedAt: string | null;
     revokedAt: string | null;
 };
+
+/**
+ * member: acts as its member and can never make, list, rotate or revoke keys. provisioning: made by a signed-in person of the org that runs the board, acts as them, and can only make, list, rotate, rescope and revoke keys for agents, within its own channels
+ */
+export type KeyKind = 'member' | 'provisioning';
 
 export type CreatedKey = {
     key: MemberKey;
@@ -2169,13 +2183,21 @@ export type CreatedKey = {
 
 export type CreateKeyBody = {
     /**
-     * The member the key acts as
+     * The member the key acts as; for a provisioning key, the person making it
      */
     member: string;
+    kind?: KeyKind;
     /**
      * Limit the key to these channels; it is refused everywhere else
      */
     channels?: Array<string> | null;
+};
+
+export type RescopeKeyBody = {
+    /**
+     * The channels the key is limited to from now on; null for every channel its member can see
+     */
+    channels: Array<string> | null;
 };
 
 export type RevokedKeys = {
@@ -7666,6 +7688,92 @@ export type RevokeKeyResponses = {
 };
 
 export type RevokeKeyResponse = RevokeKeyResponses[keyof RevokeKeyResponses];
+
+export type RotateKeyData = {
+    body?: never;
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/api/keys/{id}/rotate';
+};
+
+export type RotateKeyErrors = {
+    /**
+     * The input is not valid
+     */
+    400: Error;
+    /**
+     * Sign-in is on and the request has no session or key
+     */
+    401: Error;
+    /**
+     * The acting member is not on this board, or may not do this
+     */
+    403: Error;
+    /**
+     * Not found
+     */
+    404: Error;
+    /**
+     * The task or message is in another state, or the claim epoch is stale
+     */
+    409: Error;
+};
+
+export type RotateKeyError = RotateKeyErrors[keyof RotateKeyErrors];
+
+export type RotateKeyResponses = {
+    /**
+     * OK
+     */
+    200: CreatedKey;
+};
+
+export type RotateKeyResponse = RotateKeyResponses[keyof RotateKeyResponses];
+
+export type RescopeKeyData = {
+    body: RescopeKeyBody;
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/api/keys/{id}';
+};
+
+export type RescopeKeyErrors = {
+    /**
+     * The input is not valid
+     */
+    400: Error;
+    /**
+     * Sign-in is on and the request has no session or key
+     */
+    401: Error;
+    /**
+     * The acting member is not on this board, or may not do this
+     */
+    403: Error;
+    /**
+     * Not found
+     */
+    404: Error;
+    /**
+     * The task or message is in another state, or the claim epoch is stale
+     */
+    409: Error;
+};
+
+export type RescopeKeyError = RescopeKeyErrors[keyof RescopeKeyErrors];
+
+export type RescopeKeyResponses = {
+    /**
+     * OK
+     */
+    200: MemberKey;
+};
+
+export type RescopeKeyResponse = RescopeKeyResponses[keyof RescopeKeyResponses];
 
 export type RevokeMemberKeysData = {
     body?: never;

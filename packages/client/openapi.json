@@ -6392,6 +6392,9 @@
             "type": "string",
             "example": "claude"
           },
+          "kind": {
+            "$ref": "#/components/schemas/KeyKind"
+          },
           "owner": {
             "type": [
               "string",
@@ -6421,10 +6424,26 @@
           "createdBy": {
             "type": "string"
           },
+          "madeByKey": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The provisioning key that made it, when one did"
+          },
           "createdAt": {
             "type": "string",
             "format": "date-time",
             "example": "2026-11-24T10:40:02.000Z"
+          },
+          "rotatedAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "example": "2026-11-24T10:40:02.000Z",
+            "description": "When its secret was last replaced; the id, kind and channels stay"
           },
           "lastUsedAt": {
             "type": [
@@ -6446,14 +6465,25 @@
         "required": [
           "id",
           "member",
+          "kind",
           "owner",
           "shown",
           "channels",
           "createdBy",
+          "madeByKey",
           "createdAt",
+          "rotatedAt",
           "lastUsedAt",
           "revokedAt"
         ]
+      },
+      "KeyKind": {
+        "type": "string",
+        "enum": [
+          "member",
+          "provisioning"
+        ],
+        "description": "member: acts as its member and can never make, list, rotate or revoke keys. provisioning: made by a signed-in person of the org that runs the board, acts as them, and can only make, list, rotate, rescope and revoke keys for agents, within its own channels"
       },
       "CreatedKey": {
         "type": "object",
@@ -6477,7 +6507,10 @@
           "member": {
             "type": "string",
             "example": "claude",
-            "description": "The member the key acts as"
+            "description": "The member the key acts as; for a provisioning key, the person making it"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/KeyKind"
           },
           "channels": {
             "anyOf": [
@@ -6503,6 +6536,34 @@
         },
         "required": [
           "member"
+        ]
+      },
+      "RescopeKeyBody": {
+        "type": "object",
+        "properties": {
+          "channels": {
+            "anyOf": [
+              {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "pattern": "^[a-z0-9][a-z0-9-]*$"
+                },
+                "minItems": 1,
+                "maxItems": 20
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "example": [
+              "backend"
+            ],
+            "description": "The channels the key is limited to from now on; null for every channel its member can see"
+          }
+        },
+        "required": [
+          "channels"
         ]
       },
       "RevokedKeys": {
@@ -17622,7 +17683,7 @@
         "tags": [
           "keys"
         ],
-        "summary": "Every key on the board: whose it is, its owner, the channels it is limited to, when it was last used and whether it is revoked. Never the key itself. Only a person can list keys",
+        "summary": "Every key on the board: whose it is, its kind, its owner, the channels it is limited to, when it was last used or rotated and whether it is revoked. Never the key itself. A provisioning key lists only the keys it made. Only a signed-in person of the org that runs the board, or a provisioning key for the agent keys it made; a member key never manages keys",
         "responses": {
           "200": {
             "description": "OK",
@@ -17694,7 +17755,7 @@
         "tags": [
           "keys"
         ],
-        "summary": "Make a key that acts as a member, optionally limited to some channels. The key is in the response once and never again. Only a person can make one",
+        "summary": "Make a key that acts as a member, optionally limited to some channels; the key is in the response once and never again. kind provisioning makes an admin key that acts as the person making it and can only manage agent keys within its channels. A provisioning key makes member keys for agents only, inside its own channels. Only a signed-in person of the org that runs the board, or a provisioning key for the agent keys it made; a member key never manages keys",
         "requestBody": {
           "required": true,
           "content": {
@@ -17775,7 +17836,7 @@
         "tags": [
           "keys"
         ],
-        "summary": "Turn a key off for good; requests with it are refused from now on. Safe to repeat. Only a person can revoke one",
+        "summary": "Turn a key off for good; requests with it are refused from now on. Safe to repeat. Only a signed-in person of the org that runs the board, or a provisioning key for the agent keys it made; a member key never manages keys",
         "parameters": [
           {
             "schema": {
@@ -17851,13 +17912,187 @@
         }
       }
     },
+    "/api/keys/{id}/rotate": {
+      "post": {
+        "operationId": "rotateKey",
+        "tags": [
+          "keys"
+        ],
+        "summary": "Replace a key's secret and keep its id, kind, member and channels; the old secret is refused at once and its live feeds are cut. The new secret is in the response once. A revoked key cannot be rotated. Only a signed-in person of the org that runs the board, or a provisioning key for the agent keys it made; a member key never manages keys",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "example": "k_3f9a1c2b"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreatedKey"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The input is not valid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sign-in is on and the request has no session or key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The acting member is not on this board, or may not do this",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The task or message is in another state, or the claim epoch is stale",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/keys/{id}": {
+      "patch": {
+        "operationId": "rescopeKey",
+        "tags": [
+          "keys"
+        ],
+        "summary": "Change the channels a key is limited to and keep its id and secret; its live feeds are cut so they reconnect with the new limit. Safe to repeat. Only a signed-in person of the org that runs the board, or a provisioning key for the agent keys it made; a member key never manages keys",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "example": "k_3f9a1c2b"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RescopeKeyBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MemberKey"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The input is not valid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sign-in is on and the request has no session or key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The acting member is not on this board, or may not do this",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The task or message is in another state, or the claim epoch is stale",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/members/{name}/keys/revoke": {
       "post": {
         "operationId": "revokeMemberKeys",
         "tags": [
           "keys"
         ],
-        "summary": "Turn off every live key a member has, at once; requests with any of them are refused from now on and their live feeds are cut. Pausing, stopping or deleting an agent does this too. Safe to repeat. Only a person can do it",
+        "summary": "Turn off every live key a member has, at once; requests with any of them are refused from now on and their live feeds are cut. Pausing, stopping or deleting an agent does this too. Safe to repeat. Only a signed-in person of the org that runs the board",
         "parameters": [
           {
             "schema": {

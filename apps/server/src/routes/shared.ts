@@ -2,11 +2,12 @@ import { ErrorBody } from "@flockr/contracts"
 import { createRoute, OpenAPIHono, type RouteConfig, type z } from "@hono/zod-openapi"
 import type { AccessGrant, IdentitySource } from "@flockr/contracts"
 import type { Authenticator } from "../auth/identity"
+import type { KeyIdentity } from "../board/keys"
 import type { Viewer } from "../board/visibility"
 import type { Database } from "../db/client"
 
 export interface AppEnv {
-  Variables: { db: Database; auth: Authenticator; member: string; via: IdentitySource; channels: string[] | null; viewer: Viewer; grants: AccessGrant[] | null }
+  Variables: { db: Database; auth: Authenticator; member: string; via: IdentitySource; channels: string[] | null; viewer: Viewer; grants: AccessGrant[] | null; key: KeyIdentity | null }
 }
 
 export function router() {
@@ -44,3 +45,5 @@ export const jsonBody = <T extends z.ZodType>(schema: T) => ({
 type OperationConfig = Omit<RouteConfig, "operationId" | "tags" | "summary"> & { operationId: string; tags: [string]; summary: string }
 
 export const operation = <R extends OperationConfig>(config: R) => createRoute(config)
+
+export const credentialOf = (c: { var: { via: IdentitySource; key: KeyIdentity | null } }) => ({ via: c.var.via, key: c.var.key })

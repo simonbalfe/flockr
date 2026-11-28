@@ -2,7 +2,7 @@ import { authBasePath, channelsHeader, defaultMember, fenceOf, memberHeader, nar
 import { swaggerUI } from "@hono/swagger-ui"
 import type { MiddlewareHandler } from "hono"
 import { createAuthenticator, headerIdentity, isPublicApiPath, signInNeeded } from "./auth/identity"
-import { mcpTransport, operationMatcher, permits, needOf, requireAccess } from "./auth/access"
+import { mcpTransport, operationMatcher, permits, needOf, requireAccess, requireProvisioningOperation } from "./auth/access"
 import { requireInScope, requireReach } from "./auth/scope"
 import { authOff, type AuthSettings } from "./auth/settings"
 import { BoardError, notFound, unauthenticated } from "./board/errors"
@@ -79,17 +79,21 @@ export function createApp(db: Database, options: AppOptions = {}) {
     const open = authenticator.mode === "off" || isPublicApiPath(c.req.path)
     const found = open ? headerIdentity(c.req.raw.headers) : await authenticator.identify(c.req.raw.headers)
     if (!found) throw unauthenticated(signInNeeded)
-    const identity = { ...found, channels: narrowChannels(found.channels, fenceOf(c.req.header(channelsHeader))) }
+    const reach = found.key?.kind === "provisioning" ? null : found.channels
+    const identity = { ...found, channels: narrowChannels(reach, fenceOf(c.req.header(channelsHeader))) }
     c.set("member", identity.member)
     c.set("via", identity.via)
     c.set("channels", identity.channels)
+    c.set("key", identity.key)
     const viewer = viewerOf(identity.member, identity.channels)
     c.set("viewer", viewer)
     const request = c.req.raw
     const scoped = { method: request.method, pathname: c.req.path, query: new URL(request.url).searchParams, body: () => request.clone().json().catch(() => null) }
+    const operationId = operationOf(request.method, c.req.path)
+    if (identity.key?.kind === "provisioning") requireProvisioningOperation(operationId)
     await requireInScope(db, identity.channels, scoped)
     await requireReach(db, viewer, scoped)
-    c.set("grants", await requireAccess(db, identity.member, { method: request.method, operationId: operationOf(request.method, c.req.path) }))
+    c.set("grants", await requireAccess(db, identity.member, { method: request.method, operationId }))
     await next()
   }
 

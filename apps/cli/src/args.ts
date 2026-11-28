@@ -63,6 +63,8 @@ export const flags = {
   folder: { type: "string" },
   permissions: { type: "string" },
   grants: { type: "string" },
+  provisioning: { type: "boolean" },
+  all: { type: "boolean" },
   personality: { type: "string" },
   model: { type: "string" },
   machine: { type: "string" },

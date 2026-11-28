@@ -1,11 +1,13 @@
 import { describe, expect, test } from "bun:test"
-import { channelsHeader, MemberAccess, memberHeader, RevokedKeys } from "@flockr/contracts"
+import { channelsHeader, CreatedKey, MemberAccess, memberHeader, MemberKey, RevokedKeys } from "@flockr/contracts"
 import { Client } from "@modelcontextprotocol/sdk/client/index.js"
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js"
 import { sql } from "drizzle-orm"
 import { z } from "zod"
 import { classifiedOperations, mcpTransport, needOf, operationMatcher } from "../src/auth/access"
 import { liveViewer } from "../src/auth/identity"
+import { createKey } from "../src/board/keys"
+import { stillLive } from "../src/board/visibility"
 import { securedBoard } from "./harness"
 
 const liveUrl = new URL("http://localhost/ws")
@@ -196,5 +198,112 @@ describe("access levels (11f access-levels)", () => {
     expect((await client.callTool({ name: "listMessages", arguments: { channel: "backend" } })).isError).toBeFalsy()
     expect((await client.callTool({ name: "listMessages", arguments: { channel: "platform" } })).isError).toBe(true)
     await client.close()
+  })
+})
+
+describe("key kinds, provisioning and rotation (11f key-kinds)", () => {
+  test("a member key never manages keys, even one acting as a person", async () => {
+    const board = await securedBoard()
+    const simonKey = await board.key("simon")
+    const target = (await createKey(board.db, "simon", { member: "claude", channels: null })).key.id
+    const tries: [string, string, unknown][] = [
+      ["POST", "/api/keys", { member: "claude" }],
+      ["GET", "/api/keys", undefined],
+      ["POST", `/api/keys/${target}/revoke`, undefined],
+      ["POST", `/api/keys/${target}/rotate`, undefined],
+      ["PATCH", `/api/keys/${target}`, { channels: ["backend"] }],
+      ["POST", "/api/members/claude/keys/revoke", undefined],
+    ]
+    for (const [method, path, body] of tries) {
+      const refused = await board.bearer(path, simonKey, { method, body })
+      expect([path, refused.status]).toEqual([path, 403])
+      expect(JSON.stringify(refused.json)).toContain("A key cannot make, list, rotate or revoke keys")
+    }
+    expect((await board.bearer("/api/channels/backend/messages", simonKey, { method: "POST", body: { text: "still a normal key" } })).status).toBe(200)
+  })
+
+  test("only a host person makes a provisioning key, and it acts as them", async () => {
+    const board = await securedBoard()
+    const made = await board.call("simon", "POST", "/api/keys", { member: "simon", kind: "provisioning" })
+    expect(made.status).toBe(200)
+    expect(CreatedKey.parse(made.json).key).toMatchObject({ kind: "provisioning", member: "simon", madeByKey: null })
+    expect((await board.call("simon", "POST", "/api/keys", { member: "tim", kind: "provisioning" })).status).toBe(400)
+    expect((await board.call("simon", "POST", "/api/keys", { member: "claude", kind: "provisioning" })).status).toBe(400)
+    expect((await board.call("ana", "POST", "/api/keys", { member: "ana", kind: "provisioning" })).status).toBe(403)
+    expect((await board.call("claude", "POST", "/api/keys", { member: "claude", kind: "provisioning" })).status).toBe(403)
+  })
+
+  test("a provisioning key makes, lists, rotates and revokes keys for agents only, and nothing else", async () => {
+    const board = await securedBoard()
+    const provisioning = CreatedKey.parse((await board.call("simon", "POST", "/api/keys", { member: "simon", kind: "provisioning" })).json)
+    const other = (await createKey(board.db, "simon", { member: "codex", channels: null })).key.id
+    const p = provisioning.secret
+
+    const made = await board.bearer("/api/keys", p, { method: "POST", body: { member: "claude", channels: ["backend"] } })
+    expect(made.status).toBe(200)
+    const claudeKey = CreatedKey.parse(made.json)
+    expect(claudeKey.key).toMatchObject({ member: "claude", kind: "member", madeByKey: provisioning.key.id, createdBy: "simon", channels: ["backend"] })
+    expect((await board.bearer("/api/channels/backend/messages", claudeKey.secret)).status).toBe(200)
+    expect((await board.bearer("/api/keys", p, { method: "POST", body: { member: "acme-bot", channels: ["acme-site"] } })).status).toBe(200)
+
+    expect((await board.bearer("/api/keys", p, { method: "POST", body: { member: "tim" } })).status).toBe(403)
+    expect((await board.bearer("/api/keys", p, { method: "POST", body: { member: "simon", kind: "provisioning" } })).status).toBe(403)
+    const listed = z.array(MemberKey).parse((await board.bearer("/api/keys", p)).json)
+    expect(listed.map((k) => k.member).sort()).toEqual(["acme-bot", "claude"])
+    expect((await board.bearer(`/api/keys/${other}/revoke`, p, { method: "POST" })).status).toBe(404)
+    expect((await board.bearer(`/api/keys/${other}/rotate`, p, { method: "POST" })).status).toBe(404)
+    expect((await board.bearer("/api/members/claude/keys/revoke", p, { method: "POST" })).status).toBe(403)
+
+    expect((await board.bearer("/api/me", p)).status).toBe(200)
+    expect((await board.bearer("/api/channels/backend/messages", p)).status).toBe(403)
+    expect((await board.bearer("/api/channels/backend/messages", p, { method: "POST", body: { text: "no" } })).status).toBe(403)
+    expect((await board.bearer("/api/agents/claude/pause", p, { method: "POST" })).status).toBe(403)
+    expect((await board.bearer("/mcp", p, { method: "POST", body: {} })).status).toBe(403)
+    expect(await liveViewer(board.secured.authenticator, { headers: new Headers({ authorization: `Bearer ${p}` }), url: liveUrl })).toMatchObject({ status: 403 })
+
+    expect((await board.bearer(`/api/keys/${claudeKey.key.id}/revoke`, p, { method: "POST" })).status).toBe(200)
+    expect((await board.bearer("/api/channels/backend/messages", claudeKey.secret)).status).toBe(401)
+  })
+
+  test("a channel-limited provisioning key makes only narrower keys", async () => {
+    const board = await securedBoard()
+    const p = CreatedKey.parse((await board.call("simon", "POST", "/api/keys", { member: "simon", kind: "provisioning", channels: ["backend", "platform"] })).json).secret
+    const inherited = CreatedKey.parse((await board.bearer("/api/keys", p, { method: "POST", body: { member: "claude" } })).json)
+    expect(inherited.key.channels).toEqual(["backend", "platform"])
+    expect((await board.bearer("/api/keys", p, { method: "POST", body: { member: "claude", channels: ["backend"] } })).status).toBe(200)
+    expect((await board.bearer("/api/keys", p, { method: "POST", body: { member: "claude", channels: ["reviews"] } })).status).toBe(403)
+    expect((await board.bearer(`/api/keys/${inherited.key.id}`, p, { method: "PATCH", body: { channels: null } })).status).toBe(403)
+    expect((await board.bearer(`/api/keys/${inherited.key.id}`, p, { method: "PATCH", body: { channels: ["reviews"] } })).status).toBe(403)
+    const narrowed = await board.bearer(`/api/keys/${inherited.key.id}`, p, { method: "PATCH", body: { channels: ["backend"] } })
+    expect(MemberKey.parse(narrowed.json)).toMatchObject({ id: inherited.key.id, channels: ["backend"] })
+  })
+
+  test("rotation keeps the id and channels, refuses the old secret at once and cuts its live feed", async () => {
+    const board = await securedBoard()
+    const first = await createKey(board.db, "simon", { member: "claude", channels: ["backend"] })
+    const before = await liveViewer(board.secured.authenticator, { headers: new Headers({ authorization: `Bearer ${first.secret}` }), url: liveUrl })
+    if (before instanceof Response) throw new Error("the key should open a live feed")
+    expect(await stillLive(board.db, before)).toBe(true)
+
+    const rotated = CreatedKey.parse((await board.call("simon", "POST", `/api/keys/${first.key.id}/rotate`)).json)
+    expect(rotated.key).toMatchObject({ id: first.key.id, member: "claude", channels: ["backend"], revokedAt: null })
+    expect(rotated.key.rotatedAt).not.toBeNull()
+    expect(rotated.secret).not.toBe(first.secret)
+    expect((await board.bearer("/api/me", first.secret)).status).toBe(401)
+    expect((await board.bearer("/api/me", rotated.secret)).status).toBe(200)
+    expect(await stillLive(board.db, before)).toBe(false)
+
+    const after = await liveViewer(board.secured.authenticator, { headers: new Headers({ authorization: `Bearer ${rotated.secret}` }), url: liveUrl })
+    if (after instanceof Response) throw new Error("the new secret should open a live feed")
+    const rescoped = MemberKey.parse((await board.call("simon", "PATCH", `/api/keys/${first.key.id}`, { channels: ["backend", "platform"] })).json)
+    expect(rescoped).toMatchObject({ id: first.key.id, channels: ["backend", "platform"] })
+    expect((await board.bearer("/api/channels/platform/messages", rotated.secret)).status).toBe(200)
+    expect(await stillLive(board.db, after)).toBe(false)
+    expect((await board.call("simon", "PATCH", `/api/keys/${first.key.id}`, { channels: ["backend", "platform"] })).status).toBe(200)
+
+    await board.call("simon", "POST", `/api/keys/${first.key.id}/revoke`)
+    expect((await board.call("simon", "POST", `/api/keys/${first.key.id}/rotate`)).status).toBe(409)
+    const types = await board.db.execute(sql`select type from events where type like 'key.%' order by seq`)
+    expect(types.map((row) => row.type)).toEqual(["key.created", "key.rotated", "key.rescoped", "key.revoked"])
   })
 })

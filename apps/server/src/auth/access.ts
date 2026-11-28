@@ -125,3 +125,10 @@ export async function requireAccess(db: Executor, member: string, operation: { m
   }
   return access.grants
 }
+
+const provisioningOperations = new Set(["whoami", "listKeys", "createKey", "revokeKey", "rotateKey", "rescopeKey", "listMembers", "listChannels"])
+
+export function requireProvisioningOperation(operationId: string | null): void {
+  if (operationId && provisioningOperations.has(operationId)) return
+  throw forbidden("A provisioning key only makes, lists, rotates, rescopes and revokes agent keys; use a member key or sign in for anything else")
+}
