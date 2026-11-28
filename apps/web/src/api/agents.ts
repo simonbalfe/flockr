@@ -1,10 +1,11 @@
-import type { AgentPermissions, CreateAgentBody } from "@flockr/client"
+import type { AccessGrant, AccessLevel, AgentPermissions, CreateAgentBody } from "@flockr/client"
 import {
   createAgentMutation,
   deleteAgentMutation,
   listMachinesOptions,
   pauseAgentMutation,
   resumeAgentMutation,
+  setAgentAccessMutation,
   startAgentMutation,
   stopAgentMutation,
   updateAgentMutation,
@@ -34,3 +35,5 @@ export const useStopAgent = () => useAgentMutation(stopAgentMutation(), byName)
 export const usePauseAgent = () => useAgentMutation(pauseAgentMutation(), byName)
 export const useResumeAgent = () => useAgentMutation(resumeAgentMutation(), byName)
 export const useDeleteAgent = () => useAgentMutation(deleteAgentMutation(), byName)
+export const useSetAgentAccess = () =>
+  useAgentMutation(setAgentAccessMutation(), (a: { name: string; level: AccessLevel; grants?: AccessGrant[] }) => ({ ...byName(a.name), body: { level: a.level, grants: a.grants } }))

@@ -1,4 +1,5 @@
 import {
+  grantsOf,
   ActivityState,
   Blocks,
   commitUrl,
@@ -44,7 +45,8 @@ export function parseThreadId(raw: string): ThreadRef {
 }
 
 export function presentMember(row: MemberRow): Member {
-  return { name: row.name, kind: row.kind, org: row.org, owner: row.owner, runsIn: row.runsIn, source: row.source, displayName: row.displayName, about: row.about, colour: row.colour }
+  const level = row.kind === "agent" ? row.access : "full"
+  return { name: row.name, kind: row.kind, org: row.org, owner: row.owner, runsIn: row.runsIn, source: row.source, displayName: row.displayName, about: row.about, colour: row.colour, access: level, grants: grantsOf(level, row.accessGrants) }
 }
 
 async function replyCounts(db: Executor, ids: number[]): Promise<Map<number, number>> {

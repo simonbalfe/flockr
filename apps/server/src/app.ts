@@ -2,6 +2,7 @@ import { authBasePath, channelsHeader, defaultMember, fenceOf, memberHeader, nar
 import { swaggerUI } from "@hono/swagger-ui"
 import type { MiddlewareHandler } from "hono"
 import { createAuthenticator, headerIdentity, isPublicApiPath, signInNeeded } from "./auth/identity"
+import { mcpTransport, operationMatcher, permits, needOf, requireAccess } from "./auth/access"
 import { requireInScope, requireReach } from "./auth/scope"
 import { authOff, type AuthSettings } from "./auth/settings"
 import { BoardError, notFound, unauthenticated } from "./board/errors"
@@ -66,6 +67,8 @@ export interface AppOptions {
 export function createApp(db: Database, options: AppOptions = {}) {
   const app = router()
   const authenticator = createAuthenticator(db, options.auth ?? authOff)
+  let matcher: ReturnType<typeof operationMatcher> | undefined
+  const operationOf = (method: string, pathname: string) => (pathname === "/mcp" ? mcpTransport : (matcher ??= operationMatcher(document()))(method, pathname))
 
   const identify: MiddlewareHandler<AppEnv> = async (c, next) => {
     if (c.req.path.startsWith(`${modelProxyPath}/`)) return next()
@@ -86,6 +89,7 @@ export function createApp(db: Database, options: AppOptions = {}) {
     const scoped = { method: request.method, pathname: c.req.path, query: new URL(request.url).searchParams, body: () => request.clone().json().catch(() => null) }
     await requireInScope(db, identity.channels, scoped)
     await requireReach(db, viewer, scoped)
+    c.set("grants", await requireAccess(db, identity.member, { method: request.method, operationId: operationOf(request.method, c.req.path) }))
     await next()
   }
 
@@ -150,7 +154,10 @@ export function createApp(db: Database, options: AppOptions = {}) {
   api.notFound((c) => c.json({ error: `No route for ${c.req.method} ${c.req.path}; see /api/openapi.json`, kind: "not_found" }, 404))
 
   const mcp = mcpHandler({ document, dispatch: (url, init) => Promise.resolve(api.request(url, init)), defaultMember })
-  api.all("/mcp", (c) => mcp(c.req.raw))
+  api.all("/mcp", (c) => {
+    const grants = c.var.grants
+    return mcp(c.req.raw, (tool) => permits(grants, needOf({ method: tool.method.toUpperCase(), operationId: tool.name })))
+  })
 
   return Object.assign(api, { document, authenticator })
 }

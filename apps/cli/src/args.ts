@@ -62,6 +62,7 @@ export const flags = {
   harness: { type: "string" },
   folder: { type: "string" },
   permissions: { type: "string" },
+  grants: { type: "string" },
   personality: { type: "string" },
   model: { type: "string" },
   machine: { type: "string" },

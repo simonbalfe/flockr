@@ -1,6 +1,6 @@
 import path from "node:path"
 import * as sdk from "@flockr/client"
-import { agentPermissions, agentStatusLabels, permissionLabels, runnerCommand, type Agent, type AgentDetail, type AgentPermissions, type Machine } from "@flockr/client"
+import { accessGrants, accessLevelLabels, accessLevels, agentPermissions, agentStatusLabels, permissionLabels, runnerCommand, type Agent, type AgentDetail, type AgentPermissions, type Machine } from "@flockr/client"
 import { run } from "./api"
 import { need, UsageError, type Values } from "./args"
 import type { CommandContext } from "./activity"
@@ -13,7 +13,7 @@ export const agentLine = (a: Agent) =>
   `${a.name.padEnd(14)} ${agentStatusLabels[a.status].toLowerCase().padEnd(8)} ${servedText(a)}${a.statusReason && a.status !== "online" ? `  (${a.statusReason})` : ""}${a.owner ? `  via ${a.owner}` : ""}${a.state === "working" ? `  #${a.taskId}` : ""}`
 
 export function agentDetail(a: AgentDetail): string {
-  const lines = [`${a.name}`, `  status       ${agentStatusLabels[a.status].toLowerCase()}${a.statusReason ? ` (${a.statusReason})` : ""}`, `  owner        ${a.owner ?? "none"}`]
+  const lines = [`${a.name}`, `  status       ${agentStatusLabels[a.status].toLowerCase()}${a.statusReason ? ` (${a.statusReason})` : ""}`, `  owner        ${a.owner ?? "none"}`, `  access       ${accessLevelLabels[a.access]}${a.access === "custom" ? ` (${a.grants.join(", ") || "reads only"})` : ""}`]
   if (a.config) {
     lines.push(
       `  machine      ${a.config.machineName} (${a.config.machine})`,
@@ -130,6 +130,17 @@ export async function agentsCommand(context: CommandContext & { baseUrl: string 
     case "resume":
       show(await run(sdk.resumeAgent({ path: { name: name() } })))
       return 0
+    case "access": {
+      const level = accessLevels.find((l) => l === positionals[3])
+      if (!level) throw new UsageError(`Give a level: flockr agents access <name> ${accessLevels.join("|")} [--grants ${accessGrants.join(",")}]`)
+      const picked = values.grants === undefined ? undefined : values.grants.split(",").map((g) => g.trim()).filter((g) => g !== "")
+      const unknown = picked?.filter((g) => !accessGrants.some((known) => known === g)) ?? []
+      if (unknown.length) throw new UsageError(`Unknown grant ${unknown.join(", ")}; grants are ${accessGrants.join(", ")}`)
+      const grants = picked?.flatMap((g) => accessGrants.filter((known) => known === g))
+      const done = await run(sdk.setAgentAccess({ path: { name: name() }, body: { level, grants } }))
+      print(done, () => `${done.name}: ${accessLevelLabels[done.level]}${done.grants.length ? ` (reads, ${done.grants.join(", ")})` : " (reads only)"}`)
+      return 0
+    }
     case "watch":
       return watchAgent({ baseUrl: context.baseUrl, name: name() })
     case "delete": {

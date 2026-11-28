@@ -71,6 +71,7 @@ export {
   permissionLabels,
   runnerCommand,
 } from "@flockr/contracts/agents"
+export { accessGrantLabels, accessGrants, accessLevelLabels, accessLevels, grantsOf } from "@flockr/contracts/access"
 export { agentPresets, leadPreset, presetOf, type AgentPreset } from "@flockr/contracts/presets"
 export {
   activityEventTypes,

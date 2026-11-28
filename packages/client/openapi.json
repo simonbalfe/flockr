@@ -2529,6 +2529,16 @@
               "pink",
               null
             ]
+          },
+          "access": {
+            "$ref": "#/components/schemas/AccessLevel"
+          },
+          "grants": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AccessGrant"
+            },
+            "description": "What the member may do beyond reading, from its access level; a person always has every grant"
           }
         },
         "required": [
@@ -2540,8 +2550,29 @@
           "source",
           "displayName",
           "about",
-          "colour"
+          "colour",
+          "access",
+          "grants"
         ]
+      },
+      "AccessLevel": {
+        "type": "string",
+        "enum": [
+          "read",
+          "reply",
+          "full",
+          "custom"
+        ],
+        "description": "read: reads only. reply: reads, posts and replies. full: everything its member kind may do. custom: reads plus the grants picked"
+      },
+      "AccessGrant": {
+        "type": "string",
+        "enum": [
+          "reply",
+          "work",
+          "manage"
+        ],
+        "description": "reply: post, reply, react, ask and answer in threads. work: tasks, plans, notes, memory, areas, the channel document. manage: channels, members, agents, keys, invites, routines and settings"
       },
       "UpdateProfileBody": {
         "type": "object",
@@ -4582,6 +4613,53 @@
             "maxLength": 500
           }
         }
+      },
+      "MemberAccess": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "example": "acme-bot"
+          },
+          "level": {
+            "$ref": "#/components/schemas/AccessLevel"
+          },
+          "grants": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AccessGrant"
+            },
+            "description": "What the member may do beyond reading, worked out from its level"
+          }
+        },
+        "required": [
+          "name",
+          "level",
+          "grants"
+        ]
+      },
+      "SetAccessBody": {
+        "type": "object",
+        "properties": {
+          "level": {
+            "$ref": "#/components/schemas/AccessLevel"
+          },
+          "grants": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AccessGrant"
+            },
+            "maxItems": 3,
+            "description": "Only with level custom: what it may do beyond reading",
+            "example": [
+              "reply",
+              "work"
+            ]
+          }
+        },
+        "required": [
+          "level"
+        ]
       },
       "CreateAgentBody": {
         "type": "object",
@@ -13477,6 +13555,98 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/StopRunResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The input is not valid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sign-in is on and the request has no session or key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The acting member is not on this board, or may not do this",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The task or message is in another state, or the claim epoch is stale",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/agents/{name}/access": {
+      "put": {
+        "operationId": "setAgentAccess",
+        "tags": [
+          "agents"
+        ],
+        "summary": "Set what an agent may do on the board, served or connected: read (read only), reply (read and reply), full, or custom with grants (reply, work, manage). It applies at once to every key the agent has and to a person acting as it, on the API and MCP; tools it may not use leave its MCP tool list. Safe to repeat. Only a person can do it",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "example": "scout"
+            },
+            "required": true,
+            "name": "name",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetAccessBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MemberAccess"
                 }
               }
             }

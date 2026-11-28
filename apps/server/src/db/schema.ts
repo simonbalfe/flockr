@@ -1,5 +1,5 @@
 import { hostOrg } from "@flockr/contracts"
-import type { ActionKind, Block, ProfileColour, ReactionKind, ChannelKind, ChannelVisibility, DraftKind, AreaEndReason, ActivityState, AgentDesired, AgentPermissions, AgentReport, ApprovalVerdict, ChatBridgeName, HarnessInfo, JobKind, JobState, MemberKind, MemoryKind, MemoryScope, Question, RoutineTriggerKind, TaskState } from "@flockr/contracts"
+import type { AccessGrant, AccessLevel, ActionKind, Block, ProfileColour, ReactionKind, ChannelKind, ChannelVisibility, DraftKind, AreaEndReason, ActivityState, AgentDesired, AgentPermissions, AgentReport, ApprovalVerdict, ChatBridgeName, HarnessInfo, JobKind, JobState, MemberKind, MemoryKind, MemoryScope, Question, RoutineTriggerKind, TaskState } from "@flockr/contracts"
 import { sql } from "drizzle-orm"
 import { bigint, boolean, check, index, integer, jsonb, pgTable, primaryKey, text, timestamp, unique, uniqueIndex, type AnyPgColumn } from "drizzle-orm/pg-core"
 
@@ -40,10 +40,16 @@ export const members = pgTable(
     displayName: text("display_name"),
     about: text("about"),
     colour: text("colour").$type<ProfileColour>(),
+    access: text("access").$type<AccessLevel>().notNull().default("full"),
+    accessGrants: text("access_grants").array().$type<AccessGrant[]>(),
     removedAt: timestamp("removed_at", { withTimezone: true }),
     createdAt: createdAt(),
   },
-  (t) => [check("members_kind", sql`${t.kind} in ('person', 'agent', 'bridge', 'watcher')`), index("members_org").on(t.org)],
+  (t) => [
+    check("members_kind", sql`${t.kind} in ('person', 'agent', 'bridge', 'watcher')`),
+    check("members_access", sql`${t.access} in ('read', 'reply', 'full', 'custom')`),
+    index("members_org").on(t.org),
+  ],
 )
 
 export const machines = pgTable("machines", {

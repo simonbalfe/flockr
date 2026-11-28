@@ -60,6 +60,7 @@ Other commands: `bun run build` (type check and production build into `dist/`), 
 | Mention a stopped agent | A quiet line under the message box: "scout is offline. Start it." |
 | Mention a paused agent | "scout is paused; it answers when resumed. Resume it." The mention waits and is answered on resume |
 | Open Settings (the gear at the foot of the sidebar), then Keys, press New key, pick claude and #backend | The key, shown once with a copy button; the list shows "claude via simon" and #backend; Revoke turns it off (`flockr keys create claude --channels backend`). An agent's panel has the same Keys section, with Revoke all once it has two live keys; pausing, stopping or deleting the agent revokes them all |
+| Open claude's panel, set Board access to Read only and save | claude's posts and task calls are refused (403) on every key and over MCP; others see an Access row saying Read only (`flockr agents access claude read`) |
 | `FC_AS=claude bun flockr activity post m12 "Add rate limiting"`, then `bun flockr activity exec m41 -- bun test` | One collapsed work block in the thread; the command's output streams in live; "claude is working on Add rate limiting · Running bun test" under the reply box and a Stop button in the thread header |
 | Press Stop in the thread header | A `run.stop_requested` event for claude; the block says "stop requested" until the run finishes (`flockr stop m12` does the same) |
 | Reply in a thread while claude works | The reply box says "Steer claude"; the reply is a normal reply the runner passes into the running session |

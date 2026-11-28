@@ -1,11 +1,24 @@
-import { ActivityEntry, AgentActivityQuery, AgentDetail, AgentParams, CreateAgentBody, DeletedAgent, UpdateAgentBody } from "@flockr/contracts"
+import { ActivityEntry, AgentActivityQuery, AgentDetail, AgentParams, CreateAgentBody, DeletedAgent, MemberAccess, SetAccessBody, UpdateAgentBody } from "@flockr/contracts"
 import { z } from "@hono/zod-openapi"
 import { createAgent, deleteAgent, listAgentActivity, pauseAgent, resumeAgent, startAgent, stopAgent, updateAgent } from "../board/agents"
+import { setAgentAccess } from "../board/access"
 import { jsonBody, ok, operation, router } from "./shared"
 
 const tags: [string] = ["agents"]
 
 export const agentRoutes = router()
+  .openapi(
+    operation({
+      method: "put",
+      path: "/api/agents/{name}/access",
+      operationId: "setAgentAccess",
+      tags,
+      summary: "Set what an agent may do on the board, served or connected: read (read only), reply (read and reply), full, or custom with grants (reply, work, manage). It applies at once to every key the agent has and to a person acting as it, on the API and MCP; tools it may not use leave its MCP tool list. Safe to repeat. Only a person can do it",
+      request: { params: AgentParams, body: jsonBody(SetAccessBody) },
+      responses: ok(MemberAccess),
+    }),
+    async (c) => c.json(await setAgentAccess(c.var.db, c.var.member, c.req.valid("param").name, c.req.valid("json")), 200),
+  )
   .openapi(
     operation({
       method: "post",

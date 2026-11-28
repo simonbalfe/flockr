@@ -788,7 +788,22 @@ export type Member = {
     displayName: string | null;
     about: string | null;
     colour: 'zinc' | 'red' | 'orange' | 'amber' | 'green' | 'teal' | 'blue' | 'violet' | 'pink' | null;
+    access: AccessLevel;
+    /**
+     * What the member may do beyond reading, from its access level; a person always has every grant
+     */
+    grants: Array<AccessGrant>;
 };
+
+/**
+ * read: reads only. reply: reads, posts and replies. full: everything its member kind may do. custom: reads plus the grants picked
+ */
+export type AccessLevel = 'read' | 'reply' | 'full' | 'custom';
+
+/**
+ * reply: post, reply, react, ask and answer in threads. work: tasks, plans, notes, memory, areas, the channel document. manage: channels, members, agents, keys, invites, routines and settings
+ */
+export type AccessGrant = 'reply' | 'work' | 'manage';
 
 export type UpdateProfileBody = {
     displayName?: string | null;
@@ -1531,6 +1546,23 @@ export type StopRunBody = {
      */
     member?: string;
     reason?: string;
+};
+
+export type MemberAccess = {
+    name: string;
+    level: AccessLevel;
+    /**
+     * What the member may do beyond reading, worked out from its level
+     */
+    grants: Array<AccessGrant>;
+};
+
+export type SetAccessBody = {
+    level: AccessLevel;
+    /**
+     * Only with level custom: what it may do beyond reading
+     */
+    grants?: Array<AccessGrant>;
 };
 
 export type CreateAgentBody = {
@@ -5511,6 +5543,49 @@ export type StopRunResponses = {
 };
 
 export type StopRunResponse = StopRunResponses[keyof StopRunResponses];
+
+export type SetAgentAccessData = {
+    body: SetAccessBody;
+    path: {
+        name: string;
+    };
+    query?: never;
+    url: '/api/agents/{name}/access';
+};
+
+export type SetAgentAccessErrors = {
+    /**
+     * The input is not valid
+     */
+    400: Error;
+    /**
+     * Sign-in is on and the request has no session or key
+     */
+    401: Error;
+    /**
+     * The acting member is not on this board, or may not do this
+     */
+    403: Error;
+    /**
+     * Not found
+     */
+    404: Error;
+    /**
+     * The task or message is in another state, or the claim epoch is stale
+     */
+    409: Error;
+};
+
+export type SetAgentAccessError = SetAgentAccessErrors[keyof SetAgentAccessErrors];
+
+export type SetAgentAccessResponses = {
+    /**
+     * OK
+     */
+    200: MemberAccess;
+};
+
+export type SetAgentAccessResponse = SetAgentAccessResponses[keyof SetAgentAccessResponses];
 
 export type StartAgentData = {
     body?: never;

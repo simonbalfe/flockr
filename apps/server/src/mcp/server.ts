@@ -1,4 +1,4 @@
-import { authorizationHeader, memberHeader } from "@flockr/contracts"
+import { authorizationHeader, channelsHeader, memberHeader } from "@flockr/contracts"
 import { Server } from "@modelcontextprotocol/sdk/server/index.js"
 import { WebStandardStreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js"
 import { CallToolRequestSchema, ListToolsRequestSchema, type CallToolResult } from "@modelcontextprotocol/sdk/types.js"
@@ -12,7 +12,7 @@ export interface McpOptions {
 }
 
 const args = z.record(z.string(), z.unknown())
-const forwarded = [authorizationHeader, "cookie"] as const
+const forwarded = [authorizationHeader, "cookie", channelsHeader] as const
 
 function callerHeaders(request: Request, member: string): Record<string, string> {
   const headers: Record<string, string> = { [memberHeader]: member }
@@ -44,11 +44,11 @@ export function mcpHandler(options: McpOptions) {
   let tools: Map<string, OperationTool> | undefined
   const allTools = () => (tools ??= operationTools(options.document()))
 
-  return async (request: Request): Promise<Response> => {
+  return async (request: Request, permitted: (tool: OperationTool) => boolean = () => true): Promise<Response> => {
     const member = request.headers.get(memberHeader) ?? new URL(request.url).searchParams.get("as") ?? options.defaultMember
     const server = new Server({ name: "flockr", version: "0.1.0" }, { capabilities: { tools: {} } })
     server.setRequestHandler(ListToolsRequestSchema, () => ({
-      tools: [...allTools().values()].map((tool) => ({
+      tools: [...allTools().values()].filter(permitted).map((tool) => ({
         name: tool.name,
         description: tool.description,
         inputSchema: tool.inputSchema,

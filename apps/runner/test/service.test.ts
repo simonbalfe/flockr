@@ -24,6 +24,8 @@ function agent(name: string, config: Partial<AgentConfig> = {}): Agent {
     displayName: null,
     about: null,
     colour: null,
+    access: "full",
+    grants: ["reply", "work", "manage"],
     state: "idle",
     taskId: null,
     leaseExpiresAt: null,

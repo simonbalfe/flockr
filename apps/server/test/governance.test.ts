@@ -1,7 +1,10 @@
 import { describe, expect, test } from "bun:test"
-import { RevokedKeys } from "@flockr/contracts"
+import { channelsHeader, MemberAccess, memberHeader, RevokedKeys } from "@flockr/contracts"
+import { Client } from "@modelcontextprotocol/sdk/client/index.js"
+import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js"
 import { sql } from "drizzle-orm"
 import { z } from "zod"
+import { classifiedOperations, mcpTransport, needOf, operationMatcher } from "../src/auth/access"
 import { liveViewer } from "../src/auth/identity"
 import { securedBoard } from "./harness"
 
@@ -77,5 +80,121 @@ describe("revoke every key (11f revoke-all)", () => {
     expect(again.revoked).toHaveLength(0)
     expect(await revokeCauses(board.db, "claude")).toEqual(["all", "all", "all"])
     expect((await board.call("simon", "POST", "/api/members/nobody/keys/revoke")).status).toBe(404)
+  })
+})
+
+const mcpClient = async (app: Awaited<ReturnType<typeof securedBoard>>["secured"], headers: Record<string, string>) => {
+  const transport = new StreamableHTTPClientTransport(new URL("http://localhost/mcp"), {
+    fetch: (input, init) => Promise.resolve(app.request(input instanceof Request ? input : String(input), init)),
+    requestInit: { headers },
+  })
+  const client = new Client({ name: "governance-test", version: "1.0.0" })
+  await client.connect(transport)
+  return client
+}
+
+describe("access levels (11f access-levels)", () => {
+  test("every operation that writes has a need, and the lists name only real operations", async () => {
+    const board = await securedBoard()
+    const document = z.object({ paths: z.record(z.string(), z.record(z.string(), z.object({ operationId: z.string() }))) }).parse(board.app.document())
+    const ids = Object.values(document.paths).flatMap((ops) => Object.values(ops).map((op) => op.operationId))
+    for (const id of classifiedOperations()) if (id !== mcpTransport) expect(ids).toContain(id)
+    const match = operationMatcher(board.app.document())
+    expect(match("POST", "/api/channels/backend/messages")).toBe("postMessage")
+    expect(match("POST", "/api/tasks/claim")).toBe("claimNextTask")
+    expect(match("POST", "/api/tasks/12/claim")).toBe("claimTask")
+    expect(match("POST", "/api/members/claude/keys/revoke")).toBe("revokeMemberKeys")
+    expect(needOf({ method: "GET", operationId: "listMessages" })).toBe("read")
+    expect(needOf({ method: "POST", operationId: "postMessage" })).toBe("reply")
+    expect(needOf({ method: "POST", operationId: "createTask" })).toBe("work")
+    expect(needOf({ method: "POST", operationId: "createKey" })).toBe("manage")
+    expect(needOf({ method: "POST", operationId: "somethingNew" })).toBe("manage")
+    expect(needOf({ method: "POST", operationId: null })).toBe("manage")
+  })
+
+  test("a read-only agent reads everywhere it may but cannot post, reply or work, by key, by header and over MCP", async () => {
+    const board = await securedBoard()
+    const secret = await board.key("claude")
+    const set = await board.call("simon", "PUT", "/api/agents/claude/access", { level: "read" })
+    expect(set.status).toBe(200)
+    expect(MemberAccess.parse(set.json)).toEqual({ name: "claude", level: "read", grants: [] })
+    const task = z.object({ id: z.number() }).parse((await board.call("simon", "POST", "/api/tasks", { channel: "backend", title: "Index the users table" })).json)
+
+    expect((await board.bearer("/api/channels/backend/messages", secret)).status).toBe(200)
+    expect((await board.bearer("/api/channels/backend/read", secret, { method: "POST", body: {} })).status).not.toBe(403)
+    const refused = await board.bearer("/api/channels/backend/messages", secret, { method: "POST", body: { text: "hi" } })
+    expect(refused.status).toBe(403)
+    expect(JSON.stringify(refused.json)).toContain("read only access")
+    expect((await board.bearer(`/api/threads/${task.id}/replies`, secret, { method: "POST", body: { text: "On it" } })).status).toBe(403)
+    expect((await board.bearer("/api/tasks", secret, { method: "POST", body: { channel: "backend", title: "More" } })).status).toBe(403)
+    expect((await board.bearer("/api/tasks/claim", secret, { method: "POST", body: {} })).status).toBe(403)
+    expect((await board.call("claude", "POST", "/api/channels/backend/messages", { text: "by header" })).status).toBe(403)
+    expect((await board.call("simon", "POST", "/api/channels/backend/messages", { text: "people are not limited" })).status).toBe(200)
+
+    const client = await mcpClient(board.secured, { authorization: `Bearer ${secret}` })
+    const names = (await client.listTools()).tools.map((tool) => tool.name)
+    expect(names).toContain("listMessages")
+    expect(names).toContain("waitForEvents")
+    expect(names).not.toContain("postMessage")
+    expect(names).not.toContain("claimNextTask")
+    const posted = await client.callTool({ name: "postMessage", arguments: { channel: "backend", text: "sneaky" } })
+    expect(posted.isError).toBe(true)
+    await client.close()
+
+    const members = z.array(z.object({ name: z.string(), access: z.string(), grants: z.array(z.string()) })).parse((await board.call("simon", "GET", "/api/members")).json)
+    expect(members.find((m) => m.name === "claude")).toMatchObject({ access: "read", grants: [] })
+    expect(members.find((m) => m.name === "simon")).toMatchObject({ access: "full", grants: ["reply", "work", "manage"] })
+  })
+
+  test("read and reply posts but does not work; custom gives exactly its grants; full gives everything back", async () => {
+    const board = await securedBoard()
+    const secret = await board.key("claude")
+    await board.call("simon", "PUT", "/api/agents/claude/access", { level: "reply" })
+    expect((await board.bearer("/api/channels/backend/messages", secret, { method: "POST", body: { text: "a reply" } })).status).toBe(200)
+    expect((await board.bearer("/api/tasks", secret, { method: "POST", body: { channel: "backend", title: "Work" } })).status).toBe(403)
+
+    const custom = MemberAccess.parse((await board.call("simon", "PUT", "/api/agents/claude/access", { level: "custom", grants: ["work"] })).json)
+    expect(custom.grants).toEqual(["work"])
+    expect((await board.bearer("/api/tasks", secret, { method: "POST", body: { channel: "backend", title: "Work" } })).status).toBe(200)
+    expect((await board.bearer("/api/channels/backend/messages", secret, { method: "POST", body: { text: "no" } })).status).toBe(403)
+
+    await board.call("simon", "PUT", "/api/agents/claude/access", { level: "full" })
+    expect((await board.bearer("/api/channels/backend/messages", secret, { method: "POST", body: { text: "yes" } })).status).toBe(200)
+    const changes = await board.db.execute(sql`select data from events where type = 'agent.access_changed' order by seq`)
+    expect(changes.map((row) => z.object({ level: z.string() }).parse(row.data).level)).toEqual(["reply", "custom", "full"])
+    expect((await board.call("simon", "PUT", "/api/agents/claude/access", { level: "full" })).status).toBe(200)
+    expect(await board.db.execute(sql`select 1 from events where type = 'agent.access_changed'`)).toHaveLength(3)
+  })
+
+  test("a person acting as an agent gets the agent's level, not their own", async () => {
+    const board = await securedBoard()
+    const simonKey = await board.key("simon")
+    await board.call("simon", "PUT", "/api/agents/claude/access", { level: "read" })
+    const response = await board.secured.request("/api/channels/backend/messages", {
+      method: "POST",
+      headers: { authorization: `Bearer ${simonKey}`, [memberHeader]: "claude", "content-type": "application/json" },
+      body: JSON.stringify({ text: "as claude" }),
+    })
+    expect(response.status).toBe(403)
+    expect((await board.bearer("/api/channels/backend/messages", simonKey, { method: "POST", body: { text: "as simon" } })).status).toBe(200)
+  })
+
+  test("only a host person sets access; the inputs must agree", async () => {
+    const board = await securedBoard()
+    expect((await board.bearer("/api/agents/codex/access", await board.key("claude"), { method: "PUT", body: { level: "read" } })).status).toBe(403)
+    expect((await board.bearer("/api/agents/acme-bot/access", await board.key("ana"), { method: "PUT", body: { level: "full" } })).status).toBe(403)
+    expect((await board.call("simon", "PUT", "/api/agents/claude/access", { level: "read", grants: ["reply"] })).status).toBe(400)
+    expect((await board.call("simon", "PUT", "/api/agents/claude/access", { level: "custom" })).status).toBe(400)
+    expect((await board.call("simon", "PUT", "/api/agents/tim/access", { level: "read" })).status).toBe(404)
+    expect((await board.call("simon", "PUT", "/api/agents/acme-bot/access", { level: "read" })).status).toBe(200)
+    expect((await board.bearer("/api/channels/acme-site/messages", await board.key("acme-bot", ["acme-site"]), { method: "POST", body: { text: "x" } })).status).toBe(403)
+  })
+
+  test("MCP passes the channel fence on to every tool call", async () => {
+    const board = await securedBoard()
+    const client = await mcpClient(board.secured, { authorization: `Bearer ${await board.key("claude")}`, [channelsHeader]: "backend" })
+    expect((await client.callTool({ name: "listMessages", arguments: { channel: "backend" } })).isError).toBeFalsy()
+    expect((await client.callTool({ name: "listMessages", arguments: { channel: "platform" } })).isError).toBe(true)
+    await client.close()
   })
 })

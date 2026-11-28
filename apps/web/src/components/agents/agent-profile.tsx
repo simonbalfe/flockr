@@ -19,6 +19,7 @@ import { Button } from "@/components/ui/button"
 import { usePanel } from "@/lib/panel"
 import { clock } from "@/lib/time"
 import { cn } from "@/lib/utils"
+import { AccessChoice, accessText } from "./access-choice"
 import { fieldClass, PermissionChoice } from "./new-agent-dialog"
 import { AgentStatusShape, statusText } from "./status-dot"
 
@@ -290,9 +291,11 @@ export function AgentProfile({ name }: { name: string }) {
                   ]
             }
           />
+          {!editable && <KeyValueList rows={[{ label: "Access", value: accessText(current) }]} />}
           <Waiting name={name} />
           <RecentWork name={name} />
           {current.config && <Settings key={JSON.stringify(current.config)} name={name} config={current.config} editable={editable} />}
+          {editable && <AccessChoice key={`${current.access}:${current.grants.join()}`} agent={current} />}
           <AgentNotes name={name} />
           <Keys name={name} />
           <div className={sectionClass}>Tasks</div>

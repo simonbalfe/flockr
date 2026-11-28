@@ -23,7 +23,8 @@
     "./invites": "./src/invites.ts",
     "./routines": "./src/routines.ts",
     "./sessions": "./src/sessions.ts",
-    "./presets": "./src/presets.ts"
+    "./presets": "./src/presets.ts",
+    "./access": "./src/access.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",

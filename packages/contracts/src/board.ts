@@ -6,6 +6,7 @@ import { ChannelVisibility } from "./orgs"
 import { profileColours } from "./invites"
 import { Block } from "./blocks"
 import { FileRef, Reaction } from "./attachments"
+import { AccessGrantSchema, AccessLevelSchema } from "./access"
 
 export const TaskState = z.enum(taskStates).openapi("TaskState")
 export const MemberKind = z.enum(memberKinds).openapi("MemberKind")
@@ -54,6 +55,8 @@ export const Member = z
     displayName: z.string().nullable().openapi({ example: "Ana from Acme", description: "Shown with the member name; null shows the name alone" }),
     about: z.string().nullable(),
     colour: z.enum(profileColours).nullable(),
+    access: AccessLevelSchema,
+    grants: z.array(AccessGrantSchema).openapi({ description: "What the member may do beyond reading, from its access level; a person always has every grant" }),
   })
   .openapi("Member")
 
