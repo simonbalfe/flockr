@@ -26,22 +26,22 @@ Research only: every feature the surveyed products have, and who has it. Nothing
 
 | Id | Feature | Who has it | How it works there |
 |---|---|---|---|
-| P1 | Channels with threaded replies in one ordered log | VB, BZ | VB: channels and threads; BZ: every message is a signed event in one log |
+| P1 | Channels with threaded replies in one ordered log | VB, BZ | Done (1b): channels, threads and one gapless event log, `events.test.ts`. VB: channels and threads; BZ: every message is a signed event in one log |
 | P2 | Stream channels for chat and forum channels for longer talk | BZ | Two channel types |
-| P3 | `@` mentions route a message to an agent | BZ, FB, DB, RK, CT | FB: groups of 2 to 6 bots, routed by mention or a small router model; CT: `@name` pushes the message into that agent's session; only the person can use `@everyone` |
-| P4 | Steering: a message sent mid-turn joins the running turn | FB, RK | Queued into the live turn |
+| P3 | `@` mentions route a message to an agent | BZ, FB, DB, RK, CT | Done (2e): `messages.mentions`; the runner wakes the named agent, `board.test.ts`. FB: groups of 2 to 6 bots, routed by mention or a small router model; CT: `@name` pushes the message into that agent's session; only the person can use `@everyone` |
+| P4 | Steering: a message sent mid-turn joins the running turn | FB, RK | Partial: the runner sends a reply into a live streaming session, else queues it for after the run (`converse` in `apps/runner/src/runner.ts`); no test. Queued into the live turn |
 | P5 | Wait on a thread until someone answers, with a timeout | VB, HD | `vb wait --re <id> --timeout 30m`; `hc wait` returns message, timeout or done. Done (Work: 11b-connect-any-agent): `waitForEvents` on a thread, a channel or your mentions, with a timeout and a cursor |
-| P6 | Live tail that resumes without gaps | VB, RK, HD | RK: a sequence number per thread; HD: `hc events` JSON lines |
-| P7 | Labels and filters | VB, HD | `--label step=fix`; `hc label k=v` |
+| P6 | Live tail that resumes without gaps | VB, RK, HD | Done (1b, 1e): `listEvents` from `since=N`, live socket catch-up, `flockr tail`. RK: a sequence number per thread; HD: `hc events` JSON lines |
+| P7 | Labels and filters | VB, HD | Done (1b): labels on messages and tasks, `?label=`, `flockr label`, the web label editor, `messages.test.ts`. `--label step=fix`; `hc label k=v` |
 | P8 | Reactions | VB, BZ | |
 | P9 | Files attached to a post | VB, BZ, HD | BZ: comments pinned to a video frame; HD: `hc put` |
-| P10 | Scheduled posts | VB | |
-| P11 | Typed message blocks checked against a schema | VB | |
+| P10 | Scheduled posts | VB | Partial: a routine with a cron trigger and a `post` action posts on a schedule; no one-off post (13h) |
+| P11 | Typed message blocks checked against a schema | VB | Partial: activity entries carry typed parts checked by Zod, and question cards; posts are text only (13c) |
 | P12 | Comments pinned to code edits, not line numbers | ZD | Each edit has a lasting ID, so a comment survives later edits |
-| P13 | Sub-threads for review in place of pull requests | ZD | Each sub-thread gets its own copy of the code |
+| P13 | Sub-threads for review in place of pull requests | ZD | Partial (2b): sub-threads one level under a reply, `messages.test.ts`; no copy of the code per sub-thread. Each sub-thread gets its own copy of the code |
 | P14 | Shared canvas per channel | BZ | Agents edit it through the command line |
-| P15 | Full-text search | BZ, VB | BZ: Postgres search; VB: inspector filters by text |
-| P80 | Delivery follows the agent's status: idle, working or done get the message; blocked or absent agents queue it until they settle | CT | Event hooks flush the queue when an agent's status changes; text is cleaned of terminal control codes |
+| P15 | Full-text search | BZ, VB | Done (6b): `searchBoard`, `flockr search`, the web command palette, `search.test.ts`. BZ: Postgres search; VB: inspector filters by text |
+| P80 | Delivery follows the agent's status: idle, working or done get the message; blocked or absent agents queue it until they settle | CT | Partial: the runner queues messages for an agent that is working, full or paused (`queued` in `runner.ts`); none for an agent over MCP. Event hooks flush the queue when an agent's status changes; text is cleaned of terminal control codes |
 | P120 | A live stream that is never silently incomplete: when the server loses a live event or cannot check access, it ends the stream with "resync" and the client reloads | BZ | NIP-AR sync rules: `CLOSED "resync: ..."`; the client replaces its copy only at `EOSE`, then backs off with jitter. See `docs/reference/RESEARCH_BUZZ_ARCHITECTURE.md`. Done (Work: 11b-connect-any-agent): a `resync` frame after the hub reconnects, and the client refetches |
 | P128 | A channel shared between two orgs is a bridge: the other org's agents are context, never a trigger for yours by themselves (loops and cost) | AD | Done (Work: 11b-connect-any-agent): every event carries the actor's org and kind; the runner skips wakes from another org's agents |
 
@@ -49,26 +49,26 @@ Research only: every feature the surveyed products have, and who has it. Nothing
 
 | Id | Feature | Who has it | How it works there |
 |---|---|---|---|
-| P16 | A task is a thread with a state: waiting, ready, claimed, blocked, completed, failed, canceled | VB | Only VB has full task states; HD has terminal states (idle, working, done, blocked, error) |
-| P17 | Claim the oldest ready task matching labels, optionally waiting | VB | `vb tasks claim --ready work/ --label step=fix --wait 10m` |
-| P18 | A claim is a 15-minute lease, renewed while working | VB | `vb tasks renew`; expiry returns it to ready |
-| P19 | Fencing: a holder whose claim was replaced cannot write | RK | A generation number on each claim |
-| P20 | Atomic claim and recovery of work in progress after a crash | OB, CT | One SQL update claims; in-flight rows return to queued on restart; CT: a message is claimed for delivery by one SQL update; a failed send puts it back |
-| P21 | A task needs other tasks and starts when they complete | VB | `--needs <id>` |
-| P22 | Assign a task to one named agent | VB, CT | `--for <profile>`; CT: `chatter task create --assignee codex` |
-| P23 | Agents hand work to each other | FB, RK, DB, OB, CT | FB: owed replies with a 6-hop cap; RK: `handoff_to_bot`; CT: `chatter handoff <task> <agent>` changes the owner and sends a pointer to a structured record |
-| P24 | Work assigned by `@` mention instead of tasks | BZ | No task object |
-| P25 | Work linked to the code that did it | ZD, BZ, CT | ZD: edit IDs; BZ: git built in, a branch is a room; CT: `task done --commit`; a hand-off records branch and commit; code moves through normal Git |
+| P16 | A task is a thread with a state: waiting, ready, claimed, blocked, completed, failed, canceled | VB | Partial: waiting, ready, claimed, blocked, review, done; fail sets blocked with a `Failed:` reason; no canceled state (13f). Only VB has full task states; HD has terminal states (idle, working, done, blocked, error) |
+| P17 | Claim the oldest ready task matching labels, optionally waiting | VB | Partial: `claimNextTask` takes labels and picks the oldest ready, `claims.test.ts`; the wait is only `flockr tasks claim --wait` (13f). `vb tasks claim --ready work/ --label step=fix --wait 10m` |
+| P18 | A claim is a 15-minute lease, renewed while working | VB | Done (1c): `renewTask`; `sweepExpiredClaims` returns expired claims to ready, `claims.test.ts`. `vb tasks renew`; expiry returns it to ready |
+| P19 | Fencing: a holder whose claim was replaced cannot write | RK | Done (1c): `claimEpoch` per claim, a stale holder is refused, `claims.test.ts`. A generation number on each claim |
+| P20 | Atomic claim and recovery of work in progress after a crash | OB, CT | Done (1c): one locked update claims, two parallel claims give one winner, `claims.test.ts`. One SQL update claims; in-flight rows return to queued on restart; CT: a message is claimed for delivery by one SQL update; a failed send puts it back |
+| P21 | A task needs other tasks and starts when they complete | VB | Done (1c): `needs`; a waiting task turns ready when its needs are done, `claims.test.ts`. `--needs <id>` |
+| P22 | Assign a task to one named agent | VB, CT | Done (1c): `assignee`, `flockr tasks create --for`, `giveTask`, the web Give control. `--for <profile>`; CT: `chatter task create --assignee codex` |
+| P23 | Agents hand work to each other | FB, RK, DB, OB, CT | Done (8c): `handOffTask` and `giveTask`, `flockr tasks handoff` and `give`, the web hand-off dialog. FB: owed replies with a 6-hop cap; RK: `handoff_to_bot`; CT: `chatter handoff <task> <agent>` changes the owner and sends a pointer to a structured record |
+| P24 | Work assigned by `@` mention instead of tasks | BZ | Done (2e): a mention starts a conversation, never a task (ADR 0014). No task object |
+| P25 | Work linked to the code that did it | ZD, BZ, CT | Done (3d, 8b): `task_commits`, `flockr tasks commit`, a branch per task, `commits.test.ts`. ZD: edit IDs; BZ: git built in, a branch is a room; CT: `task done --commit`; a hand-off records branch and commit; code moves through normal Git |
 | P26 | Per-agent scratchpad: open, parked, done | RK | Done (Work: 10-agent-memory): agent notes with kinds (dead-end, decision, preference, fact, todo) and archive |
 | P27 | Parent and child agents; wait on any or all children | HD | `hc wait --children any\|all` |
-| P68 | A "ready for review" lane: finished work waits until a person marks it done | DU, DTM | DU: tasks are to do, in progress, waiting for you, finished; reminders until reviewed |
+| P68 | A "ready for review" lane: finished work waits until a person marks it done | DU, DTM | Partial: submit, approve and request changes on every surface, the review column and Focus; any member can approve, even the submitter (13a). DU: tasks are to do, in progress, waiting for you, finished; reminders until reviewed |
 | P69 | Agents suggest tasks from what they know | DU | |
 | P70 | Completion needs both sides to agree, at an exact version of the work | DG | One peer proposes, the other agrees or objects; "agreed incomplete" is a valid end |
-| P71 | Messages can never be edited or deleted | DG, DTM, BZ | |
-| P81 | Structured hand-off record: summary, branch, commit, files, tests run, next steps | CT | The receiver gets a short pointer and reads the record; ownership and an audit entry change in one step |
-| P82 | Typed shared notes: decision, discovery, dead end; old ones are superseded, not deleted | CT | Task-scoped lookup shows dead ends first, then decisions, then discoveries |
-| P83 | Open questions between agents that stay open until someone answers | CT | `chatter ask codex "..."`, `chatter answer 7 "..."` |
-| P84 | One shared space per Git repository, whatever the worktree | CT | Every worktree of a repo sees the same agents, chat, tasks and notes; other repos stay separate |
+| P71 | Messages can never be edited or deleted | DG, DTM, BZ | Partial (1b): an edit is a new version; a delete leaves a tombstone and its event stays, `delete.test.ts`; deleting is allowed on purpose |
+| P81 | Structured hand-off record: summary, branch, commit, files, tests run, next steps | CT | Partial (8c): `handOffTask` takes summary, last commit, test state and next steps as one card and event; no files list, not readable as data (13c). The receiver gets a short pointer and reads the record; ownership and an audit entry change in one step |
+| P82 | Typed shared notes: decision, discovery, dead end; old ones are superseded, not deleted | CT | Partial (10a, 10b): agent notes and channel memory with kinds, archived not deleted, `memory.test.ts`; no superseded-by link or task scope. Task-scoped lookup shows dead ends first, then decisions, then discoveries |
+| P83 | Open questions between agents that stay open until someone answers | CT | Partial: `askInThread` and task questions stay open in the inbox and Focus, `conversation.test.ts`; only a person answers (13d). `chatter ask codex "..."`, `chatter answer 7 "..."` |
+| P84 | One shared space per Git repository, whatever the worktree | CT | Partial (8b): a channel names its repo and the runner works a task in a worktree on `flockr/<id>`; nothing maps a worktree to its channel. Every worktree of a repo sees the same agents, chat, tasks and notes; other repos stay separate |
 | P121 | Typed records in a channel (a task, a project) that anyone who may post can edit; each edit names the version it replaces, so two edits never both win | BZ | NIP-AR artifacts, `kind:45010`, `prev` checked under a lock (`buzz-db/src/store/artifact.rs`); the relay defines no task schema and has no claims |
 
 ## People's view
@@ -86,7 +86,7 @@ Research only: every feature the surveyed products have, and who has it. Nothing
 | P74 | A morning brief: one daily summary | DU, CT | CT: `chatter brief` with a time such as 2h summarises changes since the last look |
 | P75 | Channels share memory but keep separate conversations | DU | One channel per project. Done (Work: 10-agent-memory): channel memory |
 | P86 | Team metrics from an append-only ledger: delivery time, tasks done, dead ends, question response time | CT | `chatter stats` |
-| P129 | A shared wiki per channel that people edit and agents update | AD | Planned for 11e with P99 |
+| P129 | A shared wiki per channel that people edit and agents update | AD | Planned for 13b with P99 (11e moved to Phase 13) |
 
 ## Agents and identity
 

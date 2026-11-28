@@ -28,6 +28,7 @@ Every phase and sub-phase with its status: "where are we". Phases are product fe
 | **Phase 10: Agent memory** | an agent uses a decision from last week's thread without being told it again | Done (Work: 10-agent-memory) |
 | **Phase 11: Orgs and shared channels** | a client org's agent (key and MCP only) and person (email sign-in) work a task with our agent in a shared channel and see nothing of our other channels or other clients | Paused: 11a, 11b done; 11c onward wait for the board and tasks phase |
 | **Phase 12: Focus and plans** | Simon asks @lead for the users API, lead makes a four-task plan, and from Focus alone Simon answers, approves and watches it reach 4 of 4 done | Mostly built: 12a to 12d done; left: a real lead run end to end |
+| **Phase 13: Board and tasks** | claude submits #812 at `a1b2c3d` naming codex; codex reads the channel document and the hand-off record and approves at that commit; an approval after a newer commit is refused; Simon sees who is behind on reading | Not started |
 
 ## Now and Blocked
 
@@ -157,7 +158,7 @@ Done when: in a shared channel `#acme-site`, an `acme` agent with a key and only
 | 11b Connect any agent | agents | A client agent joins a shared channel with a channel-limited key over MCP; wait tool with a timeout; a request key per post; other orgs' agents never wake ours by themselves; removed members cut from the live feed; connection docs and the board skill for Claude Code, Codex and Grok Bot | P5, P100 | Done (Work: 11b-connect-any-agent) |
 | 11c Invites and profiles | both | People invited by email with a one-time link into a client org, without `FLOCKR_PEOPLE`; profiles with display name, about, colour, agent badge and owner chip (folds in 3f) | P34, P87, P88 | Paused: waits for the board and tasks phase |
 | 11d Channel-fenced agent runs | agents | An agent woken in a channel reads only that channel during the run: memory, search, tasks, tools | Our own | Paused: waits for the board and tasks phase |
-| 11e Shared-board basics | both | A living document per channel; typed message blocks for approvals and deliverables; read cursors and backlog across orgs | P11, P99, P101 | Moved: the board and tasks phase takes it over |
+| 11e Shared-board basics | both | Moved to Phase 13 (28 Nov 2026): the channel document is 13b, typed blocks 13c, read cursors and backlog 13e | P11, P99, P101 | Moved to Phase 13 |
 | 11f Governance | both | Spec only: OAuth for MCP, provisioning and scoped keys, rotation, access levels, revoke-all, audit, self-invites, owner attestation and signed writes | P35, P59, P90, P91 | Paused: waits for the board and tasks phase |
 | 11g Shared threads | both | Spec only, build after 4d: share one thread with its branch and live changes and pick it up across orgs | P95, P96 | Paused: waits for the board and tasks phase |
 
@@ -172,12 +173,27 @@ Done when: Simon types "@lead users API with sign-up this week" in #backend, lea
 | 12c Focus | people | Focus as the home screen: needs you, plans, running, done today, Next, a box to ask lead | Our own | Done (Work: 12-focus-and-plans) |
 | 12d Quiet feeds and thread status | people | People / Everything in channels with agent runs collapsed, Needs you chips, status in Threads | Our own | Done (Work: 12-focus-and-plans) |
 
+## Phase 13: Board and tasks
+
+Done when: in `#backend`, claude submits #812 at commit `a1b2c3d` naming codex as reviewer; codex reads the channel document, finds the hand-off record and approves at `a1b2c3d`; a second approval after claude pushes `e4f5a6b` is refused until codex looks again; and Simon sees from the channel who is behind on reading. Plan and audit: [phase-13/README.md](phase-13/README.md). Every new read and write goes through `canSee` (11a): nothing crosses orgs.
+
+| Sub-phase | For | Delivers | Covers | Status |
+|---|---|---|---|---|
+| 13a Review that holds | both | Only a person or the named reviewer approves, never the submitter; an approval names its commit and is refused once a newer one lands; review caps per agent; the reviewer is woken (`phase-13/SPEC_PHASE_13A_REVIEW_THAT_HOLDS.md`) | P68, P70, P103 | Not started |
+| 13b Channel document | both | One living document per channel; each edit names the version it replaces; every version readable; agents read it first (from 11e) | P99, P14, P121, P129 | Not started |
+| 13c Typed blocks and hand-off records | both | Typed message blocks checked against one schema list: approval, deliverable, decision, hand-off; the hand-off record as data with files and tests run (from 11e) | P11, P81 | Not started |
+| 13d Questions between members | agents | A question addressed to any member stays open until that member answers; inbox and Focus per member; permission cards still need a person | P83 | Not started |
+| 13e Read cursors and backlog | both | Each member's cursor and backlog per channel, shown to whoever can see the channel, across orgs; the PL12 stuck flag reads it (from 11e) | P101 | Not started |
+| 13f Task queue gaps | agents | Claim the oldest ready task by label with a wait on every surface; canceled as a state, failed apart from blocked; wait on every task of a plan | P16, P17, P27 | Not started |
+| 13g Reactions and files | both | Reactions as events; files on posts through the object store, each download checked with `canSee` | P8, P9 | Not started |
+| 13h Scheduled posts | both | Post once at a set time through the job table; cancel before it runs | P10 | Not started |
+
 ## Unplaced
 
 Parity rows with no sub-phase yet; place one when it is wanted:
 
-- **Messages:** P2 stream and forum channels, P4 steering a running turn, P8 reactions, P9 files, P10 scheduled posts, P11 typed message blocks, P12 comments pinned to edits, P14 channel canvas.
-- **Tasks:** P69 agents suggesting tasks, P70 two-sided sign-off.
+- **Messages:** P2 stream and forum channels, P4 steering a running turn (partly built in the runner), P12 comments pinned to edits.
+- **Tasks:** P69 agents suggesting tasks.
 - **People's view:** P29 watching an agent's screen, P33 voice.
 - **Agents:** P42 role templates, P47 routines from plain language, P77 read-only background mode, P78 autonomy level per agent.
 - **Approvals and security:** P55 approval level per agent, P56 auto-review, P59 signed events.
