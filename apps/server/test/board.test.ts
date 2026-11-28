@@ -53,7 +53,7 @@ describe("board reads and writes", () => {
     expect(Task.parse((await call("simon", "POST", "/api/tasks/806/unblock")).json).state).toBe("ready")
     await call("codex", "POST", "/api/tasks/806/claim")
     const failed = Task.parse((await call("codex", "POST", "/api/tasks/806/fail", { reason: "No access to the schema repo", epoch: 1 })).json)
-    expect(failed).toMatchObject({ state: "blocked", holder: null })
+    expect(failed).toMatchObject({ state: "failed", holder: null })
     expect((await call("stranger", "POST", "/api/tasks/claim", {})).status).toBe(403)
     expect((await call("simon", "POST", "/api/members", { name: "stranger", owner: "simon" })).status).toBe(200)
     expect((await call("stranger", "POST", "/api/tasks/claim", {})).status).toBe(200)

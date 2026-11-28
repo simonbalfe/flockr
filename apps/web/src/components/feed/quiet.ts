@@ -20,6 +20,8 @@ const stateNeedsPerson = {
   blocked: true,
   review: true,
   done: false,
+  failed: true,
+  canceled: false,
 } as const satisfies Record<TaskState, boolean>
 
 export const threadKeyOf = (message: TextMessage): string | null => message.threadId ?? (message.taskId === null ? null : String(message.taskId))

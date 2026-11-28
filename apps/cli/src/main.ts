@@ -1,6 +1,6 @@
 #!/usr/bin/env bun
 import * as sdk from "@flockr/client"
-import { configureClient, defaultMember, memberKinds, taskStates, type BoardEvent, type Task } from "@flockr/client"
+import { configureClient, defaultMember, memberKinds, taskStates, waitLimits, type Task } from "@flockr/client"
 import { activityCommand, approvalAction, isActivityWord, stopCommand } from "./activity"
 import { agentsCommand, machinesCommand } from "./agents"
 import { areasCommand } from "./areas"
@@ -65,7 +65,7 @@ Writing
   flockr draft <channel|thread-id> <text> | flockr draft <channel|thread-id> --clear   keep unsent text so it follows you to another device
   flockr tasks create <channel> <title> [--for member] [--reviewer member] [--needs 806,808] [--label x] [--kind k] [--spec file] [--text first reply] [--plan id]
   flockr tasks plan <task> <plan|none>   put a task in an open plan of its channel, or take it out
-  flockr tasks claim [<id>] [--ready] [--label x] [--mine] [--wait [--timeout s]]
+  flockr tasks claim [<id>] [--ready] [--label x] [--mine] [--wait [--timeout s]]   --wait waits on the server for a matching task
   flockr tasks renew|unblock <id>
   flockr tasks approve <id> [--commit sha]   a person, or the agent named as reviewer; never the holder. --commit is the one you
                                       reviewed: once a newer commit lands the approval is refused (stale_review); read it and approve again
@@ -75,7 +75,9 @@ Writing
                                       an agent with 2 tasks in review, or a reviewer agent with 2 open, is refused (review_full)
   flockr tasks reviewer <id> <member|none>   name who reviews it (the holder or a person); none leaves it to a person
   flockr tasks commit <id> <sha> [--message subject]   add a commit that did the task; the same sha twice changes nothing
-  flockr tasks fail|block <id> --reason <text>
+  flockr tasks fail|block <id> --reason <text>   fail: you give up (failed, a person reopens it); block: it waits on something
+  flockr tasks cancel <id> --reason <text>   nobody should do it any more (a person, or its holder or assignee); tasks needing it stay waiting
+  flockr tasks reopen <id>            a failed or canceled task back to ready (a person)
   flockr tasks changes <id> [--note text]
   flockr tasks give <id> <member>
   flockr tasks handoff <id> <member> [--note summary] [--commit sha] [--tests text] [--files a.ts,b.ts] [--next step]...
@@ -151,6 +153,8 @@ Plans (one goal in a channel, grouping its tasks; progress is counted from the t
   flockr plans show <id>              the plan, its goal, progress and tasks
   flockr plans edit <id> [--title t] [--goal text]   an empty --goal clears it
   flockr plans close|reopen <id>      a closed plan takes no new tasks; safe to repeat
+  flockr plans wait <id> [--timeout s]   wait until every task of the plan is done or canceled (at most 120 s a call;
+                                      exits 2 with the open tasks when it times out; a failed task keeps the plan open)
 
 Channel document (one living document per channel: its current plan; every member reads it first)
   flockr doc [show] <channel> [--version n]   the document and its version; --version reads an earlier one
@@ -233,12 +237,10 @@ const deadlineOf = (v: Values) => {
   return s === null ? Number.POSITIVE_INFINITY : Date.now() + s * 1000
 }
 
-async function claimNext(v: Values): Promise<Task | null> {
-  const body = { labels: v.label ?? [], mine: v.mine ?? false }
+async function claimNext(v: Values, wait = 0): Promise<Task | null> {
+  const body = { labels: v.label ?? [], mine: v.mine ?? false, wait }
   return (await run(sdk.claimNextTask({ body }))).task
 }
-
-const wakesClaim = (e: BoardEvent) => e.type.startsWith("task.") && ["ready", "claimed", "blocked", "review", "waiting"].includes(String(e.data.state))
 
 async function claim(v: Values): Promise<number> {
   const id = positionals[2]
@@ -256,21 +258,17 @@ async function claim(v: Values): Promise<number> {
     return 0
   }
   const deadline = deadlineOf(v)
-  const queue = await openQueue(baseUrl)
-  try {
-    for (;;) {
-      const task = await claimNext(v)
-      if (task) {
-        printTask(remember(task))
-        return 0
-      }
-      if (!(await queue.next(wakesClaim, deadline))) {
-        print({ task: null }, () => "Timed out: nothing ready to claim.")
-        return 2
-      }
+  for (;;) {
+    const left = Math.max(0, Math.min(waitLimits.maxSeconds, Math.ceil((deadline - Date.now()) / 1000)))
+    const task = await claimNext(v, left)
+    if (task) {
+      printTask(remember(task))
+      return 0
     }
-  } finally {
-    queue.close()
+    if (Date.now() >= deadline) {
+      print({ task: null }, () => "Timed out: nothing ready to claim.")
+      return 2
+    }
   }
 }
 
@@ -384,6 +382,12 @@ async function tasks(v: Values): Promise<number> {
     }
     case "unblock":
       printTask(remember(await run(sdk.unblockTask({ path: { id: idArg() } }))))
+      return 0
+    case "cancel":
+      printTask(await run(sdk.cancelTask({ path: { id: idArg() }, body: { reason: need(v.reason, "--reason") } })))
+      return 0
+    case "reopen":
+      printTask(await run(sdk.reopenTask({ path: { id: idArg() } })))
       return 0
     case "approve":
       printTask(remember(await run(sdk.approveTask({ path: { id: idArg() }, body: { commit: v.commit } }))))

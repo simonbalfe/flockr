@@ -4,7 +4,7 @@ import { ReplyCount } from "@/components/reply-count"
 import { StateDot } from "@/components/state-dot"
 import { usePanel } from "@/lib/panel"
 import { useNow } from "@/lib/now"
-import { stateLabel, taskStates, taskStatus, toneClass } from "@/lib/task"
+import { kanbanLanes, laneOf, stateLabel, taskStatus, toneClass } from "@/lib/task"
 
 function TaskCard({ task, showChannel }: { task: Task; showChannel: boolean }) {
   const { openTask } = usePanel()
@@ -44,8 +44,8 @@ export function Kanban({ tasks, showChannel }: { tasks: Task[]; showChannel: boo
   return (
     <div className="min-h-0 flex-1 overflow-auto">
       <div className="grid min-h-full grid-cols-[repeat(6,minmax(140px,1fr))] items-stretch gap-2.5 px-4 py-4 nav:pl-6">
-        {taskStates.map((state) => {
-          const items = tasks.filter((t) => t.state === state)
+        {kanbanLanes.map((state) => {
+          const items = tasks.filter((t) => laneOf[t.state] === state)
           return (
             <section key={state} className="flex min-w-0 flex-col gap-2 border bg-sidebar px-2 py-2.5" aria-label={stateLabel[state]}>
               <div className="flex items-center gap-2 px-1 text-[12.5px] font-medium text-muted-foreground">

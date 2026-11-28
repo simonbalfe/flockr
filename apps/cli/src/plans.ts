@@ -1,8 +1,8 @@
 import * as sdk from "@flockr/client"
-import type { Focus, FocusRun, Plan, PlanDetail, Task } from "@flockr/client"
+import { waitLimits, type Focus, type FocusRun, type Plan, type PlanDetail, type Task } from "@flockr/client"
 import type { CommandContext } from "./activity"
 import { run } from "./api"
-import { int, need, UsageError } from "./args"
+import { int, need, seconds, UsageError } from "./args"
 import { clock, taskLine } from "./format"
 
 const progressText = (plan: Plan) => `${plan.progress.done} of ${plan.progress.total} done`
@@ -57,6 +57,12 @@ export async function plansCommand({ positionals, values, print }: CommandContex
     case "reopen":
       show(await run(sdk.reopenPlan({ path: { id: id() } })))
       return 0
+    case "wait": {
+      const timeout = seconds(values.timeout)
+      const result = await run(sdk.waitForPlan({ path: { id: id() }, query: { timeout: timeout === null ? undefined : Math.min(timeout, waitLimits.maxSeconds) } }))
+      print(result, () => (result.finished ? `Plan ${result.plan.id} finished: every task is done or canceled.` : `Plan ${result.plan.id} still open: ${result.open.map((n) => `#${n}`).join(", ")}`))
+      return result.finished ? 0 : 2
+    }
     default:
       throw new UsageError(`Unknown command flockr plans ${sub}`)
   }

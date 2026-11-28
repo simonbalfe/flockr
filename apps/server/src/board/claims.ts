@@ -1,4 +1,4 @@
-import { leaseMinutes, type ClaimNextBody, type ReleaseBody, type Task } from "@flockr/contracts"
+import { leaseMinutes, waitLimits, type ClaimNextBody, type ReleaseBody, type Task } from "@flockr/contracts"
 import { and, arrayContains, asc, eq, isNull, lt, or, type SQL } from "drizzle-orm"
 import { viewerOf, visibleTo } from "./visibility"
 import type { Database, Tx } from "../db/client"
@@ -7,6 +7,7 @@ import { releaseTaskAreas } from "./areas"
 import { mutate, type Emit } from "./events"
 import { requireActor } from "./members"
 import { getTask } from "./read"
+import { realClock, type WaitClock } from "./wait"
 import { channelEvent, emitTask, lockTask, requireClaimable, requireHolder, requireLiveLease, requireState, threadEvent, updateTask } from "./write"
 
 const leaseMs = leaseMinutes * 60_000
@@ -111,4 +112,14 @@ export async function sweepExpiredClaims(db: Database, now = new Date()): Promis
     }
     return expired.map((t) => t.id)
   })
+}
+
+export async function claimNextWaiting(db: Database, actor: string, body: ClaimNextBody & { channels?: string[] | null }, clock: WaitClock = realClock): Promise<Task | null> {
+  const deadline = clock.now() + body.wait * 1000
+  for (;;) {
+    const task = await claimNext(db, actor, body)
+    const left = deadline - clock.now()
+    if (task || left <= 0) return task
+    await clock.sleep(Math.min(waitLimits.pollMs, left))
+  }
 }

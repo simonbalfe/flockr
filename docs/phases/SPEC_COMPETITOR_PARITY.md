@@ -49,8 +49,8 @@ Research only: every feature the surveyed products have, and who has it. Nothing
 
 | Id | Feature | Who has it | How it works there |
 |---|---|---|---|
-| P16 | A task is a thread with a state: waiting, ready, claimed, blocked, completed, failed, canceled | VB | Partial: waiting, ready, claimed, blocked, review, done; fail sets blocked with a `Failed:` reason; no canceled state (13f). Only VB has full task states; HD has terminal states (idle, working, done, blocked, error) |
-| P17 | Claim the oldest ready task matching labels, optionally waiting | VB | Partial: `claimNextTask` takes labels and picks the oldest ready, `claims.test.ts`; the wait is only `flockr tasks claim --wait` (13f). `vb tasks claim --ready work/ --label step=fix --wait 10m` |
+| P16 | A task is a thread with a state: waiting, ready, claimed, blocked, completed, failed, canceled | VB | Done (Work: 13f-task-queue-gaps): waiting, ready, claimed, blocked, review, done, failed and canceled; cancel and reopen on every surface. Only VB has full task states; HD has terminal states (idle, working, done, blocked, error) |
+| P17 | Claim the oldest ready task matching labels, optionally waiting | VB | Done (Work: 13f-task-queue-gaps): `claimNextTask` takes labels and a server-side `wait`, so MCP waits too (`queue.test.ts`). `vb tasks claim --ready work/ --label step=fix --wait 10m` |
 | P18 | A claim is a 15-minute lease, renewed while working | VB | Done (1c): `renewTask`; `sweepExpiredClaims` returns expired claims to ready, `claims.test.ts`. `vb tasks renew`; expiry returns it to ready |
 | P19 | Fencing: a holder whose claim was replaced cannot write | RK | Done (1c): `claimEpoch` per claim, a stale holder is refused, `claims.test.ts`. A generation number on each claim |
 | P20 | Atomic claim and recovery of work in progress after a crash | OB, CT | Done (1c): one locked update claims, two parallel claims give one winner, `claims.test.ts`. One SQL update claims; in-flight rows return to queued on restart; CT: a message is claimed for delivery by one SQL update; a failed send puts it back |
@@ -60,7 +60,7 @@ Research only: every feature the surveyed products have, and who has it. Nothing
 | P24 | Work assigned by `@` mention instead of tasks | BZ | Done (2e): a mention starts a conversation, never a task (ADR 0014). No task object |
 | P25 | Work linked to the code that did it | ZD, BZ, CT | Done (3d, 8b): `task_commits`, `flockr tasks commit`, a branch per task, `commits.test.ts`. ZD: edit IDs; BZ: git built in, a branch is a room; CT: `task done --commit`; a hand-off records branch and commit; code moves through normal Git |
 | P26 | Per-agent scratchpad: open, parked, done | RK | Done (Work: 10-agent-memory): agent notes with kinds (dead-end, decision, preference, fact, todo) and archive |
-| P27 | Parent and child agents; wait on any or all children | HD | `hc wait --children any\|all` |
+| P27 | Parent and child agents; wait on any or all children | HD | Partial (Work: 13f-task-queue-gaps): `waitForPlan` waits on every task of a plan; no wait on any one. `hc wait --children any\|all` |
 | P68 | A "ready for review" lane: finished work waits until a person marks it done | DU, DTM | Done (Work: 13a-review-that-holds): only a person or the named reviewer approves, never the submitter; with a reviewer named the task is done only by approval; no reminders. DU: tasks are to do, in progress, waiting for you, finished; reminders until reviewed |
 | P69 | Agents suggest tasks from what they know | DU | |
 | P70 | Completion needs both sides to agree, at an exact version of the work | DG | Partial (Work: 13a-review-that-holds): an approval names its commit and is refused once a newer one lands; no "agreed incomplete" end. One peer proposes, the other agrees or objects; "agreed incomplete" is a valid end |

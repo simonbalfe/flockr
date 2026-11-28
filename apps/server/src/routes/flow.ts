@@ -1,6 +1,6 @@
-import { AddCommitBody, CompleteBody, ReasonBody, SubmitBody, Task, TaskParams } from "@flockr/contracts"
+import { AddCommitBody, CancelBody, CompleteBody, ReasonBody, SubmitBody, Task, TaskParams } from "@flockr/contracts"
 import { addTaskCommit } from "../board/commits"
-import { blockTask, completeTask, failTask, unblockTask } from "../board/flow"
+import { blockTask, cancelTask, completeTask, failTask, reopenTask, unblockTask } from "../board/flow"
 import { submitForReview } from "../board/review"
 import { jsonBody, ok, operation, router } from "./shared"
 
@@ -49,7 +49,7 @@ export const flowRoutes = router()
       path: "/api/tasks/{id}/fail",
       operationId: "failTask",
       tags,
-      summary: "Give up on a claimed task with a reason. It becomes blocked and unheld.",
+      summary: "Give up on a claimed task with a reason. It becomes failed and unheld, apart from blocked tasks; a person can reopen it.",
       request: { params: TaskParams, body: jsonBody(ReasonBody) },
       responses: ok(Task),
     }),
@@ -84,4 +84,28 @@ export const flowRoutes = router()
       responses: ok(Task),
     }),
     async (c) => c.json(await unblockTask(c.var.db, c.var.member, c.req.valid("param").id), 200),
+  )
+  .openapi(
+    operation({
+      method: "post",
+      path: "/api/tasks/{id}/cancel",
+      operationId: "cancelTask",
+      tags,
+      summary: "End a task nobody should do any more, with a reason. A person cancels any task, an agent only one it holds or is assigned. Its claim and areas end; tasks that need it stay waiting",
+      request: { params: TaskParams, body: jsonBody(CancelBody) },
+      responses: ok(Task),
+    }),
+    async (c) => c.json(await cancelTask(c.var.db, c.var.member, c.req.valid("param").id, c.req.valid("json").reason), 200),
+  )
+  .openapi(
+    operation({
+      method: "post",
+      path: "/api/tasks/{id}/reopen",
+      operationId: "reopenTask",
+      tags,
+      summary: "Bring a failed or canceled task back: ready, or waiting while its needs are not done. A person only",
+      request: { params: TaskParams },
+      responses: ok(Task),
+    }),
+    async (c) => c.json(await reopenTask(c.var.db, c.var.member, c.req.valid("param").id), 200),
   )

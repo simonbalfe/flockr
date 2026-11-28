@@ -2280,7 +2280,9 @@
           "claimed",
           "blocked",
           "review",
-          "done"
+          "done",
+          "failed",
+          "canceled"
         ]
       },
       "TaskCommit": {
@@ -2675,6 +2677,13 @@
             "type": "boolean",
             "default": false,
             "description": "Only tasks assigned to the acting member"
+          },
+          "wait": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 120,
+            "default": 0,
+            "description": "Seconds to wait for a matching task when none is ready, at most 120; 0 returns at once"
           }
         }
       },
@@ -3151,6 +3160,19 @@
           "epoch": {
             "type": "integer",
             "description": "The claimEpoch from your claim. A stale value is refused with 409."
+          }
+        },
+        "required": [
+          "reason"
+        ]
+      },
+      "CancelBody": {
+        "type": "object",
+        "properties": {
+          "reason": {
+            "type": "string",
+            "minLength": 1,
+            "example": "Replaced by #830"
           }
         },
         "required": [
@@ -6276,6 +6298,12 @@
           },
           "done": {
             "type": "integer"
+          },
+          "failed": {
+            "type": "integer"
+          },
+          "canceled": {
+            "type": "integer"
           }
         },
         "required": [
@@ -6285,7 +6313,9 @@
           "claimed",
           "blocked",
           "review",
-          "done"
+          "done",
+          "failed",
+          "canceled"
         ]
       },
       "CreatePlanBody": {
@@ -6339,6 +6369,38 @@
               "tasks"
             ]
           }
+        ]
+      },
+      "PlanWait": {
+        "type": "object",
+        "properties": {
+          "plan": {
+            "$ref": "#/components/schemas/PlanDetail"
+          },
+          "finished": {
+            "type": "boolean",
+            "description": "Every task of the plan is done or canceled. A failed task keeps it open: it needs a decision"
+          },
+          "open": {
+            "type": "array",
+            "items": {
+              "type": "integer"
+            },
+            "description": "The tasks still open, in creation order",
+            "example": [
+              812,
+              814
+            ]
+          },
+          "timedOut": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "plan",
+          "finished",
+          "open",
+          "timedOut"
         ]
       },
       "UpdatePlanBody": {
@@ -9133,7 +9195,7 @@
         "tags": [
           "claims"
         ],
-        "summary": "Claim the oldest ready task open to you, optionally only with these labels or only assigned to you; a key limited to channels claims only in those. Returns null when there is none.",
+        "summary": "Claim the oldest ready task open to you, optionally only with these labels or only assigned to you; a key limited to channels claims only in those. With wait, the server keeps trying for up to that many seconds. Returns null when there is none.",
         "requestBody": {
           "required": true,
           "content": {
@@ -10670,7 +10732,7 @@
         "tags": [
           "tasks"
         ],
-        "summary": "Give up on a claimed task with a reason. It becomes blocked and unheld.",
+        "summary": "Give up on a claimed task with a reason. It becomes failed and unheld, apart from blocked tasks; a person can reopen it.",
         "parameters": [
           {
             "schema": {
@@ -10855,6 +10917,180 @@
           "tasks"
         ],
         "summary": "Unblock a task: back to its holder with a new lease, or ready if nobody holds it",
+        "parameters": [
+          {
+            "schema": {
+              "type": "integer",
+              "example": 806
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Task"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The input is not valid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sign-in is on and the request has no session or key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The acting member is not on this board, or may not do this",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The task or message is in another state, or the claim epoch is stale",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/tasks/{id}/cancel": {
+      "post": {
+        "operationId": "cancelTask",
+        "tags": [
+          "tasks"
+        ],
+        "summary": "End a task nobody should do any more, with a reason. A person cancels any task, an agent only one it holds or is assigned. Its claim and areas end; tasks that need it stay waiting",
+        "parameters": [
+          {
+            "schema": {
+              "type": "integer",
+              "example": 806
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CancelBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Task"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The input is not valid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sign-in is on and the request has no session or key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The acting member is not on this board, or may not do this",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The task or message is in another state, or the claim epoch is stale",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/tasks/{id}/reopen": {
+      "post": {
+        "operationId": "reopenTask",
+        "tags": [
+          "tasks"
+        ],
+        "summary": "Bring a failed or canceled task back: ready, or waiting while its needs are not done. A person only",
         "parameters": [
           {
             "schema": {
@@ -16766,6 +17002,98 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Plan"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The input is not valid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sign-in is on and the request has no session or key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The acting member is not on this board, or may not do this",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The task or message is in another state, or the claim epoch is stale",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/plans/{id}/wait": {
+      "get": {
+        "operationId": "waitForPlan",
+        "tags": [
+          "plans"
+        ],
+        "summary": "Wait until every task of the plan is done or canceled, or the timeout passes. Returns the plan, whether it finished and the tasks still open; a failed task keeps it open",
+        "parameters": [
+          {
+            "schema": {
+              "type": "integer",
+              "example": 3
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "description": "Seconds to wait, at most 120; 0 checks once"
+            },
+            "required": false,
+            "description": "Seconds to wait, at most 120; 0 checks once",
+            "name": "timeout",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlanWait"
                 }
               }
             }

@@ -14,7 +14,7 @@ export interface WaitClock {
   sleep: (ms: number) => Promise<void>
 }
 
-const realClock: WaitClock = { now: () => Date.now(), sleep: (ms) => new Promise((resolve) => setTimeout(resolve, ms)) }
+export const realClock: WaitClock = { now: () => Date.now(), sleep: (ms) => new Promise((resolve) => setTimeout(resolve, ms)) }
 
 function matcher(viewer: Viewer, query: WaitQuery): (event: BoardEvent) => boolean {
   const thread = query.thread === undefined ? undefined : threadKey(parseThreadId(query.thread))

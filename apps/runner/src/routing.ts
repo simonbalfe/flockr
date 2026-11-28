@@ -14,7 +14,7 @@ export const eventTypes = {
   stopRequested: activityEventTypes.stopRequested,
 } as const
 
-export const claimable = { waiting: false, ready: true, claimed: false, blocked: false, review: false, done: false } as const satisfies Record<TaskState, boolean>
+export const claimable = { waiting: false, ready: true, claimed: false, blocked: false, review: false, done: false, failed: false, canceled: false } as const satisfies Record<TaskState, boolean>
 
 const EventData = z.object({
   mentions: z.array(z.string()).catch([]),

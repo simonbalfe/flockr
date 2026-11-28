@@ -1,5 +1,9 @@
 import {
+  planFinishedStates,
   planLimits,
+  waitLimits,
+  type PlanWait,
+  type PlanWaitQuery,
   type CreatePlanBody,
   ListPlansQuery,
   type Plan,
@@ -18,6 +22,7 @@ import { notFound, wrongState } from "./errors"
 import { mutate, type Emit } from "./events"
 import { requireActor } from "./members"
 import { getTask, presentTasks, requireChannel } from "./read"
+import { realClock, type WaitClock } from "./wait"
 import { emitTask, lockTask, updateTask } from "./write"
 import { requireSees, viewerOf, visibleTo, type Viewer } from "./visibility"
 
@@ -27,7 +32,7 @@ export type PlanViewer = Viewer
 
 const stateOf = (row: PlanRow): PlanState => (row.closedAt === null ? "open" : "closed")
 
-const emptyProgress = (): PlanProgress => ({ total: 0, waiting: 0, ready: 0, claimed: 0, blocked: 0, review: 0, done: 0 })
+const emptyProgress = (): PlanProgress => ({ total: 0, waiting: 0, ready: 0, claimed: 0, blocked: 0, review: 0, done: 0, failed: 0, canceled: 0 })
 
 async function progressOf(db: Executor, ids: number[]): Promise<Map<number, PlanProgress>> {
   const grouped = new Map<number, PlanProgress>()
@@ -217,4 +222,15 @@ export async function setTaskPlan(db: Database, actor: string, taskId: number, p
     emitTask(emit, "task.planned", row, actor, { task: row.id, plan: planId, from: task.planId })
   })
   return getTask(db, taskId)
+}
+
+export async function waitForPlan(db: Executor, viewer: PlanViewer, id: number, query: PlanWaitQuery, clock: WaitClock = realClock): Promise<PlanWait> {
+  const deadline = clock.now() + query.timeout * 1000
+  for (;;) {
+    const plan = await getPlan(db, viewer, id)
+    const open = plan.tasks.filter((t) => !planFinishedStates.some((s) => s === t.state)).map((t) => t.id)
+    const left = deadline - clock.now()
+    if (!open.length || left <= 0) return { plan, finished: open.length === 0, open, timedOut: open.length > 0 }
+    await clock.sleep(Math.min(waitLimits.pollMs, left))
+  }
 }

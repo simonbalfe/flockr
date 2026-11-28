@@ -716,7 +716,7 @@ export type Task = {
     createdAt: string;
 };
 
-export type TaskState = 'waiting' | 'ready' | 'claimed' | 'blocked' | 'review' | 'done';
+export type TaskState = 'waiting' | 'ready' | 'claimed' | 'blocked' | 'review' | 'done' | 'failed' | 'canceled';
 
 export type TaskCommit = {
     sha: string;
@@ -842,6 +842,10 @@ export type ClaimNextBody = {
      * Only tasks assigned to the acting member
      */
     mine?: boolean;
+    /**
+     * Seconds to wait for a matching task when none is ready, at most 120; 0 returns at once
+     */
+    wait?: number;
 };
 
 export type FenceBody = {
@@ -1055,6 +1059,10 @@ export type ReasonBody = {
      * The claimEpoch from your claim. A stale value is refused with 409.
      */
     epoch?: number;
+};
+
+export type CancelBody = {
+    reason: string;
 };
 
 export type ApproveBody = {
@@ -2098,6 +2106,8 @@ export type PlanProgress = {
     blocked: number;
     review: number;
     done: number;
+    failed: number;
+    canceled: number;
 };
 
 export type CreatePlanBody = {
@@ -2115,6 +2125,19 @@ export type PlanDetail = Plan & {
      * The plan's tasks, in creation order
      */
     tasks: Array<Task>;
+};
+
+export type PlanWait = {
+    plan: PlanDetail;
+    /**
+     * Every task of the plan is done or canceled. A failed task keeps it open: it needs a decision
+     */
+    finished: boolean;
+    /**
+     * The tasks still open, in creation order
+     */
+    open: Array<number>;
+    timedOut: boolean;
 };
 
 export type UpdatePlanBody = {
@@ -4314,6 +4337,92 @@ export type UnblockTaskResponses = {
 };
 
 export type UnblockTaskResponse = UnblockTaskResponses[keyof UnblockTaskResponses];
+
+export type CancelTaskData = {
+    body: CancelBody;
+    path: {
+        id: number;
+    };
+    query?: never;
+    url: '/api/tasks/{id}/cancel';
+};
+
+export type CancelTaskErrors = {
+    /**
+     * The input is not valid
+     */
+    400: Error;
+    /**
+     * Sign-in is on and the request has no session or key
+     */
+    401: Error;
+    /**
+     * The acting member is not on this board, or may not do this
+     */
+    403: Error;
+    /**
+     * Not found
+     */
+    404: Error;
+    /**
+     * The task or message is in another state, or the claim epoch is stale
+     */
+    409: Error;
+};
+
+export type CancelTaskError = CancelTaskErrors[keyof CancelTaskErrors];
+
+export type CancelTaskResponses = {
+    /**
+     * OK
+     */
+    200: Task;
+};
+
+export type CancelTaskResponse = CancelTaskResponses[keyof CancelTaskResponses];
+
+export type ReopenTaskData = {
+    body?: never;
+    path: {
+        id: number;
+    };
+    query?: never;
+    url: '/api/tasks/{id}/reopen';
+};
+
+export type ReopenTaskErrors = {
+    /**
+     * The input is not valid
+     */
+    400: Error;
+    /**
+     * Sign-in is on and the request has no session or key
+     */
+    401: Error;
+    /**
+     * The acting member is not on this board, or may not do this
+     */
+    403: Error;
+    /**
+     * Not found
+     */
+    404: Error;
+    /**
+     * The task or message is in another state, or the claim epoch is stale
+     */
+    409: Error;
+};
+
+export type ReopenTaskError = ReopenTaskErrors[keyof ReopenTaskErrors];
+
+export type ReopenTaskResponses = {
+    /**
+     * OK
+     */
+    200: Task;
+};
+
+export type ReopenTaskResponse = ReopenTaskResponses[keyof ReopenTaskResponses];
 
 export type ApproveTaskData = {
     body: ApproveBody;
@@ -7294,6 +7403,54 @@ export type UpdatePlanResponses = {
 };
 
 export type UpdatePlanResponse = UpdatePlanResponses[keyof UpdatePlanResponses];
+
+export type WaitForPlanData = {
+    body?: never;
+    path: {
+        id: number;
+    };
+    query?: {
+        /**
+         * Seconds to wait, at most 120; 0 checks once
+         */
+        timeout?: number;
+    };
+    url: '/api/plans/{id}/wait';
+};
+
+export type WaitForPlanErrors = {
+    /**
+     * The input is not valid
+     */
+    400: Error;
+    /**
+     * Sign-in is on and the request has no session or key
+     */
+    401: Error;
+    /**
+     * The acting member is not on this board, or may not do this
+     */
+    403: Error;
+    /**
+     * Not found
+     */
+    404: Error;
+    /**
+     * The task or message is in another state, or the claim epoch is stale
+     */
+    409: Error;
+};
+
+export type WaitForPlanError = WaitForPlanErrors[keyof WaitForPlanErrors];
+
+export type WaitForPlanResponses = {
+    /**
+     * OK
+     */
+    200: PlanWait;
+};
+
+export type WaitForPlanResponse = WaitForPlanResponses[keyof WaitForPlanResponses];
 
 export type ClosePlanData = {
     body?: never;

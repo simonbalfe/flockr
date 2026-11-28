@@ -1,7 +1,7 @@
 import { type FormEvent, type ReactNode, useState } from "react"
 import { toast } from "sonner"
 import { hideWithUndo, type NeedItem, threadOf } from "@/api/focus"
-import { errorText, useAnswerInThread, useAnswerQuestion, useApproveTask, useReply, useRequestChanges, useUnblockTask } from "@/api/hooks"
+import { errorText, useAnswerInThread, useAnswerQuestion, useApproveTask, useReply, useReopenTask, useRequestChanges, useUnblockTask } from "@/api/hooks"
 import type { Task } from "@/api/types"
 import { QuestionPrompt } from "@/components/agent/question-prompt"
 import { MemberAvatar } from "@/components/member-avatar"
@@ -124,14 +124,22 @@ function ReviewBody({ item }: { item: Extract<NeedItem, { kind: "review" }> }) {
 
 function BlockedBody({ item }: { item: Extract<NeedItem, { kind: "blocked" }> }) {
   const unblock = useUnblockTask()
+  const reopen = useReopenTask()
   const [replying, setReplying] = useState(false)
   const { task } = item
+  const failed = task.state === "failed"
+  const label = failed ? "Failed" : "Blocked"
   return (
     <Body>
-      <div className="text-sm">{task.reason ? `Blocked: ${task.reason}` : "Blocked"}</div>
+      <div className="text-sm">{task.reason ? `${label}: ${task.reason}` : label}</div>
       <div className="mt-3 flex flex-wrap items-center gap-2">
-        <Button size="sm" onClick={() => hideWithUndo({ key: item.key, done: `Unblocked #${task.id}`, run: () => unblock.mutateAsync(task.id) })}>
-          Unblock
+        <Button
+          size="sm"
+          onClick={() =>
+            hideWithUndo({ key: item.key, done: `${failed ? "Reopened" : "Unblocked"} #${task.id}`, run: () => (failed ? reopen.mutateAsync(task.id) : unblock.mutateAsync(task.id)) })
+          }
+        >
+          {failed ? "Reopen" : "Unblock"}
         </Button>
         <Button size="sm" variant="outline" aria-expanded={replying} onClick={() => setReplying((open) => !open)}>
           Reply

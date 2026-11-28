@@ -1,5 +1,5 @@
 import { ClaimNextBody, ClaimResult, FenceBody, ReleaseBody, Task, TaskParams } from "@flockr/contracts"
-import { claimNext, claimTask, releaseTask, renewTask } from "../board/claims"
+import { claimNextWaiting, claimTask, releaseTask, renewTask } from "../board/claims"
 import { jsonBody, ok, operation, router } from "./shared"
 
 const tags: [string] = ["claims"]
@@ -11,11 +11,11 @@ export const claimRoutes = router()
       path: "/api/tasks/claim",
       operationId: "claimNextTask",
       tags,
-      summary: "Claim the oldest ready task open to you, optionally only with these labels or only assigned to you; a key limited to channels claims only in those. Returns null when there is none.",
+      summary: "Claim the oldest ready task open to you, optionally only with these labels or only assigned to you; a key limited to channels claims only in those. With wait, the server keeps trying for up to that many seconds. Returns null when there is none.",
       request: { body: jsonBody(ClaimNextBody) },
       responses: ok(ClaimResult),
     }),
-    async (c) => c.json({ task: await claimNext(c.var.db, c.var.member, { ...c.req.valid("json"), channels: c.var.channels }) }, 200),
+    async (c) => c.json({ task: await claimNextWaiting(c.var.db, c.var.member, { ...c.req.valid("json"), channels: c.var.channels }) }, 200),
   )
   .openapi(
     operation({

@@ -1,4 +1,6 @@
 import { z } from "@hono/zod-openapi"
+import { waitLimits } from "./connect"
+import type { TaskState } from "./board"
 import { Task, ThreadQuestion } from "./board"
 
 const timestamp = z.string().openapi({ format: "date-time", example: "2026-11-25T09:00:00.000Z" })
@@ -23,6 +25,8 @@ export const PlanProgress = z
     blocked: z.number().int(),
     review: z.number().int(),
     done: z.number().int(),
+    failed: z.number().int(),
+    canceled: z.number().int(),
   })
   .openapi("PlanProgress")
 
@@ -114,3 +118,27 @@ export type SetTaskPlanBody = z.infer<typeof SetTaskPlanBody>
 export type RunStep = z.infer<typeof RunStep>
 export type FocusRun = z.infer<typeof FocusRun>
 export type Focus = z.infer<typeof Focus>
+
+export const planFinishedStates = ["done", "canceled"] as const satisfies readonly TaskState[]
+
+export const PlanWaitQuery = z.object({
+  timeout: z.coerce
+    .number()
+    .int()
+    .min(0)
+    .max(waitLimits.maxSeconds)
+    .default(waitLimits.defaultSeconds)
+    .openapi({ type: "integer", description: `Seconds to wait, at most ${waitLimits.maxSeconds}; 0 checks once` }),
+})
+
+export const PlanWait = z
+  .object({
+    plan: PlanDetail,
+    finished: z.boolean().openapi({ description: "Every task of the plan is done or canceled. A failed task keeps it open: it needs a decision" }),
+    open: z.array(z.number().int()).openapi({ description: "The tasks still open, in creation order", example: [812, 814] }),
+    timedOut: z.boolean(),
+  })
+  .openapi("PlanWait")
+
+export type PlanWaitQuery = z.infer<typeof PlanWaitQuery>
+export type PlanWait = z.infer<typeof PlanWait>

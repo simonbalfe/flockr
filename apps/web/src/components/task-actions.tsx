@@ -5,13 +5,21 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { useReviewRefusal, useTaskActions } from "@/lib/use-task-actions"
 
-function BlockForm({ task, onDone }: { task: Task; onDone: () => void }) {
+type Asking = "block" | "cancel"
+
+const asks = {
+  block: { verb: "Block", placeholder: "Why is it blocked?" },
+  cancel: { verb: "Cancel task", placeholder: "Why is it no longer needed?" },
+} as const satisfies Record<Asking, { verb: string; placeholder: string }>
+
+function ReasonForm({ task, asking, onDone }: { task: Task; asking: Asking; onDone: () => void }) {
   const actions = useTaskActions()
   const [reason, setReason] = useState("")
 
   const submit = (event: FormEvent) => {
     event.preventDefault()
-    actions.block(task.id, reason)
+    if (asking === "block") actions.block(task.id, reason)
+    else actions.cancel(task.id, reason)
     onDone()
   }
 
@@ -23,9 +31,9 @@ function BlockForm({ task, onDone }: { task: Task; onDone: () => void }) {
 
   return (
     <form onSubmit={submit} className="flex w-full gap-2">
-      <Input autoFocus value={reason} onChange={(e) => setReason(e.target.value)} onKeyDown={onKeyDown} placeholder="Why is it blocked?" aria-label="Reason" />
+      <Input autoFocus value={reason} onChange={(e) => setReason(e.target.value)} onKeyDown={onKeyDown} placeholder={asks[asking].placeholder} aria-label="Reason" />
       <Button type="submit" variant="secondary">
-        Block
+        {asks[asking].verb}
       </Button>
     </form>
   )
@@ -34,17 +42,22 @@ function BlockForm({ task, onDone }: { task: Task; onDone: () => void }) {
 export function TaskActions({ task }: { task: Task }) {
   const actions = useTaskActions()
   const agents = useAgents()
-  const [blocking, setBlocking] = useState(false)
+  const [asking, setAsking] = useState<Asking | null>(null)
   const approveRefusal = useReviewRefusal(task, "approve")
   const changesRefusal = useReviewRefusal(task, "changes")
   const helper = agents.data?.[0]?.name
 
-  if (blocking) return <BlockForm task={task} onDone={() => setBlocking(false)} />
+  if (asking) return <ReasonForm task={task} asking={asking} onDone={() => setAsking(null)} />
 
   const hint = (text: string) => <span className="text-[13px] text-muted-foreground">{text}</span>
   const blockButton = (
-    <Button variant="outline" onClick={() => setBlocking(true)}>
+    <Button variant="outline" onClick={() => setAsking("block")}>
       Block
+    </Button>
+  )
+  const cancelButton = (
+    <Button variant="ghost" onClick={() => setAsking("cancel")}>
+      Cancel task
     </Button>
   )
 
@@ -59,6 +72,7 @@ export function TaskActions({ task }: { task: Task }) {
             </Button>
           )}
           {blockButton}
+          {cancelButton}
         </>
       )
     case "claimed":
@@ -69,10 +83,25 @@ export function TaskActions({ task }: { task: Task }) {
             Release
           </Button>
           {blockButton}
+          {cancelButton}
         </>
       )
     case "blocked":
-      return <Button onClick={() => actions.unblock(task.id)}>Unblock</Button>
+      return (
+        <>
+          <Button onClick={() => actions.unblock(task.id)}>Unblock</Button>
+          {cancelButton}
+        </>
+      )
+    case "failed":
+      return (
+        <>
+          <Button onClick={() => actions.reopen(task.id)}>Reopen</Button>
+          {cancelButton}
+        </>
+      )
+    case "canceled":
+      return <Button variant="secondary" onClick={() => actions.reopen(task.id)}>Reopen</Button>
     case "review":
       if (approveRefusal && changesRefusal) return hint(`Waiting for ${task.reviewer ?? "a person"} to review${task.reviewCommit ? ` ${task.reviewCommit.slice(0, 7)}` : ""}.`)
       return (
@@ -86,7 +115,12 @@ export function TaskActions({ task }: { task: Task }) {
         </>
       )
     case "waiting":
-      return hint(`Starts by itself when ${task.needs.map((n) => `#${n}`).join(", ")} ${task.needs.length > 1 ? "are" : "is"} done.`)
+      return (
+        <>
+          {hint(`Starts by itself when ${task.needs.map((n) => `#${n}`).join(", ")} ${task.needs.length > 1 ? "are" : "is"} done.`)}
+          {cancelButton}
+        </>
+      )
     case "done":
       return hint(`Completed${task.commits.length ? ` in ${task.commits.map((c) => c.short).join(", ")}` : ""}.`)
   }

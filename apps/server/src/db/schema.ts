@@ -198,7 +198,7 @@ export const tasks = pgTable(
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [
-    check("tasks_state", sql`${t.state} in ('waiting', 'ready', 'claimed', 'blocked', 'review', 'done')`),
+    check("tasks_state", sql`${t.state} in ('waiting', 'ready', 'claimed', 'blocked', 'review', 'done', 'failed', 'canceled')`),
     index("tasks_ready").on(t.state, t.createdAt, t.id),
     index("tasks_channel").on(t.channel),
     index("tasks_plan").on(t.planId),

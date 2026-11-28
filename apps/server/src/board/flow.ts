@@ -70,7 +70,7 @@ export async function failTask(db: Database, actor: string, id: number, reason: 
     const task = await lockTask(tx, id)
     requireState(task, "claimed")
     requireHolder(task, member, epoch)
-    const row = await updateTask(tx, id, { state: "blocked", holder: null, leaseExpiresAt: null, question: null, reason: `Failed: ${reason}` })
+    const row = await updateTask(tx, id, { state: "failed", holder: null, leaseExpiresAt: null, question: null, reason })
     await releaseTaskAreas(tx, emit, row, actor)
     await threadEvent(tx, row, actor, `failed this task: ${reason}`)
     await channelEvent(tx, row.channel, actor, `failed #${id}: ${reason}`)
@@ -131,6 +131,43 @@ export async function answerQuestion(db: Database, actor: string, id: number, op
     const row = await updateTask(tx, id, { question: null, ...(task.state === "claimed" ? { leaseExpiresAt: leaseFromNow() } : {}) })
     await taskReply(tx, row, actor, `${option}.`)
     emitTask(emit, "task.answered", row, actor, { option, question: question.text })
+  })
+  return getTask(db, id)
+}
+
+async function waitingOn(tx: Tx, id: number): Promise<number[]> {
+  const rows = await tx.select({ id: tasks.id }).from(tasks).where(and(eq(tasks.state, "waiting"), arrayContains(tasks.needs, [id]))).orderBy(asc(tasks.id))
+  return rows.map((r) => r.id)
+}
+
+export async function cancelTask(db: Database, actor: string, id: number, reason: string): Promise<Task> {
+  await mutate(db, async (tx, emit) => {
+    const member = await requireActor(tx, actor)
+    const task = await lockTask(tx, id)
+    requireState(task, "waiting", "ready", "claimed", "blocked", "review", "failed")
+    const involved = task.holder === actor || task.assignee === actor
+    if (member.kind !== "person" && !involved) throw forbidden(`${actor} neither holds nor is assigned #${id}; a person or its holder cancels it`)
+    const row = await updateTask(tx, id, { state: "canceled", holder: null, leaseExpiresAt: null, question: null, reason })
+    await releaseTaskAreas(tx, emit, row, actor)
+    const stuck = await waitingOn(tx, id)
+    await threadEvent(tx, row, actor, `canceled this task: ${reason}${stuck.length ? `. ${stuck.map((n) => `#${n}`).join(", ")} still ${stuck.length === 1 ? "needs" : "need"} it and stay waiting` : ""}`)
+    await channelEvent(tx, row.channel, actor, `canceled #${id}: ${reason}`)
+    emitTask(emit, "task.canceled", row, actor, { reason, holder: task.holder, waiting: stuck })
+  })
+  return getTask(db, id)
+}
+
+export async function reopenTask(db: Database, actor: string, id: number): Promise<Task> {
+  await mutate(db, async (tx, emit) => {
+    const member = await requireActor(tx, actor)
+    if (member.kind !== "person") throw forbidden(`${actor} is not a person; only a person reopens a failed or canceled task`)
+    const task = await lockTask(tx, id)
+    requireState(task, "failed", "canceled")
+    const needed = task.needs.length ? await tx.select({ state: tasks.state }).from(tasks).where(inArray(tasks.id, task.needs)) : []
+    const state = needed.every((n) => n.state === "done") ? "ready" : "waiting"
+    const row = await updateTask(tx, id, { state, reason: null, holder: null, leaseExpiresAt: null })
+    await threadEvent(tx, row, actor, `reopened this task; it is ${state}`)
+    emitTask(emit, "task.reopened", row, actor, { from: task.state, assignee: row.assignee })
   })
   return getTask(db, id)
 }

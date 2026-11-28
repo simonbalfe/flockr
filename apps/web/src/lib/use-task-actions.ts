@@ -14,6 +14,8 @@ import {
   useReleaseTask,
   useRequestChanges,
   useUnblockTask,
+  useReopenTask,
+  useCancelTask,
 } from "@/api/hooks"
 import { currentUser } from "@/api/session"
 import type { Task } from "@/api/types"
@@ -25,6 +27,8 @@ export function useTaskActions() {
   const release = useReleaseTask()
   const block = useBlockTask()
   const unblock = useUnblockTask()
+  const reopen = useReopenTask()
+  const cancel = useCancelTask()
   const approve = useApproveTask()
   const submit = useSubmitTask()
   const changes = useRequestChanges()
@@ -37,6 +41,9 @@ export function useTaskActions() {
     release: (id: number) => release.mutate(id, { onSuccess: () => toast(`Released #${id}`) }),
     block: (id: number, reason: string) => block.mutate({ id, reason: reason.trim() || `Blocked by ${currentUser}` }, { onSuccess: () => toast(`Blocked #${id}`) }),
     unblock: (id: number) => unblock.mutate(id, { onSuccess: () => toast(`Unblocked #${id}`) }),
+    reopen: (id: number) => reopen.mutate(id, { onSuccess: () => toast(`Reopened #${id}`), onError: (error) => toast.error(errorText(error)) }),
+    cancel: (id: number, reason: string) =>
+      cancel.mutate({ id, reason: reason.trim() || `Canceled by ${currentUser}` }, { onSuccess: () => toast(`Canceled #${id}`), onError: (error) => toast.error(errorText(error)) }),
     approve: (task: Task) =>
       approve.mutate({ id: task.id, commit: task.reviewCommit }, { onSuccess: () => toast(`Approved #${task.id}`), onError: (error) => toast.error(errorText(error)) }),
     submit: (id: number) => submit.mutate(id, { onSuccess: () => toast(`Sent #${id} for review`), onError: (error) => toast.error(errorText(error)) }),

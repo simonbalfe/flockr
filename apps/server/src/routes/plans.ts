@@ -1,6 +1,6 @@
-import { CreatePlanBody, ListPlansQuery, Plan, PlanDetail, SetTaskPlanBody, Task, TaskParams, UpdatePlanBody } from "@flockr/contracts"
+import { CreatePlanBody, ListPlansQuery, Plan, PlanDetail, PlanWait, PlanWaitQuery, SetTaskPlanBody, Task, TaskParams, UpdatePlanBody } from "@flockr/contracts"
 import { z } from "@hono/zod-openapi"
-import { createPlan, getPlan, listPlans, setPlanClosed, setTaskPlan, updatePlan } from "../board/plans"
+import { createPlan, getPlan, listPlans, setPlanClosed, setTaskPlan, updatePlan, waitForPlan } from "../board/plans"
 import { jsonBody, ok, operation, router } from "./shared"
 
 const tags: [string] = ["plans"]
@@ -43,6 +43,18 @@ export const planRoutes = router()
       responses: ok(PlanDetail),
     }),
     async (c) => c.json(await getPlan(c.var.db, c.var.viewer, c.req.valid("param").id), 200),
+  )
+  .openapi(
+    operation({
+      method: "get",
+      path: "/api/plans/{id}/wait",
+      operationId: "waitForPlan",
+      tags,
+      summary: "Wait until every task of the plan is done or canceled, or the timeout passes. Returns the plan, whether it finished and the tasks still open; a failed task keeps it open",
+      request: { params: PlanParams, query: PlanWaitQuery },
+      responses: ok(PlanWait),
+    }),
+    async (c) => c.json(await waitForPlan(c.var.db, c.var.viewer, c.req.valid("param").id, c.req.valid("query")), 200),
   )
   .openapi(
     operation({

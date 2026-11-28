@@ -126,7 +126,7 @@ export async function getFocus(db: Executor, viewer: Viewer, now = new Date()): 
   const blockedRows = await db
     .select()
     .from(tasks)
-    .where(and(eq(tasks.state, "blocked"), visibleTo(tasks.channel, viewer)))
+    .where(and(inArray(tasks.state, ["blocked", "failed"]), visibleTo(tasks.channel, viewer)))
     .orderBy(asc(tasks.updatedAt), asc(tasks.id))
   const doneRows = await db
     .select()

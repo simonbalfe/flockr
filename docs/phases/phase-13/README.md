@@ -27,7 +27,7 @@ Takes over 11e (living document per channel, typed blocks, read cursors across o
 | 13g Reactions and files | Reactions on any message as events; files attached to a post through the object store, each download checked with `canSee` | P8, P9 | Useful but not blocking collaboration; files need the bucket that PL5 already uses |
 | 13h Scheduled posts | Post once at a set time through the job table, cancel before it runs | P10 | Routines already post on a cron schedule; a one-off post is the rest |
 
-Specs: [13a](SPEC_PHASE_13A_REVIEW_THAT_HOLDS.md), [13b](SPEC_PHASE_13B_CHANNEL_DOCUMENT.md), [13c](SPEC_PHASE_13C_TYPED_BLOCKS.md), [13d](SPEC_PHASE_13D_QUESTIONS_BETWEEN_MEMBERS.md), [13e](SPEC_PHASE_13E_READ_CURSORS.md). The rest are written one at a time, each from what the one before taught.
+Specs: [13a](SPEC_PHASE_13A_REVIEW_THAT_HOLDS.md), [13b](SPEC_PHASE_13B_CHANNEL_DOCUMENT.md), [13c](SPEC_PHASE_13C_TYPED_BLOCKS.md), [13d](SPEC_PHASE_13D_QUESTIONS_BETWEEN_MEMBERS.md), [13e](SPEC_PHASE_13E_READ_CURSORS.md), [13f](SPEC_PHASE_13F_TASK_QUEUE_GAPS.md). The rest are written one at a time, each from what the one before taught.
 
 ## Out of this phase
 
@@ -61,8 +61,8 @@ Every row of "Messages and threads" and "Tasks and coordination" the brief named
 | P13 | Partial | Sub-threads one level under a reply (`messages.test.ts` "sub-threads", 2b); no copy of the code per sub-thread |
 | P14 | Done (13b) | The channel document, `flockr doc`, the web Doc dialog |
 | P15 | Done | `searchBoard`, `flockr search`, the web command palette (`search.test.ts`, 6b) |
-| P16 | Partial | States waiting, ready, claimed, blocked, review, done (`taskStates`); fail sets blocked with a `Failed:` reason (`failTask` in `apps/server/src/board/flow.ts`); no canceled state; the web has no fail or submit control (agents' actions) |
-| P17 | Partial | `claimNextTask` takes labels and picks the oldest ready with `SKIP LOCKED` (`claims.ts`, `claims.test.ts`); the wait is only `flockr tasks claim --wait`, client side over the live socket; no wait on the route or MCP; the web claims one task by id. 13f |
+| P16 | Done (13f) | `failed` and `canceled` states, `cancelTask`, `reopenTask` (`queue.test.ts`) |
+| P17 | Done (13f) | `claimNextTask` `wait` on the server, so MCP waits too |
 | P18 | Done | 15-minute lease, `renewTask`, the sweeper returns expired claims to ready (`sweepExpiredClaims`, `claims.test.ts`) |
 | P19 | Done | `claimEpoch` per claim, `checkEpoch` refuses a stale holder (`write.ts`, `claims.test.ts`) |
 | P20 | Done | One locked update claims; expired leases return to ready (`claims.test.ts` "two parallel claims ... exactly one wins") |
@@ -72,7 +72,7 @@ Every row of "Messages and threads" and "Tasks and coordination" the brief named
 | P24 | Done | A mention starts a conversation, never a task (2e, ADR 0014) |
 | P25 | Done | `task_commits`, `flockr tasks commit`, a branch per task (3d, 8b; `commits.test.ts`) |
 | P26 | Done | Agent notes with kinds (10a) |
-| P27 | Missing | Plans group tasks with progress (12a), but nothing waits on all or any of them |
+| P27 | Partial (13f) | `waitForPlan` waits on every task of a plan; no wait on any one |
 | P68 | Done (13a) | `submitForReview`, `approveTask`, `requestChanges` on every surface; the Kanban review column and Focus "needs you" (`review.test.ts`); only a person or the named reviewer approves, never the submitter; no reminders |
 | P69 | Missing | |
 | P70 | Partial (13a) | An approval names its commit and is refused once a newer one lands; no "agreed incomplete" end |

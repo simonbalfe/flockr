@@ -1,4 +1,4 @@
-export const taskStates = ["waiting", "ready", "claimed", "blocked", "review", "done"] as const
+export const taskStates = ["waiting", "ready", "claimed", "blocked", "review", "done", "failed", "canceled"] as const
 export const memberKinds = ["person", "agent", "bridge", "watcher"] as const
 export const agentStates = ["working", "blocked", "idle"] as const
 export const channelKinds = ["channel", "dm"] as const

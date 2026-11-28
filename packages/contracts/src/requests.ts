@@ -7,6 +7,7 @@ import { checklistLimits, checklistSkipReasons } from "./checklist"
 import { commitMessageChars, Repo, Sha } from "./commits"
 import { hostOrg } from "./constants"
 import { ChannelVisibility, orgId } from "./orgs"
+import { waitLimits } from "./connect"
 
 const text = z.string().trim().min(1)
 const epoch = z.number().int().optional().openapi({ description: "The claimEpoch from your claim. A stale value is refused with 409." })
@@ -98,6 +99,7 @@ export const ClaimNextBody = z
   .object({
     labels: z.array(z.string()).default([]).openapi({ description: "Only tasks that carry every one of these labels" }),
     mine: z.boolean().default(false).openapi({ description: "Only tasks assigned to the acting member" }),
+    wait: z.number().int().min(0).max(waitLimits.maxSeconds).default(0).openapi({ description: `Seconds to wait for a matching task when none is ready, at most ${waitLimits.maxSeconds}; 0 returns at once` }),
   })
   .openapi("ClaimNextBody")
 
@@ -137,6 +139,7 @@ export const AddCommitBody = z
   })
   .openapi("AddCommitBody")
 export const ReasonBody = z.object({ reason: text, epoch }).openapi("ReasonBody")
+export const CancelBody = z.object({ reason: text.openapi({ example: "Replaced by #830" }) }).openapi("CancelBody")
 export const ChangesBody = z.object({ note: z.string().optional() }).openapi("ChangesBody")
 export const AskBody = z
   .object({

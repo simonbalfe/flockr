@@ -55,7 +55,7 @@ export const toolNames = {
 export const runIdFor = (thread: string) => `pi-${thread}`
 
 const offered = { allow: true, ask: false, deny: false } as const satisfies Record<Verdict, boolean>
-const openTask = { waiting: true, ready: true, claimed: true, blocked: true, review: true, done: false } as const satisfies Record<TaskState, boolean>
+const openTask = { waiting: true, ready: true, claimed: true, blocked: true, review: true, done: false, failed: true, canceled: false } as const satisfies Record<TaskState, boolean>
 const runningStatus = { running: true, ok: false, error: false, stopped: false } as const satisfies Record<RunStatus, boolean>
 
 function parameters(schema: z.ZodObject): Record<string, unknown> {

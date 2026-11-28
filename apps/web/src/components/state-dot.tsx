@@ -2,7 +2,7 @@ import type { TaskState } from "@/api/types"
 import { cn } from "@/lib/utils"
 
 export function StateDot({ state, className }: { state: TaskState; className?: string }) {
-  const tone = state === "blocked" ? "text-destructive" : state === "waiting" ? "text-faint" : "text-foreground"
+  const tone = state === "blocked" || state === "failed" ? "text-destructive" : state === "waiting" || state === "canceled" ? "text-faint" : "text-foreground"
   return (
     <svg viewBox="0 0 12 12" aria-hidden="true" className={cn("size-3 shrink-0", tone, className)}>
       {state === "waiting" && <rect x="1.25" y="1.25" width="9.5" height="9.5" fill="none" stroke="currentColor" strokeWidth="1.5" strokeDasharray="2.4 2.1" />}
@@ -20,6 +20,13 @@ export function StateDot({ state, className }: { state: TaskState; className?: s
         </>
       )}
       {(state === "done" || state === "blocked") && <rect x="0.6" y="0.6" width="10.8" height="10.8" fill="currentColor" />}
+      {state === "failed" && <path d="M2 2 L10 10 M10 2 L2 10" stroke="currentColor" strokeWidth="2" />}
+      {state === "canceled" && (
+        <>
+          <rect x="1.25" y="1.25" width="9.5" height="9.5" fill="none" stroke="currentColor" strokeWidth="1.5" />
+          <path d="M1.5 10.5 L10.5 1.5" stroke="currentColor" strokeWidth="1.5" />
+        </>
+      )}
     </svg>
   )
 }

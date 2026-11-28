@@ -4,6 +4,8 @@ import {
   answerInThreadMutation,
   answerQuestionMutation,
   approveTaskMutation,
+  cancelTaskMutation,
+  reopenTaskMutation,
   setTaskReviewerMutation,
   submitForReviewMutation,
   blockTaskMutation,
@@ -170,6 +172,8 @@ export const useCompleteTask = () => useBoardMutation(completeTaskMutation(), (i
 export const useReleaseTask = () => useBoardMutation(releaseTaskMutation(), (id: number) => ({ ...onTask(id), body: {} }))
 export const useBlockTask = () => useBoardMutation(blockTaskMutation(), (a: { id: number; reason: string }) => ({ ...onTask(a.id), body: { reason: a.reason } }))
 export const useUnblockTask = () => useBoardMutation(unblockTaskMutation(), onTask)
+export const useReopenTask = () => useBoardMutation(reopenTaskMutation(), onTask)
+export const useCancelTask = () => useBoardMutation(cancelTaskMutation(), (a: { id: number; reason: string }) => ({ ...onTask(a.id), body: { reason: a.reason } }))
 export const useApproveTask = () => useBoardMutation(approveTaskMutation(), (a: { id: number; commit: string | null }) => ({ ...onTask(a.id), body: { commit: a.commit ?? undefined } }))
 export const useSubmitTask = () => useBoardMutation(submitForReviewMutation(), (id: number) => ({ ...onTask(id), body: {} }))
 export const useSetTaskReviewer = () =>

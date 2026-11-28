@@ -2,7 +2,6 @@ import { leaseMinutes } from "@flockr/client"
 import { lowLeaseMinutes } from "@/api/session"
 import type { Task, TaskState } from "@/api/types"
 
-export const taskStates: TaskState[] = ["waiting", "ready", "claimed", "blocked", "review", "done"]
 
 export const stateLabel: Record<TaskState, string> = {
   waiting: "Waiting",
@@ -11,6 +10,8 @@ export const stateLabel: Record<TaskState, string> = {
   blocked: "Blocked",
   review: "Review",
   done: "Done",
+  failed: "Failed",
+  canceled: "Canceled",
 }
 
 export type StatusTone = "normal" | "low" | "you"
@@ -51,3 +52,17 @@ export function toneClass(tone: StatusTone): string {
   if (tone === "you") return "font-medium text-foreground"
   return "text-muted-foreground"
 }
+
+export const kanbanLanes = ["waiting", "ready", "claimed", "blocked", "review", "done"] as const satisfies readonly TaskState[]
+export type KanbanLane = (typeof kanbanLanes)[number]
+
+export const laneOf = {
+  waiting: "waiting",
+  ready: "ready",
+  claimed: "claimed",
+  blocked: "blocked",
+  review: "review",
+  done: "done",
+  failed: "blocked",
+  canceled: "done",
+} as const satisfies Record<TaskState, KanbanLane>

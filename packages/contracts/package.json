@@ -17,6 +17,7 @@
     "./memory": "./src/memory.ts",
     "./documents": "./src/documents.ts",
     "./blocks": "./src/blocks.ts",
+    "./connect": "./src/connect.ts",
     "./routines": "./src/routines.ts",
     "./sessions": "./src/sessions.ts",
     "./presets": "./src/presets.ts"

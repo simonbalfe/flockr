@@ -45,6 +45,10 @@ export function taskStatus(task: Task): string {
       return `in review${lastCommit(task) ? ` (${lastCommit(task)})` : ""}`
     case "done":
       return `done${lastCommit(task) ? ` in ${lastCommit(task)}` : ""}`
+    case "failed":
+      return `failed: ${task.reason ?? "no reason"}`
+    case "canceled":
+      return `canceled: ${task.reason ?? "no reason"}`
   }
 }
 
