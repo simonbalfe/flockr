@@ -71,6 +71,10 @@ const routingFields = ["mentions", "direct", "member", "state", actorFields.org,
 export type EventViewer = { kind: "member"; viewer: Viewer } | { kind: "live"; viewer: Viewer }
 
 export async function eventsSince(db: Executor, since: number, limit: number, reader: EventViewer): Promise<BoardEvent[]> {
+  return (await eventPage(db, since, limit, reader)).events
+}
+
+export async function eventPage(db: Executor, since: number, limit: number, reader: EventViewer): Promise<{ events: BoardEvent[]; through: number }> {
   const rows = await db
     .select({
       row: events,
@@ -81,9 +85,10 @@ export async function eventsSince(db: Executor, since: number, limit: number, re
     .where(and(eq(events.boardId, boardId), gt(events.seq, since)))
     .orderBy(asc(events.seq))
     .limit(limit)
-  return rows.flatMap(({ row, allowed, ownOrg }): BoardEvent[] => {
+  const shown = rows.flatMap(({ row, allowed, ownOrg }): BoardEvent[] => {
     if (!allowed && !(reader.kind === "live" && ownOrg)) return []
     const data = allowed ? row.data : Object.fromEntries(routingFields.flatMap((key) => (key in row.data ? [[key, row.data[key]]] : [])))
     return [{ seq: row.seq, type: row.type, at: row.at.toISOString(), actor: row.actor, channel: row.channel, taskId: row.taskId, threadId: row.threadId, messageId: row.messageId, data }]
   })
+  return { events: shown, through: rows.at(-1)?.row.seq ?? since }
 }

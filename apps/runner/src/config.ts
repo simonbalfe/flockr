@@ -16,7 +16,6 @@ export const claimsFile = process.env.FC_STATE ?? defaultClaimsFile
 export const inheritedPath = process.env.PATH ?? "/usr/bin:/bin"
 export const quiet = process.env.FLOCKR_RUNNER_QUIET === "1"
 export const noRunner = process.env.FLOCKR_NO_RUNNER === "1"
-export const fenceEnv = "FC_CHANNELS"
 export const defaultBoard = "http://localhost:5173"
 
 const repoRoot = path.resolve(import.meta.dir, "../../..")
@@ -27,9 +26,7 @@ export const runnerEntry = path.join(import.meta.dir, "main.ts")
 export const webDir = path.join(repoRoot, "apps/web")
 export const bunBinary = process.execPath
 
-export const leaseRenewMs = 5 * 60_000
-export const boardRetryMs = 2_000
-export const callTimeoutMs = 20_000
+export { boardRetryMs, callTimeoutMs, fenceEnv, folderFor, leaseRenewMs } from "./limits"
 
 export const childEnv = (extra: Record<string, string>): Record<string, string> => ({ ...inherited(Object.keys(process.env)), ...extra })
 
@@ -136,8 +133,6 @@ export function machineIdentity(config: RunnerConfig, host: string = hostname())
       .slice(0, 63) || "this-mac"
   return { id, name }
 }
-
-export const folderFor = (config: Pick<RunnerConfig, "channels">, channel: string): string | null => config.channels[channel] ?? null
 
 const BridgeEnv = z.object({
   FC_URL: z.url(),

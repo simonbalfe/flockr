@@ -17,7 +17,7 @@ import type { RunStatus, TaskState, Thread, ThreadEntry } from "@flockr/client"
 import { z } from "zod"
 import type { ToolKind, Verdict } from "../../permissions"
 import { threadLines } from "../../prompt"
-import type { PiBoard } from "./board"
+import type { FencedBoard, PiBoard } from "./board"
 import { insideFolder } from "./folder"
 
 export type TurnRecord = {
@@ -29,6 +29,7 @@ export type TurnRecord = {
 export type ThreadState = {
   thread: string
   folder: string | null
+  channel?: string | null
   pending: TurnRecord[]
   posted: string[]
 }
@@ -39,7 +40,7 @@ export const ThreadDoc = defineDoc<ThreadState>({
   scope: "conversation",
   history: "latest",
   fork: "initial",
-  initial: () => ({ thread: "", folder: null, pending: [], posted: [] }),
+  initial: () => ({ thread: "", folder: null, channel: null, pending: [], posted: [] }),
   checkpointWhen: () => true,
 })
 
@@ -89,7 +90,7 @@ export function triggerOf(options: { thread: Thread; member: string; text: strin
 
 export interface ToolDeps {
   member: string
-  board: PiBoard
+  board: FencedBoard
   log: (line: string) => void
 }
 
@@ -111,8 +112,10 @@ export async function threadState(reader: DocumentReader, conversationId: Conver
   return (await reader.snapshot(ThreadDoc, conversationId, context)) ?? null
 }
 
+export const boardOf = (deps: Pick<ToolDeps, "board">, state: Readonly<ThreadState>): PiBoard => deps.board(state.channel ?? null)
+
 export function boardTools(deps: ToolDeps): ToolRegistration[] {
-  const { member, board } = deps
+  const { member } = deps
 
   const readThread = defineTool({
     name: toolNames.readThread,
@@ -122,6 +125,7 @@ export function boardTools(deps: ToolDeps): ToolRegistration[] {
     execute: async (_args, api, context) => {
       const state = await threadState(api, api.conversationId, context)
       if (!state?.thread) return text("No thread is linked to this conversation.", true)
+      const board = boardOf(deps, state)
       return text(threadLines(await board.thread(state.thread)) || "(the thread is empty)")
     },
   })
@@ -136,6 +140,7 @@ export function boardTools(deps: ToolDeps): ToolRegistration[] {
       if (!parsed.success) return text(`Invalid arguments: ${parsed.error.message}`, true)
       const state = await threadState(api, api.conversationId, context)
       if (!state?.thread) return text("No thread is linked to this conversation.", true)
+      const board = boardOf(deps, state)
       const after = state.pending[0]?.messageId ?? null
       if (alreadyPosted({ thread: await board.thread(state.thread), member, after, text: parsed.data.text })) return text("Already posted.")
       await board.reply(state.thread, parsed.data.text)
@@ -154,6 +159,7 @@ export function boardTools(deps: ToolDeps): ToolRegistration[] {
       if (!parsed.success) return text(`Invalid arguments: ${parsed.error.message}`, true)
       const state = await threadState(api, api.conversationId, context)
       if (!state?.thread) return text("No thread is linked to this conversation.", true)
+      const board = boardOf(deps, state)
       const current = await board.thread(state.thread)
       const open = current.entries.find((e) => e.kind === "question" && e.answer === null)
       if (open?.kind === "question" && open.who === member && open.question.text === parsed.data.question) return text("You already asked this; wait for a person to answer.")
@@ -182,6 +188,7 @@ export function boardTools(deps: ToolDeps): ToolRegistration[] {
       if (!parsed.success) return text(`Invalid arguments: ${parsed.error.message}`, true)
       const state = await threadState(api, api.conversationId, context)
       if (!state?.thread) return text("No thread is linked to this conversation.", true)
+      const board = boardOf(deps, state)
       const current = await board.thread(state.thread)
       const messages = [...(current.root ? [current.root] : []), ...current.entries.flatMap((e) => (e.kind === "reply" ? [e] : []))]
       const said = messages.flatMap((m) => (!m.deleted && m.who !== member && m.text.includes(parsed.data.quote) ? [m.who] : []))
@@ -204,10 +211,10 @@ export function boardTools(deps: ToolDeps): ToolRegistration[] {
 }
 
 export function boardExtension(deps: ToolDeps) {
-  const { board, member, log } = deps
-  const partOf = new Map<string, string>()
+  const { member, log } = deps
+  const partOf = new Map<string, { entryId: string; board: PiBoard }>()
 
-  const entryFor = async (thread: string): Promise<string | null> => {
+  const entryFor = async (board: PiBoard, thread: string): Promise<string | null> => {
     const current = await board.thread(thread)
     const running = current.entries.flatMap((e) => (e.kind === "activity" && e.who === member && e.runId === runIdFor(thread) && runningStatus[e.status] ? [e.id] : []))
     return running.at(-1) ?? null
@@ -221,19 +228,21 @@ export function boardExtension(deps: ToolDeps) {
     }
   }
 
-  const started = async (call: ToolHookCall, thread: string) =>
+  const started = async (call: ToolHookCall, state: Readonly<ThreadState>) =>
     quietly(async () => {
-      const entryId = await entryFor(thread)
+      const board = boardOf(deps, state)
+      const entryId = await entryFor(board, state.thread)
       if (!entryId) return
-      partOf.set(call.id, entryId)
+      partOf.set(call.id, { entryId, board })
       await board.updateEntry(entryId, [{ type: "part.set", part: { id: call.id.slice(0, 80), type: "tool", name: call.name, input: call.arguments, status: "running" } }])
     })
 
   const finished = async (call: ToolHookCall, result: ToolExecutionResult) =>
     quietly(async () => {
-      const entryId = partOf.get(call.id)
-      if (!entryId) return
+      const part = partOf.get(call.id)
+      if (!part) return
       partOf.delete(call.id)
+      const { entryId, board } = part
       const output = (result.output ?? []).flatMap((c) => (c.type === "text" ? [c.text] : [])).join("\n").slice(0, 4000)
       await board.updateEntry(entryId, [{ type: "part.finished", partId: call.id.slice(0, 80), status: result.isError ? "error" : "ok", output }])
     })
@@ -245,7 +254,7 @@ export function boardExtension(deps: ToolDeps) {
       hook(ToolTask, {
         beforeTool: async (call, api, context) => {
           const state = await threadState(api, api.conversationId, context)
-          if (state?.thread) await started(call, state.thread)
+          if (state?.thread) await started(call, state)
           return undefined
         },
         afterTool: async (call, result) => {

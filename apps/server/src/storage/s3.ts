@@ -55,10 +55,10 @@ export function s3Store(settings: S3Settings): ObjectStore {
 
   return {
     async put(key, body, contentType) {
-      await send(objectUrl(key), { method: "PUT", body, headers: { "content-type": contentType } })
+      await send(objectUrl(key), { method: "PUT", body: Uint8Array.from(body), headers: { "content-type": contentType } })
     },
     async create(key, body, contentType) {
-      const response = await send(objectUrl(key), { method: "PUT", body, headers: { "content-type": contentType, "if-none-match": "*" } }, [preconditionFailed])
+      const response = await send(objectUrl(key), { method: "PUT", body: Uint8Array.from(body), headers: { "content-type": contentType, "if-none-match": "*" } }, [preconditionFailed])
       return response.status === preconditionFailed ? "exists" : "created"
     },
     async get(key) {

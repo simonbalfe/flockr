@@ -1,10 +1,11 @@
 import { randomUUID } from "node:crypto"
 import { mkdirSync, readFileSync, renameSync, rmSync, writeFileSync } from "node:fs"
 import path from "node:path"
-import { fenceSegment, SessionFence } from "@flockr/contracts/sessions"
+import { SessionFence } from "@flockr/contracts/sessions"
 import { z } from "zod"
-import type { Claim, SessionsPort } from "./board"
+import type { SessionsPort } from "./board"
 import type { SessionPlace, SessionSaver } from "./harness/types"
+import { needsOpen, openSession } from "./session-fence"
 
 const OutboxEntry = z.object({ id: z.string(), turn: z.number().int().min(1), fence: SessionFence })
 
@@ -18,8 +19,6 @@ const LocalSession = z.object({
 type LocalSession = z.infer<typeof LocalSession>
 
 const fresh = (): LocalSession => ({ fence: null, next: 1, cursor: null, lost: false, outbox: [] })
-
-const claimFence = (claim: Claim): SessionFence => ({ kind: "claim", task: claim.taskId, epoch: claim.epoch })
 
 const short = (error: unknown) => (error instanceof Error ? error.message : String(error)).replace(/\s+/g, " ").trim().slice(0, 200)
 
@@ -63,17 +62,10 @@ export function sessionSaver(options: SaverOptions): SessionSaver & { flush: (pl
   }
 
   async function open(place: SessionPlace, state: LocalSession): Promise<{ state: LocalSession; turns: number[] }> {
-    const opened = await board.open(place.session, { claim: place.claim ? { task: place.claim.taskId, epoch: place.claim.epoch } : null, thread: place.thread })
-    const fence = place.claim ? claimFence(place.claim) : { kind: "session" as const, epoch: opened.epoch }
-    let next = opened.turns + 1
+    const { fence, saved, turns } = await openSession(board, place)
+    let next = saved + 1
     const outbox = state.outbox.map((entry) => ({ ...entry, turn: next++, fence }))
-    return { state: { ...state, fence, next, lost: false, outbox }, turns: opened.chunks.map((c) => c.turn) }
-  }
-
-  const needsOpen = (state: LocalSession, place: SessionPlace): boolean => {
-    if (!state.fence) return true
-    if (place.claim) return fenceSegment(claimFence(place.claim)) !== fenceSegment(state.fence)
-    return state.fence.kind !== "session"
+    return { state: { ...state, fence, next, lost: false, outbox }, turns }
   }
 
   function drop(session: string, state: LocalSession, reason: string): LocalSession {
@@ -132,9 +124,9 @@ export function sessionSaver(options: SaverOptions): SessionSaver & { flush: (pl
     save: (place, chunk) =>
       queued(place.session, async () => {
         let state = read(place.session)
-        if (state.lost && !(place.claim && needsOpen(state, place))) return true
+        if (state.lost && !(place.claim && needsOpen(state.fence, place))) return true
         try {
-          if (needsOpen(state, place)) state = (await open(place, state)).state
+          if (needsOpen(state.fence, place)) state = (await open(place, state)).state
         } catch (error) {
           log(`session ${place.session}: could not open it on the board, the next turn sends these steps: ${short(error)}`)
           return false

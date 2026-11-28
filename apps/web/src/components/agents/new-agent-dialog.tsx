@@ -72,13 +72,14 @@ function CreateForm({ machines, onDone }: { machines: Machine[]; onDone: () => v
     if (!name) setName(option.id)
   }
   const problem = nameProblem(name)
-  const ready = name !== "" && problem === null && machine !== undefined && harness !== undefined && chosenFolder.startsWith("/")
+  const hosted = machine?.hosted === true
+  const ready = name !== "" && problem === null && machine !== undefined && harness !== undefined && (hosted || chosenFolder.startsWith("/"))
 
   const submit = (event: FormEvent) => {
     event.preventDefault()
     if (!ready || !machine || !harness) return
     create.mutate(
-      { name, harness: harness.id, machine: machine.id, folder: chosenFolder.trim(), permissions, personality: personality.trim() || null },
+      { name, harness: harness.id, machine: machine.id, folder: hosted ? undefined : chosenFolder.trim(), permissions, personality: personality.trim() || null },
       {
         onSuccess: (agent) => {
           toast(`Created ${agent.name}. Mention @${agent.name} to start a conversation.`)
@@ -127,11 +128,15 @@ function CreateForm({ machines, onDone }: { machines: Machine[]; onDone: () => v
           <span className={hintClass}>{machine?.name} reports no harness it can run.</span>
         )}
       </label>
-      <label className={labelClass}>
-        Folder
-        <input className={cn(fieldClass, "font-mono text-[13px]")} value={chosenFolder} onChange={(e) => setFolder(e.target.value)} placeholder="/Users/you/code/project" spellCheck={false} autoComplete="off" />
-        <span className={hintClass}>An absolute path on {machine?.name ?? "the machine"}. The agent reads and works here.</span>
-      </label>
+      {hosted ? (
+        <span className={hintClass}>{machine?.name} is hosted by the board: the agent uses board tools only, has no folder and answers with every laptop shut.</span>
+      ) : (
+        <label className={labelClass}>
+          Folder
+          <input className={cn(fieldClass, "font-mono text-[13px]")} value={chosenFolder} onChange={(e) => setFolder(e.target.value)} placeholder="/Users/you/code/project" spellCheck={false} autoComplete="off" />
+          <span className={hintClass}>An absolute path on {machine?.name ?? "the machine"}. The agent reads and works here.</span>
+        </label>
+      )}
       <PermissionChoice value={permissions} onChange={setPermissions} />
       <div className={labelClass}>
         <div className="flex items-center justify-between gap-2">

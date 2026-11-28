@@ -49,17 +49,21 @@ export function connectLive(options: LiveOptions): LiveConnection {
   let lastSeq: number | null = options.since ?? null
   let socket: WebSocket | null = null
   let closed = false
+  let detached: WebSocket | null = null
   let retry: ReturnType<typeof setTimeout> | undefined
   let delay = 500
 
   const open = () => {
     const url = liveUrl(options.baseUrl, lastSeq, options.channels ?? null)
-    socket = openSocket(url, options.key)
-    socket.onopen = () => {
+    const current = openSocket(url, options.key)
+    socket = current
+    current.addEventListener("open", () => {
+      if (detached === current) return current.close()
       delay = 500
       options.onStatus?.(true)
-    }
-    socket.onmessage = (message) => {
+    })
+    current.addEventListener("message", (message) => {
+      if (detached === current) return
       const frame: unknown = JSON.parse(String(message.data))
       if (!isFrame(frame)) return
       if (frame.kind === "hello") {
@@ -82,13 +86,13 @@ export function connectLive(options: LiveOptions): LiveConnection {
       if (lastSeq !== null && frame.event.seq <= lastSeq) return
       lastSeq = frame.event.seq
       options.onEvent(frame.event)
-    }
-    socket.onclose = () => {
+    })
+    current.addEventListener("close", () => {
       options.onStatus?.(false)
       if (closed) return
       retry = setTimeout(open, delay)
       delay = Math.min(delay * 2, 5000)
-    }
+    })
   }
 
   open()
@@ -99,9 +103,8 @@ export function connectLive(options: LiveOptions): LiveConnection {
       clearTimeout(retry)
       const current = socket
       if (!current) return
-      current.onmessage = null
-      if (current.readyState === WebSocket.CONNECTING) current.onopen = () => current.close()
-      else current.close()
+      detached = current
+      if (current.readyState !== WebSocket.CONNECTING) current.close()
     },
     get lastSeq() {
       return lastSeq

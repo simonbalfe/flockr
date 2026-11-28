@@ -276,7 +276,11 @@ export const BoardEvent = z
   .openapi("BoardEvent")
 
 export const EventPage = z
-  .object({ events: z.array(BoardEvent), head: z.number().int().openapi({ description: "The latest sequence number on the board" }) })
+  .object({
+    events: z.array(BoardEvent),
+    head: z.number().int().openapi({ description: "The latest sequence number on the board" }),
+    through: z.number().int().openapi({ description: "The last sequence number this page read, shown or not; ask for since=through next. Events you may not see are skipped, so a page can be short while more follow" }),
+  })
   .openapi("EventPage")
 
 export const ErrorBody = z.object({ error: z.string(), kind: z.enum(errorKinds) }).openapi("Error")

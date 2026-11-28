@@ -65,6 +65,7 @@ export const flags = {
   personality: { type: "string" },
   model: { type: "string" },
   machine: { type: "string" },
+  cloud: { type: "boolean" },
   action: { type: "string" },
   limit: { type: "string" },
   cron: { type: "string" },

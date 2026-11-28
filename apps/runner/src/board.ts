@@ -1,5 +1,5 @@
 import * as sdk from "@flockr/client"
-import { callTimeoutMs } from "./config"
+import { callTimeoutMs } from "./limits"
 import type { MemoryContext } from "./memory"
 import type { ActionKind, ActivityUpdate, Agent, AgentDetail, ApprovalVerdict, Client, CreateAgentBody, HeartbeatBody, OpenSessionBody, RegisterMachineBody, RunEndStatus, SavedSession, SaveChunkBody, Task, TaskState, Thread, ThreadQuestion } from "@flockr/client"
 

@@ -6,6 +6,8 @@ import { cloudflareEmail } from "./email"
 export const WorkerEnv = z.looseObject({
   HYPERDRIVE: z.object({ connectionString: z.string().min(1) }),
   BOARD_ROOM: z.custom<DurableObjectNamespace>((value) => typeof value === "object" && value !== null && "idFromName" in value),
+  CLOUD_AGENT: z.custom<DurableObjectNamespace>((value) => typeof value === "object" && value !== null && "idFromName" in value),
+  FLOCKR_CLOUD_MODEL: z.string().trim().min(1).optional(),
   EMAIL: z.custom<SendEmail>((value) => typeof value === "object" && value !== null && "send" in value).optional(),
 })
 

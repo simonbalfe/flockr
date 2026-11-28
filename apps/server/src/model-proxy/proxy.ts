@@ -1,8 +1,8 @@
 import { z } from "zod"
-
+import { signToken, verifyToken, type Signer } from "../auth/signed"
 
 export const modelProxyPath = "/api/model"
-const tokenPrefix = "fbx_"
+const boxSigner: Signer = { prefix: "fbx_", purpose: "flockr-model-proxy" }
 
 export const ModelProxyEnv = z.object({
   FLOCKR_MODEL_BASE_URL: z.url(),
@@ -27,44 +27,9 @@ export function modelProxySettingsFrom(env: Record<string, unknown>, secret: str
 const BoxClaims = z.object({ box: z.string().min(1), exp: z.number().int() })
 export type BoxClaims = z.infer<typeof BoxClaims>
 
-const encoder = new TextEncoder()
+export const issueBoxToken = (secret: string, claims: { box: string; expiresAt: Date }): Promise<string> => signToken(boxSigner, secret, { box: claims.box, exp: claims.expiresAt.getTime() })
 
-function base64url(bytes: Uint8Array): string {
-  let text = ""
-  for (const byte of bytes) text += String.fromCharCode(byte)
-  return btoa(text).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "")
-}
-
-function fromBase64url(text: string): Uint8Array<ArrayBuffer> {
-  const plain = atob(text.replace(/-/g, "+").replace(/_/g, "/"))
-  const bytes = new Uint8Array(plain.length)
-  for (let i = 0; i < plain.length; i++) bytes[i] = plain.charCodeAt(i)
-  return bytes
-}
-
-async function signingKey(secret: string): Promise<CryptoKey> {
-  return crypto.subtle.importKey("raw", encoder.encode(`flockr-model-proxy:${secret}`), { name: "HMAC", hash: "SHA-256" }, false, ["sign", "verify"])
-}
-
-export async function issueBoxToken(secret: string, claims: { box: string; expiresAt: Date }): Promise<string> {
-  const body = base64url(encoder.encode(JSON.stringify({ box: claims.box, exp: claims.expiresAt.getTime() })))
-  const signature = new Uint8Array(await crypto.subtle.sign("HMAC", await signingKey(secret), encoder.encode(body)))
-  return `${tokenPrefix}${body}.${base64url(signature)}`
-}
-
-export async function verifyBoxToken(secret: string, token: string, now: Date): Promise<BoxClaims | null> {
-  if (!token.startsWith(tokenPrefix)) return null
-  const [body, signature, extra] = token.slice(tokenPrefix.length).split(".")
-  if (!body || !signature || extra !== undefined) return null
-  try {
-    const valid = await crypto.subtle.verify("HMAC", await signingKey(secret), fromBase64url(signature), encoder.encode(body))
-    if (!valid) return null
-    const claims = BoxClaims.parse(JSON.parse(new TextDecoder().decode(fromBase64url(body))))
-    return claims.exp > now.getTime() ? claims : null
-  } catch {
-    return null
-  }
-}
+export const verifyBoxToken = (secret: string, token: string, now: Date): Promise<BoxClaims | null> => verifyToken(boxSigner, BoxClaims, secret, token, now)
 
 function presentedToken(headers: Headers): string | null {
   const auth = /^Bearer\s+(\S+)$/i.exec(headers.get("authorization") ?? "")?.[1]
@@ -88,7 +53,7 @@ export async function proxyModel(request: Request, settings: ModelProxySettings 
   headers.set(settings.keyHeader, settings.keyHeader === "authorization" ? `Bearer ${settings.key}` : settings.key)
 
   const hasBody = request.method !== "GET" && request.method !== "HEAD"
-  const response = await (settings.fetch ?? fetch)(upstream, { method: request.method, headers, ...(hasBody ? { body: await request.arrayBuffer() } : {}) })
+  const response = await (settings.fetch ?? fetch)(upstream, { method: request.method, headers, signal: request.signal, ...(hasBody ? { body: await request.arrayBuffer() } : {}) })
   const out = new Headers(response.headers)
   out.delete("content-encoding")
   out.delete("content-length")

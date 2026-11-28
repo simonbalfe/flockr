@@ -1202,6 +1202,10 @@ export type EventPage = {
      * The latest sequence number on the board
      */
     head: number;
+    /**
+     * The last sequence number this page read, shown or not; ask for since=through next. Events you may not see are skipped, so a page can be short while more follow
+     */
+    through: number;
 };
 
 export type BoardEvent = {
@@ -1535,7 +1539,10 @@ export type CreateAgentBody = {
      * A harness id the machine reports (listMachines)
      */
     harness: string;
-    folder: string;
+    /**
+     * Where the agent works on its machine; needed on every machine that is not hosted, ignored on a hosted one
+     */
+    folder?: string;
     /**
      * The machine whose runner serves the agent
      */
@@ -1696,9 +1703,13 @@ export type Machine = {
     name: string;
     harnesses: Array<HarnessInfo>;
     /**
-     * True while the last heartbeat is under 45 seconds old
+     * True while the last heartbeat is under 45 seconds old, or 180 for a hosted machine
      */
     online: boolean;
+    /**
+     * Runs on the board's own platform (the machine cloud): its agents need no folder, use board tools only and run with every laptop shut
+     */
+    hosted: boolean;
     lastSeenAt: string;
 };
 

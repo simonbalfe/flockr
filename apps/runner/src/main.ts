@@ -93,6 +93,7 @@ function spawn(spec: Spawn) {
     channels: config.channels,
     maxSessions: config.maxSessions,
     maxMinutes: config.maxMinutes,
+    folderExists: isFolder,
     harness: spec.harness,
     board: boardClient({ member: spec.name, client: clientFor(spec.name) }),
     epochs: epochStore({ file: claimsFile, url: board, member: spec.name }),

@@ -1,5 +1,5 @@
 import { EventPage, EventsQuery } from "@flockr/contracts"
-import { eventsSince, headSeq } from "../board/events"
+import { eventPage, headSeq } from "../board/events"
 import { ok, operation, router } from "./shared"
 
 const tags: [string] = ["events"]
@@ -16,7 +16,8 @@ export const eventRoutes = router().openapi(
   }),
   async (c) => {
     const query = c.req.valid("query")
-    const [events, head] = await Promise.all([eventsSince(c.var.db, query.since, query.limit, { kind: "member", viewer: c.var.viewer }), headSeq(c.var.db)])
-    return c.json({ events, head }, 200)
+    const head = await headSeq(c.var.db)
+    const page = await eventPage(c.var.db, query.since, query.limit, { kind: "member", viewer: c.var.viewer })
+    return c.json({ ...page, head }, 200)
   },
 )

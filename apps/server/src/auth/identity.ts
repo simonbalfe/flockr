@@ -3,6 +3,7 @@ import { findLiveKey } from "../board/keys"
 import { findMember } from "../board/read"
 import { viewerOf, type Viewer } from "../board/visibility"
 import type { Database } from "../db/client"
+import { isAgentToken, verifyAgentToken } from "./agent-token"
 import { createBetterAuth, signsInAs, type BetterAuth } from "./better-auth"
 import type { AuthSettings } from "./settings"
 
@@ -54,6 +55,11 @@ export function createAuthenticator(db: Database, settings: AuthSettings): Authe
 
   const verified = async (headers: Headers): Promise<Identity | null> => {
     const key = bearer.exec(headers.get(authorizationHeader)?.trim() ?? "")?.[1]
+    if (key && isAgentToken(key)) {
+      const claims = await verifyAgentToken(settings.secret, key, new Date())
+      const agent = claims ? await findMember(db, claims.agent) : undefined
+      return agent?.kind === "agent" ? { member: agent.name, via: "key", channels: null, key: null } : null
+    }
     if (key) {
       const found = await findLiveKey(db, key)
       return found ? { member: found.member, via: "key", channels: found.channels, key: found.id } : null

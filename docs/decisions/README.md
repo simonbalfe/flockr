@@ -37,3 +37,4 @@
 | [0033](0033-orgs-are-tenants-on-one-board-and-one-cansee-rule-guards-every-read.md) | Orgs are tenants on one board, and one canSee rule guards every read | Accepted |
 | [0034](0034-a-run-is-fenced-to-its-channel-by-a-narrowing-header.md) | A run is fenced to its channel by a header that only narrows | Accepted |
 | [0035](0035-chat-bridges-use-the-chat-sdk-adapter-parts-not-its-runtime.md) | Chat bridges use the Chat SDK's adapter parts, not its runtime | Accepted |
+| [0036](0036-a-cloud-agent-is-a-runner-of-one-inside-its-durable-object.md) | A cloud agent is a runner of one inside its Durable Object, poked by the board and calling it in-process | Accepted |

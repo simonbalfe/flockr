@@ -4,8 +4,8 @@
   "main": "src/worker.ts",
   "compatibility_date": "2026-11-01",
   "compatibility_flags": ["nodejs_compat"],
-  "durable_objects": { "bindings": [{ "name": "BOARD_ROOM", "class_name": "BoardRoom" }] },
-  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["BoardRoom"] }],
+  "durable_objects": { "bindings": [{ "name": "BOARD_ROOM", "class_name": "BoardRoom" }, { "name": "CLOUD_AGENT", "class_name": "CloudAgent" }] },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["BoardRoom"] }, { "tag": "v2", "new_sqlite_classes": ["CloudAgent"] }],
   "triggers": { "crons": ["* * * * *", "0 3 * * *"] },
   "send_email": [{ "name": "EMAIL" }],
   "vars": { "FLOCKR_EMAIL_FROM": "flockr@example.com" },
@@ -25,8 +25,8 @@
         "not_found_handling": "single-page-application",
         "run_worker_first": ["/api/*", "/mcp", "/ws"]
       },
-      "durable_objects": { "bindings": [{ "name": "BOARD_ROOM", "class_name": "BoardRoom" }] },
-      "migrations": [{ "tag": "v1", "new_sqlite_classes": ["BoardRoom"] }],
+      "durable_objects": { "bindings": [{ "name": "BOARD_ROOM", "class_name": "BoardRoom" }, { "name": "CLOUD_AGENT", "class_name": "CloudAgent" }] },
+      "migrations": [{ "tag": "v1", "new_sqlite_classes": ["BoardRoom"] }, { "tag": "v2", "new_sqlite_classes": ["CloudAgent"] }],
       "triggers": { "crons": ["* * * * *", "0 3 * * *"] },
       "send_email": [{ "name": "EMAIL" }],
       "vars": {

@@ -1,15 +1,13 @@
-import { Database } from "bun:sqlite"
 import { createHash } from "node:crypto"
-import { existsSync, mkdirSync, readFileSync, renameSync, rmSync, writeFileSync } from "node:fs"
-import path from "node:path"
-import { BACKGROUND_CONTEXT } from "@earendil-works/chord/context"
-import { SqliteStorage } from "@earendil-works/pi-durable/storage/sqlite"
+import type { SqliteDatabase, SqliteExecutor } from "@earendil-works/chord/sqlite"
 import { z } from "zod"
-import { openBunSqlite } from "./sqlite"
 
 export const piChunkFormat = "pi-rows/1"
 
+export const hostTablePrefix = "flockr_"
+
 const skippedTables = new Set(["durable_schema"])
+const reservedPrefixes = ["sqlite_", "_cf_", hostTablePrefix]
 
 const Value = z.union([z.string(), z.number(), z.null()])
 const Row = z.record(z.string(), Value)
@@ -22,8 +20,8 @@ const PiChunk = z.object({
 })
 type PiChunk = z.infer<typeof PiChunk>
 
-const Ledger = z.record(z.string(), z.record(z.string(), z.string()))
-type Ledger = z.infer<typeof Ledger>
+export const Ledger = z.record(z.string(), z.record(z.string(), z.string()))
+export type Ledger = z.infer<typeof Ledger>
 
 const TableName = z.object({ name: z.string() })
 const ColumnInfo = z.object({ name: z.string(), pk: z.number() })
@@ -33,20 +31,30 @@ interface TableRows {
   rows: Map<string, { row: Row; hash: string }>
 }
 
+export interface TakenChunk {
+  data: Uint8Array
+  commit: () => Promise<void>
+}
+
 const quote = (name: string) => `"${name.replace(/"/g, '""')}"`
 
 const hashOf = (row: Row) => createHash("sha256").update(JSON.stringify(row)).digest("hex")
 
-function readTables(db: Database): Map<string, TableRows> {
+const isPiTable = (name: string) => !skippedTables.has(name) && !reservedPrefixes.some((prefix) => name.startsWith(prefix))
+
+export async function piTables(db: SqliteExecutor): Promise<string[]> {
+  const names = z.array(TableName).parse(await db.all("select name from sqlite_master where type = 'table' order by name"))
+  return names.map((t) => t.name).filter(isPiTable)
+}
+
+async function readTables(db: SqliteExecutor): Promise<Map<string, TableRows>> {
   const tables = new Map<string, TableRows>()
-  const names = z.array(TableName).parse(db.query("select name from sqlite_master where type = 'table' and name not like 'sqlite_%' order by name").all())
-  for (const { name } of names) {
-    if (skippedTables.has(name)) continue
-    const columns = z.array(ColumnInfo).parse(db.query(`pragma table_info(${quote(name)})`).all())
+  for (const name of await piTables(db)) {
+    const columns = z.array(ColumnInfo).parse(await db.all(`pragma table_info(${quote(name)})`))
     const primary = columns.filter((c) => c.pk > 0).sort((a, b) => a.pk - b.pk)
     const keys = (primary.length ? primary : columns).map((c) => c.name)
     const rows = new Map<string, { row: Row; hash: string }>()
-    for (const raw of db.query(`select * from ${quote(name)}`).all()) {
+    for (const raw of await db.all(`select * from ${quote(name)}`)) {
       const row = Row.parse(raw)
       rows.set(JSON.stringify(keys.map((k) => row[k] ?? null)), { row, hash: hashOf(row) })
     }
@@ -58,80 +66,48 @@ function readTables(db: Database): Map<string, TableRows> {
 const ledgerOf = (tables: Map<string, TableRows>): Ledger =>
   Object.fromEntries([...tables].map(([name, table]) => [name, Object.fromEntries([...table.rows].map(([key, { hash }]) => [key, hash]))]))
 
-function readLedger(file: string): Ledger {
-  if (!existsSync(file)) return {}
-  const parsed = Ledger.safeParse(JSON.parse(readFileSync(file, "utf8")))
-  return parsed.success ? parsed.data : {}
+async function through(data: Uint8Array, stream: CompressionStream | DecompressionStream): Promise<Uint8Array> {
+  const out = new Response(new Blob([Uint8Array.from(data)]).stream().pipeThrough(stream))
+  return new Uint8Array(await out.arrayBuffer())
 }
 
-function writeLedger(file: string, ledger: Ledger): void {
-  writeFileSync(`${file}.tmp`, JSON.stringify(ledger))
-  renameSync(`${file}.tmp`, file)
-}
+const encode = async (chunk: PiChunk) => through(new TextEncoder().encode(JSON.stringify(chunk)), new CompressionStream("gzip"))
 
-export interface TakenChunk {
-  data: Uint8Array
-  commit: () => void
-}
+const decode = async (data: Uint8Array) => PiChunk.parse(JSON.parse(new TextDecoder().decode(await through(data, new DecompressionStream("gzip")))))
 
-export function takePiChunk(options: { file: string; ledger: string }): TakenChunk | null {
-  if (!existsSync(options.file)) return null
-  const db = new Database(options.file)
-  try {
-    db.run("BEGIN")
-    const tables = readTables(db)
-    db.run("COMMIT")
-    const before = readLedger(options.ledger)
-    const chunk: PiChunk = { format: piChunkFormat, upserts: [], deletes: [] }
-    for (const [name, table] of tables) {
-      const known = before[name] ?? {}
-      for (const [key, { row, hash }] of table.rows) if (known[key] !== hash) chunk.upserts.push({ table: name, row })
-      for (const key of Object.keys(known)) {
-        if (table.rows.has(key)) continue
-        const values = z.array(Value).parse(JSON.parse(key))
-        chunk.deletes.push({ table: name, key: Object.fromEntries(table.keys.map((column, i) => [column, values[i] ?? null])) })
-      }
+export type Snapshot = <T>(work: (db: SqliteExecutor) => Promise<T>) => Promise<T>
+
+export async function takeChunk(snapshot: Snapshot, before: Ledger): Promise<{ data: Uint8Array; ledger: Ledger } | null> {
+  const tables = await snapshot(readTables)
+  const chunk: PiChunk = { format: piChunkFormat, upserts: [], deletes: [] }
+  for (const [name, table] of tables) {
+    const known = before[name] ?? {}
+    for (const [key, { row, hash }] of table.rows) if (known[key] !== hash) chunk.upserts.push({ table: name, row })
+    for (const key of Object.keys(known)) {
+      if (table.rows.has(key)) continue
+      const values = z.array(Value).parse(JSON.parse(key))
+      chunk.deletes.push({ table: name, key: Object.fromEntries(table.keys.map((column, i) => [column, values[i] ?? null])) })
     }
-    if (!chunk.upserts.length && !chunk.deletes.length) return null
-    const after = ledgerOf(tables)
-    return { data: Bun.gzipSync(new TextEncoder().encode(JSON.stringify(chunk))), commit: () => writeLedger(options.ledger, after) }
-  } finally {
-    db.close()
   }
+  if (!chunk.upserts.length && !chunk.deletes.length) return null
+  return { data: await encode(chunk), ledger: ledgerOf(tables) }
 }
 
-function apply(db: Database, chunk: PiChunk): void {
+async function apply(db: SqliteExecutor, chunk: PiChunk): Promise<void> {
   for (const { table, row } of chunk.upserts) {
     const columns = Object.keys(row)
-    db.query(`insert or replace into ${quote(table)} (${columns.map(quote).join(", ")}) values (${columns.map(() => "?").join(", ")})`).run(...columns.map((c) => row[c] ?? null))
+    await db.run(`insert or replace into ${quote(table)} (${columns.map(quote).join(", ")}) values (${columns.map(() => "?").join(", ")})`, ...columns.map((c) => row[c] ?? null))
   }
   for (const { table, key } of chunk.deletes) {
     const columns = Object.keys(key)
-    db.query(`delete from ${quote(table)} where ${columns.map((c) => `${quote(c)} is ?`).join(" and ")}`).run(...columns.map((c) => key[c] ?? null))
+    await db.run(`delete from ${quote(table)} where ${columns.map((c) => `${quote(c)} is ?`).join(" and ")}`, ...columns.map((c) => key[c] ?? null))
   }
 }
 
-const restoringMarker = (file: string) => `${file}.restoring`
-
-export const hasPiState = (file: string): boolean => existsSync(file) && !existsSync(restoringMarker(file))
-
-export async function rebuildPiState(options: { file: string; ledger: string; chunks: readonly Uint8Array[] }): Promise<void> {
-  const decoded = options.chunks.map((data) => PiChunk.parse(JSON.parse(new TextDecoder().decode(Bun.gunzipSync(Uint8Array.from(data))))))
-  const marker = restoringMarker(options.file)
-  if (existsSync(options.file) && !existsSync(marker)) throw new Error(`${options.file} already exists; a restore only fills an empty agent`)
-  mkdirSync(path.dirname(options.file), { recursive: true })
-  writeFileSync(marker, "")
-  for (const suffix of ["", "-wal", "-shm"]) rmSync(`${options.file}${suffix}`, { force: true })
-  const raw = openBunSqlite(options.file)
-  await (await SqliteStorage.open(raw)).close(BACKGROUND_CONTEXT)
-  const db = new Database(options.file)
-  try {
-    db.transaction(() => {
-      for (const chunk of decoded) apply(db, chunk)
-    })()
-    writeLedger(options.ledger, ledgerOf(readTables(db)))
-  } finally {
-    db.close()
-  }
-  rmSync(marker, { force: true })
+export async function applyChunks(db: SqliteDatabase, chunks: readonly Uint8Array[]): Promise<Ledger> {
+  const decoded = await Promise.all(chunks.map(decode))
+  return db.transaction(async (tx) => {
+    for (const chunk of decoded) await apply(tx, chunk)
+    return ledgerOf(await readTables(tx))
+  })
 }

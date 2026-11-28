@@ -4,7 +4,9 @@ import path from "node:path"
 import { createModels, fauxProvider, type FauxResponseStep } from "@earendil-works/pi-ai"
 import type { ActivityUpdate, MemberKind, Task, Thread, ThreadEntry } from "@flockr/client"
 import type { BuiltInModel } from "../src/config"
+import { NodeExecutionEnv } from "@earendil-works/pi-durable/env/node"
 import { createPiHarness } from "../src/harness/pi-durable"
+import { fileStore } from "../src/harness/pi/file-store"
 import { defaultAgentSettings } from "../src/harness/pi/agent"
 import type { NewTask, PiBoard } from "../src/harness/pi/board"
 import type { ModelSource } from "../src/harness/pi/model"
@@ -23,6 +25,7 @@ export class FakePiBoard implements PiBoard {
   updates: { entryId: string; updates: ActivityUpdate[] }[] = []
   kinds: Record<string, MemberKind> = { [person]: "person", [member]: "agent", helper: "agent" }
   crashAfterReply = false
+  fences: (string | null)[] = []
   private next = 100
 
   constructor(root: { thread: string; who: string; text: string }) {
@@ -141,8 +144,12 @@ export function piHarness(options: { board: FakePiBoard; source: ModelSource; di
   const harness = createPiHarness({
     model: () => options.model ?? testModel(),
     source: () => options.source,
-    stateFile: (name) => path.join(options.dir, name, "agent.sqlite"),
-    boardFor: () => options.board,
+    store: fileStore((name) => path.join(options.dir, name, "agent.sqlite")),
+    boardFor: () => (channel) => {
+      options.board.fences.push(channel)
+      return options.board
+    },
+    workspace: (cwd) => new NodeExecutionEnv({ cwd }),
     log: (line) => lines.push(line),
     settings: { ...defaultAgentSettings, retry: { enabled: false } },
   })

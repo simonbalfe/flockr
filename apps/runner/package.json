@@ -2,6 +2,10 @@
   "name": "@flockr/runner",
   "private": true,
   "type": "module",
+  "exports": {
+    "./cloud": "./src/cloud/agent.ts",
+    "./bun-sqlite": "./src/harness/pi/sqlite.ts"
+  },
   "scripts": {
     "start": "bun src/main.ts",
     "test": "bun test",

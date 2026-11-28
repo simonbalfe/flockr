@@ -33,7 +33,9 @@ const Harnesses = z.array(HarnessInfo).catch([])
 
 export const harnessesOf = (row: MachineRow) => Harnesses.parse(row.harnesses)
 
-export const isOnline = (machine: MachineRow, now: Date) => now.getTime() - machine.lastSeenAt.getTime() < machineLimits.onlineSeconds * 1000
+export const onlineSecondsOf = (machine: Pick<MachineRow, "hosted">) => (machine.hosted ? machineLimits.hostedOnlineSeconds : machineLimits.onlineSeconds)
+
+export const isOnline = (machine: MachineRow, now: Date) => now.getTime() - machine.lastSeenAt.getTime() < onlineSecondsOf(machine) * 1000
 
 const reportStatus = { serving: "online", working: "working", error: "error" } as const satisfies Record<AgentReport, AgentStatus>
 
@@ -190,10 +192,11 @@ export async function createAgent(db: Database, actor: string, body: CreateAgent
     if (!harness) {
       throw invalid(`${machine.name} does not offer harness ${body.harness}; it offers ${offered.length ? offered.map((h) => h.id).join(", ") : "none"}. flockr machines lists them`)
     }
+    if (!machine.hosted && body.folder === undefined) throw invalid(`${machine.name} needs a folder for the agent to work in; send folder as an absolute path`)
     const joined = await claimName(tx, owner, body.name, { runsIn: `${harness.label} on ${machine.name}`, source: harness.id })
     const values = {
       harness: harness.id,
-      folder: body.folder,
+      folder: machine.hosted ? "" : (body.folder ?? ""),
       machine: machine.id,
       permissions: body.permissions,
       personality: body.personality || null,

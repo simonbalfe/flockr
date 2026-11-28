@@ -18,7 +18,7 @@ export function agentDetail(a: AgentDetail): string {
     lines.push(
       `  machine      ${a.config.machineName} (${a.config.machine})`,
       `  harness      ${a.config.harnessLabel ?? "not reported"} (${a.config.harness})`,
-      `  folder       ${a.config.folder}`,
+      `  folder       ${a.config.folder || "none (board tools only)"}`,
       `  permissions  ${permissionLabels[a.config.permissions].label} (${a.config.permissions})`,
       `  personality  ${a.config.personality ?? "none"}`,
       `  model        ${a.config.model ?? "runner default"}`,
@@ -30,7 +30,7 @@ export function agentDetail(a: AgentDetail): string {
 }
 
 export const machineLine = (m: Machine) =>
-  `${m.id.padEnd(22)} ${(m.online ? "online" : "offline").padEnd(8)} ${m.harnesses.length ? m.harnesses.map((h) => `${h.label} (${h.id})`).join(", ") : "no harness"}${m.name === m.id ? "" : `  ${m.name}`}`
+  `${m.id.padEnd(22)} ${(m.online ? "online" : "offline").padEnd(8)}${m.hosted ? "hosted  " : ""} ${m.harnesses.length ? m.harnesses.map((h) => `${h.label} (${h.id})`).join(", ") : "no harness"}${m.name === m.id ? "" : `  ${m.name}`}`
 
 function permissionsOf(value: string | undefined): AgentPermissions | undefined {
   if (value === undefined) return undefined
@@ -45,14 +45,20 @@ const noRunner = `No runner is connected, so nothing can serve the agent. Start 
 
 async function pickMachine(values: Values): Promise<Machine> {
   const machines = await run(sdk.listMachines())
+  if (values.cloud) {
+    const hosted = machines.find((m) => m.hosted)
+    if (!hosted) throw new UsageError("This board hosts no cloud agents. flockr machines lists the machines it has.")
+    if (!hosted.online) throw new UsageError(`${hosted.name} is offline: this board is not hosting agents right now (it needs a model: FLOCKR_MODEL_BASE_URL)`)
+    return hosted
+  }
   if (values.machine) {
     const named = machines.find((m) => m.id === values.machine)
     if (!named) throw new UsageError(`No machine ${values.machine}. flockr machines lists them.`)
     return named
   }
-  const online = machines.filter((m) => m.online)
+  const online = machines.filter((m) => m.online && !m.hosted)
   const [only] = online
-  if (!only) throw new UsageError(noRunner)
+  if (!only) throw new UsageError(machines.some((m) => m.hosted && m.online) ? `${noRunner} Or make a cloud agent with --cloud.` : noRunner)
   if (online.length > 1) throw new UsageError(`Several machines are online (${online.map((m) => m.id).join(", ")}); pick one with --machine <id>.`)
   return only
 }
@@ -91,7 +97,7 @@ export async function agentsCommand(context: CommandContext & { baseUrl: string 
       const body = {
         name: agentName,
         harness: pickHarness(machine, values.harness),
-        folder: absolute(need(values.folder, "--folder <path>")),
+        folder: machine.hosted ? undefined : absolute(need(values.folder, "--folder <path>")),
         machine: machine.id,
         permissions: permissionsOf(values.permissions),
         personality: values.personality ?? null,

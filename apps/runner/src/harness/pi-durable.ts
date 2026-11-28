@@ -1,31 +1,47 @@
 import type { HarnessSettings } from "@earendil-works/pi-durable"
-import { memberClient } from "@flockr/client"
+import type { ExecutionEnv } from "@earendil-works/pi-durable/env"
 import { z } from "zod"
-import { agentStateFile, builtInModel, type BuiltInModel } from "../config"
+import { fenceEnv } from "../limits"
 import { failedText } from "../prompt"
-import { AgentHome, type TurnOutcome } from "./pi/agent"
-import { piBoard, type PiBoard } from "./pi/board"
-import { hasPiState, rebuildPiState, takePiChunk } from "./pi/chunks"
+import { AgentHome, type HostWakes, type TurnOutcome, type WhenBusy } from "./pi/agent"
+import type { FencedBoard } from "./pi/board"
 import { piInstructions } from "./pi/instructions"
-import { endpointModels, type ModelSource } from "./pi/model"
+import type { ModelSource } from "./pi/model"
+import type { PiStore } from "./pi/store"
 import { offeredFileTools, runIdFor } from "./pi/tools"
 import type { Harness, HarnessProbe, PermissionCodec, Session, SessionExit, SessionPlace, SessionSaver, SessionSpec, SessionStatus } from "./types"
 
-const SessionEnv = z.object({ FC_URL: z.url(), FC_AS: z.string().min(1), FLOCKR_KEY: z.string().min(1).optional() })
+const SessionEnv = z.object({ FC_URL: z.url(), FC_AS: z.string().min(1), FLOCKR_KEY: z.string().min(1).optional(), [fenceEnv]: z.string().min(1).optional() })
 
 export const maxTurnsPerRun = 40
 
+export const piDurableInfo = { name: "pi-durable", label: "Built-in agent", capabilities: { resume: true, streaming: true } } as const
+
 export const piSession: Omit<SessionPlace, "claim"> = { session: "agent", thread: null }
 
-export const ledgerFile = (stateFile: string) => `${stateFile}.chunks.json`
+export interface PiModel {
+  defaultModel: string | null
+  key: string | null
+  problem: string | null
+  known?: readonly string[]
+}
 
 export interface PiDeps {
-  model: () => BuiltInModel
-  source: (model: BuiltInModel) => ModelSource
-  stateFile: (member: string) => string
-  boardFor: (options: { url: string; member: string; key: string | null }) => PiBoard
+  model: () => PiModel
+  source: () => ModelSource
+  store: PiStore
+  boardFor: (options: { url: string; member: string; key: string | null }) => FencedBoard
+  workspace: ((cwd: string) => ExecutionEnv) | null
   log: (line: string) => void
   settings?: HarnessSettings
+  wakes?: HostWakes
+}
+
+export interface HomeAddress {
+  url: string
+  member: string
+  key: string | null
+  saver: SessionSaver | null
 }
 
 const noBridge: PermissionCodec = {
@@ -36,66 +52,68 @@ const noBridge: PermissionCodec = {
 
 const short = (error: unknown) => (error instanceof Error ? error.message : String(error)).replace(/\s+/g, " ").trim().slice(0, 300)
 
-export function createPiHarness(deps: PiDeps): Harness & { home: (member: string) => Promise<AgentHome> | undefined } {
+export function createPiHarness(deps: PiDeps) {
   const homes = new Map<string, Promise<AgentHome>>()
   const savers = new Map<string, SessionSaver>()
   const saving = new Map<string, Promise<void>>()
   let source: ModelSource | null = null
 
-  const sourceFor = (model: BuiltInModel): ModelSource => {
-    source ??= deps.source(model)
+  const sourceFor = (): ModelSource => {
+    source ??= deps.source()
     return source
   }
 
   const place: SessionPlace = { ...piSession, claim: null }
 
-  async function restoreHome(file: string, saver: SessionSaver | null): Promise<void> {
-    if (!saver || hasPiState(file)) return
-    const chunks = await saver.restore(place)
-    await rebuildPiState({ file, ledger: ledgerFile(file), chunks })
+  async function restoreHome(member: string, saver: SessionSaver | null): Promise<void> {
+    const state = deps.store(member)
+    if (!saver || (await state.hasState())) return
+    await state.rebuild(await saver.restore(place))
   }
 
   function saveHome(member: string): Promise<void> {
     const saver = savers.get(member)
     if (!saver) return Promise.resolve()
-    const file = deps.stateFile(member)
     const work = (saving.get(member) ?? Promise.resolve())
       .then(async () => {
-        const taken = takePiChunk({ file, ledger: ledgerFile(file) })
+        const taken = await deps.store(member).take()
         if (!taken) return
-        if (await saver.save(place, { data: taken.data, cursor: null })) taken.commit()
+        if (await saver.save(place, { data: taken.data, cursor: null })) await taken.commit()
       })
       .catch((error: unknown) => deps.log(`${member}: could not save the session: ${short(error)}`))
     saving.set(member, work)
     return work
   }
 
-  function homeFor(options: { url: string; member: string; key: string | null; model: BuiltInModel; saver: SessionSaver | null }): Promise<AgentHome> {
-    const known = homes.get(options.member)
+  function homeFor(address: HomeAddress): Promise<AgentHome> {
+    const known = homes.get(address.member)
     if (known) return known
-    if (options.saver) savers.set(options.member, options.saver)
-    const file = deps.stateFile(options.member)
-    const opened = restoreHome(file, options.saver).then(() =>
-      AgentHome.open({
-        file,
-        member: options.member,
-        board: deps.boardFor({ url: options.url, member: options.member, key: options.key }),
-        models: sourceFor(options.model).models,
+    if (address.saver) savers.set(address.member, address.saver)
+    const opened = restoreHome(address.member, address.saver).then(async () => {
+      const model = deps.model()
+      for (const id of new Set([...(model.defaultModel ? [model.defaultModel] : []), ...(model.known ?? [])])) sourceFor().ref(id)
+      return AgentHome.open({
+        storage: await deps.store(address.member).open(),
+        member: address.member,
+        board: deps.boardFor({ url: address.url, member: address.member, key: address.key }),
+        workspace: deps.workspace,
+        models: sourceFor().models,
         log: deps.log,
         failedText,
         settings: deps.settings,
-      }),
-    )
-    homes.set(options.member, opened)
+        wakes: deps.wakes,
+      })
+    })
+    homes.set(address.member, opened)
     opened
       .then((home) => home.recover())
       .then((count) => {
-        void saveHome(options.member)
-        if (count) deps.log(`${options.member}: resumed ${count} unfinished turn${count === 1 ? "" : "s"}`)
+        void saveHome(address.member)
+        if (count) deps.log(`${address.member}: resumed ${count} unfinished turn${count === 1 ? "" : "s"}`)
       })
       .catch((error: unknown) => {
-        homes.delete(options.member)
-        deps.log(`${options.member}: built-in agent could not open its state: ${short(error)}`)
+        homes.delete(address.member)
+        deps.log(`${address.member}: built-in agent could not open its state: ${short(error)}`)
       })
     return opened
   }
@@ -106,10 +124,10 @@ export function createPiHarness(deps: PiDeps): Harness & { home: (member: string
     return model.key ? { kind: "available" } : { kind: "missing", reason: "no model key" }
   }
 
-  function homeForSpec(spec: SessionSpec, model: BuiltInModel): Promise<AgentHome> {
+  function homeForSpec(spec: SessionSpec): Promise<AgentHome> {
     const env = SessionEnv.safeParse(spec.env)
     if (!env.success) return Promise.reject(new Error("the session has no board address"))
-    return homeFor({ url: env.data.FC_URL, member: env.data.FC_AS, key: env.data.FLOCKR_KEY ?? null, model, saver: spec.saver })
+    return homeFor({ url: env.data.FC_URL, member: env.data.FC_AS, key: env.data.FLOCKR_KEY ?? null, saver: spec.saver })
   }
 
   function start(spec: SessionSpec): Session {
@@ -118,9 +136,10 @@ export function createPiHarness(deps: PiDeps): Harness & { home: (member: string
     const outcomes: Promise<TurnOutcome>[] = []
     const env = SessionEnv.safeParse(spec.env)
     const model = deps.model()
-    const folder = spec.folder.trim() ? spec.folder : null
+    const folder = spec.folder.trim() && deps.workspace ? spec.folder : null
+    const channel = env.data?.[fenceEnv] ?? null
     const fileTools = offeredFileTools(spec.rule)
-    const home = homeForSpec(spec, model)
+    const home = homeForSpec(spec)
     const member = env.data?.FC_AS ?? null
     const saved = async (outcome: TurnOutcome): Promise<TurnOutcome> => {
       if (member) await saveHome(member)
@@ -128,24 +147,28 @@ export function createPiHarness(deps: PiDeps): Harness & { home: (member: string
     }
     const modelId = spec.model ?? model.defaultModel
 
-    const ask = (prompt: string) =>
+    const ask = (prompt: string, whenBusy: WhenBusy) =>
       outcomes.push(
-        home.then((agent) =>
-          agent.turn({
-            thread: spec.thread,
-            prompt,
-            settings: {
-              model: model.key && modelId ? sourceFor(model).ref(modelId) : null,
-              instructions: piInstructions({ member: env.data?.FC_AS ?? "agent", personality: spec.personality, folder, fileTools: fileTools.map((t) => t.name) }),
-              folder,
-              fileTools,
-              maxTurns: maxTurnsPerRun,
-            },
-          }),
-        ).then(saved),
+        home
+          .then((agent) =>
+            agent.turn({
+              thread: spec.thread,
+              prompt,
+              whenBusy,
+              settings: {
+                model: model.key && modelId ? sourceFor().ref(modelId) : null,
+                instructions: piInstructions({ member: env.data?.FC_AS ?? "agent", personality: spec.personality, folder, fileTools: fileTools.map((t) => t.name) }),
+                folder,
+                channel,
+                fileTools,
+                maxTurns: maxTurnsPerRun,
+              },
+            }),
+          )
+          .then(saved),
       )
 
-    ask(spec.prompt)
+    ask(spec.prompt, "followUp")
 
     const exit = (async (): Promise<SessionExit> => {
       const results: TurnOutcome[] = []
@@ -164,7 +187,7 @@ export function createPiHarness(deps: PiDeps): Harness & { home: (member: string
       exit,
       send(text) {
         if (status === "exited" || stopped) return false
-        ask(text)
+        ask(text, "steer")
         return true
       },
       stop() {
@@ -176,23 +199,17 @@ export function createPiHarness(deps: PiDeps): Harness & { home: (member: string
     }
   }
 
-  return {
-    name: "pi-durable",
-    label: "Built-in agent",
-    capabilities: { resume: true, streaming: true },
+  const harness: Harness = {
+    ...piDurableInfo,
+    capabilities: { ...piDurableInfo.capabilities },
     probe,
     passEnv: [],
     permissions: noBridge,
-    chunks: { saving: "always", ready: async (spec) => void (await homeForSpec(spec, deps.model())) },
+    chunks: { saving: "always", ready: async (spec) => void (await homeForSpec(spec)) },
     start,
-    home: (member) => homes.get(member),
   }
+
+  return Object.assign(harness, { home: (member: string) => homes.get(member), open: homeFor })
 }
 
-export const piDurable = createPiHarness({
-  model: () => builtInModel(),
-  source: (model) => endpointModels({ baseUrl: model.baseUrl, key: model.key ?? "", contextWindow: model.contextWindow, maxTokens: model.maxTokens }),
-  stateFile: agentStateFile,
-  boardFor: ({ url, member, key }) => piBoard({ member, client: memberClient({ baseUrl: url, member, key }) }),
-  log: (line) => console.log(line),
-})
+export type PiHarness = ReturnType<typeof createPiHarness>

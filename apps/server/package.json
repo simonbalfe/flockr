@@ -21,7 +21,10 @@
   },
   "dependencies": {
     "@chat-adapter/slack": "4.45.0",
+    "@earendil-works/chord": "1.5.1",
+    "@earendil-works/pi-durable": "1.5.1",
     "@flockr/contracts": "workspace:*",
+    "@flockr/runner": "workspace:*",
     "@hono/swagger-ui": "0.6.2",
     "@hono/zod-openapi": "1.6.3",
     "@modelcontextprotocol/sdk": "1.32.2",

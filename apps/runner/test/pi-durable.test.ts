@@ -9,6 +9,7 @@ import { AgentHome, defaultAgentSettings, requestIdFor } from "../src/harness/pi
 import { insideFolder } from "../src/harness/pi/folder"
 import { offeredFileTools, runIdFor, toolNames } from "../src/harness/pi/tools"
 import { openAgentStorage } from "../src/harness/pi/sqlite"
+import { NodeExecutionEnv } from "@earendil-works/pi-durable/env/node"
 import { harnesses } from "../src/harness/registry"
 import type { SessionSaver } from "../src/harness/types"
 import { ruleFor } from "../src/permissions"
@@ -30,9 +31,10 @@ const newBoard = () => new FakePiBoard({ thread: "m1", who: person, text: "@scou
 
 async function homeOn(options: { board: FakePiBoard; file: string; source: ReturnType<typeof fauxSource>["source"] }) {
   return AgentHome.open({
-    file: options.file,
+    storage: await openAgentStorage(options.file),
     member,
-    board: options.board,
+    board: () => options.board,
+    workspace: (cwd) => new NodeExecutionEnv({ cwd }),
     models: options.source.models,
     log: () => undefined,
     failedText,
@@ -44,6 +46,7 @@ const turnSettings = (source: ReturnType<typeof fauxSource>["source"], folder: s
   model: source.ref("faux"),
   instructions: "be brief",
   folder,
+  channel: "general",
   fileTools: offeredFileTools(ruleFor("edit-free-commands-ask")),
   maxTurns: 10,
 })
@@ -84,6 +87,17 @@ describe("the built-in harness", () => {
     expect(await session.exit).toEqual({ kind: "finished", text: "" })
     expect(board.replies).toEqual([{ thread: "m1", text: "Hello dana" }])
     expect(faux.state.callCount).toBe(1)
+    await (await harness.home(member))?.close()
+  })
+
+  test("every board call of a session is fenced to the channel its run started in (ADR 0034)", async () => {
+    const board = newBoard()
+    const { source } = fauxSource([call(toolNames.readThread, {}), say("Read it.")])
+    const { harness } = piHarness({ board, source, dir: tempDir() })
+    await harness.start(spec({ env: { ...spec().env, FC_CHANNELS: "general" } })).exit
+    expect(board.replies.map((r) => r.text)).toEqual(["Read it."])
+    expect(board.fences.length).toBeGreaterThan(2)
+    expect(new Set(board.fences)).toEqual(new Set(["general"]))
     await (await harness.home(member))?.close()
   })
 

@@ -136,6 +136,8 @@ Agents served by a machine (a runner on that machine starts their sessions; a pe
   flockr agents [list] | flockr agents show <name>   status (offline, online, working, error), machine, harness, folder
   flockr agents create <name> --folder <path> [--harness id] [--machine id] [--permissions edit-free-commands-ask|read-only] [--personality text] [--model id]
                                       --machine defaults to the one online machine; --harness to its only harness
+  flockr agents create <name> --cloud [--personality text] [--model id]
+                                      on the board's hosted machine cloud: no folder, board tools only, runs with every laptop shut
   flockr agents update <name> [--folder path] [--permissions p] [--personality text] [--model id]   an empty --personality or --model clears it
   flockr agents start|stop|delete <name>  stop ends its sessions and releases its claims; delete keeps its messages
   flockr agents pause|resume <name>   pause: its current run finishes, new mentions, replies and tasks wait; resume picks them up

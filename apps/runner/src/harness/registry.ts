@@ -1,5 +1,5 @@
 import { claudeCode } from "./claude-code"
-import { piDurable } from "./pi-durable"
+import { piDurable } from "./pi-local"
 import type { Harness } from "./types"
 
 export const harnesses: readonly Harness[] = [claudeCode, piDurable]

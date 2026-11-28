@@ -50,6 +50,7 @@ export const machines = pgTable("machines", {
   id: text("id").primaryKey(),
   name: text("name").notNull(),
   harnesses: jsonb("harnesses").$type<HarnessInfo[]>().notNull().default([]),
+  hosted: boolean("hosted").notNull().default(false),
   lastSeenAt: timestamp("last_seen_at", { withTimezone: true }).notNull().defaultNow(),
   announcedOnline: boolean("announced_online").notNull().default(false),
   createdAt: createdAt(),

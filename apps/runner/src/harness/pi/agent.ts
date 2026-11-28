@@ -12,10 +12,11 @@ import {
   type ModelRef,
   type SettledSubmissionRecord,
   type ToolRegistration,
+  type Wake,
 } from "@earendil-works/pi-durable"
-import { NodeExecutionEnv } from "@earendil-works/pi-durable/env/node"
-import type { PiBoard } from "./board"
-import { openAgentStorage } from "./sqlite"
+import type { ExecutionEnv } from "@earendil-works/pi-durable/env"
+import type { SqliteStorage } from "@earendil-works/pi-durable/storage/sqlite"
+import type { FencedBoard } from "./board"
 import { alreadyPosted, boardExtension, filesExtension, keptPosted, ThreadDoc, triggerOf, type TurnRecord } from "./tools"
 
 const context = BACKGROUND_CONTEXT
@@ -38,20 +39,30 @@ export interface TurnSettings {
   model: ModelRef | null
   instructions: string
   folder: string | null
+  channel: string | null
   fileTools: readonly ToolRegistration[]
   maxTurns: number
 }
 
+export type WhenBusy = "followUp" | "steer"
+
 export type TurnOutcome = { kind: "answered"; text: string } | { kind: "unanswered"; reason: string; aborted: boolean }
 
 export interface AgentHomeOptions {
-  file: string
+  storage: SqliteStorage
   member: string
-  board: PiBoard
+  board: FencedBoard
+  workspace: ((cwd: string) => ExecutionEnv) | null
+  wakes?: HostWakes
   models: Models
   log: (line: string) => void
   settings?: HarnessSettings
   failedText: (reason: string) => string
+}
+
+export interface HostWakes {
+  onWake: (wake: Wake) => void
+  arm: (wake: Wake) => Promise<void>
 }
 
 export const requestIdFor = (options: { thread: string; messageId: string | null; prompt: string }): string =>
@@ -86,20 +97,28 @@ export class AgentHome {
     const board = boardExtension({ member: options.member, board: options.board, log: options.log })
     registry.install(board)
     registry.install(filesExtension)
+    const workspace = options.workspace
     const harness = await Harness.open(
-      await openAgentStorage(options.file),
+      options.storage,
       {
         models: options.models,
         registry,
         identity: { attribution: null },
-        env: ({ cwd }) => (cwd ? new NodeExecutionEnv({ cwd }) : undefined),
+        env: ({ cwd }) => (cwd && workspace ? workspace(cwd) : undefined),
+        ...(options.wakes ? { onWake: options.wakes.onWake } : {}),
         settings: options.settings ?? defaultAgentSettings,
         onReport: (report) => options.log(`${options.member}: ${report.kind}`),
       },
       context,
     )
+    await options.wakes?.arm(harness.wake())
     harness.resume()
     return new AgentHome(harness, options, board)
+  }
+
+  async alarm(): Promise<void> {
+    await this.options.wakes?.arm({ ...this.harness.wake(), active: true })
+    this.harness.resume()
   }
 
   get toolNames(): string[] {
@@ -134,10 +153,10 @@ export class AgentHome {
     )
   }
 
-  async turn(options: { thread: string; prompt: string; settings: TurnSettings }): Promise<TurnOutcome> {
+  async turn(options: { thread: string; prompt: string; settings: TurnSettings; whenBusy?: WhenBusy }): Promise<TurnOutcome> {
     const { thread, prompt, settings } = options
     if (!settings.model) return { kind: "unanswered", reason: "no model is set for this agent", aborted: false }
-    const current = await this.options.board.thread(thread)
+    const current = await this.options.board(settings.channel).thread(thread)
     const messageId = triggerOf({ thread: current, member: this.options.member, text: prompt })
     const requestId = requestIdFor({ thread, messageId, prompt })
     const conversation = await this.conversationFor(thread)
@@ -145,11 +164,13 @@ export class AgentHome {
       { model: settings.model, instructions: settings.instructions, cwd: settings.folder, tools: [...this.boardTools, ...(settings.folder ? settings.fileTools : [])], maxTurns: settings.maxTurns },
       context,
     )
+    await this.options.wakes?.arm({ ...this.harness.wake(), active: true })
     const turn = await conversation.commit(async (tx) => {
-      const submissionId = await conversation.submit(tx, { type: "input", content: prompt, requestId, whenBusy: "followUp" })
+      const submissionId = await conversation.submit(tx, { type: "input", content: prompt, requestId, whenBusy: options.whenBusy ?? "followUp" })
       const state = await tx.doc(ThreadDoc, conversation.id)
       state.thread = thread
       state.folder = settings.folder
+      state.channel = settings.channel
       const record: TurnRecord = { requestId, messageId, submissionId }
       if (!state.pending.some((p) => p.requestId === requestId) && !state.posted.includes(requestId)) state.pending.push(record)
       return record
@@ -175,8 +196,9 @@ export class AgentHome {
     if (text) {
       const state = await this.harness.snapshot(ThreadDoc, conversation.id, context)
       if (!state?.posted.includes(turn.requestId)) {
-        const current = await this.options.board.thread(thread)
-        if (!alreadyPosted({ thread: current, member: this.options.member, after: turn.messageId, text })) await this.options.board.reply(thread, text)
+        const board = this.options.board(state?.channel ?? null)
+        const current = await board.thread(thread)
+        if (!alreadyPosted({ thread: current, member: this.options.member, after: turn.messageId, text })) await board.reply(thread, text)
       }
     }
     await conversation.commit(async (tx) => {

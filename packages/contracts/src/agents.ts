@@ -33,7 +33,7 @@ export const agentEventTypes = {
   deleted: "agent.deleted",
 } as const
 
-export const machineLimits = { heartbeatSeconds: 15, onlineSeconds: 45 } as const
+export const machineLimits = { heartbeatSeconds: 15, onlineSeconds: 45, hostedOnlineSeconds: 180 } as const
 export const agentLimits = { nameMin: 2, nameMax: 32, personalityMax: 4000, reasonMax: 300, modelMax: 200, recentRuns: 5, recentRunsMax: 20 } as const
 
 export const runnerCommand = "bun run runner"
@@ -89,7 +89,8 @@ export const Machine = z
     id: MachineId,
     name: z.string(),
     harnesses: z.array(HarnessInfo),
-    online: z.boolean().openapi({ description: `True while the last heartbeat is under ${machineLimits.onlineSeconds} seconds old` }),
+    online: z.boolean().openapi({ description: `True while the last heartbeat is under ${machineLimits.onlineSeconds} seconds old, or ${machineLimits.hostedOnlineSeconds} for a hosted machine` }),
+    hosted: z.boolean().openapi({ description: "Runs on the board's own platform (the machine cloud): its agents need no folder, use board tools only and run with every laptop shut" }),
     lastSeenAt: timestamp,
   })
   .openapi("Machine")
@@ -138,7 +139,7 @@ export const CreateAgentBody = z
   .object({
     name: AgentName,
     harness: z.string().min(1).openapi({ description: "A harness id the machine reports (listMachines)" }),
-    folder: AbsoluteFolder,
+    folder: AbsoluteFolder.optional().openapi({ description: "Where the agent works on its machine; needed on every machine that is not hosted, ignored on a hosted one" }),
     machine: MachineId.openapi({ description: "The machine whose runner serves the agent" }),
     permissions: AgentPermissionsSchema.default(defaultAgentPermissions),
     personality: Personality.nullable().default(null),

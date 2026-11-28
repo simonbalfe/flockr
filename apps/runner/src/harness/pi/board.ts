@@ -36,3 +36,17 @@ export function piBoard(options: { member: string; client: Client }): PiBoard {
     updateEntry: port.updateEntry,
   }
 }
+
+export type FencedBoard = (channel: string | null) => PiBoard
+
+export function fencedPiBoard(options: { member: string; clientFor: (channels: string[] | null) => Client }): FencedBoard {
+  const boards = new Map<string, PiBoard>()
+  return (channel) => {
+    const key = channel ?? ""
+    const known = boards.get(key)
+    if (known) return known
+    const made = piBoard({ member: options.member, client: options.clientFor(channel === null ? null : [channel]) })
+    boards.set(key, made)
+    return made
+  }
+}

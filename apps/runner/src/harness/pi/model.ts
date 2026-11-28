@@ -1,4 +1,5 @@
-import { createModels, createProvider, type Model, type MutableModels } from "@earendil-works/pi-ai"
+import type { FetchFunction, Model, MutableModels, ProviderStreams } from "@earendil-works/pi-ai"
+import { createModels, createProvider } from "@earendil-works/pi-ai/models"
 import { openAICompletionsApi } from "@earendil-works/pi-ai/api/openai-completions.lazy"
 import type { ModelRef } from "@earendil-works/pi-durable"
 
@@ -12,6 +13,16 @@ export interface ModelEndpoint {
   key: string
   contextWindow: number
   maxTokens: number
+  fetch?: FetchFunction
+}
+
+function streamsThrough(fetch: FetchFunction | undefined): ProviderStreams {
+  const api = openAICompletionsApi()
+  if (!fetch) return api
+  return {
+    stream: (model, context, options) => api.stream(model, context, { ...options, fetch }),
+    streamSimple: (model, context, options) => api.streamSimple(model, context, { ...options, fetch }),
+  }
 }
 
 const providerId = "flockr-model"
@@ -41,7 +52,7 @@ export function endpointModels(endpoint: ModelEndpoint): ModelSource {
         baseUrl: endpoint.baseUrl,
         auth: { apiKey: { name: "Model key", resolve: async () => ({ auth: { apiKey: endpoint.key }, source: "runner config" }) } },
         models: [...known].map(model),
-        api: openAICompletionsApi(),
+        api: streamsThrough(endpoint.fetch),
       }),
     )
 

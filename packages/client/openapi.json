@@ -3644,11 +3644,16 @@
           "head": {
             "type": "integer",
             "description": "The latest sequence number on the board"
+          },
+          "through": {
+            "type": "integer",
+            "description": "The last sequence number this page read, shown or not; ask for since=through next. Events you may not see are skipped, so a page can be short while more follow"
           }
         },
         "required": [
           "events",
-          "head"
+          "head",
+          "through"
         ]
       },
       "BoardEvent": {
@@ -4596,7 +4601,8 @@
           "folder": {
             "type": "string",
             "pattern": "^\\/",
-            "example": "/Users/dana/code/shop"
+            "example": "/Users/dana/code/shop",
+            "description": "Where the agent works on its machine; needed on every machine that is not hosted, ignored on a hosted one"
           },
           "machine": {
             "type": "string",
@@ -4629,7 +4635,6 @@
         "required": [
           "name",
           "harness",
-          "folder",
           "machine"
         ]
       },
@@ -5077,7 +5082,11 @@
           },
           "online": {
             "type": "boolean",
-            "description": "True while the last heartbeat is under 45 seconds old"
+            "description": "True while the last heartbeat is under 45 seconds old, or 180 for a hosted machine"
+          },
+          "hosted": {
+            "type": "boolean",
+            "description": "Runs on the board's own platform (the machine cloud): its agents need no folder, use board tools only and run with every laptop shut"
           },
           "lastSeenAt": {
             "type": "string",
@@ -5090,6 +5099,7 @@
           "name",
           "harnesses",
           "online",
+          "hosted",
           "lastSeenAt"
         ]
       },

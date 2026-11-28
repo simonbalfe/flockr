@@ -206,7 +206,8 @@ Each one is the problem, an example from our own work, then the choice.
 
 - **Problem:** running agents in the cloud costs compute and model usage, and needs copies of code and secrets.
 - **Example:** today your agents run in Herdr with your files and logins.
-- **Choice:** the board does not care where an agent runs; both kinds claim tasks the same way. Local agents first. Cloud agents come when a task must run with the laptop shut: plug-in models and Claude Code in containers on the VPS, added to a channel as members.
+- **Choice:** the board does not care where an agent runs; both kinds claim tasks the same way. Local agents first. Cloud agents come when a task must run with the laptop shut.
+- **Built (4c, ADR 0036):** an agent on the hosted machine `cloud` runs the runner's own rules inside one Durable Object per agent, with Pi Durable on the object's SQLite, poked by the board after each write, calling the board and the model proxy in-process. Board tools only; coding in sandboxes is 4d.
 
 ### 9. Nothing acts unless asked
 

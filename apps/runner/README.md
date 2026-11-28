@@ -91,6 +91,21 @@ At each turn end the harness adapter takes the new steps as one chunk and the ru
 - **Restore:** a built-in agent with no `agent.sqlite` opens its session (which fences out any older worker), downloads the chunks in order and rebuilds the file before it starts. For Claude Code, a thread with no stored session resumes the newest one the board saved for it, after writing its session file back.
 - `flockr sessions list <agent>` and `flockr sessions show <agent> <session>` show what is saved.
 
+## Cloud agents
+
+An agent on the hosted machine `cloud` runs this same service and runner, for that one agent, inside a Durable Object on the board (`src/cloud/agent.ts`, hosted by `apps/server/src/platform/cloudflare/cloud-agent.ts`; ADR 0036, `docs/phases/phase-4/SPEC_PHASE_4C_CLOUD_AGENTS.md`). No Mac is involved.
+
+| What | On a Mac | In the cloud |
+|---|---|---|
+| Feed | The live socket | A poke after every board write and every minute; the object reads `listEvents?since=` as the agent, following `through` |
+| Board calls | HTTP with the runner's key | In-process requests to the board's app with a 15-minute agent token |
+| Model | `models` in `runner.json`, the key from the environment | The board's model proxy with a box token; the key never reaches the agent |
+| Pi state | `~/.flockr/agents/<agent>/agent.sqlite` (`pi/file-store.ts`) | The object's SQLite (`pi/database-store.ts`), its alarm armed through `onWake` |
+| Saving | The outbox (`src/sessions.ts`) | Sent directly; a turn that fails to save is resent with the next turn (`src/cloud/saver.ts`) |
+| Tools | Board tools, file tools inside the folder | Board tools only; no folder |
+
+The cloud entry must load in a Worker: nothing it imports may use Bun, `src/config.ts`, a child process or Pi's Node execution env (`test/cloud.test.ts` holds it; shared limits live in `src/limits.ts`). Import `createModels` and `createProvider` from `@earendil-works/pi-ai/models`, not the package index: through the index the Worker bundle skips the module's init (found in `wrangler dev`, 4c Notes).
+
 ## Panes
 
 With `panes` set, every run also shows in a terminal pane a person can watch. The headless harness session stays the source of truth (ADR 0013); the pane is only a view, and closing it changes nothing.
@@ -132,6 +147,7 @@ A hand-off (`flockr tasks handoff`) is seen as `task.handed_off`: the runner of 
 
 - Works in the agent's folder (or the channel override), with an environment of only `FC_URL`, `FC_AS` (the agent's name), `FC_STATE`, `FC_CHANNELS` (the run's channel: every `flockr` call in the run reads and writes only that channel, ADR 0034), `FLOCKR_KEY` (when the config has a key), `PATH` (with `flockr` and `fc` shims first, in `~/.flockr/bin`) and what the harness declares it needs.
 - Gets the board skill (`skills/flockr/SKILL.md`), the runner's rules for its permissions and the agent's personality as extra system instructions.
+- The built-in agent (`pi-durable`) sends every board call of a run with that run's channel as `x-flockr-channels`, kept in its thread document so a turn resumed after a crash is fenced too. A reply that arrives while it runs is submitted as a steer: it joins the running work after the current tool round. The model ids it knows (its default, and the agent's own) are registered before unfinished turns resume, so a resumed turn finds its model.
 - The `claude-code` adapter runs the logged-in Claude plan headless (`claude -p` with stream-json input and output), with user settings left out so their permission defaults do not apply. Its exact flags are in ADR 0013.
 
 ## Code
@@ -147,8 +163,9 @@ A hand-off (`flockr tasks handoff`) is seen as `task.handed_off`: the runner of 
 | `src/workspace/` | The workspace interface (`prepare` gives a task its own folder), the path rules (`paths.ts`), the `git` adapter and the real command runner |
 | `src/routing.ts`, `src/prompt.ts`, `src/permissions.ts` | Pure rules: who is addressed, the prompts, what is free, asked or refused |
 | `src/activity.ts` | Batches the steps a session reports (`SessionSpec.activity`) into activity entry updates |
-| `src/sessions.ts` | The session saver: outbox, fence, restore, through `sessionsClient` in `src/board.ts` |
-| `src/harness/` | The harness interface (label, capabilities, probe, start), the registry and one adapter per harness; `pi/chunks.ts` and `claude-code-chunks.ts` take and rebuild each adapter's session chunks; `claude-code-activity.ts` maps Claude Code's `stream-json` lines to steps (`docs/guides/GUIDE_AGENT_ACTIVITY.md`) |
+| `src/sessions.ts`, `src/session-fence.ts` | The session saver: outbox, fence, restore, through `sessionsClient` in `src/board.ts`; the fence rules both savers share |
+| `src/cloud/` | A cloud agent: the service and runner for one agent on a SQLite database, its event feed and its direct saver |
+| `src/harness/` | The harness interface (label, capabilities, probe, start), the registry and one adapter per harness; `pi/chunks.ts` (on any SQLite database) and `claude-code-chunks.ts` take and rebuild each adapter's session chunks, `pi/store.ts` is where Pi keeps its state (a file or a database), `pi-local.ts` is the Mac's built-in agent; `claude-code-activity.ts` maps Claude Code's `stream-json` lines to steps (`docs/guides/GUIDE_AGENT_ACTIVITY.md`) |
 | `src/bridge.ts`, `src/gate.ts`, `src/mcp.ts` | The permission bridge |
 | `test/` | `bun test`: config, prompts, permissions, store, routing, claims, steps reaching the entry, the Claude Code stream mapping, worktree paths and the git adapter against a fake `git` (`workspace.test.ts`), the machine service (including pause and resume) and the migration, through a fake harness and a fake board; the Herdr launcher against a fake `hc` |
 

@@ -218,6 +218,13 @@
       "when": 1795847149542,
       "tag": "0030_chat_bridges",
       "breakpoints": true
+    },
+    {
+      "idx": 31,
+      "version": "7",
+      "when": 1795849020444,
+      "tag": "0031_cloud_machine",
+      "breakpoints": true
     }
   ]
 }

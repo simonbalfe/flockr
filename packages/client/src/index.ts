@@ -103,6 +103,7 @@ export interface ClientOptions {
   member?: string
   key?: string | null
   channels?: string[] | null
+  fetch?: typeof fetch
 }
 
 export function clientHeaders(options: Omit<ClientOptions, "baseUrl">): Record<string, string> {
@@ -118,5 +119,5 @@ export function configureClient(options: ClientOptions): void {
 }
 
 export function memberClient(options: ClientOptions): Client {
-  return createClient({ baseUrl: options.baseUrl, headers: clientHeaders(options) })
+  return createClient({ baseUrl: options.baseUrl, headers: clientHeaders(options), ...(options.fetch ? { fetch: options.fetch } : {}) })
 }

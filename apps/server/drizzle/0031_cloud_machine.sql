@@ -1,0 +1,1 @@
+ALTER TABLE "machines" ADD COLUMN "hosted" boolean DEFAULT false NOT NULL;

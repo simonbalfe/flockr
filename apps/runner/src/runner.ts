@@ -3,7 +3,7 @@ import type { AgentPermissions } from "@flockr/contracts/agents"
 import type { EpochStore } from "@flockr/cli/epochs"
 import { activitySink, type ActivitySink } from "./activity"
 import type { BoardPort, Claim } from "./board"
-import { fenceEnv, folderFor, isFolder, leaseRenewMs } from "./config"
+import { fenceEnv, folderFor, leaseRenewMs } from "./limits"
 import type { Harness, PermissionBridge, Session, SessionExit, SessionSaver, SessionSpec } from "./harness/types"
 import { memoryBlock, noMemory } from "./memory"
 import { ruleFor } from "./permissions"
@@ -57,7 +57,7 @@ export interface RunnerDeps {
   bridge: (place: BridgePlace, settings: AgentSettings) => PermissionBridge
   log: (line: string) => void
   timers?: Timers
-  folderExists?: (folder: string) => boolean
+  folderExists: (folder: string) => boolean
   hasRoom?: () => boolean
   changed?: () => void
   freed?: () => void
@@ -97,7 +97,7 @@ export function createRunner(deps: RunnerDeps) {
   const { member, harness, board, epochs, log } = deps
   const maxMinutes = deps.maxMinutes
   const timers = deps.timers ?? realTimers
-  const folderExists = deps.folderExists ?? isFolder
+  const folderExists = deps.folderExists
   const runs = new Map<string, Run>()
   const toldMissing = new Set<string>()
   const queued = new Map<string, { channel: string; texts: string[] }>()
@@ -348,7 +348,7 @@ export function createRunner(deps: RunnerDeps) {
     const thread = String(task.id)
     if (closing || runs.has(thread) || !waitsFor(task, member)) return
     const folder = await folderOrNotice(thread, task.channel)
-    if (!folder || !hasRoom()) return
+    if (folder === null || !hasRoom()) return
     const claimed = await board.claim(task.id)
     if (!claimed) return
     epochs.set(claimed.id, claimed.claimEpoch)
@@ -372,7 +372,7 @@ export function createRunner(deps: RunnerDeps) {
     const key = reviewKey(task)
     if (closing || runs.has(thread) || !awaitsReview(task, member) || reviewed.has(key)) return
     const folder = await folderOrNotice(thread, task.channel)
-    if (!folder || !hasRoom()) return
+    if (folder === null || !hasRoom()) return
     reviewed.add(key)
     const history = await board.thread(thread)
     const memory = await memoryText(task.channel)
@@ -383,7 +383,7 @@ export function createRunner(deps: RunnerDeps) {
     const thread = question.threadId
     if (closing || runs.has(thread) || question.to !== member || question.answer !== null || answering.has(question.id)) return
     const folder = await folderOrNotice(thread, question.channel)
-    if (!folder || !hasRoom()) return
+    if (folder === null || !hasRoom()) return
     answering.add(question.id)
     const history = await board.thread(thread)
     const memory = await memoryText(question.channel)
@@ -414,7 +414,7 @@ export function createRunner(deps: RunnerDeps) {
     const thread = String(task.id)
     if (closing || runs.has(thread)) return
     const folder = await folderOrNotice(thread, task.channel)
-    if (!folder || !hasRoom()) return
+    if (folder === null || !hasRoom()) return
     epochs.set(task.id, task.claimEpoch)
     const history = await board.thread(thread)
     const memory = await memoryText(task.channel)
@@ -440,7 +440,7 @@ export function createRunner(deps: RunnerDeps) {
       return
     }
     const folder = await folderOrNotice(thread, channel)
-    if (!folder) return
+    if (folder === null) return
     if (!hasRoom()) {
       const waiting = queued.get(thread)?.texts ?? []
       queued.set(thread, { channel, texts: message === null ? waiting : [...waiting, message] })
@@ -552,7 +552,7 @@ export function createRunner(deps: RunnerDeps) {
       return
     }
     const folder = await folderOrNotice(thread, task.channel)
-    if (!folder) return
+    if (folder === null) return
     if (!hasRoom()) {
       queued.set(thread, { channel: task.channel, texts: [...(queued.get(thread)?.texts ?? []), message] })
       return

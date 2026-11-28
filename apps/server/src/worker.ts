@@ -1,24 +1,23 @@
 import { livePath } from "@flockr/contracts"
-import { createApp } from "./app"
 import { createAuthenticator, headerIdentity, liveAsParam, liveViewer } from "./auth/identity"
 import { viewerOf } from "./board/visibility"
 import { viewerHeader } from "./platform/cloudflare/board-room"
 import { backUp } from "./backup/backup"
 import { drainJobs } from "./board/drain"
+import { beatHostedMachine, hostedAgents } from "./board/machines"
+import { cloudMachine } from "./cloud/host"
 import { sweepOnce } from "./live/sweeper"
-import { boardId } from "./config"
-import type { Database } from "./db/client"
 import { useLiveSignals } from "./platform"
-import { signalsPath } from "./platform/cloudflare/board-room"
+import { boardRoom, onBoard, pokeCloudAgents, serveApi } from "./platform/cloudflare/api"
 import { connectWorker } from "./platform/cloudflare/db"
 import { WorkerEnv, workerAuth } from "./platform/cloudflare/env"
-import { cloudflareSignals, collectSignals } from "./platform/cloudflare/live"
-import { hookSettingsFrom } from "./board/hook-route"
+import { cloudflareSignals } from "./platform/cloudflare/live"
 import { bridgeSettingsFrom } from "./chat-bridges"
 import { modelProxySettingsFrom } from "./model-proxy/proxy"
 import { s3SettingsFrom, s3Store } from "./storage/s3"
 
 export { BoardRoom } from "./platform/cloudflare/board-room"
+export { CloudAgent } from "./platform/cloudflare/cloud-agent"
 
 useLiveSignals(cloudflareSignals)
 
@@ -36,31 +35,6 @@ async function nightlyBackup(env: WorkerEnv): Promise<void> {
   }
 }
 
-const bucketOf = (env: WorkerEnv) => {
-  const settings = s3SettingsFrom(env)
-  return settings ? s3Store(settings) : null
-}
-
-const boardRoom = (env: WorkerEnv) => env.BOARD_ROOM.get(env.BOARD_ROOM.idFromName(boardId))
-
-interface BoardWork<T> {
-  run: (db: Database) => Promise<T>
-  delivered: (result: T) => boolean
-}
-
-async function onBoard<T>(env: WorkerEnv, ctx: ExecutionContext, { run, delivered }: BoardWork<T>): Promise<T> {
-  const connection = connectWorker(env.HYPERDRIVE.connectionString)
-  try {
-    const { result, signals } = await collectSignals(() => run(connection.db))
-    if (signals.length && delivered(result)) {
-      ctx.waitUntil(boardRoom(env).fetch(`https://board-room${signalsPath}`, { method: "POST", body: JSON.stringify(signals) }))
-    }
-    return result
-  } finally {
-    ctx.waitUntil(connection.close())
-  }
-}
-
 export default {
   async fetch(request: Request, rawEnv: unknown, ctx: ExecutionContext): Promise<Response> {
     const env = WorkerEnv.parse(rawEnv)
@@ -74,15 +48,19 @@ export default {
       return boardRoom(env).fetch(new Request(request, { headers }))
     }
     if (!url.pathname.startsWith("/api/") && url.pathname !== "/mcp") return new Response("Not found", { status: 404 })
-    return onBoard(env, ctx, { run: async (db) => createApp(db, { auth, modelProxy: modelProxySettingsFrom(env, auth.secret), hooks: hookSettingsFrom(env), bridges: bridgeSettingsFrom(env), objects: bucketOf(env) }).fetch(request), delivered: (response) => response.ok })
+    return serveApi(env, ctx, request)
   },
   async scheduled(controller: ScheduledController, rawEnv: unknown, ctx: ExecutionContext): Promise<void> {
     const env = WorkerEnv.parse(rawEnv)
     if (controller.cron === backupCron) return nightlyBackup(env)
+    const hostsAgents = modelProxySettingsFrom(env, workerAuth(env, null).secret) !== null
     const drained = await onBoard(env, ctx, {
       run: async (db) => {
         await sweepOnce(db)
-        return drainJobs(db, { bridges: bridgeSettingsFrom(env) })
+        if (hostsAgents) await beatHostedMachine(db, cloudMachine)
+        const result = await drainJobs(db, { bridges: bridgeSettingsFrom(env) })
+        if (hostsAgents) pokeCloudAgents(env, ctx, await hostedAgents(db))
+        return result
       },
       delivered: () => true,
     })
