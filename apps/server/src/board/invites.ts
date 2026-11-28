@@ -27,12 +27,18 @@ const present = (row: InviteRow, now = new Date()): Invite => ({
   at: row.createdAt.toISOString(),
 })
 
-async function requireHostPerson(db: Executor, actor: string, via: IdentitySource): Promise<void> {
+type Inviter = { kind: "host" } | { kind: "owner"; org: string }
+
+async function requireInviter(db: Executor, actor: string, via: IdentitySource): Promise<Inviter> {
   if (via === "key") throw forbidden("A key cannot invite; a signed-in person invites")
   const me = await requireActor(db, actor)
-  const [org] = await db.select({ host: orgs.host }).from(orgs).where(eq(orgs.id, me.org))
-  if (me.kind !== "person" || !org?.host) throw forbidden(`${actor} cannot invite; only a person in the org that runs the board invites`)
+  const [org] = await db.select().from(orgs).where(eq(orgs.id, me.org))
+  if (me.kind === "person" && org?.host) return { kind: "host" }
+  if (me.kind === "person" && org?.selfInvites && org.owner === actor) return { kind: "owner", org: org.id }
+  throw forbidden(`${actor} cannot invite; a person in the org that runs the board invites, or a client org's owner once that org has self-invites on`)
 }
+
+const inviterSees = (inviter: Inviter, row: InviteRow) => inviter.kind === "host" || row.org === inviter.org
 
 export async function memberOfEmail(db: Executor, email: string): Promise<string | undefined> {
   const [row] = await db.select({ member: memberEmails.member }).from(memberEmails).where(eq(memberEmails.email, email.trim().toLowerCase()))
@@ -50,7 +56,8 @@ export async function openInvite(db: Executor, email: string, now = new Date()):
 }
 
 export async function createInvite(db: Database, mail: InviteMail, who: { actor: string; via: IdentitySource }, body: CreateInviteBody): Promise<Invite> {
-  await requireHostPerson(db, who.actor, who.via)
+  const inviter = await requireInviter(db, who.actor, who.via)
+  if (inviter.kind === "owner" && body.org !== inviter.org) throw forbidden(`${who.actor} invites only into ${inviter.org}`)
   const row = await mutate(db, async (tx, emit) => {
     const [org] = await tx.select().from(orgs).where(eq(orgs.id, body.org))
     if (!org) throw invalid(`No org ${body.org}; create it first (flockr orgs create)`)
@@ -74,16 +81,21 @@ export async function createInvite(db: Database, mail: InviteMail, who: { actor:
 }
 
 export async function listInvites(db: Database, who: { actor: string; via: IdentitySource }): Promise<Invite[]> {
-  await requireHostPerson(db, who.actor, who.via)
-  const rows = await db.select().from(invites).orderBy(desc(invites.id)).limit(100)
+  const inviter = await requireInviter(db, who.actor, who.via)
+  const rows = await db
+    .select()
+    .from(invites)
+    .where(inviter.kind === "owner" ? eq(invites.org, inviter.org) : undefined)
+    .orderBy(desc(invites.id))
+    .limit(100)
   return rows.map((row) => present(row))
 }
 
 export async function revokeInvite(db: Database, who: { actor: string; via: IdentitySource }, id: number): Promise<Invite> {
-  await requireHostPerson(db, who.actor, who.via)
+  const inviter = await requireInviter(db, who.actor, who.via)
   return mutate(db, async (tx, emit) => {
     const [row] = await tx.select().from(invites).where(eq(invites.id, id)).for("update")
-    if (!row) throw notFound(`Invite ${id} does not exist`)
+    if (!row || !inviterSees(inviter, row)) throw notFound(`Invite ${id} does not exist`)
     if (stateOf(row, new Date()) !== "open") return present(row)
     const [revoked] = await tx.update(invites).set({ revokedAt: new Date() }).where(eq(invites.id, id)).returning()
     if (!revoked) throw new Error("Invite update returned nothing")
@@ -94,7 +106,7 @@ export async function revokeInvite(db: Database, who: { actor: string; via: Iden
 
 export async function acceptInvite(db: Database, invite: InviteRow): Promise<string> {
   if (!(await findAnyMember(db, invite.member))) {
-    await createMember(db, invite.invitedBy, { name: invite.member, kind: "person", org: invite.org, owner: null, runsIn: null, source: null })
+    await createMember(db, invite.invitedBy, { name: invite.member, kind: "person", org: invite.org, owner: null, runsIn: null, source: null }, { invited: true })
   }
   await mutate(db, async (tx, emit) => {
     await tx.insert(memberEmails).values({ email: invite.email, member: invite.member }).onConflictDoNothing()

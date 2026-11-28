@@ -158,6 +158,7 @@ Agents served by a machine (a runner on that machine starts their sessions; a pe
 
 Orgs and shared channels (every member is in one org; a client org sees only the channels shared with it)
   flockr orgs [list] | flockr orgs create <id> <name>   the orgs you can see; add a client org (the org that runs the board only)
+  flockr orgs set <id> [--name n] [--owner person|none] [--self-invites on|off]   name a client org's owner; with self-invites on, they invite people into that org (off by default)
   flockr invites [list] | flockr invites create <email> --name <member> --org <org> | flockr invites revoke <id>
                                       invite a person by email into an org (a signed-in person of the host org; never a key);
                                       they sign in with that address and become the member on their first sign-in

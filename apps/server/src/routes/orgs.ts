@@ -1,6 +1,6 @@
-import { CreateOrgBody, Org } from "@flockr/contracts"
+import { CreateOrgBody, Org, OrgParams, UpdateOrgBody } from "@flockr/contracts"
 import { z } from "@hono/zod-openapi"
-import { createOrg, listOrgs } from "../board/orgs"
+import { createOrg, listOrgs, updateOrg } from "../board/orgs"
 import { jsonBody, ok, operation, router } from "./shared"
 
 const tags: [string] = ["orgs"]
@@ -21,4 +21,17 @@ export const orgRoutes = router()
       responses: ok(Org),
     }),
     async (c) => c.json(await createOrg(c.var.db, c.var.member, c.req.valid("json")), 200),
+  )
+  .openapi(
+    operation({
+      method: "patch",
+      path: "/api/orgs/{id}",
+      operationId: "updateOrg",
+      tags,
+      summary:
+        "Rename a client org, name its owner (a person in it), or turn self-invites on or off (off by default). With self-invites on, the owner invites people into that org only, and sees and revokes only its invites; turning it off revokes the open invites its people sent. Only a person in the org that runs the board",
+      request: { params: OrgParams, body: jsonBody(UpdateOrgBody) },
+      responses: ok(Org),
+    }),
+    async (c) => c.json(await updateOrg(c.var.db, c.var.member, c.req.valid("param").id, c.req.valid("json")), 200),
   )

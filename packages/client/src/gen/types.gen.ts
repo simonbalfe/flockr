@@ -888,11 +888,31 @@ export type Org = {
      * True for the org that runs the board; board-wide settings belong to it
      */
     host: boolean;
+    /**
+     * A client org only: whether its owner may invite people into it by email. Off by default
+     */
+    selfInvites: boolean;
+    /**
+     * A client org only: the person who manages it; with selfInvites on, they invite its people
+     */
+    owner: string | null;
 };
 
 export type CreateOrgBody = {
     id: string;
     name: string;
+};
+
+export type UpdateOrgBody = {
+    name?: string;
+    /**
+     * Let the org's owner invite people into it; turning it off revokes the open invites its people sent
+     */
+    selfInvites?: boolean;
+    /**
+     * A person in the org; null clears it
+     */
+    owner?: string | null;
 };
 
 export type Invite = {
@@ -3834,6 +3854,49 @@ export type CreateOrgResponses = {
 };
 
 export type CreateOrgResponse = CreateOrgResponses[keyof CreateOrgResponses];
+
+export type UpdateOrgData = {
+    body: UpdateOrgBody;
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/api/orgs/{id}';
+};
+
+export type UpdateOrgErrors = {
+    /**
+     * The input is not valid
+     */
+    400: Error;
+    /**
+     * Sign-in is on and the request has no session or key
+     */
+    401: Error;
+    /**
+     * The acting member is not on this board, or may not do this
+     */
+    403: Error;
+    /**
+     * Not found
+     */
+    404: Error;
+    /**
+     * The task or message is in another state, or the claim epoch is stale
+     */
+    409: Error;
+};
+
+export type UpdateOrgError = UpdateOrgErrors[keyof UpdateOrgErrors];
+
+export type UpdateOrgResponses = {
+    /**
+     * OK
+     */
+    200: Org;
+};
+
+export type UpdateOrgResponse = UpdateOrgResponses[keyof UpdateOrgResponses];
 
 export type ListInvitesData = {
     body?: never;

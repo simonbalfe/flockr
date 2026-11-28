@@ -64,6 +64,7 @@ export const flags = {
   permissions: { type: "string" },
   grants: { type: "string" },
   provisioning: { type: "boolean" },
+  "self-invites": { type: "string" },
   all: { type: "boolean" },
   personality: { type: "string" },
   model: { type: "string" },

@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test"
-import { AuthorizeResult, channelsHeader, CreatedKey, DeviceDecision, DeviceRequest, MemberAccess, memberHeader, MemberKey, OAuthClient, RevokedKeys } from "@flockr/contracts"
+import { AuthorizeResult, channelsHeader, CreatedKey, DeviceDecision, DeviceRequest, MemberAccess, memberHeader, MemberKey, OAuthClient, Org, RevokedKeys } from "@flockr/contracts"
 import { Client } from "@modelcontextprotocol/sdk/client/index.js"
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js"
 import { sql } from "drizzle-orm"
@@ -449,5 +449,76 @@ describe("OAuth for MCP (11f mcp-oauth)", () => {
     const token = TokenOk.parse((await form(board.secured, "/api/oauth/token", { grant_type: "authorization_code", code, redirect_uri: "https://grok.example/oauth/callback", client_id: client, code_verifier: verifier })).json).access_token
     const me = z.object({ name: z.string(), member: z.object({ kind: z.string(), owner: z.string().nullable() }) }).parse((await board.bearer("/api/me", token)).json)
     expect(me).toMatchObject({ name: "grok-helper", member: { kind: "agent", owner: "simon" } })
+  })
+})
+
+describe("client self-invites (11f self-invites)", () => {
+  async function selfInviteBoard() {
+    const board = await securedBoard()
+    await board.call("simon", "POST", "/api/orgs", { id: "globex", name: "Globex" })
+    await board.call("simon", "POST", "/api/members", { name: "ben", kind: "person", org: "acme" })
+    await board.call("simon", "POST", "/api/members", { name: "gus", kind: "person", org: "globex" })
+    return board
+  }
+  const invite = (email: string, name: string, org: string) => ({ email, name, org })
+
+  test("off by default: a client person cannot invite, even into their own org", async () => {
+    const board = await selfInviteBoard()
+    const orgs = z.array(Org).parse((await board.call("simon", "GET", "/api/orgs")).json)
+    expect(orgs.find((o) => o.id === "acme")).toMatchObject({ selfInvites: false, owner: null })
+    expect((await board.call("ana", "POST", "/api/invites", invite("bea@example.com", "bea", "acme"))).status).toBe(403)
+    await board.call("simon", "PATCH", "/api/orgs/acme", { owner: "ana" })
+    expect((await board.call("ana", "POST", "/api/invites", invite("bea@example.com", "bea", "acme"))).status).toBe(403)
+  })
+
+  test("only a host person sets the owner and the switch, and the owner must be a person in that org", async () => {
+    const board = await selfInviteBoard()
+    expect((await board.call("ana", "PATCH", "/api/orgs/acme", { selfInvites: true })).status).toBe(403)
+    expect((await board.call("claude", "PATCH", "/api/orgs/acme", { selfInvites: true })).status).toBe(403)
+    expect((await board.call("simon", "PATCH", "/api/orgs/acme", { owner: "gus" })).status).toBe(400)
+    expect((await board.call("simon", "PATCH", "/api/orgs/acme", { owner: "acme-bot" })).status).toBe(400)
+    expect((await board.call("simon", "PATCH", "/api/orgs/home", { selfInvites: true })).status).toBe(400)
+    const set = await board.call("simon", "PATCH", "/api/orgs/acme", { owner: "ana", selfInvites: true })
+    expect(Org.parse(set.json)).toMatchObject({ id: "acme", owner: "ana", selfInvites: true })
+    await board.call("simon", "PATCH", "/api/orgs/acme", { owner: "ana", selfInvites: true })
+    expect(await board.db.execute(sql`select 1 from events where type = 'org.updated'`)).toHaveLength(1)
+  })
+
+  test("with it on, the owner invites into their own org only, sees only its invites, and the invitee sees nothing else", async () => {
+    const board = await selfInviteBoard()
+    await board.call("simon", "PATCH", "/api/orgs/acme", { owner: "ana", selfInvites: true })
+    const ours = z.object({ id: z.number() }).parse((await board.call("simon", "POST", "/api/invites", invite("hal@example.com", "hal", "home"))).json)
+    expect((await board.call("ana", "POST", "/api/invites", invite("eve@example.com", "eve", "home"))).status).toBe(403)
+    expect((await board.call("ana", "POST", "/api/invites", invite("eve@example.com", "eve", "globex"))).status).toBe(403)
+    expect((await board.call("ben", "POST", "/api/invites", invite("eve@example.com", "eve", "acme"))).status).toBe(403)
+    expect((await board.call("gus", "POST", "/api/invites", invite("eve@example.com", "eve", "globex"))).status).toBe(403)
+    expect((await board.bearer("/api/invites", await board.key("ana"), { method: "POST", body: invite("eve@example.com", "eve", "acme") })).status).toBe(403)
+
+    const made = await board.call("ana", "POST", "/api/invites", invite("bea@example.com", "bea", "acme"))
+    expect(made.status).toBe(200)
+    expect(z.object({ org: z.string(), invitedBy: z.string() }).parse(made.json)).toMatchObject({ org: "acme", invitedBy: "ana" })
+    const listed = z.array(z.object({ id: z.number(), org: z.string() })).parse((await board.call("ana", "GET", "/api/invites")).json)
+    expect(listed.map((i) => i.org)).toEqual(["acme"])
+    expect((await board.call("ana", "POST", `/api/invites/${ours.id}/revoke`)).status).toBe(404)
+    expect(z.array(z.object({ org: z.string() })).parse((await board.call("simon", "GET", "/api/invites")).json).map((i) => i.org).sort()).toEqual(["acme", "home"])
+
+    const cookie = await board.signIn("bea@example.com")
+    const me = z.object({ name: z.string(), member: z.object({ org: z.string(), kind: z.string() }) }).parse((await board.session("/api/me", cookie)).json)
+    expect(me).toMatchObject({ name: "bea", member: { org: "acme", kind: "person" } })
+    expect((await board.session("/api/channels/backend/messages", cookie)).status).toBe(403)
+    expect((await board.session("/api/invites", cookie, { method: "POST", body: invite("zed@example.com", "zed", "acme") })).status).toBe(403)
+  })
+
+  test("turning it off stops the owner and revokes the open invites the org's people sent, not ours", async () => {
+    const board = await selfInviteBoard()
+    await board.call("simon", "PATCH", "/api/orgs/acme", { owner: "ana", selfInvites: true })
+    await board.call("ana", "POST", "/api/invites", invite("bea@example.com", "bea", "acme"))
+    const ours = z.object({ id: z.number() }).parse((await board.call("simon", "POST", "/api/invites", invite("cal@example.com", "cal", "acme"))).json)
+    await board.call("simon", "PATCH", "/api/orgs/acme", { selfInvites: false })
+    expect((await board.call("ana", "POST", "/api/invites", invite("dot@example.com", "dot", "acme"))).status).toBe(403)
+    const states = z.array(z.object({ id: z.number(), name: z.string(), state: z.string() })).parse((await board.call("simon", "GET", "/api/invites")).json)
+    expect(states.find((i) => i.name === "bea")?.state).toBe("revoked")
+    expect(states.find((i) => i.id === ours.id)?.state).toBe("open")
+    await expect(board.signIn("bea@example.com")).rejects.toThrow("No sign-in link")
   })
 })

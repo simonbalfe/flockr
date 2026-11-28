@@ -61,6 +61,7 @@ const rules: Rule[] = [
   { method: "POST", pattern: /^\/api\/(dms|members)$/, target: () => ({ kind: "viewer" }) },
   { method: "GET", pattern: /^\/api\/orgs$/, target: () => ({ kind: "open" }) },
   { pattern: /^\/api\/oauth\//, target: () => ({ kind: "viewer" }) },
+  { pattern: /^\/api\/invites(\/\d+\/revoke)?$/, target: () => ({ kind: "viewer" }) },
   { method: "GET", pattern: /^\/api\/wait$/, target: (_, request) => waitTarget(request.query) },
 ]
 

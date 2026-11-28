@@ -63,6 +63,7 @@ Scope: `apps/server` (routes, board rules, the database, live events, the lease 
 - **Schema and migrations:**
   - a schema edit in `apps/server/src/db/schema.ts` has its generated migration (`bun run db:generate`) committed, and no applied migration is edited
   - the migration applies to an empty database and to one that holds rows: a new `NOT NULL` column has a default or a backfill
+  - no foreign key closes a cycle between two tables (`orgs.owner` to `members` would, since `members.org` points back): the restore orders tables by their foreign keys and refuses a cycle, so keep such a column plain and check it in code (a table pointing at itself is fine)
   - the generated SQL is read, not trusted
   - queries filter by board first and use an index for it; no N+1 in a list, the sweeper or a claim
   - lists page by keyset (`(created_at, id)` or the sequence number) with a stable order and a unique tiebreaker, never by offset or a hard cap

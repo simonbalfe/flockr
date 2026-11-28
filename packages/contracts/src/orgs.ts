@@ -12,8 +12,20 @@ export const Org = z
     id: orgId.openapi({ example: "acme" }),
     name: z.string().openapi({ example: "Acme" }),
     host: z.boolean().openapi({ description: "True for the org that runs the board; board-wide settings belong to it" }),
+    selfInvites: z.boolean().openapi({ description: "A client org only: whether its owner may invite people into it by email. Off by default" }),
+    owner: z.string().nullable().openapi({ example: "ana", description: "A client org only: the person who manages it; with selfInvites on, they invite its people" }),
   })
   .openapi("Org")
+
+export const UpdateOrgBody = z
+  .object({
+    name: z.string().trim().min(1).max(80).optional(),
+    selfInvites: z.boolean().optional().openapi({ description: "Let the org's owner invite people into it; turning it off revokes the open invites its people sent" }),
+    owner: z.string().nullable().optional().openapi({ example: "ana", description: "A person in the org; null clears it" }),
+  })
+  .openapi("UpdateOrgBody")
+
+export const OrgParams = z.object({ id: z.string().openapi({ param: { name: "id", in: "path" }, example: "acme" }) })
 
 export const CreateOrgBody = z.object({ id: orgId.openapi({ example: "acme" }), name: z.string().trim().min(1).max(80).openapi({ example: "Acme" }) }).openapi("CreateOrgBody")
 
@@ -37,4 +49,5 @@ export const mayJoinChannel = (channel: { org: string; visibility: ChannelVisibi
 export type ChannelVisibility = z.infer<typeof ChannelVisibility>
 export type Org = z.infer<typeof Org>
 export type CreateOrgBody = z.infer<typeof CreateOrgBody>
+export type UpdateOrgBody = z.infer<typeof UpdateOrgBody>
 export type ChannelMember = z.infer<typeof ChannelMember>

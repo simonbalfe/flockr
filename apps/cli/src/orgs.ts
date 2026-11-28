@@ -5,7 +5,7 @@ import { run } from "./api"
 import { need, UsageError } from "./args"
 import { channelLine } from "./format"
 
-const orgLine = (o: Org) => `${o.id.padEnd(14)} ${o.name}${o.host ? "  (runs this board)" : ""}`
+const orgLine = (o: Org) => `${o.id.padEnd(14)} ${o.name}${o.host ? "  (runs this board)" : ""}${o.owner ? `  owner ${o.owner}` : ""}${o.selfInvites ? "  self-invites on" : ""}`
 const channelMemberLine = (m: ChannelMember) => `${m.member.padEnd(14)} ${m.org.padEnd(10)} ${m.addedBy ? `added by ${m.addedBy}` : ""}`
 const channelArg = (raw: string | undefined) => need(raw, "channel").replace(/^#/, "")
 
@@ -17,9 +17,18 @@ export function visibilityOf(raw: string | undefined): ChannelVisibility | undef
 }
 
 export async function orgsCommand(context: CommandContext): Promise<number> {
-  const { positionals, print } = context
+  const { positionals, values, print } = context
   const sub = positionals[1] ?? "list"
   switch (sub) {
+    case "set": {
+      const raw = values["self-invites"]
+      if (raw !== undefined && raw !== "on" && raw !== "off") throw new UsageError("--self-invites must be on or off")
+      const body = { name: values.name, owner: values.owner === undefined ? undefined : values.owner === "none" ? null : values.owner, selfInvites: raw === undefined ? undefined : raw === "on" }
+      if (body.name === undefined && body.owner === undefined && body.selfInvites === undefined) throw new UsageError("Give --name, --owner <person>|none or --self-invites on|off")
+      const org = await run(sdk.updateOrg({ path: { id: need(positionals[2], "org id") }, body }))
+      print(org, () => orgLine(org))
+      return 0
+    }
     case "list": {
       const list = await run(sdk.listOrgs())
       print(list, () => list.map(orgLine).join("\n"))
@@ -31,7 +40,7 @@ export async function orgsCommand(context: CommandContext): Promise<number> {
       return 0
     }
     default:
-      throw new UsageError(`Unknown orgs command ${sub}. Use flockr orgs [list|create <id> <name>]`)
+      throw new UsageError(`Unknown orgs command ${sub}. Use flockr orgs [list|create <id> <name>|set <id> [--name n] [--owner person|none] [--self-invites on|off]]`)
   }
 }
 

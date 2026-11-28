@@ -1,14 +1,14 @@
-import { mayJoinChannel, type ChannelMember, type ChannelVisibility, type CreateOrgBody, type Org } from "@flockr/contracts"
-import { and, asc, eq, isNull, ne, sql } from "drizzle-orm"
+import { mayJoinChannel, type ChannelMember, type ChannelVisibility, type CreateOrgBody, type Org, type UpdateOrgBody } from "@flockr/contracts"
+import { and, asc, eq, gt, inArray, isNull, ne, sql } from "drizzle-orm"
 import type { Database, Executor, Tx } from "../db/client"
-import { channelMembers, channels, members, orgs, type ChannelRow, type MemberRow, type OrgRow } from "../db/schema"
+import { channelMembers, channels, invites, members, orgs, type ChannelRow, type MemberRow, type OrgRow } from "../db/schema"
 import { alreadyExists, forbidden, invalid, notFound } from "./errors"
 import { mutate } from "./events"
 import { requireActor } from "./members"
 import { findMember } from "./read"
 import { seesMember, type Viewer } from "./visibility"
 
-const presentOrg = (row: OrgRow): Org => ({ id: row.id, name: row.name, host: row.host })
+const presentOrg = (row: OrgRow): Org => ({ id: row.id, name: row.name, host: row.host, selfInvites: row.selfInvites, owner: row.owner })
 
 export async function listOrgs(db: Executor, viewer: Viewer): Promise<Org[]> {
   const rows = await db
@@ -32,6 +32,37 @@ export async function createOrg(db: Database, actor: string, body: CreateOrgBody
     if (!row) throw new Error("Org insert returned nothing")
     emit({ type: "org.created", actor, data: { id: row.id, name: row.name } })
     return presentOrg(row)
+  })
+}
+
+export async function updateOrg(db: Database, actor: string, id: string, body: UpdateOrgBody): Promise<Org> {
+  return mutate(db, async (tx, emit) => {
+    const me = await requireActor(tx, actor)
+    const [mine] = await tx.select({ host: orgs.host }).from(orgs).where(eq(orgs.id, me.org))
+    if (me.kind !== "person" || !mine?.host) throw forbidden(`${actor} cannot change an org; a person in the org that runs the board does`)
+    const [row] = await tx.select().from(orgs).where(eq(orgs.id, id)).for("update")
+    if (!row) throw notFound(`No org ${id}`)
+    if (row.host && (body.selfInvites !== undefined || (body.owner !== undefined && body.owner !== null))) throw invalid(`${id} runs the board: its people always invite, and it has no owner`)
+    if (body.owner) {
+      const owner = await findMember(tx, body.owner)
+      if (!owner || owner.kind !== "person" || owner.org !== id) throw invalid(`The owner of ${id} must be a person in ${id}`)
+    }
+    const next = { name: body.name ?? row.name, selfInvites: body.selfInvites ?? row.selfInvites, owner: body.owner === undefined ? row.owner : body.owner }
+    const changed = (["name", "selfInvites", "owner"] as const).filter((key) => next[key] !== row[key])
+    if (!changed.length) return presentOrg(row)
+    const [updated] = await tx.update(orgs).set(next).where(eq(orgs.id, id)).returning()
+    if (!updated) throw new Error("Org update returned nothing")
+    emit({ type: "org.updated", actor, data: { id, changed, selfInvites: updated.selfInvites, owner: updated.owner } })
+    if (row.selfInvites && !updated.selfInvites) {
+      const inOrg = tx.select({ name: members.name }).from(members).where(eq(members.org, id))
+      const revoked = await tx
+        .update(invites)
+        .set({ revokedAt: new Date() })
+        .where(and(eq(invites.org, id), inArray(invites.invitedBy, inOrg), isNull(invites.acceptedAt), isNull(invites.revokedAt), gt(invites.expiresAt, new Date())))
+        .returning({ id: invites.id })
+      for (const invite of revoked) emit({ type: "invite.revoked", actor, data: { invite: invite.id, cause: "self-invites-off" } })
+    }
+    return presentOrg(updated)
   })
 }
 

@@ -2859,12 +2859,26 @@
           "host": {
             "type": "boolean",
             "description": "True for the org that runs the board; board-wide settings belong to it"
+          },
+          "selfInvites": {
+            "type": "boolean",
+            "description": "A client org only: whether its owner may invite people into it by email. Off by default"
+          },
+          "owner": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "example": "ana",
+            "description": "A client org only: the person who manages it; with selfInvites on, they invite its people"
           }
         },
         "required": [
           "id",
           "name",
-          "host"
+          "host",
+          "selfInvites",
+          "owner"
         ]
       },
       "CreateOrgBody": {
@@ -2886,6 +2900,28 @@
           "id",
           "name"
         ]
+      },
+      "UpdateOrgBody": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80
+          },
+          "selfInvites": {
+            "type": "boolean",
+            "description": "Let the org's owner invite people into it; turning it off revokes the open invites its people sent"
+          },
+          "owner": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "example": "ana",
+            "description": "A person in the org; null clears it"
+          }
+        }
       },
       "Invite": {
         "type": "object",
@@ -10205,13 +10241,105 @@
         }
       }
     },
+    "/api/orgs/{id}": {
+      "patch": {
+        "operationId": "updateOrg",
+        "tags": [
+          "orgs"
+        ],
+        "summary": "Rename a client org, name its owner (a person in it), or turn self-invites on or off (off by default). With self-invites on, the owner invites people into that org only, and sees and revokes only its invites; turning it off revokes the open invites its people sent. Only a person in the org that runs the board",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "example": "acme"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateOrgBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Org"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The input is not valid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sign-in is on and the request has no session or key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The acting member is not on this board, or may not do this",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The task or message is in another state, or the claim epoch is stale",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/invites": {
       "post": {
         "operationId": "createInvite",
         "tags": [
           "orgs"
         ],
-        "summary": "Invite a person by email into an org, as a new member name. They sign in with a one-time link sent to that address; the first sign-in makes them a member. Only a signed-in person of the org that runs the board invites, never a key; the invite lasts 7 days",
+        "summary": "Invite a person by email into an org, as a new member name. They sign in with a one-time link sent to that address; the first sign-in makes them a member. A signed-in person of the org that runs the board invites into any org, and a client org's owner into their own org once it has self-invites on; never a key. The invite lasts 7 days",
         "requestBody": {
           "required": true,
           "content": {
@@ -10290,7 +10418,7 @@
         "tags": [
           "orgs"
         ],
-        "summary": "Invites, newest first: open, accepted, revoked or expired",
+        "summary": "Invites, newest first: open, accepted, revoked or expired. A client org's owner sees only their org's",
         "responses": {
           "200": {
             "description": "OK",

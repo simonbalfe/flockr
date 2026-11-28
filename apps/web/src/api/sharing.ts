@@ -1,5 +1,5 @@
 import type { ChannelVisibility } from "@flockr/client"
-import { addChannelMemberMutation, listOrgsOptions, listChannelMembersOptions, removeChannelMemberMutation, updateChannelMutation } from "@flockr/client/react-query"
+import { addChannelMemberMutation, listOrgsOptions, updateOrgMutation, listChannelMembersOptions, removeChannelMemberMutation, updateChannelMutation } from "@flockr/client/react-query"
 import { useQuery } from "@tanstack/react-query"
 import { useBoardMutation } from "./hooks"
 
@@ -15,3 +15,6 @@ export const useSetReviewNeedsPerson = () =>
 export const useAddChannelMember = () => useBoardMutation(addChannelMemberMutation(), (a: { channel: string; name: string }) => ({ path: { channel: a.channel, name: a.name } }))
 
 export const useRemoveChannelMember = () => useBoardMutation(removeChannelMemberMutation(), (a: { channel: string; name: string }) => ({ path: { channel: a.channel, name: a.name } }))
+
+export const useUpdateOrg = () =>
+  useBoardMutation(updateOrgMutation(), (a: { id: string; owner?: string | null; selfInvites?: boolean }) => ({ path: { id: a.id }, body: { owner: a.owner, selfInvites: a.selfInvites } }))

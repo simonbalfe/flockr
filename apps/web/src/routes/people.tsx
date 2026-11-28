@@ -1,9 +1,10 @@
 import { useState, type FormEvent } from "react"
 import { toast } from "sonner"
-import { useMayManageKeys } from "@/api/auth"
 import { errorText, useMembers } from "@/api/hooks"
 import { useCreateInvite, useInvites, useRevokeInvite } from "@/api/invites"
-import { useOrgs } from "@/api/sharing"
+import { currentUser } from "@/api/session"
+import { useOrgs, useUpdateOrg } from "@/api/sharing"
+import { Switch } from "@/components/ui/switch"
 import { PageHeader } from "@/components/page-header"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
@@ -12,14 +13,26 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 
 const fieldClass = "h-8 w-full border bg-background px-2.5 text-[13.5px] outline-none focus-visible:border-ring focus-visible:ring-1 focus-visible:ring-ring/50"
 
-function InviteDialog() {
+type Inviter = { kind: "host" } | { kind: "owner"; org: string } | { kind: "none" }
+
+function useInviter(): Inviter {
+  const members = useMembers()
+  const orgs = useOrgs()
+  const me = members.data?.find((m) => m.name === currentUser)
+  const mine = orgs.data?.find((o) => o.id === me?.org)
+  if (!me || me.kind !== "person" || !mine) return { kind: "none" }
+  if (mine.host) return { kind: "host" }
+  return mine.selfInvites && mine.owner === me.name ? { kind: "owner", org: mine.id } : { kind: "none" }
+}
+
+function InviteDialog({ inviter }: { inviter: Exclude<Inviter, { kind: "none" }> }) {
   const create = useCreateInvite()
   const orgs = useOrgs()
   const [open, setOpen] = useState(false)
   const [email, setEmail] = useState("")
   const [name, setName] = useState("")
   const [org, setOrg] = useState("")
-  const options = orgs.data ?? []
+  const options = (orgs.data ?? []).filter((o) => inviter.kind === "host" || o.id === inviter.org)
   const target = org || options.find((o) => !o.host)?.id || options[0]?.id || ""
 
   const submit = (event: FormEvent) => {
@@ -94,6 +107,53 @@ function InviteList() {
   )
 }
 
+function OrgSettings() {
+  const orgs = useOrgs()
+  const members = useMembers()
+  const update = useUpdateOrg()
+  const clients = (orgs.data ?? []).filter((o) => !o.host)
+  if (!clients.length) return <div className="text-sm text-faint">No client orgs yet.</div>
+  return (
+    <div className="grid gap-2">
+      {clients.map((org) => {
+        const people = (members.data ?? []).filter((m) => m.kind === "person" && m.org === org.id)
+        return (
+          <div key={org.id} className="flex flex-wrap items-center gap-3 text-sm">
+            <span className="min-w-0 flex-1 truncate">{org.name}</span>
+            <select
+              className={fieldClass + " w-40"}
+              value={org.owner ?? ""}
+              aria-label={`Owner of ${org.name}`}
+              onChange={(e) => update.mutate({ id: org.id, owner: e.target.value || null }, { onError: (error) => toast.error(errorText(error)) })}
+            >
+              <option value="">No owner</option>
+              {people.map((p) => (
+                <option key={p.name} value={p.name}>
+                  {p.name}
+                </option>
+              ))}
+            </select>
+            <label className="flex items-center gap-2 text-[13px] text-muted-foreground">
+              <Switch
+                checked={org.selfInvites}
+                disabled={update.isPending || org.owner === null}
+                onCheckedChange={(checked) =>
+                  update.mutate(
+                    { id: org.id, selfInvites: checked },
+                    { onSuccess: () => toast(checked ? `${org.owner ?? "The owner"} can invite people into ${org.name} now.` : `Self-invites off; ${org.name}'s open invites are revoked.`), onError: (error) => toast.error(errorText(error)) },
+                  )
+                }
+              />
+              Owner invites
+            </label>
+          </div>
+        )
+      })}
+      <p className="text-xs text-faint">With Owner invites on, the owner invites people into that org only, by email. Off by default; turning it off revokes their open invites.</p>
+    </div>
+  )
+}
+
 function MemberList() {
   const members = useMembers()
   return (
@@ -114,10 +174,11 @@ function MemberList() {
 }
 
 export function PeopleView() {
-  const mayManage = useMayManageKeys()
+  const inviter = useInviter()
+  const mayManage = inviter.kind !== "none"
   return (
     <>
-      <PageHeader title="People">{mayManage && <InviteDialog />}</PageHeader>
+      <PageHeader title="People">{inviter.kind !== "none" && <InviteDialog inviter={inviter} />}</PageHeader>
       <ScrollArea className="min-h-0 flex-1">
         <div className="grid max-w-[720px] gap-6 px-4 pt-5 pb-6 nav:pl-6">
           <section className="grid gap-2">
@@ -128,6 +189,12 @@ export function PeopleView() {
             <section className="grid gap-2">
               <h2 className="text-[13px] font-medium text-muted-foreground">Invites</h2>
               <InviteList />
+            </section>
+          )}
+          {inviter.kind === "host" && (
+            <section className="grid gap-2">
+              <h2 className="text-[13px] font-medium text-muted-foreground">Client orgs</h2>
+              <OrgSettings />
             </section>
           )}
         </div>

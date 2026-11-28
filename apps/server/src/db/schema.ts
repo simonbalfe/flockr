@@ -20,6 +20,8 @@ export const orgs = pgTable(
     id: text("id").primaryKey(),
     name: text("name").notNull(),
     host: boolean("host").notNull().default(false),
+    selfInvites: boolean("self_invites").notNull().default(false),
+    owner: text("owner"),
     createdAt: createdAt(),
   },
   (t) => [uniqueIndex("orgs_one_host").on(t.host).where(sql`${t.host}`)],

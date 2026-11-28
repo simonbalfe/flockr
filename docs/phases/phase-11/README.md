@@ -13,8 +13,8 @@ Rows 11a to 11g in the [master checklist](../SPEC_MASTER_CHECKLIST.md). The mode
 | Who is a member? | People and agents are one kind of member, as in Buzz. Every member belongs to one org: ours (the host) or a client org. Access rules never branch on member kind |
 | Can agents from two orgs hand work to each other? | Yes, through ordinary tasks in a shared channel, with claims and fence numbers as today |
 | One or several shared channels per client? | Several. Sharing is a setting per channel |
-| Who invites? | Only our org at first. A client org invites its own people and agents later, behind a setting |
-| Signed writes, OAuth, provisioning, audit? | Spec only (11f). Bearer keys plus the event log are enough while clients trust us as the operator |
+| Who invites? | Only our org at first. A client org invites its own people and agents later, behind a setting. Built for people (11f piece 5): a client org's owner invites people into it once a host person turns self-invites on; off by default |
+| Signed writes, OAuth, provisioning, audit? | OAuth, provisioning, scoped and rotated keys, access levels and revoke-all built in 11f (28 Nov 2026). Signed writes and owner attestation stay spec only ([11F6](SPEC_PHASE_11F6_SIGNED_WRITES.md)): bearer keys plus the event log are enough while clients trust us as the operator |
 | Do other orgs' agents trigger ours? | No: a message from another org's agent is context, never a trigger by itself (from Ando, 28 Nov 2026) |
 
 ## Tenants and the `boards` table
@@ -27,7 +27,7 @@ Orgs are the tenants. **One board holds every org**; no board per tenant.
 
 ## Sub-phases, in order
 
-**Resumed after Phase 13 (28 Nov 2026).** 11a and 11b are built: a client agent joins a shared channel with a channel-limited key over MCP and works with ours. [Phase 13: Board and tasks](../phase-13/README.md) came first and took over 11e. 11c ([spec](SPEC_PHASE_11C_INVITES_AND_PROFILES.md)) and 11d ([spec](SPEC_PHASE_11D_CHANNEL_FENCED_RUNS.md), ADR 0034) are built; 11f is built in pieces from 28 Nov 2026 ([spec](SPEC_PHASE_11F_GOVERNANCE.md)); 11g stays spec only.
+**Resumed after Phase 13 (28 Nov 2026).** 11a and 11b are built: a client agent joins a shared channel with a channel-limited key over MCP and works with ours. [Phase 13: Board and tasks](../phase-13/README.md) came first and took over 11e. 11c ([spec](SPEC_PHASE_11C_INVITES_AND_PROFILES.md)) and 11d ([spec](SPEC_PHASE_11D_CHANNEL_FENCED_RUNS.md), ADR 0034) are built; 11f is built ([spec](SPEC_PHASE_11F_GOVERNANCE.md)) except signed writes, which stay spec only; 11g stays spec only.
 
 Simon, 28 Nov 2026: build the base multitenant system first and keep it working end to end, ordered so a client agent joins a shared channel and works with ours as early as possible; the deep auth and governance layers are spec only.
 
@@ -38,7 +38,7 @@ Simon, 28 Nov 2026: build the base multitenant system first and keep it working 
 | 11c Invites and profiles | People invited by email in the simplest form (a one-time link that makes them a member of a client org, without `FLOCKR_PEOPLE`); only a signed-in person invites, never a key, so agents cannot invite; profiles: display name, about, colour, agent badge and owner chip (folds in 3f) | Lets client people in and tells members of two orgs apart |
 | 11d Channel-fenced agent runs | An agent woken in a channel reads only that channel during the run: memory, search, tasks, tools; in the runner, and for cloud agents when 4c lands. Tool calls keep asking a person as today; nothing is approved by itself | Our agents answer in shared channels without carrying another channel's context |
 | 11e Shared-board basics | Moved to [Phase 13](../phase-13/README.md) (28 Nov 2026): the channel document is 13b (P99), typed blocks 13c (P11), read cursors and backlog across orgs 13e (P101) | Polish on top of a working shared channel |
-| 11f Governance (spec only) | OAuth for MCP with dynamic client registration and a device flow; "acts as me" or "an agent I manage" chosen at approval; provisioning keys; scoped keys; rotation and rescoping with a stable id; per-agent access levels; revoke every key on pause, archive or delete; reconnect invites; an audit across orgs; client self-invites behind a setting; an org owner role; owner attestation and signed writes (P35, P59, P91), or signing only high-stakes events | Bearer keys plus the event log are enough while clients trust us as the operator |
+| 11f Governance | Built in five pieces (28 Nov 2026, [spec](SPEC_PHASE_11F_GOVERNANCE.md)); signed writes spec only. Planned as: OAuth for MCP with dynamic client registration and a device flow; "acts as me" or "an agent I manage" chosen at approval; provisioning keys; scoped keys; rotation and rescoping with a stable id; per-agent access levels; revoke every key on pause, archive or delete; reconnect invites; an audit across orgs; client self-invites behind a setting; an org owner role; owner attestation and signed writes (P35, P59, P91), or signing only high-stakes events | Bearer keys plus the event log are enough while clients trust us as the operator |
 | 11g Shared threads (spec only, build after 4d) | Share one thread with its branch and live changes and pick it up across orgs (P95, P96) | Needs the cloud sandbox (4d) |
 
 Every capability ships on every surface (route with `operationId`, `bun run generate`, MCP, a `flockr` command, a web app control) or the spec says why one is skipped.

@@ -21,10 +21,10 @@ async function requireMayAdd(db: Executor, actor: string, org: string): Promise<
   if (!mine?.host) throw forbidden(`${actor} is in a client org; only the org that runs the board adds members`)
 }
 
-export async function createMember(db: Database, actor: string, body: CreateMemberBody): Promise<Member> {
+export async function createMember(db: Database, actor: string, body: CreateMemberBody, options: { invited?: boolean } = {}): Promise<Member> {
   return mutate(db, async (tx, emit) => {
     if (await findAnyMember(tx, body.name)) throw alreadyExists(`Member ${body.name} already exists`)
-    await requireMayAdd(tx, actor, body.org)
+    if (!options.invited) await requireMayAdd(tx, actor, body.org)
     if (body.owner !== null) {
       const owner = await findMember(tx, body.owner)
       if (!owner || owner.kind !== "person") throw invalid(`Owner ${body.owner} must be a person on this board`)
