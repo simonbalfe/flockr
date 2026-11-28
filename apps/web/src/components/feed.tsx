@@ -44,17 +44,18 @@ function toBlocks(entries: Entry[]): Block[] {
 
 const shownGone = (entry: Entry): boolean => (entry.kind === "text" || entry.kind === "reply") && entry.deleted
 
-function kindLabel(member: Member): string {
-  if (member.kind === "agent") return `via ${member.owner}`
+function kindLabel(member: Member, ownerPresent: boolean): string {
+  if (member.kind === "agent") return member.owner && ownerPresent ? `of ${member.owner}` : "owner unavailable"
   if (member.kind === "bridge") return `from ${member.source}`
   if (member.kind === "watcher") return "watcher"
   return ""
 }
 
-function subLabel(member: Member | undefined, myOrg: string | undefined): string {
+function subLabel(member: Member | undefined, all: Member[], myOrg: string | undefined): string {
   if (!member) return ""
   const outside = myOrg !== undefined && member.org !== myOrg ? member.org : ""
-  return [kindLabel(member), outside].filter(Boolean).join(" · ")
+  const ownerPresent = all.some((m) => m.name === member.owner)
+  return [kindLabel(member, ownerPresent), outside].filter(Boolean).join(" · ")
 }
 
 function EventRow({ event }: { event: Event }) {
@@ -118,13 +119,18 @@ export function Feed({ entries, inThread = false, subThreads = null }: { entries
       {toBlocks(entries.filter((entry) => !shownGone(entry))).map((block) => {
         if (block.kind === "event") return <EventRow key={block.event.id} event={block.event} />
         const { group } = block
-        const sub = subLabel(members.data?.find((m) => m.name === group.who), myOrg)
+        const author = members.data?.find((m) => m.name === group.who)
+        const sub = subLabel(author, members.data ?? [], myOrg)
         return (
           <div key={group.items[0]?.id} data-entry={group.items[0]?.id} className={`group grid grid-cols-[30px_minmax(0,1fr)] gap-3 py-[7px] ${inThread ? "" : "hover:bg-sidebar"}`}>
             <MemberAvatar name={group.who} />
             <div className="min-w-0">
               <div className="flex flex-wrap items-baseline gap-[7px]">
-                <span className="text-[13.5px] font-semibold">{group.who}</span>
+                <span className="text-[13.5px] font-semibold" title={author?.about ?? undefined}>
+                  {author?.displayName ?? group.who}
+                </span>
+                {author?.displayName && <span className="text-[12.5px] text-faint">{group.who}</span>}
+                {author?.kind === "agent" && <span className="border px-1 text-[10.5px] font-medium tracking-wide text-muted-foreground uppercase">Agent</span>}
                 {sub && <span className="text-[12.5px] text-muted-foreground">{sub}</span>}
                 <span className="text-xs text-faint tabular-nums">{clock(group.at)}</span>
               </div>

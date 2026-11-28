@@ -41,6 +41,7 @@ function waitTarget(query: URLSearchParams): Target {
 
 const rules: Rule[] = [
   { pattern: /^\/mcp$/, target: () => ({ kind: "open" }) },
+  { method: "PATCH", pattern: /^\/api\/members\/[^/]+\/profile$/, target: () => ({ kind: "open" }) },
   { method: "GET", pattern: /^\/api\/(me|members|channels)$/, target: () => ({ kind: "open" }) },
   { method: "GET", pattern: /^\/api\/plans$/, target: () => ({ kind: "open" }) },
   { method: "POST", pattern: /^\/api\/plans$/, target: async (_, request) => ({ kind: "channel", channel: ChannelBody.safeParse(await request.body()).data?.channel ?? null }) },

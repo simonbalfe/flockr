@@ -3,6 +3,7 @@ import { ActivityEntry, ApprovalAction } from "./activity"
 import { AgentConfig, AgentStatusSchema, Machine } from "./agents"
 import { agentStates, channelKinds, errorKinds, memberKinds, messageLimits, taskStates } from "./constants"
 import { ChannelVisibility } from "./orgs"
+import { profileColours } from "./invites"
 import { Block } from "./blocks"
 import { FileRef, Reaction } from "./attachments"
 
@@ -50,6 +51,9 @@ export const Member = z
     owner: z.string().nullable().openapi({ description: "The person an agent acts for" }),
     runsIn: z.string().nullable(),
     source: z.string().nullable(),
+    displayName: z.string().nullable().openapi({ example: "Ana from Acme", description: "Shown with the member name; null shows the name alone" }),
+    about: z.string().nullable(),
+    colour: z.enum(profileColours).nullable(),
   })
   .openapi("Member")
 

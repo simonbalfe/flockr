@@ -1,8 +1,9 @@
 import type { ChannelVisibility } from "@flockr/client"
-import { addChannelMemberMutation, listChannelMembersOptions, removeChannelMemberMutation, updateChannelMutation } from "@flockr/client/react-query"
+import { addChannelMemberMutation, listOrgsOptions, listChannelMembersOptions, removeChannelMemberMutation, updateChannelMutation } from "@flockr/client/react-query"
 import { useQuery } from "@tanstack/react-query"
 import { useBoardMutation } from "./hooks"
 
+export const useOrgs = () => useQuery(listOrgsOptions())
 export const useChannelMembers = (channel: string, enabled: boolean) => useQuery({ ...listChannelMembersOptions({ path: { channel } }), enabled })
 
 export const useSetVisibility = () =>

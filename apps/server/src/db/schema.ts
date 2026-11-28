@@ -1,5 +1,5 @@
 import { hostOrg } from "@flockr/contracts"
-import type { ActionKind, Block, ReactionKind, ChannelKind, ChannelVisibility, DraftKind, AreaEndReason, ActivityState, AgentDesired, AgentPermissions, AgentReport, ApprovalVerdict, HarnessInfo, JobKind, JobState, MemberKind, MemoryKind, MemoryScope, Question, RoutineTriggerKind, TaskState } from "@flockr/contracts"
+import type { ActionKind, Block, ProfileColour, ReactionKind, ChannelKind, ChannelVisibility, DraftKind, AreaEndReason, ActivityState, AgentDesired, AgentPermissions, AgentReport, ApprovalVerdict, HarnessInfo, JobKind, JobState, MemberKind, MemoryKind, MemoryScope, Question, RoutineTriggerKind, TaskState } from "@flockr/contracts"
 import { sql } from "drizzle-orm"
 import { bigint, boolean, check, index, integer, jsonb, pgTable, primaryKey, text, timestamp, unique, uniqueIndex, type AnyPgColumn } from "drizzle-orm/pg-core"
 
@@ -37,6 +37,9 @@ export const members = pgTable(
     owner: text("owner").references((): AnyPgColumn => members.name),
     runsIn: text("runs_in"),
     source: text("source"),
+    displayName: text("display_name"),
+    about: text("about"),
+    colour: text("colour").$type<ProfileColour>(),
     removedAt: timestamp("removed_at", { withTimezone: true }),
     createdAt: createdAt(),
   },
@@ -677,3 +680,33 @@ export const files = pgTable(
 )
 
 export type FileRow = typeof files.$inferSelect
+
+export const invites = pgTable(
+  "invites",
+  {
+    id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+    email: text("email").notNull(),
+    member: text("member").notNull(),
+    org: text("org")
+      .notNull()
+      .references(() => orgs.id),
+    invitedBy: text("invited_by")
+      .notNull()
+      .references(() => members.name),
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+    acceptedAt: timestamp("accepted_at", { withTimezone: true }),
+    revokedAt: timestamp("revoked_at", { withTimezone: true }),
+    createdAt: createdAt(),
+  },
+  (t) => [index("invites_email").on(t.email)],
+)
+
+export const memberEmails = pgTable("member_emails", {
+  email: text("email").primaryKey(),
+  member: text("member")
+    .notNull()
+    .references(() => members.name),
+  createdAt: createdAt(),
+})
+
+export type InviteRow = typeof invites.$inferSelect

@@ -3,7 +3,7 @@ import { findLiveKey } from "../board/keys"
 import { findMember } from "../board/read"
 import { viewerOf, type Viewer } from "../board/visibility"
 import type { Database } from "../db/client"
-import { createBetterAuth, memberFor, type BetterAuth } from "./better-auth"
+import { createBetterAuth, signsInAs, type BetterAuth } from "./better-auth"
 import type { AuthSettings } from "./settings"
 
 export interface Identity {
@@ -58,7 +58,7 @@ export function createAuthenticator(db: Database, settings: AuthSettings): Authe
       return found ? { member: found.member, via: "key", channels: found.channels, key: found.id } : null
     }
     const session = await betterAuth().api.getSession({ headers })
-    const member = session ? memberFor(settings, session.user.email) : undefined
+    const member = session ? await signsInAs(db, settings, session.user.email) : undefined
     return member ? { member, via: "session", channels: null, key: null } : null
   }
 

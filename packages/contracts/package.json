@@ -19,6 +19,7 @@
     "./blocks": "./src/blocks.ts",
     "./connect": "./src/connect.ts",
     "./attachments": "./src/attachments.ts",
+    "./invites": "./src/invites.ts",
     "./routines": "./src/routines.ts",
     "./sessions": "./src/sessions.ts",
     "./presets": "./src/presets.ts"

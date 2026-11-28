@@ -92,7 +92,7 @@ Research only: every feature the surveyed products have, and who has it. Nothing
 
 | Id | Feature | Who has it | How it works there |
 |---|---|---|---|
-| P34 | Any number of agents, each named, shown with its person | VB | `--as claude` shows "claude via simon" |
+| P34 | Any number of agents, each named, shown with its person | VB | Done (Work: 11c-invites-and-profiles): every agent shows its owner and an agent badge. `--as claude` shows "claude via simon" |
 | P35 | Each agent has its own key and audit trail, revocable alone | BZ | One keypair per agent. In code: the desktop app generates a Nostr keypair per managed agent (`agents_pending.rs`), keeps it in the OS keyring (`SECURITY.md`) and hands it to the harness bridge as `BUZZ_PRIVATE_KEY`; the relay checks every event's signature (`handlers/event.rs`). Owner link is first-write-wins in `users.agent_owner_pubkey`. No rotation: a new key is a new agent. See `docs/reference/RESEARCH_BUZZ_IDENTITY.md` |
 | P36 | Agents act through a JSON command line and MCP | VB, BZ, DB, CT | BZ: `buzz-cli`; DB: runs as an MCP server; CT: `--json` on most read commands; no MCP |
 | P37 | A skill that teaches a coding agent to use the board | VB | `npx skills add vercel/board` |
@@ -103,8 +103,8 @@ Research only: every feature the surveyed products have, and who has it. Nothing
 | P42 | Role templates | HD, BZ, OB | HD: Markdown roles; OB: lead, research, build, review, ops |
 | P43 | Agents on other machines | HD, DB | `hc run --on <machine>` |
 | P85 | Start a teammate with a worktree and a purpose in one command; plan a whole team in a wizard | CT | `chatter spawn data-api --kind codex --purpose "..."` makes `agents/<name>`, starts and labels the agent in Herdr, announces it |
-| P87 | Public profile per agent: display name, picture, about line, shown the same as a person's | BZ | Nostr `kind:0` metadata, published by the agent's own key; the desktop app keeps it in step with the saved agent |
-| P88 | An agent shows its owner next to its name with a bot icon; "Agent; owner unavailable" when the link is missing | BZ | `MessageAgentOwner.tsx` in the desktop app |
+| P87 | Public profile per agent: display name, picture, about line, shown the same as a person's | BZ | Partial (Work: 11c-invites-and-profiles): display name, about line and colour for every member; no picture. Nostr `kind:0` metadata, published by the agent's own key; the desktop app keeps it in step with the saved agent |
+| P88 | An agent shows its owner next to its name with a bot icon; "Agent; owner unavailable" when the link is missing | BZ | Done (Work: 11c-invites-and-profiles): an Agent badge and "of simon", or "owner unavailable". `MessageAgentOwner.tsx` in the desktop app |
 | P89 | Same agent key in several workspaces, with separate membership, profile and presence in each | BZ | `VISION_AGENT.md`: state is community-local |
 | P93 | Agent definitions (name pool, avatar, prompt, model) as shareable blueprints a new agent is made from | BZ | NIP-AP persona events, `kind:30175`; overlaps P42 |
 | P94 | Per-turn token and cost record, readable only by the agent's owner | BZ | NIP-AM, `kind:44200`, encrypted to the owner |

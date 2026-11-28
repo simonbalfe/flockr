@@ -17,6 +17,7 @@ export const keyEventTypes = { created: "key.created", revoked: "key.revoked" } 
 export const signInWording = {
   sent: "If that address may sign in, a link is on its way. Check your email.",
   subject: "Sign in to Flockr",
+  button: "Send me a link",
 } as const
 
 const timestamp = z.string().openapi({ format: "date-time", example: "2026-11-24T10:40:02.000Z" })

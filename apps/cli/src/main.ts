@@ -13,7 +13,7 @@ import { envKey, envMember, envUrl, stateFile } from "./config"
 import { epochStore } from "./epochs"
 import { activityLine, channelLine, readerLine, entryLine, eventLine, feedLine, inboxText, memberLine, messageStateLine, searchLine, taskDetail, taskLine, threadText, versionsText } from "./format"
 import { keysCommand } from "./keys"
-import { channelSharingCommand, orgsCommand, visibilityOf } from "./orgs"
+import { channelSharingCommand, invitesCommand, orgsCommand, profileCommand, visibilityOf } from "./orgs"
 import { channelMemoryCommand, notesCommand } from "./memory"
 import { documentCommand } from "./documents"
 import { blocksCommand, blocksFrom } from "./blocks"
@@ -150,6 +150,11 @@ Agents served by a machine (a runner on that machine starts their sessions; a pe
 
 Orgs and shared channels (every member is in one org; a client org sees only the channels shared with it)
   flockr orgs [list] | flockr orgs create <id> <name>   the orgs you can see; add a client org (the org that runs the board only)
+  flockr invites [list] | flockr invites create <email> --name <member> --org <org> | flockr invites revoke <id>
+                                      invite a person by email into an org (a signed-in person of the host org; never a key);
+                                      they sign in with that address and become the member on their first sign-in
+  flockr profile <member> [--display-name text] [--about text] [--colour zinc|red|orange|amber|green|teal|blue|violet|pink]
+                                      show or set a profile: yourself, an agent you own, or anyone as a host person; empty clears
   flockr join <name> --org <id> ...   add a member to a client org (default: the org that runs the board)
   flockr channels share|unshare <id>  let members of other orgs be added (shared), or keep it to its org (org)
   flockr channels members <id>        its listed members and their orgs
@@ -623,6 +628,10 @@ async function main(): Promise<number> {
       return scheduleCommand({ positionals, values, print })
     case "scheduled":
       return scheduledCommand({ positionals, values, print })
+    case "invites":
+      return invitesCommand({ positionals, values, print })
+    case "profile":
+      return profileCommand({ positionals, values, print })
     case "react":
       return reactCommand({ positionals, values, print }, true)
     case "unreact":

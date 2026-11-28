@@ -1,6 +1,7 @@
-import { Agent, AgentDetail, AuthMode, CreateMemberBody, IdentitySource, Member, MemberParams, orNull } from "@flockr/contracts"
+import { Agent, AgentDetail, AuthMode, CreateMemberBody, IdentitySource, Member, MemberParams, orNull, UpdateProfileBody } from "@flockr/contracts"
 import { z } from "@hono/zod-openapi"
 import { createMember } from "../board/members"
+import { updateProfile } from "../board/invites"
 import { getAgent, listAgents } from "../board/agents"
 import { findMember, listMembers, presentMember } from "../board/read"
 import { jsonBody, ok, operation, router } from "./shared"
@@ -8,6 +9,18 @@ import { jsonBody, ok, operation, router } from "./shared"
 const tags: [string] = ["members"]
 
 export const memberRoutes = router()
+  .openapi(
+    operation({
+      method: "patch",
+      path: "/api/members/{name}/profile",
+      operationId: "updateProfile",
+      tags,
+      summary: "Set a member's display name, about line or colour (null clears one): the member itself, an agent's owner, or a person in the org that runs the board",
+      request: { params: MemberParams, body: jsonBody(UpdateProfileBody) },
+      responses: ok(Member),
+    }),
+    async (c) => c.json(await updateProfile(c.var.db, c.var.member, c.req.valid("param").name, c.req.valid("json")), 200),
+  )
   .openapi(
     operation({ method: "get", path: "/api/members", operationId: "listMembers", tags, summary: "List people, agents, bridges and watchers", responses: ok(z.array(Member)) }),
     async (c) => c.json(await listMembers(c.var.db, c.var.viewer), 200),

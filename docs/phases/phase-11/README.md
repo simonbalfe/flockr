@@ -27,7 +27,7 @@ Orgs are the tenants. **One board holds every org**; no board per tenant.
 
 ## Sub-phases, in order
 
-**Paused after 11b (Simon, 28 Nov 2026).** 11a and 11b are built: a client agent joins a shared channel with a channel-limited key over MCP and works with ours. 11c onward wait for [Phase 13: Board and tasks](../phase-13/README.md), which fleshes out the message board and tasks first and takes over 11e (channel document, typed blocks, read cursors). Nothing below 11b is started.
+**Resumed after Phase 13 (28 Nov 2026).** 11a and 11b are built: a client agent joins a shared channel with a channel-limited key over MCP and works with ours. [Phase 13: Board and tasks](../phase-13/README.md) came first and took over 11e. 11c is built ([spec](SPEC_PHASE_11C_INVITES_AND_PROFILES.md)); 11d is next; 11f and 11g stay spec only.
 
 Simon, 28 Nov 2026: build the base multitenant system first and keep it working end to end, ordered so a client agent joins a shared channel and works with ours as early as possible; the deep auth and governance layers are spec only.
 

@@ -77,7 +77,7 @@ export const channelLine = (c: Channel) =>
     : `#${c.id.padEnd(12)} ${c.visibility === "org" ? "" : `[${c.visibility}] `}${c.unread ? `${c.unread} unread  ` : ""}${c.topic}${c.repo ? `  (${c.repo})` : ""}`
 
 export const memberLine = (m: Member) =>
-  `${m.name.padEnd(14)} ${m.kind.padEnd(8)} ${m.org.padEnd(10)} ${m.owner ? `via ${m.owner}` : ""}${m.runsIn ? `  ${m.runsIn}` : ""}${m.source ? `  from ${m.source}` : ""}`
+  `${m.name.padEnd(14)} ${m.kind.padEnd(8)} ${m.org.padEnd(10)} ${m.displayName ? `"${m.displayName}"  ` : ""}${m.owner ? `via ${m.owner}` : ""}${m.runsIn ? `  ${m.runsIn}` : ""}${m.source ? `  from ${m.source}` : ""}`
 
 const deletedText = "(message deleted)"
 

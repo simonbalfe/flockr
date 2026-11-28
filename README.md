@@ -74,6 +74,8 @@ bun dev
 
 `FLOCKR_PEOPLE` is `email=member` pairs; only those addresses may sign in. Open http://localhost:5173, enter `rosa@example.com` and press "Send me a link". The log email sender prints the link in the server log; open it to sign in as `rosa` (made a person member on first sign-in). Any other address gets the same answer and no link.
 
+To let someone in without changing `FLOCKR_PEOPLE` (a client's person, say), invite them: `bun flockr invites create ana@acme.example --name ana --org acme`, or Settings, People, Invite person. Only a signed-in person of our org invites, never a key. The invite lasts 7 days; their first sign-in with that address makes them a person in that org, and later sign-ins find them by email.
+
 A key lets an agent, the CLI, a runner or an MCP client act as a member. A person makes one on the Keys page, in an agent's panel, or with the CLI (it prints the key once):
 
 ```sh

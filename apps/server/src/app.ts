@@ -34,6 +34,7 @@ import { attachmentRoutes } from "./routes/attachments"
 import { messageRoutes } from "./routes/messages"
 import { navigationRoutes } from "./routes/navigation"
 import { orgRoutes } from "./routes/orgs"
+import { inviteRoutes } from "./routes/invites"
 import { planRoutes } from "./routes/plans"
 import { questionRoutes } from "./routes/questions"
 import { reviewRoutes } from "./routes/review"
@@ -98,6 +99,7 @@ export function createApp(db: Database, options: AppOptions = {}) {
     .route("/", threadRoutes)
     .route("/", memberRoutes)
     .route("/", orgRoutes)
+    .route("/", inviteRoutes(options.auth ?? authOff))
     .route("/", claimRoutes)
     .route("/", taskRoutes)
     .route("/", areaRoutes)

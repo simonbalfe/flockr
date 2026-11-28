@@ -12,6 +12,7 @@ import { KeyList, NewKeyDialog } from "@/components/keys/keys"
 import { AgentNotes } from "@/components/memory/agent-notes"
 import { MemberAvatar } from "@/components/member-avatar"
 import { KeyValueList, PanelFrame } from "@/components/panel-frame"
+import { ProfileDialog } from "@/components/profile-dialog"
 import { QuestionCard, ThreadQuestionCard } from "@/components/question-card"
 import { TaskRow } from "@/components/task-row"
 import { Button } from "@/components/ui/button"
@@ -246,7 +247,11 @@ export function AgentProfile({ name }: { name: string }) {
           <div className="flex items-center gap-3">
             <MemberAvatar name={name} size="lg" />
             <div className="min-w-0">
-              <h2 className="text-lg leading-[1.3] font-semibold tracking-[-0.01em]">{name}</h2>
+              <h2 className="text-lg leading-[1.3] font-semibold tracking-[-0.01em]">
+                {current.displayName ?? name}
+                {current.displayName && <span className="ml-2 text-[13px] font-normal text-faint">{name}</span>}
+              </h2>
+              {current.about && <p className="text-[13px] text-muted-foreground">{current.about}</p>}
               <div className="flex items-center gap-[7px] text-[13px] text-muted-foreground">
                 <AgentStatusShape status={current.status} />
                 <span className="truncate">{current.status === "error" ? "Error" : statusText(current.status, current.statusReason)}</span>
@@ -259,6 +264,7 @@ export function AgentProfile({ name }: { name: string }) {
             </div>
           )}
           {withConfig(current) && editable && <Controls agent={current} />}
+          {editable && <ProfileDialog member={current} trigger={<Button variant="secondary" size="sm" className="w-fit">Edit profile</Button>} />}
           <KeyValueList
             rows={
               current.config

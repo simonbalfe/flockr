@@ -13,6 +13,7 @@ import { DraftsView } from "@/routes/drafts"
 import { FocusView } from "@/routes/focus"
 import { ApprovalsView } from "@/routes/approvals"
 import { KeysView } from "@/routes/keys"
+import { PeopleView } from "@/routes/people"
 import { RoutinesView } from "@/routes/routines"
 import { SavedView } from "@/routes/saved"
 import { ThreadsView } from "@/routes/threads"
@@ -72,6 +73,7 @@ const threadsRoute = createRoute({ getParentRoute: () => rootRoute, path: "/thre
 const savedRoute = createRoute({ getParentRoute: () => rootRoute, path: "/saved", component: SavedView })
 const draftsRoute = createRoute({ getParentRoute: () => rootRoute, path: "/drafts", component: DraftsView })
 const keysRoute = createRoute({ getParentRoute: () => rootRoute, path: "/settings/keys", component: KeysView })
+const peopleRoute = createRoute({ getParentRoute: () => rootRoute, path: "/settings/people", component: PeopleView })
 
 const routeTree = rootRoute.addChildren([
   indexRoute,
@@ -85,6 +87,7 @@ const routeTree = rootRoute.addChildren([
   routinesRoute,
   approvalsRoute,
   keysRoute,
+  peopleRoute,
   ...movedRoutes,
 ])
 

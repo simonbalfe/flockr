@@ -1,3 +1,4 @@
+import { signInWording } from "@flockr/client"
 import { useState, type FormEvent } from "react"
 import { useRequestLink } from "@/api/auth"
 import { Button } from "@/components/ui/button"
@@ -53,7 +54,7 @@ export function SignIn() {
               <Input type="email" autoComplete="email" autoFocus required value={email} onChange={(event) => setEmail(event.target.value)} placeholder="you@example.com" />
             </label>
             <Button type="submit" disabled={request.isPending || !email.trim()}>
-              Send me a link
+              {signInWording.button}
             </Button>
           </form>
         )}

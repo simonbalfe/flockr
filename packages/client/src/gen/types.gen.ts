@@ -782,6 +782,18 @@ export type Member = {
     owner: string | null;
     runsIn: string | null;
     source: string | null;
+    /**
+     * Shown with the member name; null shows the name alone
+     */
+    displayName: string | null;
+    about: string | null;
+    colour: 'zinc' | 'red' | 'orange' | 'amber' | 'green' | 'teal' | 'blue' | 'violet' | 'pink' | null;
+};
+
+export type UpdateProfileBody = {
+    displayName?: string | null;
+    about?: string | null;
+    colour?: 'zinc' | 'red' | 'orange' | 'amber' | 'green' | 'teal' | 'blue' | 'violet' | 'pink' | null;
 };
 
 export type CreateMemberBody = {
@@ -866,6 +878,29 @@ export type Org = {
 export type CreateOrgBody = {
     id: string;
     name: string;
+};
+
+export type Invite = {
+    id: number;
+    email: string;
+    name: string;
+    org: string;
+    invitedBy: string;
+    state: 'open' | 'accepted' | 'revoked' | 'expired';
+    expiresAt: string;
+    at: string;
+};
+
+export type CreateInviteBody = {
+    email: string;
+    /**
+     * The member name they get
+     */
+    name: string;
+    /**
+     * The org they join
+     */
+    org: string;
 };
 
 export type ClaimResult = {
@@ -3129,6 +3164,49 @@ export type MakeTaskFromThreadResponses = {
 
 export type MakeTaskFromThreadResponse = MakeTaskFromThreadResponses[keyof MakeTaskFromThreadResponses];
 
+export type UpdateProfileData = {
+    body: UpdateProfileBody;
+    path: {
+        name: string;
+    };
+    query?: never;
+    url: '/api/members/{name}/profile';
+};
+
+export type UpdateProfileErrors = {
+    /**
+     * The input is not valid
+     */
+    400: Error;
+    /**
+     * Sign-in is on and the request has no session or key
+     */
+    401: Error;
+    /**
+     * The acting member is not on this board, or may not do this
+     */
+    403: Error;
+    /**
+     * Not found
+     */
+    404: Error;
+    /**
+     * The task or message is in another state, or the claim epoch is stale
+     */
+    409: Error;
+};
+
+export type UpdateProfileError = UpdateProfileErrors[keyof UpdateProfileErrors];
+
+export type UpdateProfileResponses = {
+    /**
+     * OK
+     */
+    200: Member;
+};
+
+export type UpdateProfileResponse = UpdateProfileResponses[keyof UpdateProfileResponses];
+
 export type ListMembersData = {
     body?: never;
     path?: never;
@@ -3553,6 +3631,131 @@ export type CreateOrgResponses = {
 };
 
 export type CreateOrgResponse = CreateOrgResponses[keyof CreateOrgResponses];
+
+export type ListInvitesData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/invites';
+};
+
+export type ListInvitesErrors = {
+    /**
+     * The input is not valid
+     */
+    400: Error;
+    /**
+     * Sign-in is on and the request has no session or key
+     */
+    401: Error;
+    /**
+     * The acting member is not on this board, or may not do this
+     */
+    403: Error;
+    /**
+     * Not found
+     */
+    404: Error;
+    /**
+     * The task or message is in another state, or the claim epoch is stale
+     */
+    409: Error;
+};
+
+export type ListInvitesError = ListInvitesErrors[keyof ListInvitesErrors];
+
+export type ListInvitesResponses = {
+    /**
+     * OK
+     */
+    200: Array<Invite>;
+};
+
+export type ListInvitesResponse = ListInvitesResponses[keyof ListInvitesResponses];
+
+export type CreateInviteData = {
+    body: CreateInviteBody;
+    path?: never;
+    query?: never;
+    url: '/api/invites';
+};
+
+export type CreateInviteErrors = {
+    /**
+     * The input is not valid
+     */
+    400: Error;
+    /**
+     * Sign-in is on and the request has no session or key
+     */
+    401: Error;
+    /**
+     * The acting member is not on this board, or may not do this
+     */
+    403: Error;
+    /**
+     * Not found
+     */
+    404: Error;
+    /**
+     * The task or message is in another state, or the claim epoch is stale
+     */
+    409: Error;
+};
+
+export type CreateInviteError = CreateInviteErrors[keyof CreateInviteErrors];
+
+export type CreateInviteResponses = {
+    /**
+     * OK
+     */
+    200: Invite;
+};
+
+export type CreateInviteResponse = CreateInviteResponses[keyof CreateInviteResponses];
+
+export type RevokeInviteData = {
+    body?: never;
+    path: {
+        id: number;
+    };
+    query?: never;
+    url: '/api/invites/{id}/revoke';
+};
+
+export type RevokeInviteErrors = {
+    /**
+     * The input is not valid
+     */
+    400: Error;
+    /**
+     * Sign-in is on and the request has no session or key
+     */
+    401: Error;
+    /**
+     * The acting member is not on this board, or may not do this
+     */
+    403: Error;
+    /**
+     * Not found
+     */
+    404: Error;
+    /**
+     * The task or message is in another state, or the claim epoch is stale
+     */
+    409: Error;
+};
+
+export type RevokeInviteError = RevokeInviteErrors[keyof RevokeInviteErrors];
+
+export type RevokeInviteResponses = {
+    /**
+     * OK
+     */
+    200: Invite;
+};
+
+export type RevokeInviteResponse = RevokeInviteResponses[keyof RevokeInviteResponses];
 
 export type ClaimNextTaskData = {
     body: ClaimNextBody;

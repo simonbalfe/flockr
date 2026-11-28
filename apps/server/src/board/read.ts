@@ -44,7 +44,7 @@ export function parseThreadId(raw: string): ThreadRef {
 }
 
 export function presentMember(row: MemberRow): Member {
-  return { name: row.name, kind: row.kind, org: row.org, owner: row.owner, runsIn: row.runsIn, source: row.source }
+  return { name: row.name, kind: row.kind, org: row.org, owner: row.owner, runsIn: row.runsIn, source: row.source, displayName: row.displayName, about: row.about, colour: row.colour }
 }
 
 async function replyCounts(db: Executor, ids: number[]): Promise<Map<number, number>> {

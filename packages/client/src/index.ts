@@ -42,6 +42,7 @@ export {
 export { nextRunOf, parseCron } from "@flockr/contracts/cron"
 export { waitLimits } from "@flockr/contracts/connect"
 export { fileLimits, reactionKinds } from "@flockr/contracts/attachments"
+export { profileColours, type ProfileColour } from "@flockr/contracts/invites"
 export { blockKinds, blockSummary, postableBlockKinds, PostableBlock as PostableBlockSchema } from "@flockr/contracts/blocks"
 export {
   backoffSeconds,

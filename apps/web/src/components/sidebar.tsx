@@ -1,9 +1,10 @@
 import { Link, useRouterState } from "@tanstack/react-router"
-import { ArrowLeft, Bookmark, KeyRound, ListChecks, LogOut, MessagesSquare, Repeat, PanelLeftClose, Search, SendHorizontal, Settings, ShieldCheck, Target } from "lucide-react"
+import { ArrowLeft, Bookmark, KeyRound, ListChecks, LogOut, MessagesSquare, Repeat, PanelLeftClose, Search, SendHorizontal, Settings, ShieldCheck, Target, Users } from "lucide-react"
 import type { ReactNode } from "react"
 import { useSignOut, useWhoami } from "@/api/auth"
 import { useNeedsYou } from "@/api/focus"
 import { useAgents, useChannels, useDrafts, useMembers, useMyThreads } from "@/api/hooks"
+import { ProfileDialog } from "@/components/profile-dialog"
 import { currentUser } from "@/api/session"
 import type { Agent } from "@/api/types"
 import { AgentsHeading } from "@/components/agents/agents-heading"
@@ -43,13 +44,26 @@ function AgentRow({ agent }: { agent: Agent }) {
 
 function SidebarFooter() {
   const me = useWhoami()
+  const members = useMembers()
   const signOut = useSignOut()
   const session = me.data?.via === "session"
   const name = me.data?.name ?? currentUser
+  const mine = members.data?.find((m) => m.name === name)
   return (
     <div className="flex flex-none items-center gap-1 border-t py-2 pr-2.5 pl-[18px] text-[13.5px]">
       <MemberAvatar name={name} size="xs" />
-      <span className="ml-[5px] min-w-0 flex-1 truncate">{name}</span>
+      {mine ? (
+        <ProfileDialog
+          member={mine}
+          trigger={
+            <button type="button" className="ml-[5px] min-w-0 flex-1 truncate text-left hover:underline" aria-label="Edit your profile">
+              {mine.displayName ?? name}
+            </button>
+          }
+        />
+      ) : (
+        <span className="ml-[5px] min-w-0 flex-1 truncate">{name}</span>
+      )}
       <Tooltip>
         <TooltipTrigger asChild>
           <Button variant="ghost" size="icon-sm" aria-label="Settings" asChild>
@@ -92,6 +106,7 @@ const settingsLinks = [
   { to: "/settings/routines", label: "Routines", icon: Repeat },
   { to: "/settings/approvals", label: "Approval rules", icon: ShieldCheck },
   { to: "/settings/keys", label: "Keys", icon: KeyRound },
+  { to: "/settings/people", label: "People", icon: Users },
 ] as const
 
 function SettingsSidebar() {
