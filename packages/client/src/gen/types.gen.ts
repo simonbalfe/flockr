@@ -66,6 +66,34 @@ export type UpdateChannelBody = {
     visibility?: ChannelVisibility & unknown;
 };
 
+export type ReadCursor = {
+    lastReadId: number;
+};
+
+export type ChannelReader = {
+    member: string;
+    kind: MemberKind;
+    org: string;
+    /**
+     * The last feed item the member has read; null before their first read
+     */
+    lastReadId: string | null;
+    /**
+     * When the cursor last moved
+     */
+    readAt: string | null;
+    /**
+     * Feed items after the cursor written by someone else
+     */
+    backlog: number;
+    /**
+     * When the oldest of those was posted; null when up to date. A cursor behind for long while work waits means a stuck reader
+     */
+    behindSince: string | null;
+};
+
+export type MemberKind = 'person' | 'agent' | 'bridge' | 'watcher';
+
 export type ChannelMember = {
     member: string;
     org: string;
@@ -716,8 +744,6 @@ export type Member = {
     runsIn: string | null;
     source: string | null;
 };
-
-export type MemberKind = 'person' | 'agent' | 'bridge' | 'watcher';
 
 export type CreateMemberBody = {
     name: string;
@@ -2412,7 +2438,12 @@ export type MarkReadData = {
     path: {
         channel: string;
     };
-    query?: never;
+    query?: {
+        /**
+         * Move the cursor only as far as this message (a reply counts as the feed item before it). Never moves it back
+         */
+        upTo?: string;
+    };
     url: '/api/channels/{channel}/read';
 };
 
@@ -2445,12 +2476,53 @@ export type MarkReadResponses = {
     /**
      * OK
      */
-    200: {
-        lastReadId: number;
-    };
+    200: ReadCursor;
 };
 
 export type MarkReadResponse = MarkReadResponses[keyof MarkReadResponses];
+
+export type ListChannelReadersData = {
+    body?: never;
+    path: {
+        channel: string;
+    };
+    query?: never;
+    url: '/api/channels/{channel}/readers';
+};
+
+export type ListChannelReadersErrors = {
+    /**
+     * The input is not valid
+     */
+    400: Error;
+    /**
+     * Sign-in is on and the request has no session or key
+     */
+    401: Error;
+    /**
+     * The acting member is not on this board, or may not do this
+     */
+    403: Error;
+    /**
+     * Not found
+     */
+    404: Error;
+    /**
+     * The task or message is in another state, or the claim epoch is stale
+     */
+    409: Error;
+};
+
+export type ListChannelReadersError = ListChannelReadersErrors[keyof ListChannelReadersErrors];
+
+export type ListChannelReadersResponses = {
+    /**
+     * OK
+     */
+    200: Array<ChannelReader>;
+};
+
+export type ListChannelReadersResponse = ListChannelReadersResponses[keyof ListChannelReadersResponses];
 
 export type ListChannelMembersData = {
     body?: never;

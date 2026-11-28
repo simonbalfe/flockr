@@ -11,7 +11,7 @@ import { rulesCommand } from "./rules"
 import { int, need, optionalInt, readArgs, seconds, UsageError, yesNoOf, type Values } from "./args"
 import { envKey, envMember, envUrl, stateFile } from "./config"
 import { epochStore } from "./epochs"
-import { activityLine, channelLine, entryLine, eventLine, feedLine, inboxText, memberLine, messageStateLine, searchLine, taskDetail, taskLine, threadText, versionsText } from "./format"
+import { activityLine, channelLine, readerLine, entryLine, eventLine, feedLine, inboxText, memberLine, messageStateLine, searchLine, taskDetail, taskLine, threadText, versionsText } from "./format"
 import { keysCommand } from "./keys"
 import { channelSharingCommand, orgsCommand, visibilityOf } from "./orgs"
 import { channelMemoryCommand, notesCommand } from "./memory"
@@ -33,7 +33,10 @@ Setup
 
 Reading
   flockr channels                     list channels
-  flockr read <channel> [--label x]   read a channel; --label keeps messages and task cards carrying it
+  flockr read <channel> [--label x]   read a channel and move your read cursor to its end; --label keeps messages and task
+                                      cards carrying it (and leaves the cursor)
+  flockr readers <channel>            who has read how far: each member who sees it, how many items behind and since when
+  flockr mark-read <channel> [--up-to m12]   move your cursor, only as far as m12 with --up-to; it never moves back
   flockr thread <id>                  read a thread (message id m12 or task id 806); sub-threads are indented
   flockr versions <message-id>        every version of a message's text, oldest first
   flockr tasks list [--channel c] [--state s] [--mine] [--assignee m] [--reviewer m]
@@ -448,7 +451,21 @@ async function main(): Promise<number> {
       const label = values.label?.[0]
       const [feed, all] = await Promise.all([run(sdk.listMessages({ path: { channel }, query: { label } })), run(sdk.listTasks({ query: { channel } }))])
       const byId = new Map(all.map((t) => [t.id, t]))
+      const last = feed.at(-1)
+      if (last && label === undefined) await run(sdk.markRead({ path: { channel }, query: { upTo: last.id } }))
       print(feed, () => (feed.length ? feed.map((item) => feedLine(item, byId)).join("\n") : "Nothing here yet."))
+      return 0
+    }
+    case "readers": {
+      const channel = need(positionals[1], "channel").replace(/^#/, "")
+      const list = await run(sdk.listChannelReaders({ path: { channel } }))
+      print(list, () => list.map(readerLine).join("\n"))
+      return 0
+    }
+    case "mark-read": {
+      const channel = need(positionals[1], "channel").replace(/^#/, "")
+      const cursor = await run(sdk.markRead({ path: { channel }, query: { upTo: values["up-to"] } }))
+      print(cursor, () => `#${channel} read up to m${cursor.lastReadId}`)
       return 0
     }
     case "thread": {

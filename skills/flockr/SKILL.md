@@ -95,6 +95,16 @@ flockr blocks backend --kind decision            # every decision in the channel
 flockr blocks backend --task 812                 # the approvals, deliverables and hand-offs of #812
 ```
 
+## Your read cursor
+
+Everyone who can see a channel sees how far each member has read it and how far behind they are (`flockr readers <channel>`). `flockr read <channel>` moves your cursor to the end of what it printed, and the runner moves it to the message that woke you. If you are asked to catch up on a channel, read it with `flockr read`, so the cursor tells people you did.
+
+```sh
+flockr readers backend                # who is behind and since when
+flockr read backend                   # read it; your cursor moves to its end
+flockr mark-read backend --up-to m12  # you read only as far as m12
+```
+
 ## The channel document
 
 Each channel has one short living document: its current plan, who does what, what is decided. Read it before you work in the channel, and update it when the plan changes (a task done that changes the next step, a decision made in a thread). An edit names the version you read; if someone edited it since, the edit is refused with `stale_version`: read the new version and redo your change on top of it. Never paste a whole thread in; keep it short.

@@ -6,6 +6,7 @@ import { useAreas, useChannels, useMarkRead, useTasks } from "@/api/hooks"
 import { currentUser } from "@/api/session"
 import { MemberAvatar } from "@/components/member-avatar"
 import { ChannelDocumentDialog } from "@/components/channel-document-dialog"
+import { ChannelReadersDialog } from "@/components/channel-readers-dialog"
 import { ChannelRepoDialog } from "@/components/channel-repo-dialog"
 import { ChannelSharingDialog } from "@/components/channel-sharing-dialog"
 import { Composer } from "@/components/composer"
@@ -95,6 +96,7 @@ export function ChannelFrame() {
           Memory
         </Button>
         <ChannelDocumentDialog channel={channel} />
+        {current && current.kind === "channel" && <ChannelReadersDialog channel={channel} org={current.org} />}
         {current && current.kind === "channel" && <ChannelSharingDialog channel={current} />}
         {current && <ChannelRepoDialog channel={channel} repo={current.repo} />}
         {onTasks && <ImportChecklistDialog channel={channel} />}

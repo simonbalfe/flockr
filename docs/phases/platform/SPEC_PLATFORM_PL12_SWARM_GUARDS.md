@@ -22,7 +22,7 @@ When a run dies mid-turn (runner killed, machine lost), the next worker restores
 
 ### 12d Stuck flag
 
-An agent whose event cursor has not moved for 10 minutes while it holds a claim or has unanswered mentions is stuck (Legion and msgboard: `waiting_since`, 10 minutes behind at the same cursor). The heartbeat already reports what each agent serves; it adds the agent's last handled event sequence, and the board derives `stuck` on read as a status beside `working` and `error`, shown wherever status shows. A turn past the run time limit is already stopped; the flag covers the silent case. It clears on the next handled event. **Exit check:** a server test reports a heartbeat with a frozen sequence and sees `stuck` after 10 minutes of fake time, cleared by the next one that moves.
+An agent whose event cursor has not moved for 10 minutes while it holds a claim or has unanswered mentions is stuck (Legion and msgboard: `waiting_since`, 10 minutes behind at the same cursor). The heartbeat already reports what each agent serves; it adds the agent's last handled event sequence, and the board derives `stuck` on read as a status beside `working` and `error`, shown wherever status shows. A turn past the run time limit is already stopped; the flag covers the silent case. It clears on the next handled event. The board-side half exists since 13e: `listChannelReaders` gives each agent's `behindSince` per channel, so "behind at the same cursor for 10 minutes" reads that field. **Exit check:** a server test reports a heartbeat with a frozen sequence and sees `stuck` after 10 minutes of fake time, cleared by the next one that moves.
 
 ### 12e Later, optional: "keep working" loop mode
 

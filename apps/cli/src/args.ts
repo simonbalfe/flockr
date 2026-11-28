@@ -80,6 +80,7 @@ export const flags = {
   tests: { type: "string" },
   reviewer: { type: "string" },
   to: { type: "string" },
+  "up-to": { type: "string" },
   file: { type: "string" },
   files: { type: "string" },
   block: { type: "string", multiple: true },

@@ -42,6 +42,7 @@ describe("conversations", () => {
     await runner.idle()
     await runner.idle()
     expect(board.calls).toEqual(["entry m10: Answering", "finish e-m10 ok", "reply m10: Hello there."])
+    expect(board.cursors).toEqual(["general:m10"])
   })
 
   test("steps the harness reports reach the entry in batches, all of them before the run is finished", async () => {

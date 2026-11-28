@@ -1,8 +1,9 @@
-import { Channel, ChannelMember, ChannelMemberParams, ChannelParams, CreateChannelBody, UpdateChannelBody } from "@flockr/contracts"
+import { Channel, ChannelMember, ChannelMemberParams, ChannelParams, ChannelReader, CreateChannelBody, MarkReadQuery, ReadCursor, UpdateChannelBody } from "@flockr/contracts"
 import { z } from "@hono/zod-openapi"
 import { createChannel, markRead, updateChannel } from "../board/channels"
 import { addChannelMember, listChannelMembers, removeChannelMember } from "../board/orgs"
 import { listChannels } from "../board/read"
+import { listChannelReaders } from "../board/readers"
 import { jsonBody, ok, operation, router } from "./shared"
 
 const tags: [string] = ["channels"]
@@ -42,11 +43,23 @@ export const channelRoutes = router()
       path: "/api/channels/{channel}/read",
       operationId: "markRead",
       tags,
-      summary: "Mark a channel as read for the acting member",
-      request: { params: ChannelParams },
-      responses: ok(z.object({ lastReadId: z.number().int() })),
+      summary: "Move the acting member's read cursor in a channel: to the newest feed item, or with upTo only as far as that message. It never moves back; everyone who sees the channel sees the cursor (listChannelReaders)",
+      request: { params: ChannelParams, query: MarkReadQuery },
+      responses: ok(ReadCursor),
     }),
-    async (c) => c.json(await markRead(c.var.db, c.var.member, c.req.valid("param").channel), 200),
+    async (c) => c.json(await markRead(c.var.db, c.var.member, c.req.valid("param").channel, c.req.valid("query")), 200),
+  )
+  .openapi(
+    operation({
+      method: "get",
+      path: "/api/channels/{channel}/readers",
+      operationId: "listChannelReaders",
+      tags,
+      summary: "Every person and agent who can see the channel, from any org, with their read cursor, how many feed items they are behind and since when; most behind first",
+      request: { params: ChannelParams },
+      responses: ok(z.array(ChannelReader)),
+    }),
+    async (c) => c.json(await listChannelReaders(c.var.db, c.req.valid("param").channel), 200),
   )
   .openapi(
     operation({

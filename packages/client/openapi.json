@@ -187,6 +187,82 @@
           }
         }
       },
+      "ReadCursor": {
+        "type": "object",
+        "properties": {
+          "lastReadId": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "lastReadId"
+        ]
+      },
+      "ChannelReader": {
+        "type": "object",
+        "properties": {
+          "member": {
+            "type": "string",
+            "example": "acme-bot"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/MemberKind"
+          },
+          "org": {
+            "type": "string",
+            "example": "acme"
+          },
+          "lastReadId": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "example": "m12",
+            "description": "The last feed item the member has read; null before their first read"
+          },
+          "readAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "example": "2026-11-28T10:40:02.000Z",
+            "description": "When the cursor last moved"
+          },
+          "backlog": {
+            "type": "integer",
+            "example": 9,
+            "description": "Feed items after the cursor written by someone else"
+          },
+          "behindSince": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "example": "2026-11-28T10:40:02.000Z",
+            "description": "When the oldest of those was posted; null when up to date. A cursor behind for long while work waits means a stuck reader"
+          }
+        },
+        "required": [
+          "member",
+          "kind",
+          "org",
+          "lastReadId",
+          "readAt",
+          "backlog",
+          "behindSince"
+        ]
+      },
+      "MemberKind": {
+        "type": "string",
+        "enum": [
+          "person",
+          "agent",
+          "bridge",
+          "watcher"
+        ]
+      },
       "ChannelMember": {
         "type": "object",
         "properties": {
@@ -2292,15 +2368,6 @@
           "owner",
           "runsIn",
           "source"
-        ]
-      },
-      "MemberKind": {
-        "type": "string",
-        "enum": [
-          "person",
-          "agent",
-          "bridge",
-          "watcher"
         ]
       },
       "CreateMemberBody": {
@@ -7086,7 +7153,101 @@
         "tags": [
           "channels"
         ],
-        "summary": "Mark a channel as read for the acting member",
+        "summary": "Move the acting member's read cursor in a channel: to the newest feed item, or with upTo only as far as that message. It never moves back; everyone who sees the channel sees the cursor (listChannelReaders)",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "example": "backend"
+            },
+            "required": true,
+            "name": "channel",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^m\\d+$",
+              "example": "m12",
+              "description": "Move the cursor only as far as this message (a reply counts as the feed item before it). Never moves it back"
+            },
+            "required": false,
+            "description": "Move the cursor only as far as this message (a reply counts as the feed item before it). Never moves it back",
+            "name": "upTo",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReadCursor"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The input is not valid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sign-in is on and the request has no session or key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The acting member is not on this board, or may not do this",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The task or message is in another state, or the claim epoch is stale",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/channels/{channel}/readers": {
+      "get": {
+        "operationId": "listChannelReaders",
+        "tags": [
+          "channels"
+        ],
+        "summary": "Every person and agent who can see the channel, from any org, with their read cursor, how many feed items they are behind and since when; most behind first",
         "parameters": [
           {
             "schema": {
@@ -7104,15 +7265,10 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "properties": {
-                    "lastReadId": {
-                      "type": "integer"
-                    }
-                  },
-                  "required": [
-                    "lastReadId"
-                  ]
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ChannelReader"
+                  }
                 }
               }
             }

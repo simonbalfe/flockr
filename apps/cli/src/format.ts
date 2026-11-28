@@ -3,6 +3,7 @@ import type {
   Activity,
   BoardEvent,
   Channel,
+  ChannelReader,
   FeedItem,
   Inbox,
   Member,
@@ -172,3 +173,6 @@ export const areaLine = (a: WorkingArea) =>
   `${String(a.id).padStart(3)}  ${a.owner.padEnd(10)} ${a.paths.join(", ")}  [${a.taskId === null ? `no task, runs out ${clock(a.expiresAt ?? a.createdAt)}` : `#${a.taskId} on ${a.branch}`}${a.note ? `, ${a.note}` : ""}]`
 
 export const overlapLine = (o: AreaOverlap) => `  overlaps ${o.area.owner} (${o.area.taskId === null ? "no task" : `#${o.area.taskId} on ${o.area.branch}`}): ${o.paths.map((p) => `${p.yours} meets ${p.theirs}`).join(", ")}`
+
+export const readerLine = (r: ChannelReader) =>
+  `${r.member.padEnd(14)} ${r.kind.padEnd(7)} ${r.org.padEnd(10)} ${r.backlog ? `${r.backlog} behind since ${clock(r.behindSince ?? "")}` : "up to date"}${r.lastReadId ? `  (read to ${r.lastReadId}${r.readAt ? ` at ${clock(r.readAt)}` : ""})` : "  (never read)"}`

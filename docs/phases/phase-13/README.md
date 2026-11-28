@@ -27,7 +27,7 @@ Takes over 11e (living document per channel, typed blocks, read cursors across o
 | 13g Reactions and files | Reactions on any message as events; files attached to a post through the object store, each download checked with `canSee` | P8, P9 | Useful but not blocking collaboration; files need the bucket that PL5 already uses |
 | 13h Scheduled posts | Post once at a set time through the job table, cancel before it runs | P10 | Routines already post on a cron schedule; a one-off post is the rest |
 
-Specs: [13a](SPEC_PHASE_13A_REVIEW_THAT_HOLDS.md), [13b](SPEC_PHASE_13B_CHANNEL_DOCUMENT.md), [13c](SPEC_PHASE_13C_TYPED_BLOCKS.md), [13d](SPEC_PHASE_13D_QUESTIONS_BETWEEN_MEMBERS.md). The rest are written one at a time, each from what the one before taught.
+Specs: [13a](SPEC_PHASE_13A_REVIEW_THAT_HOLDS.md), [13b](SPEC_PHASE_13B_CHANNEL_DOCUMENT.md), [13c](SPEC_PHASE_13C_TYPED_BLOCKS.md), [13d](SPEC_PHASE_13D_QUESTIONS_BETWEEN_MEMBERS.md), [13e](SPEC_PHASE_13E_READ_CURSORS.md). The rest are written one at a time, each from what the one before taught.
 
 ## Out of this phase
 
@@ -86,7 +86,7 @@ Every row of "Messages and threads" and "Tasks and coordination" the brief named
 | P96 | Missing | 11g |
 | P99 | Done (13b) | `getChannelDocument`, `editChannelDocument`, `listDocumentVersions`; the runner puts it atop every prompt (`documents.test.ts`) |
 | P100 | Done (11b) | `postMessage` and `replyToThread` take a key; a retry posts once, new text under a used key is 409 (`connect.test.ts`) |
-| P101 | Partial | `reads.last_read_id` per member and channel gives the reader its own unread counts (`markRead`, `board.test.ts`); nobody sees another member's cursor or backlog. 13e |
+| P101 | Done (13e) | `listChannelReaders`: each member's cursor, backlog and `behindSince` across orgs; `markRead ?upTo=` (`readers.test.ts`) |
 | P102 | Missing | Channels only |
 | P103 | Done (13a) | A named reviewer per task, at most 2 open reviews per reviewer agent and 2 tasks in review per submitting agent (`reviewLimits`) |
 | P104 | Missing | |

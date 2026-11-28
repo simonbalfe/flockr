@@ -1,12 +1,12 @@
-import type { Channel, CreateChannelBody, UpdateChannelBody } from "@flockr/contracts"
-import { and, eq, isNull, max } from "drizzle-orm"
+import type { Channel, CreateChannelBody, MarkReadQuery, UpdateChannelBody } from "@flockr/contracts"
+import { and, eq, isNull, lte, max } from "drizzle-orm"
 import type { Database } from "../db/client"
 import { channelMembers, channels, messages, reads } from "../db/schema"
 import { alreadyExists, forbidden, notFound } from "./errors"
 import { mutate } from "./events"
 import { requireActor } from "./members"
 import { requireVisibilityChange } from "./orgs"
-import { listChannels, requireChannel } from "./read"
+import { listChannels, parseThreadId, requireChannel } from "./read"
 import { viewerOf } from "./visibility"
 
 export async function createChannel(db: Database, actor: string, body: CreateChannelBody): Promise<Channel> {
@@ -48,14 +48,16 @@ export async function updateChannel(db: Database, actor: string, id: string, bod
   })
 }
 
-export async function markRead(db: Database, actor: string, channel: string): Promise<{ lastReadId: number }> {
+export async function markRead(db: Database, actor: string, channel: string, query: MarkReadQuery = {}): Promise<{ lastReadId: number }> {
   return mutate(db, async (tx, emit) => {
     await requireActor(tx, actor)
     await requireChannel(tx, channel)
+    const upTo = query.upTo === undefined ? null : parseThreadId(query.upTo)
+    const until = upTo?.kind === "message" ? lte(messages.id, upTo.id) : undefined
     const [latest] = await tx
       .select({ id: max(messages.id) })
       .from(messages)
-      .where(and(eq(messages.channel, channel), isNull(messages.parentId), isNull(messages.threadTaskId)))
+      .where(and(eq(messages.channel, channel), isNull(messages.parentId), isNull(messages.threadTaskId), until))
     const lastReadId = latest?.id ?? 0
     const [current] = await tx
       .select()
@@ -64,9 +66,9 @@ export async function markRead(db: Database, actor: string, channel: string): Pr
     if (current && current.lastReadId >= lastReadId) return { lastReadId: current.lastReadId }
     await tx
       .insert(reads)
-      .values({ member: actor, channel, lastReadId })
-      .onConflictDoUpdate({ target: [reads.member, reads.channel], set: { lastReadId } })
-    emit({ type: "channel.read", actor, channel, data: { lastReadId } })
+      .values({ member: actor, channel, lastReadId, readAt: new Date() })
+      .onConflictDoUpdate({ target: [reads.member, reads.channel], set: { lastReadId, readAt: new Date() } })
+    emit({ type: "channel.read", actor, channel, data: { lastReadId, upTo: query.upTo ?? null } })
     return { lastReadId }
   })
 }

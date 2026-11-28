@@ -336,6 +336,7 @@ export const reads = pgTable(
       .notNull()
       .references(() => channels.id),
     lastReadId: integer("last_read_id").notNull().default(0),
+    readAt: timestamp("read_at", { withTimezone: true }),
   },
   (t) => [primaryKey({ columns: [t.member, t.channel] })],
 )

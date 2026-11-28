@@ -108,6 +108,7 @@ export function fakeBoard() {
   const tasks = new Map<number, Task>()
   const threads = new Map<string, Thread>()
   const calls: string[] = []
+  const cursors: string[] = []
   const memory: { notes: MemoryItem[]; channel: MemoryItem[] } = { notes: [], channel: [] }
   let renewWorks = true
   let replyCount = 0
@@ -119,6 +120,7 @@ export function fakeBoard() {
   const port: BoardPort = {
     me: async () => ({ org: "home" }),
     people: async () => new Set(["simon", "dana"]),
+    markRead: async (channel, upTo) => void cursors.push(`${channel}:${upTo}`),
     questions: async () => [...threads.values()].flatMap((t) => t.entries.flatMap((e) => (e.kind === "question" && e.answer === null && e.to === member ? [e] : []))),
     async task(id) {
       const found = tasks.get(id)
@@ -188,6 +190,7 @@ export function fakeBoard() {
     tasks,
     threads,
     calls,
+    cursors,
     failRenew: () => void (renewWorks = false),
   }
 }

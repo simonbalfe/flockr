@@ -473,6 +473,7 @@ export function createRunner(deps: RunnerDeps) {
     const history: Thread = await board.thread(threadId)
     const entry = history.entries.find((e) => e.id === event.messageId)
     if (!entry || entry.kind !== "reply" || entry.deleted) return
+    await readTo(history.channel, threadId)
     if (await chainTooLong(event, history)) return
     const message = followUpPrompt({ thread: threadId, who: event.actor, text: entry.text })
     if (runs.has(threadId)) {
@@ -498,9 +499,15 @@ export function createRunner(deps: RunnerDeps) {
     }
   }
 
+  async function readTo(channel: string, upTo: string): Promise<void> {
+    if (!/^m\d+$/.test(upTo)) return
+    await board.markRead(channel, upTo).catch((error: unknown) => log(`${member}: could not move the read cursor in #${channel}: ${error instanceof Error ? error.message : String(error)}`))
+  }
+
   async function onPost(event: BoardEvent): Promise<void> {
     const thread = event.messageId
     if (thread === null || event.channel === null) return
+    await readTo(event.channel, thread)
     await converse({ thread, channel: event.channel, message: null })
   }
 
