@@ -100,6 +100,7 @@ function KeyRow({ entry, showMember, mayManage }: { entry: MemberKey; showMember
           <span className="font-mono text-[13px]">{entry.shown}…</span>
           {showMember && <span className="font-medium"> {entry.owner ? `${entry.member} via ${entry.owner}` : entry.member}</span>}
           {entry.kind === "provisioning" && <span className="text-muted-foreground"> · provisioning</span>}
+          {entry.client && <span className="text-muted-foreground"> · {entry.client} (OAuth)</span>}
         </div>
         <div className="truncate text-xs text-muted-foreground">
           {limit} · {used} · made by {entry.createdBy}

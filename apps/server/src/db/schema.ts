@@ -1,5 +1,5 @@
 import { hostOrg } from "@flockr/contracts"
-import type { AccessGrant, AccessLevel, ActionKind, KeyKind, Block, ProfileColour, ReactionKind, ChannelKind, ChannelVisibility, DraftKind, AreaEndReason, ActivityState, AgentDesired, AgentPermissions, AgentReport, ApprovalVerdict, ChatBridgeName, HarnessInfo, JobKind, JobState, MemberKind, MemoryKind, MemoryScope, Question, RoutineTriggerKind, TaskState } from "@flockr/contracts"
+import type { AccessGrant, AccessLevel, ActionKind, KeyKind, OAuthGrantKind, OAuthGrantState, Block, ProfileColour, ReactionKind, ChannelKind, ChannelVisibility, DraftKind, AreaEndReason, ActivityState, AgentDesired, AgentPermissions, AgentReport, ApprovalVerdict, ChatBridgeName, HarnessInfo, JobKind, JobState, MemberKind, MemoryKind, MemoryScope, Question, RoutineTriggerKind, TaskState } from "@flockr/contracts"
 import { sql } from "drizzle-orm"
 import { bigint, boolean, check, index, integer, jsonb, pgTable, primaryKey, text, timestamp, unique, uniqueIndex, type AnyPgColumn } from "drizzle-orm/pg-core"
 
@@ -504,6 +504,8 @@ export const memberKeys = pgTable(
       .notNull()
       .references(() => members.name),
     madeByKey: text("made_by_key").references((): AnyPgColumn => memberKeys.id),
+    oauthClient: text("oauth_client").references((): AnyPgColumn => oauthClients.id),
+    clientName: text("client_name"),
     version: integer("version").notNull().default(0),
     createdAt: createdAt(),
     rotatedAt: timestamp("rotated_at", { withTimezone: true }),
@@ -517,6 +519,43 @@ export const memberKeys = pgTable(
     check("member_keys_kind", sql`${t.kind} in ('member', 'provisioning')`),
   ],
 )
+
+export const oauthClients = pgTable("oauth_clients", {
+  id: text("id").primaryKey(),
+  name: text("name").notNull(),
+  redirectUris: text("redirect_uris").array().notNull(),
+  createdAt: createdAt(),
+})
+
+export const oauthGrants = pgTable(
+  "oauth_grants",
+  {
+    id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+    kind: text("kind").$type<OAuthGrantKind>().notNull(),
+    codeHash: text("code_hash").notNull(),
+    userCode: text("user_code"),
+    client: text("client")
+      .notNull()
+      .references(() => oauthClients.id),
+    redirectUri: text("redirect_uri"),
+    codeChallenge: text("code_challenge"),
+    state: text("state").$type<OAuthGrantState>().notNull(),
+    member: text("member").references(() => members.name),
+    channels: text("channels").array(),
+    approvedBy: text("approved_by").references(() => members.name),
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+    createdAt: createdAt(),
+  },
+  (t) => [
+    uniqueIndex("oauth_grants_code_hash").on(t.codeHash),
+    uniqueIndex("oauth_grants_pending_user_code").on(t.userCode).where(sql`${t.state} = 'pending'`),
+    check("oauth_grants_kind", sql`${t.kind} in ('code', 'device')`),
+    check("oauth_grants_state", sql`${t.state} in ('pending', 'approved', 'denied', 'used')`),
+  ],
+)
+
+export type OAuthClientRow = typeof oauthClients.$inferSelect
+export type OAuthGrantRow = typeof oauthGrants.$inferSelect
 
 const authTimestamp = (name: string) => timestamp(name, { withTimezone: true }).notNull().defaultNow()
 

@@ -50,7 +50,7 @@ export default {
       headers.set(viewerHeader, JSON.stringify(viewer))
       return boardRoom(env).fetch(new Request(request, { headers }))
     }
-    if (!url.pathname.startsWith("/api/") && url.pathname !== "/mcp") return new Response("Not found", { status: 404 })
+    if (!url.pathname.startsWith("/api/") && url.pathname !== "/mcp" && !url.pathname.startsWith("/.well-known/")) return new Response("Not found", { status: 404 })
     return serveApi(env, ctx, request)
   },
   async scheduled(controller: ScheduledController, rawEnv: unknown, ctx: ExecutionContext): Promise<void> {

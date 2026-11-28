@@ -14,6 +14,13 @@ function linkError(): string | null {
   return code ? (linkErrors[code] ?? "That link did not work. Send a new one.") : null
 }
 
+function returnPath(): string {
+  const params = new URLSearchParams(window.location.search)
+  params.delete("error")
+  const query = params.toString()
+  return `${window.location.pathname}${query ? `?${query}` : ""}`
+}
+
 export function SignIn() {
   const request = useRequestLink()
   const [email, setEmail] = useState("")
@@ -24,7 +31,7 @@ export function SignIn() {
     event.preventDefault()
     const address = email.trim()
     if (!address) return
-    request.mutate({ body: { email: address, callbackURL: "/" } }, { onSuccess: () => setSentTo(address) })
+    request.mutate({ body: { email: address, callbackURL: returnPath() } }, { onSuccess: () => setSentTo(address) })
   }
 
   return (

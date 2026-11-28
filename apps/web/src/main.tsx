@@ -5,6 +5,7 @@ import { createRoot } from "react-dom/client"
 import { toast } from "sonner"
 import { recheckSession } from "@/api/auth"
 import { errorText } from "@/api/hooks"
+import { isOAuthPage, OAuthPage } from "@/components/oauth/consent"
 import { SessionGate } from "@/components/session-gate"
 import { createAppRouter } from "@/router"
 import "@/index.css"
@@ -29,7 +30,7 @@ createRoot(container).render(
   <StrictMode>
     <QueryClientProvider client={queryClient}>
       <SessionGate>
-        <RouterProvider router={router} />
+        {isOAuthPage(window.location.pathname) ? <OAuthPage /> : <RouterProvider router={router} />}
       </SessionGate>
     </QueryClientProvider>
   </StrictMode>,

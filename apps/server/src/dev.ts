@@ -13,7 +13,7 @@ import { parseSince, type LiveSocket } from "./live/hub"
 import { startLive } from "./live/runtime"
 import { bridgeSettingsFrom } from "./chat-bridges"
 
-const servedByHono = /^(?!\/(api|mcp)(\/|\?|$)).*/
+const servedByHono = /^(?!\/(api|mcp|\.well-known)(\/|\?|$)).*/
 
 function liveSocketPlugin(): Plugin {
   return {

@@ -60,6 +60,7 @@ const rules: Rule[] = [
   { pattern: /^\/api\/me\/[a-z]+$/, target: () => ({ kind: "viewer" }) },
   { method: "POST", pattern: /^\/api\/(dms|members)$/, target: () => ({ kind: "viewer" }) },
   { method: "GET", pattern: /^\/api\/orgs$/, target: () => ({ kind: "open" }) },
+  { pattern: /^\/api\/oauth\//, target: () => ({ kind: "viewer" }) },
   { method: "GET", pattern: /^\/api\/wait$/, target: (_, request) => waitTarget(request.query) },
 ]
 

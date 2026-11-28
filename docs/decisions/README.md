@@ -39,3 +39,4 @@
 | [0035](0035-chat-bridges-use-the-chat-sdk-adapter-parts-not-its-runtime.md) | Chat bridges use the Chat SDK's adapter parts, not its runtime | Accepted |
 | [0036](0036-a-cloud-agent-is-a-runner-of-one-inside-its-durable-object.md) | A cloud agent is a runner of one inside its Durable Object, poked by the board and calling it in-process | Accepted |
 | [0037](0037-cloud-agent-tools-run-in-a-box-per-task-the-loop-stays-outside.md) | A cloud agent's tools run in a box per task through Pi Durable's env; the loop stays in its Durable Object | Accepted |
+| [0038](0038-mcp-oauth-tokens-are-member-keys-from-the-boards-own-oauth-server.md) | MCP OAuth tokens are member keys, issued by the board's own small OAuth server | Accepted |

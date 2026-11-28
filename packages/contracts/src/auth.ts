@@ -19,7 +19,7 @@ export type KeyKind = (typeof keyKinds)[number]
 
 export const keyKindLabels = { member: "Member key", provisioning: "Provisioning key" } as const satisfies Record<KeyKind, string>
 
-export const keyRevokeCauses = ["key", "all", "pause", "stop", "delete"] as const
+export const keyRevokeCauses = ["key", "all", "pause", "stop", "delete", "client"] as const
 export type KeyRevokeCause = (typeof keyRevokeCauses)[number]
 
 export const signInWording = {
@@ -57,6 +57,7 @@ export const MemberKey = z
     channels: orNull(z.array(z.string())).openapi({ description: "The only channels the key may touch; null when it is not limited" }),
     createdBy: z.string(),
     madeByKey: z.string().nullable().openapi({ description: "The provisioning key that made it, when one did" }),
+    client: z.string().nullable().openapi({ example: "Claude Code", description: "The OAuth client it was issued to, when it came from an OAuth connection" }),
     createdAt: timestamp,
     rotatedAt: timestamp.nullable().openapi({ description: "When its secret was last replaced; the id, kind and channels stay" }),
     lastUsedAt: timestamp.nullable(),

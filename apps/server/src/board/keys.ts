@@ -1,5 +1,5 @@
 import { keyEventTypes, keyLimits, mayManageKeys, type CreatedKey, type IdentitySource, type KeyKind, type KeyRevokeCause, type MemberKey, type RescopeKeyBody, type RevokedKeys } from "@flockr/contracts"
-import { and, asc, eq, inArray, isNull, lt, or } from "drizzle-orm"
+import { and, asc, eq, inArray, isNotNull, isNull, lt, or } from "drizzle-orm"
 import type { Database, Executor, Tx } from "../db/client"
 import { channels, memberKeys, members, type MemberKeyRow, type MemberRow } from "../db/schema"
 import { forbidden, invalid, notFound, wrongState } from "./errors"
@@ -37,6 +37,7 @@ export interface CreateKeyInput {
   member: string
   channels: string[] | null
   kind?: KeyKind
+  client?: { id: string; name: string }
 }
 
 interface KeyManager {
@@ -53,6 +54,7 @@ const toKey = (row: MemberKeyRow, owner: string | null): MemberKey => ({
   channels: row.channels,
   createdBy: row.createdBy,
   madeByKey: row.madeByKey,
+  client: row.clientName,
   createdAt: row.createdAt.toISOString(),
   rotatedAt: row.rotatedAt?.toISOString() ?? null,
   lastUsedAt: row.lastUsedAt?.toISOString() ?? null,
@@ -103,10 +105,10 @@ export async function createKey(db: Database, actor: string, body: CreateKeyInpu
     const made = await newSecret()
     const [row] = await tx
       .insert(memberKeys)
-      .values({ id: `k_${hex(randomBytes(6))}`, member: member.name, kind, hash: made.hash, shown: made.shown, channels: limit, createdBy: actor, madeByKey: provisioner?.id ?? null })
+      .values({ id: `k_${hex(randomBytes(6))}`, member: member.name, kind, hash: made.hash, shown: made.shown, channels: limit, createdBy: actor, madeByKey: provisioner?.id ?? null, oauthClient: body.client?.id ?? null, clientName: body.client?.name ?? null })
       .returning()
     if (!row) throw new Error("Key insert returned nothing")
-    emit({ type: keyEventTypes.created, actor, data: { id: row.id, member: row.member, kind: row.kind, channels: row.channels, madeByKey: row.madeByKey } })
+    emit({ type: keyEventTypes.created, actor, data: { id: row.id, member: row.member, kind: row.kind, channels: row.channels, madeByKey: row.madeByKey, client: row.oauthClient } })
     return { key: toKey(row, member.owner), secret: made.secret }
   })
 }
@@ -214,4 +216,15 @@ export async function findLiveKey(db: Database, secret: string, now = new Date()
       .where(and(eq(memberKeys.id, row.id), or(isNull(memberKeys.lastUsedAt), lt(memberKeys.lastUsedAt, new Date(now.getTime() - touchEveryMs)))))
   }
   return { id: row.id, member: row.member, kind: row.kind, channels: row.channels, version: row.version }
+}
+
+export async function revokeClientKey(db: Database, secret: string, client: string | null): Promise<void> {
+  await mutate(db, async (tx, emit) => {
+    const [row] = await tx
+      .update(memberKeys)
+      .set({ revokedAt: new Date() })
+      .where(and(eq(memberKeys.hash, await hashKey(secret)), isNull(memberKeys.revokedAt), isNotNull(memberKeys.oauthClient), client === null ? undefined : eq(memberKeys.oauthClient, client)))
+      .returning()
+    if (row) emit({ type: keyEventTypes.revoked, actor: row.member, data: { id: row.id, member: row.member, cause: "client" satisfies KeyRevokeCause } })
+  })
 }

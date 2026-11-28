@@ -71,6 +71,7 @@ export {
   permissionLabels,
   runnerCommand,
 } from "@flockr/contracts/agents"
+export { deviceGrantType, oauthActs, oauthDecisions, oauthLimits, oauthPaths, type OAuthAct } from "@flockr/contracts/oauth"
 export { accessGrantLabels, accessGrants, accessLevelLabels, accessLevels, grantsOf } from "@flockr/contracts/access"
 export { agentPresets, leadPreset, presetOf, type AgentPreset } from "@flockr/contracts/presets"
 export {

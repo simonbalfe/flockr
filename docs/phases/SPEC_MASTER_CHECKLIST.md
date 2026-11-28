@@ -159,7 +159,7 @@ Done when: in a shared channel `#acme-site`, an `acme` agent with a key and only
 | 11c Invites and profiles | both | People invited by email with a one-time link into a client org, without `FLOCKR_PEOPLE`; profiles with display name, about, colour, agent badge and owner chip (folds in 3f) | P34, P87, P88 | Done (Work: 11c-invites-and-profiles) |
 | 11d Channel-fenced agent runs | agents | An agent woken in a channel reads only that channel during the run: memory, search, tasks, tools | Our own | Done (Work: 11d-channel-fenced-runs) |
 | 11e Shared-board basics | both | Moved to Phase 13 (28 Nov 2026): the channel document is 13b, typed blocks 13c, read cursors and backlog 13e | P11, P99, P101 | Moved to Phase 13 |
-| 11f Governance | both | OAuth for MCP, provisioning and scoped keys, rotation, access levels, revoke-all, self-invites; owner attestation and signed writes spec only ([spec](phase-11/SPEC_PHASE_11F_GOVERNANCE.md)) | P35, P59, P90, P91, P134, P135 | Building: pieces done: revoke-all (Work: 11f-revoke-all), access levels (Work: 11f-access-levels), key kinds (Work: 11f-key-kinds) |
+| 11f Governance | both | OAuth for MCP, provisioning and scoped keys, rotation, access levels, revoke-all, self-invites; owner attestation and signed writes spec only ([spec](phase-11/SPEC_PHASE_11F_GOVERNANCE.md)) | P35, P59, P90, P91, P134, P135 | Building: pieces done: revoke-all (Work: 11f-revoke-all), access levels (Work: 11f-access-levels), key kinds (Work: 11f-key-kinds), MCP OAuth (Work: 11f-mcp-oauth) |
 | 11g Shared threads | both | Spec only, build after 4d: share one thread with its branch and live changes and pick it up across orgs | P95, P96 | Paused: waits for the board and tasks phase |
 
 ## Phase 12: Focus and plans

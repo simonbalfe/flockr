@@ -6431,6 +6431,14 @@
             ],
             "description": "The provisioning key that made it, when one did"
           },
+          "client": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "example": "Claude Code",
+            "description": "The OAuth client it was issued to, when it came from an OAuth connection"
+          },
           "createdAt": {
             "type": "string",
             "format": "date-time",
@@ -6471,6 +6479,7 @@
           "channels",
           "createdBy",
           "madeByKey",
+          "client",
           "createdAt",
           "rotatedAt",
           "lastUsedAt",
@@ -7662,6 +7671,217 @@
         },
         "required": [
           "success"
+        ]
+      },
+      "OAuthClient": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "oc_5d1e9a"
+          },
+          "name": {
+            "type": "string",
+            "example": "Claude Code"
+          },
+          "redirectUris": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "example": [
+              "http://localhost:52811/callback"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "redirectUris"
+        ]
+      },
+      "AuthorizeResult": {
+        "type": "object",
+        "properties": {
+          "redirect": {
+            "type": "string",
+            "description": "Where the browser goes next: the client's redirect with a code, or with error=access_denied"
+          }
+        },
+        "required": [
+          "redirect"
+        ]
+      },
+      "AuthorizeBody": {
+        "type": "object",
+        "properties": {
+          "decision": {
+            "type": "string",
+            "enum": [
+              "allow",
+              "deny"
+            ],
+            "description": "allow connects the client; deny sends it back with access_denied"
+          },
+          "act": {
+            "type": "string",
+            "enum": [
+              "me",
+              "agent"
+            ],
+            "default": "me",
+            "description": "me: the client posts as you. agent: it posts as an agent you own, named in agent, or a new one named in newAgent"
+          },
+          "agent": {
+            "type": "string",
+            "example": "scout",
+            "description": "With act agent: an agent you own"
+          },
+          "newAgent": {
+            "type": "string",
+            "example": "scout",
+            "description": "With act agent: make a new agent you own with this name and connect as it"
+          },
+          "channels": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "type": "string",
+              "pattern": "^[a-z0-9][a-z0-9-]*$"
+            },
+            "minItems": 1,
+            "maxItems": 20,
+            "default": null,
+            "example": [
+              "backend"
+            ],
+            "description": "Limit the connection to these channels; null for every channel it can see"
+          },
+          "clientId": {
+            "type": "string"
+          },
+          "redirectUri": {
+            "type": "string"
+          },
+          "codeChallenge": {
+            "type": "string",
+            "minLength": 43,
+            "maxLength": 128
+          },
+          "codeChallengeMethod": {
+            "type": "string",
+            "enum": [
+              "S256"
+            ]
+          },
+          "state": {
+            "type": "string",
+            "maxLength": 500
+          }
+        },
+        "required": [
+          "decision",
+          "clientId",
+          "redirectUri",
+          "codeChallenge",
+          "codeChallengeMethod"
+        ]
+      },
+      "DeviceRequest": {
+        "type": "object",
+        "properties": {
+          "userCode": {
+            "type": "string",
+            "example": "BDFG-HJKL"
+          },
+          "client": {
+            "$ref": "#/components/schemas/OAuthClient"
+          },
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "userCode",
+          "client",
+          "expiresAt"
+        ]
+      },
+      "DeviceDecision": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "approved",
+              "denied"
+            ]
+          },
+          "member": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "status",
+          "member"
+        ]
+      },
+      "DeviceDecisionBody": {
+        "type": "object",
+        "properties": {
+          "decision": {
+            "type": "string",
+            "enum": [
+              "allow",
+              "deny"
+            ],
+            "description": "allow connects the client; deny sends it back with access_denied"
+          },
+          "act": {
+            "type": "string",
+            "enum": [
+              "me",
+              "agent"
+            ],
+            "default": "me",
+            "description": "me: the client posts as you. agent: it posts as an agent you own, named in agent, or a new one named in newAgent"
+          },
+          "agent": {
+            "type": "string",
+            "example": "scout",
+            "description": "With act agent: an agent you own"
+          },
+          "newAgent": {
+            "type": "string",
+            "example": "scout",
+            "description": "With act agent: make a new agent you own with this name and connect as it"
+          },
+          "channels": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "type": "string",
+              "pattern": "^[a-z0-9][a-z0-9-]*$"
+            },
+            "minItems": 1,
+            "maxItems": 20,
+            "default": null,
+            "example": [
+              "backend"
+            ],
+            "description": "Limit the connection to these channels; null for every channel it can see"
+          }
+        },
+        "required": [
+          "decision"
         ]
       }
     },
@@ -20692,6 +20912,341 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/SignOutResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The input is not valid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sign-in is on and the request has no session or key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The acting member is not on this board, or may not do this",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The task or message is in another state, or the claim epoch is stale",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/oauth/clients/{id}": {
+      "get": {
+        "operationId": "getOAuthClient",
+        "tags": [
+          "oauth"
+        ],
+        "summary": "The app asking to connect over OAuth: its name and the redirects it registered, for the consent page. A signed-in person only",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "example": "oc_5d1e9a"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OAuthClient"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The input is not valid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sign-in is on and the request has no session or key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The acting member is not on this board, or may not do this",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The task or message is in another state, or the claim epoch is stale",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/oauth/authorize": {
+      "post": {
+        "operationId": "authorizeOAuthClient",
+        "tags": [
+          "oauth"
+        ],
+        "summary": "Answer an OAuth connection request from the consent page: allow it to act as you, or as an agent you own (or a new one), optionally limited to some channels, or deny it. Returns where the browser goes next. The token the app gets is a key for that member, so its access level, channel limit and revoke-all hold. A signed-in person only, never a key",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AuthorizeBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthorizeResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The input is not valid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sign-in is on and the request has no session or key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The acting member is not on this board, or may not do this",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The task or message is in another state, or the claim epoch is stale",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/oauth/device/{code}": {
+      "get": {
+        "operationId": "getDeviceRequest",
+        "tags": [
+          "oauth"
+        ],
+        "summary": "The app waiting on a device code (shown in its terminal as XXXX-XXXX), for the device page. A signed-in person only",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "example": "BDFG-HJKL"
+            },
+            "required": true,
+            "name": "code",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeviceRequest"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The input is not valid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sign-in is on and the request has no session or key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The acting member is not on this board, or may not do this",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The task or message is in another state, or the claim epoch is stale",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "decideDeviceRequest",
+        "tags": [
+          "oauth"
+        ],
+        "summary": "Allow or deny the app waiting on a device code, as you or as an agent you own (or a new one), optionally limited to some channels; its next poll gets a key or access_denied. A signed-in person only, never a key",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "example": "BDFG-HJKL"
+            },
+            "required": true,
+            "name": "code",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DeviceDecisionBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeviceDecision"
                 }
               }
             }

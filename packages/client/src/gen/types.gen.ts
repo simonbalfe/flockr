@@ -2159,6 +2159,10 @@ export type MemberKey = {
      * The provisioning key that made it, when one did
      */
     madeByKey: string | null;
+    /**
+     * The OAuth client it was issued to, when it came from an OAuth connection
+     */
+    client: string | null;
     createdAt: string;
     /**
      * When its secret was last replaced; the id, kind and channels stay
@@ -2572,6 +2576,81 @@ export type SignInBody = {
 
 export type SignOutResult = {
     success: boolean;
+};
+
+export type OAuthClient = {
+    id: string;
+    name: string;
+    redirectUris: Array<string>;
+};
+
+export type AuthorizeResult = {
+    /**
+     * Where the browser goes next: the client's redirect with a code, or with error=access_denied
+     */
+    redirect: string;
+};
+
+export type AuthorizeBody = {
+    /**
+     * allow connects the client; deny sends it back with access_denied
+     */
+    decision: 'allow' | 'deny';
+    /**
+     * me: the client posts as you. agent: it posts as an agent you own, named in agent, or a new one named in newAgent
+     */
+    act?: 'me' | 'agent';
+    /**
+     * With act agent: an agent you own
+     */
+    agent?: string;
+    /**
+     * With act agent: make a new agent you own with this name and connect as it
+     */
+    newAgent?: string;
+    /**
+     * Limit the connection to these channels; null for every channel it can see
+     */
+    channels?: Array<string> | null;
+    clientId: string;
+    redirectUri: string;
+    codeChallenge: string;
+    codeChallengeMethod: 'S256';
+    state?: string;
+};
+
+export type DeviceRequest = {
+    userCode: string;
+    client: OAuthClient;
+    expiresAt: string;
+};
+
+export type DeviceDecision = {
+    status: 'approved' | 'denied';
+    member: string | null;
+};
+
+export type DeviceDecisionBody = {
+    /**
+     * allow connects the client; deny sends it back with access_denied
+     */
+    decision: 'allow' | 'deny';
+    /**
+     * me: the client posts as you. agent: it posts as an agent you own, named in agent, or a new one named in newAgent
+     */
+    act?: 'me' | 'agent';
+    /**
+     * With act agent: an agent you own
+     */
+    agent?: string;
+    /**
+     * With act agent: make a new agent you own with this name and connect as it
+     */
+    newAgent?: string;
+    /**
+     * Limit the connection to these channels; null for every channel it can see
+     */
+    channels?: Array<string> | null;
 };
 
 export type ListChannelsData = {
@@ -9124,3 +9203,173 @@ export type SignOutResponses = {
 };
 
 export type SignOutResponse = SignOutResponses[keyof SignOutResponses];
+
+export type GetOAuthClientData = {
+    body?: never;
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/api/oauth/clients/{id}';
+};
+
+export type GetOAuthClientErrors = {
+    /**
+     * The input is not valid
+     */
+    400: Error;
+    /**
+     * Sign-in is on and the request has no session or key
+     */
+    401: Error;
+    /**
+     * The acting member is not on this board, or may not do this
+     */
+    403: Error;
+    /**
+     * Not found
+     */
+    404: Error;
+    /**
+     * The task or message is in another state, or the claim epoch is stale
+     */
+    409: Error;
+};
+
+export type GetOAuthClientError = GetOAuthClientErrors[keyof GetOAuthClientErrors];
+
+export type GetOAuthClientResponses = {
+    /**
+     * OK
+     */
+    200: OAuthClient;
+};
+
+export type GetOAuthClientResponse = GetOAuthClientResponses[keyof GetOAuthClientResponses];
+
+export type AuthorizeOAuthClientData = {
+    body: AuthorizeBody;
+    path?: never;
+    query?: never;
+    url: '/api/oauth/authorize';
+};
+
+export type AuthorizeOAuthClientErrors = {
+    /**
+     * The input is not valid
+     */
+    400: Error;
+    /**
+     * Sign-in is on and the request has no session or key
+     */
+    401: Error;
+    /**
+     * The acting member is not on this board, or may not do this
+     */
+    403: Error;
+    /**
+     * Not found
+     */
+    404: Error;
+    /**
+     * The task or message is in another state, or the claim epoch is stale
+     */
+    409: Error;
+};
+
+export type AuthorizeOAuthClientError = AuthorizeOAuthClientErrors[keyof AuthorizeOAuthClientErrors];
+
+export type AuthorizeOAuthClientResponses = {
+    /**
+     * OK
+     */
+    200: AuthorizeResult;
+};
+
+export type AuthorizeOAuthClientResponse = AuthorizeOAuthClientResponses[keyof AuthorizeOAuthClientResponses];
+
+export type GetDeviceRequestData = {
+    body?: never;
+    path: {
+        code: string;
+    };
+    query?: never;
+    url: '/api/oauth/device/{code}';
+};
+
+export type GetDeviceRequestErrors = {
+    /**
+     * The input is not valid
+     */
+    400: Error;
+    /**
+     * Sign-in is on and the request has no session or key
+     */
+    401: Error;
+    /**
+     * The acting member is not on this board, or may not do this
+     */
+    403: Error;
+    /**
+     * Not found
+     */
+    404: Error;
+    /**
+     * The task or message is in another state, or the claim epoch is stale
+     */
+    409: Error;
+};
+
+export type GetDeviceRequestError = GetDeviceRequestErrors[keyof GetDeviceRequestErrors];
+
+export type GetDeviceRequestResponses = {
+    /**
+     * OK
+     */
+    200: DeviceRequest;
+};
+
+export type GetDeviceRequestResponse = GetDeviceRequestResponses[keyof GetDeviceRequestResponses];
+
+export type DecideDeviceRequestData = {
+    body: DeviceDecisionBody;
+    path: {
+        code: string;
+    };
+    query?: never;
+    url: '/api/oauth/device/{code}';
+};
+
+export type DecideDeviceRequestErrors = {
+    /**
+     * The input is not valid
+     */
+    400: Error;
+    /**
+     * Sign-in is on and the request has no session or key
+     */
+    401: Error;
+    /**
+     * The acting member is not on this board, or may not do this
+     */
+    403: Error;
+    /**
+     * Not found
+     */
+    404: Error;
+    /**
+     * The task or message is in another state, or the claim epoch is stale
+     */
+    409: Error;
+};
+
+export type DecideDeviceRequestError = DecideDeviceRequestErrors[keyof DecideDeviceRequestErrors];
+
+export type DecideDeviceRequestResponses = {
+    /**
+     * OK
+     */
+    200: DeviceDecision;
+};
+
+export type DecideDeviceRequestResponse = DecideDeviceRequestResponses[keyof DecideDeviceRequestResponses];

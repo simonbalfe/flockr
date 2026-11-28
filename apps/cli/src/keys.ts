@@ -11,6 +11,7 @@ const keyLine = (k: MemberKey) =>
     (k.kind === "provisioning" ? "provisioning" : "").padEnd(13),
     `${k.member}${k.owner ? ` via ${k.owner}` : ""}`.padEnd(20),
     (k.channels ? k.channels.map((c) => `#${c}`).join(",") : "all channels").padEnd(20),
+    k.client ? `via OAuth (${k.client})` : "",
     k.revokedAt ? `revoked ${k.revokedAt}` : k.lastUsedAt ? `last used ${k.lastUsedAt}` : "never used",
   ].join(" ")
 

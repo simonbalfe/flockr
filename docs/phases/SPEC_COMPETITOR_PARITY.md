@@ -110,8 +110,8 @@ Research only: every feature the surveyed products have, and who has it. Nothing
 | P94 | Per-turn token and cost record, readable only by the agent's owner | BZ | NIP-AM, `kind:44200`, encrypted to the owner |
 | P122 | An agent answers only its owner unless set otherwise: owner only, an allowlist, anyone, or nobody | BZ | `buzz-acp --respond-to`, default `owner-only` (`crates/buzz-acp/src/config.rs`) |
 | P123 | An agent proposes a new agent or channel as a draft its owner reviews and saves | BZ | `buzz agents draft-create`, `buzz projects add-channel` open owner-reviewed drafts in desktop |
-| P130 | Agents are invited from the same dialog as people: a one-time link that expires after 1 hour, or OAuth to the hosted MCP with dynamic client registration and a device flow | AD | Link in 11c; OAuth in 11f (spec only) |
-| P131 | The owner picks at connection whether it posts as them or as a managed agent; the author comes from the credential, never from a prompt or tool argument | AD | 11f (spec only); today a key always acts as its own member |
+| P130 | Agents are invited from the same dialog as people: a one-time link that expires after 1 hour, or OAuth to the hosted MCP with dynamic client registration and a device flow | AD | Link in 11c; OAuth with dynamic registration and a device flow done (Work: 11f-mcp-oauth) |
+| P131 | The owner picks at connection whether it posts as them or as a managed agent; the author comes from the credential, never from a prompt or tool argument | AD | Done (Work: 11f-mcp-oauth): Me or an agent I manage at consent; the token is a key for that member |
 | P132 | A notify setting per agent (all, mentions and DMs, mentions only, off), woken by a live connection, an HTTPS webhook or a scheduled inbox check, since MCP alone does not wake an idle agent | AD | Wait tool done (Work: 11b-connect-any-agent); notify setting and webhook in 11f |
 | P133 | Agents never take a seat | AD | Pricing note; Flockr has no seats |
 
@@ -151,8 +151,8 @@ Research only: every feature the surveyed products have, and who has it. Nothing
 | P124 | Read-only guest role per channel; a channel can make everyone who joins a guest | BZ | `member_role` `guest` may not post (`buzz-core/src/channel.rs`, `can_post`); `channels.join_role` |
 | P125 | Invite links with a required expiry, a use limit and revoke, stored hashed | BZ | `relay_invites`: `max_uses` 1 to 10,000, `expires_at`, `revoked_at`; grants workspace member only |
 | P126 | Removing a member cuts their live stream for that channel at once | BZ | Their channel subscriptions are evicted on every connection and their workflows there disabled (`handlers/side_effects.rs`). Done (Work: 11b-connect-any-agent): every live event is checked against the viewer, and a socket closes when its key is revoked or its member removed |
-| P134 | Pausing, archiving or deleting an agent revokes every key issued for it; a reconnect invite keeps the identity and replaces the key | AD | 11f (spec only) |
-| P135 | Keys belong to one workspace and one member; delegated keys get message, realtime and webhook scopes but never key management; an admin-only provisioning key issues narrower keys for named agents; keys rotate and rescope with a stable id; per-agent access levels (read only, read and reply, full, custom) apply to keys and sign-ins alike | AD | 11f (spec only) |
+| P134 | Pausing, archiving or deleting an agent revokes every key issued for it; a reconnect invite keeps the identity and replaces the key | AD | Done (Work: 11f-revoke-all); a new key reconnects |
+| P135 | Keys belong to one workspace and one member; delegated keys get message, realtime and webhook scopes but never key management; an admin-only provisioning key issues narrower keys for named agents; keys rotate and rescope with a stable id; per-agent access levels (read only, read and reply, full, custom) apply to keys and sign-ins alike | AD | Done (Work: 11f-access-levels, 11f-key-kinds) |
 
 ## Hosting and storage
 

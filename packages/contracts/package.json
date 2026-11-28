@@ -24,7 +24,8 @@
     "./routines": "./src/routines.ts",
     "./sessions": "./src/sessions.ts",
     "./presets": "./src/presets.ts",
-    "./access": "./src/access.ts"
+    "./access": "./src/access.ts",
+    "./oauth": "./src/oauth.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",

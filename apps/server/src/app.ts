@@ -39,6 +39,8 @@ import { messageRoutes } from "./routes/messages"
 import { navigationRoutes } from "./routes/navigation"
 import { orgRoutes } from "./routes/orgs"
 import { inviteRoutes } from "./routes/invites"
+import { oauthRoutes } from "./routes/oauth"
+import { isOAuthProtocolPath, oauthProtocol, resourceMetadataUrl } from "./auth/oauth"
 import { planRoutes } from "./routes/plans"
 import { questionRoutes } from "./routes/questions"
 import { reviewRoutes } from "./routes/review"
@@ -73,6 +75,7 @@ export function createApp(db: Database, options: AppOptions = {}) {
   const identify: MiddlewareHandler<AppEnv> = async (c, next) => {
     if (c.req.path.startsWith(`${modelProxyPath}/`)) return next()
     if (c.req.path.startsWith(`${hooksPath}/`)) return next()
+    if (isOAuthProtocolPath(c.req.path)) return next()
     c.set("db", db)
     c.set("auth", authenticator)
     if (authenticator.mode !== "off" && isPublicApiPath(c.req.path)) return next()
@@ -100,7 +103,12 @@ export function createApp(db: Database, options: AppOptions = {}) {
   app.use("/api/*", identify)
   app.use("/mcp", identify)
 
+  const oauthSettings = { enabled: (options.auth ?? authOff).mode === "on", baseURL: new URL((options.auth ?? authOff).baseURL).origin }
+
   app.onError((error, c) => {
+    if (error instanceof BoardError && error.kind === "unauthenticated" && c.req.path === "/mcp" && oauthSettings.enabled) {
+      c.header("WWW-Authenticate", `Bearer resource_metadata="${resourceMetadataUrl(oauthSettings.baseURL)}"`)
+    }
     if (error instanceof BoardError) return c.json({ error: error.message, kind: error.kind }, error.status)
     console.error(error)
     return c.json({ error: "Internal error; the server log has the details", kind: "internal" }, 500)
@@ -141,6 +149,7 @@ export function createApp(db: Database, options: AppOptions = {}) {
     .route("/", sessionRoutes(options.objects ?? null))
     .route("/", attachmentRoutes(options.objects ?? null))
     .route("/", authRoutes)
+    .route("/", oauthRoutes)
 
   const document = () => api.getOpenAPI31Document({ openapi: "3.1.0", info })
 
@@ -149,6 +158,7 @@ export function createApp(db: Database, options: AppOptions = {}) {
     const bridge = bridgeFor(c.req.param("host"))
     return bridge ? receiveBridgeHook(db, c.req.raw, bridge, options.bridges ?? {}) : receiveHook(db, c.req.raw, c.req.param("host"), options.hooks ?? null)
   })
+  api.on(["GET", "POST"], ["/api/oauth/register", "/api/oauth/token", "/api/oauth/device", "/api/oauth/revoke", "/.well-known/*"], (c) => oauthProtocol(db, oauthSettings, c.req.raw, c.req.path))
   api.get("/api/openapi.json", (c) => c.json(document()))
   api.get("/api/docs", swaggerUI({ url: "/api/openapi.json" }))
   api.on(["GET", "POST"], `${authBasePath}/*`, (c) => {

@@ -56,7 +56,20 @@ export async function securedBoard() {
   await call("simon", "POST", "/api/members", { name: "acme-bot", kind: "agent", org: "acme", owner: "ana" })
   await call("simon", "POST", "/api/channels", { id: "acme-site", visibility: "shared" })
   for (const name of ["ana", "acme-bot"]) await call("simon", "PUT", `/api/channels/acme-site/members/${name}`)
-  const secured = createApp(board.db, { auth: { mode: "on", people: new Map([["simon@example.com", "simon"]]), secret: "test-secret-for-the-governance-tests", baseURL: "http://localhost", email: logEmail(() => undefined) } })
+  const mail: string[] = []
+  const people = new Map([
+    ["simon@example.com", "simon"],
+    ["ana@example.com", "ana"],
+  ])
+  const secured = createApp(board.db, { auth: { mode: "on", people, secret: "test-secret-for-the-governance-tests", baseURL: "http://localhost", email: logEmail((line) => mail.push(line)) } })
+  const signIn = async (email: string): Promise<string> => {
+    await secured.request("/api/auth/sign-in/magic-link", { method: "POST", headers: { origin: "http://localhost", "content-type": "application/json" }, body: JSON.stringify({ email, callbackURL: "/" }) })
+    const url = /http\S+/.exec(mail.at(-1) ?? "")?.[0]
+    if (!url) throw new Error(`No sign-in link for ${email}`)
+    const link = new URL(url)
+    const visit = await secured.request(`${link.pathname}${link.search}`, { headers: { origin: "http://localhost" } })
+    return visit.headers.getSetCookie().map((c) => c.split(";")[0]).join("; ")
+  }
   const bearer = async (path: string, secret: string, init: { method?: string; body?: unknown } = {}) => {
     const response = await secured.request(path, {
       method: init.method ?? "GET",
@@ -67,5 +80,14 @@ export async function securedBoard() {
     return { status: response.status, json: text && response.headers.get("content-type")?.includes("json") ? (JSON.parse(text) as unknown) : null }
   }
   const key = async (member: string, channels: string[] | null = null) => (await createKey(board.db, "simon", { member, channels })).secret
-  return { ...board, secured, bearer, key }
+  const session = async (path: string, cookie: string, init: { method?: string; body?: unknown } = {}) => {
+    const response = await secured.request(path, {
+      method: init.method ?? "GET",
+      headers: { cookie, origin: "http://localhost", ...(init.body === undefined ? {} : { "content-type": "application/json" }) },
+      ...(init.body === undefined ? {} : { body: JSON.stringify(init.body) }),
+    })
+    const text = await response.text()
+    return { status: response.status, json: text && response.headers.get("content-type")?.includes("json") ? (JSON.parse(text) as unknown) : null }
+  }
+  return { ...board, secured, bearer, key, signIn, session }
 }

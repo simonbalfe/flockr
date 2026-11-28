@@ -46,7 +46,7 @@ const server = Bun.serve<{ since: number | null; viewer: Viewer; socket?: LiveSo
       if (srv.upgrade(request, { data: { since: parseSince(url), viewer } })) return undefined
       return new Response("Expected a WebSocket upgrade", { status: 426 })
     }
-    if (url.pathname.startsWith("/api/") || url.pathname === "/mcp") return app.fetch(request)
+    if (url.pathname.startsWith("/api/") || url.pathname === "/mcp" || url.pathname.startsWith("/.well-known/")) return app.fetch(request)
     return staticFile(url.pathname)
   },
   websocket: {
