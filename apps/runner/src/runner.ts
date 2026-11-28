@@ -7,8 +7,8 @@ import { fenceEnv, folderFor, isFolder, leaseRenewMs } from "./config"
 import type { Harness, PermissionBridge, Session, SessionExit, SessionSaver, SessionSpec } from "./harness/types"
 import { memoryBlock, noMemory } from "./memory"
 import { ruleFor } from "./permissions"
-import { conversationPrompt, failedText, followUpPrompt, missingFolderText, questionPrompt, resumeWorkPrompt, reviewPrompt, stoppedText, timeLimitText, workPrompt } from "./prompt"
-import { addressedDirectly, agentChain, agentChainLimit, askedOf, asksReview, awaitsReview, claimable, eventData, eventTypes, holds, isTaskEvent, reviewKey, routeReply, startsConversation, waitsFor, wakes } from "./routing"
+import { conversationPrompt, failedText, followUpPrompt, missingFolderText, questionPrompt, resumeWorkPrompt, reviewPrompt, stoppedText, timeLimitText, verdictPrompt, verdictText, workPrompt } from "./prompt"
+import { addressedDirectly, agentChain, agentChainLimit, askedOf, asksReview, awaitsReview, claimable, eventData, eventTypes, holds, isTaskEvent, reviewKey, reviewNote, routeReply, startsConversation, verdictFor, waitsFor, wakes, type ReviewVerdict } from "./routing"
 import type { Workspace } from "./workspace/types"
 import { sessionKey, type JsonStore, type SessionMap } from "./store"
 
@@ -537,6 +537,37 @@ export function createRunner(deps: RunnerDeps) {
     await work(await board.task(taskId))
   }
 
+  async function onVerdict(event: BoardEvent, verdict: ReviewVerdict): Promise<void> {
+    const taskId = event.taskId
+    if (taskId === null) return
+    const task = await board.task(taskId)
+    if (task.holder !== member) return
+    const thread = String(task.id)
+    const history = await board.thread(thread)
+    const told = { task, thread: history, reviewer: event.actor, verdict, note: reviewNote(history, event.actor, verdict) }
+    const message = verdictText(told)
+    if (closing) return
+    if (runs.has(thread)) {
+      await converse({ thread, channel: task.channel, message })
+      return
+    }
+    const folder = await folderOrNotice(thread, task.channel)
+    if (!folder) return
+    if (!hasRoom()) {
+      queued.set(thread, { channel: task.channel, texts: [...(queued.get(thread)?.texts ?? []), message] })
+      return
+    }
+    const memory = await memoryText(task.channel)
+    const prompt = (place: { worktree: boolean }) => (resuming: boolean) => (resuming ? message : verdictPrompt({ ...told, memory, worktree: place.worktree }))
+    if (verdict === "approved" || task.state !== "claimed") {
+      await launch({ thread, channel: task.channel, purpose: "talk", claim: null, prompt: prompt({ worktree: false }) }, folder)
+      return
+    }
+    epochs.set(task.id, task.claimEpoch)
+    const place = await workFolder(folder, task)
+    await launch({ thread, channel: task.channel, purpose: "work", claim: { taskId: task.id, epoch: task.claimEpoch }, prompt: prompt(place) }, place.folder)
+  }
+
   function onStopRequest(event: BoardEvent): void {
     const run = event.threadId === null ? undefined : runs.get(event.threadId)
     if (run && eventData(event).member === member) stop(run, "asked")
@@ -547,9 +578,11 @@ export function createRunner(deps: RunnerDeps) {
   }
 
   async function handle(event: BoardEvent): Promise<void> {
+    const verdict = verdictFor(event, member)
     if (event.type === eventTypes.handedOff) await onHandoff(event)
     else if (event.actor === member) logOwn(event)
     else if (asksReview(event, member)) await onReview(event)
+    else if (verdict) await onVerdict(event, verdict)
     else if (isTaskEvent(event)) await onTaskEvent(event)
     else if (!wakes(event, org)) return
     else if (startsConversation(event, member)) await onPost(event)

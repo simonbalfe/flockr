@@ -1,4 +1,4 @@
-import type { BoardEvent, MemoryItem, Task, Thread, ThreadEntry } from "@flockr/client"
+import type { BoardEvent, Block, MemoryItem, Task, Thread, ThreadEntry } from "@flockr/client"
 import type { EpochStore } from "@flockr/cli/epochs"
 import type { BoardPort, Claim } from "../src/board"
 import type { Harness, Session, SessionExit, SessionSpec } from "../src/harness/types"
@@ -92,7 +92,7 @@ export function task(values: Partial<Task> & { id: number }): Task {
   }
 }
 
-export const reply = (id: string, who: string, text: string): ThreadEntry => ({ kind: "reply", id, who, at: "2026-11-24T10:00:00.000Z", text, deleted: false, mentions: [], labels: [], editedAt: null, replyTo: null, blocks: [], reactions: [], files: [] })
+export const reply = (id: string, who: string, text: string, blocks: Block[] = []): ThreadEntry => ({ kind: "reply", id, who, at: "2026-11-24T10:00:00.000Z", text, deleted: false, mentions: [], labels: [], editedAt: null, replyTo: null, blocks, reactions: [], files: [] })
 
 export function messageThread(id: string, who: string, text: string, entries: ThreadEntry[] = []): Thread {
   return {

@@ -1,5 +1,6 @@
 import { blockSummary, type Block, type Task, type Thread, type ThreadEntry, type ThreadQuestion } from "@flockr/client"
 import type { AgentPermissions } from "@flockr/contracts/agents"
+import type { ReviewVerdict } from "./routing"
 
 const maxEntries = 40
 const maxText = 2000
@@ -97,7 +98,38 @@ function branchLines(task: Task, worktree: boolean): string[] {
   ]
 }
 
-export const resumeWorkPrompt = (task: Task) => `The runner restarted. Continue task #${task.id} (${task.title}); read flockr thread ${task.id} for anything new first.`
+export function verdictText(options: { task: Task; reviewer: string; verdict: ReviewVerdict; note: string | null }): string {
+  const { task, reviewer, note } = options
+  const reasons = note ? [`${reviewer}'s reasons:`, "", clip(note), ""] : []
+  switch (options.verdict) {
+    case "changes_requested":
+      return [
+        `${reviewer} reviewed task #${task.id} (${task.title}) and asked for changes. You still hold it.`,
+        "",
+        ...(note ? reasons : [`${reviewer} gave no reasons; read flockr thread ${task.id}.`, ""]),
+        `Make the changes on branch ${task.branch}, commit and push them, add each commit with flockr tasks commit ${task.id} <sha>, then send it back with flockr tasks submit ${task.id} --note "<what changed>".`,
+      ].join("\n")
+    case "approved":
+      return [
+        `${reviewer} approved task #${task.id} (${task.title}), which you submitted. It is done.`,
+        "",
+        ...reasons,
+        `Do anything the thread asks of you now that it is approved. If nothing is asked, end with an empty final message so nothing is posted; otherwise your final message is posted as your reply in thread ${task.id}.`,
+      ].join("\n")
+    default: {
+      const never: never = options.verdict
+      throw new Error(`Unknown verdict ${String(never)}`)
+    }
+  }
+}
+
+export function verdictPrompt(options: { task: Task; thread: Thread; reviewer: string; verdict: ReviewVerdict; note: string | null; memory?: string; worktree?: boolean }): string {
+  const { task, thread, memory } = options
+  const branch = options.verdict === "changes_requested" ? ["", ...branchLines(task, options.worktree ?? false)] : []
+  return [...(memory ? [memory, ""] : []), verdictText(options), "", "Thread so far:", threadLines(thread) || "(empty)", ...branch].join("\n")
+}
+
+export const resumeWorkPrompt =(task: Task) => `The runner restarted. Continue task #${task.id} (${task.title}); read flockr thread ${task.id} for anything new first.`
 
 export const missingFolderText = (folder: string) => `My folder ${folder} does not exist on this machine, so I cannot work here. Fix it in my agent settings.`
 export const timeLimitText = (minutes: number) => `Stopped after ${minutes} minutes, the runner's time limit for one run.`

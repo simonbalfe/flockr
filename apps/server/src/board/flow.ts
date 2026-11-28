@@ -43,7 +43,7 @@ export async function finish(tx: Tx, emit: Emit, task: TaskRow, actor: string, h
   await releaseTaskAreas(tx, emit, row, actor)
   await insertMessage(tx, { channel: row.channel, kind: "event", who: actor, body: threadText, threadTaskId: row.id, blocks: how.blocks ?? [] })
   await channelEvent(tx, row.channel, actor, channelText)
-  emitTask(emit, type, row, actor, { commit: commit ?? how.reviewed ?? (await latestCommit(tx, row.id)) })
+  emitTask(emit, type, row, actor, { holder: row.holder, commit: commit ?? how.reviewed ?? (await latestCommit(tx, row.id)) })
   await startReadyTasks(tx, emit, row, actor)
 }
 

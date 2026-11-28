@@ -1,5 +1,8 @@
 import { activityEventTypes, taskStates, wakesAgent, type BoardEvent, type Task, type TaskState, type Thread } from "@flockr/client"
+import type { reviewVerdicts } from "@flockr/contracts/blocks"
 import { z } from "zod"
+
+export type ReviewVerdict = (typeof reviewVerdicts)[number]
 
 export const eventTypes = {
   posted: "message.posted",
@@ -11,6 +14,8 @@ export const eventTypes = {
   submitted: "task.submitted",
   reviewerSet: "task.reviewer_set",
   reviewMoved: "task.review_moved",
+  approved: "task.approved",
+  changesRequested: "task.changes_requested",
   stopRequested: activityEventTypes.stopRequested,
 } as const
 
@@ -25,6 +30,7 @@ const EventData = z.object({
   from: z.string().nullable().optional().catch(undefined),
   to: z.string().optional().catch(undefined),
   reviewer: z.string().nullable().optional().catch(undefined),
+  holder: z.string().nullable().optional().catch(undefined),
   actorOrg: z.string().optional().catch(undefined),
   actorKind: z.string().optional().catch(undefined),
 })
@@ -41,6 +47,21 @@ const reviewEvents: ReadonlySet<string> = new Set([eventTypes.submitted, eventTy
 export function asksReview(event: BoardEvent, member: string): boolean {
   const data = eventData(event)
   return reviewEvents.has(event.type) && event.actor !== member && event.taskId !== null && data.state === "review" && data.reviewer === member
+}
+
+const verdicts: ReadonlyMap<string, ReviewVerdict> = new Map([
+  [eventTypes.approved, "approved"],
+  [eventTypes.changesRequested, "changes_requested"],
+])
+
+export function verdictFor(event: BoardEvent, member: string): ReviewVerdict | null {
+  if (event.taskId === null || eventData(event).holder !== member) return null
+  return verdicts.get(event.type) ?? null
+}
+
+export function reviewNote(thread: Thread, reviewer: string, verdict: ReviewVerdict): string | null {
+  const note = thread.entries.findLast((entry) => entry.kind === "reply" && !entry.deleted && entry.who === reviewer && entry.blocks.some((block) => block.kind === "approval" && block.verdict === verdict))
+  return note?.kind === "reply" ? note.text : null
 }
 
 export const reviewKey = (task: Task) => `${task.id}@${task.reviewCommit ?? "none"}`

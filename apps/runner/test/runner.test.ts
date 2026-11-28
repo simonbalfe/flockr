@@ -1,7 +1,8 @@
 import { describe, expect, test } from "bun:test"
 import { documentLimits } from "@flockr/contracts/documents"
 import { memoryBlock } from "../src/memory"
-import type { ThreadEntry } from "@flockr/client"
+import type { Block, ThreadEntry } from "@flockr/client"
+import type { ReviewVerdict } from "../src/routing"
 import { event, member, memoryItem, messageThread, reply, setup, task } from "./fakes"
 
 const mention = (thread: string, actor = "simon") => event({ type: "message.posted", actor, messageId: thread, threadId: thread, data: { mentions: [member] } })
@@ -395,6 +396,46 @@ describe("reviews (13a)", () => {
     await runner.receive(submitted(812, member, { actor: "acme-bot", data: { actorOrg: "acme", actorKind: "agent" } }))
     expect(started).toHaveLength(1)
     expect(started[0]?.spec.claim).toBeNull()
+  })
+})
+
+describe("review verdicts on our agent's task", () => {
+  const acme = { actorOrg: "acme", actorKind: "agent" }
+  const approval = (verdict: ReviewVerdict): Block[] => [{ kind: "approval", task: 830, verdict, commit: "a1b2c3d" }]
+  const taskThread = (entries: ThreadEntry[]) => ({ id: "830", channel: "general", taskId: 830, root: null, entries })
+
+  test("another org's reviewer asking for changes starts our holder on the task with the reasons; that reviewer replying in the thread starts nothing", async () => {
+    const { runner, board, started } = setup()
+    board.tasks.set(830, task({ id: 830, state: "claimed", holder: member, claimEpoch: 2, reviewer: "acme-bot" }))
+    board.threads.set("830", taskThread([reply("m71", "acme-bot", "Index the email column before this ships.", approval("changes_requested"))]))
+    await runner.receive(event({ type: "task.changes_requested", actor: "acme-bot", taskId: 830, threadId: "830", data: { state: "claimed", holder: member, ...acme } }))
+    expect(started).toHaveLength(1)
+    expect(started[0]?.spec.claim).toEqual({ taskId: 830, epoch: 2 })
+    expect(started[0]?.spec.prompt).toContain("acme-bot reviewed task #830")
+    expect(started[0]?.spec.prompt).toContain("Index the email column before this ships.")
+    expect(started[0]?.spec.prompt).toContain("flockr tasks submit 830")
+    expect(board.calls.filter((c) => c.startsWith("claim"))).toEqual([])
+    started[0]?.end({ kind: "finished", text: "Indexed." })
+    await runner.idle()
+    await runner.idle()
+    expect(board.calls).toContain("submit 830 epoch 2: Indexed.")
+    board.tasks.set(830, task({ id: 830, state: "claimed", holder: member, claimEpoch: 2, reviewer: "acme-bot" }))
+    board.threads.set("830", taskThread([reply("m72", member, "Indexed."), reply("m73", "acme-bot", "@claude also rename the column")]))
+    await runner.receive(event({ type: "reply.posted", actor: "acme-bot", threadId: "830", messageId: "m73", data: { mentions: [member], ...acme } }))
+    expect(started).toHaveLength(1)
+  })
+
+  test("an approval wakes the agent that submitted the task as a conversation; a verdict on another member's task wakes nothing", async () => {
+    const { runner, board, started } = setup()
+    board.tasks.set(831, task({ id: 831, state: "done", holder: "codex", reviewer: "acme-bot" }))
+    await runner.receive(event({ type: "task.approved", actor: "acme-bot", taskId: 831, threadId: "831", data: { state: "done", holder: "codex", ...acme } }))
+    await runner.receive(event({ type: "task.changes_requested", actor: "acme-bot", taskId: 831, threadId: "831", data: { state: "claimed", holder: "codex", ...acme } }))
+    expect(started).toHaveLength(0)
+    board.tasks.set(830, task({ id: 830, state: "done", holder: member, reviewer: "acme-bot" }))
+    await runner.receive(event({ type: "task.approved", actor: "acme-bot", taskId: 830, threadId: "830", data: { state: "done", holder: member, commit: "a1b2c3d", ...acme } }))
+    expect(started).toHaveLength(1)
+    expect(started[0]?.spec.claim).toBeNull()
+    expect(started[0]?.spec.prompt).toContain("acme-bot approved task #830")
   })
 })
 
