@@ -63,6 +63,7 @@ export function createApp(db: Database, options: AppOptions = {}) {
     if (c.req.path.startsWith(`${hooksPath}/`)) return next()
     c.set("db", db)
     c.set("auth", authenticator)
+    if (authenticator.mode !== "off" && isPublicApiPath(c.req.path)) return next()
     const open = authenticator.mode === "off" || isPublicApiPath(c.req.path)
     const identity = open ? headerIdentity(c.req.raw.headers) : await authenticator.identify(c.req.raw.headers)
     if (!identity) throw unauthenticated(signInNeeded)

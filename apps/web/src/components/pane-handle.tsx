@@ -5,19 +5,31 @@ interface PaneHandleProps {
   edge: "left" | "right"
   width: number
   label: string
+  onPreview: (width: number) => void
   onResize: (width: number) => void
   onReset: () => void
   onDragging?: (dragging: boolean) => void
 }
 
-export function PaneHandle({ edge, width, label, onResize, onReset, onDragging }: PaneHandleProps) {
+export function PaneHandle({ edge, width, label, onPreview, onResize, onReset, onDragging }: PaneHandleProps) {
   const start = useRef<{ x: number; width: number } | null>(null)
+  const latest = useRef<number | null>(null)
+  const frame = useRef<number | null>(null)
   const [dragging, setDragging] = useState(false)
   const toggle = (next: boolean) => {
     setDragging(next)
     onDragging?.(next)
     document.body.style.cursor = next ? "col-resize" : ""
     document.body.style.userSelect = next ? "none" : ""
+  }
+  const finish = (commit: boolean) => {
+    if (frame.current !== null) cancelAnimationFrame(frame.current)
+    frame.current = null
+    const final = latest.current
+    start.current = null
+    latest.current = null
+    toggle(false)
+    if (commit && final !== null) onResize(final)
   }
   return (
     <div
@@ -33,16 +45,15 @@ export function PaneHandle({ edge, width, label, onResize, onReset, onDragging }
       onPointerMove={(event) => {
         if (!start.current) return
         const moved = event.clientX - start.current.x
-        onResize(edge === "right" ? start.current.width + moved : start.current.width - moved)
+        latest.current = edge === "right" ? start.current.width + moved : start.current.width - moved
+        if (frame.current !== null) return
+        frame.current = requestAnimationFrame(() => {
+          frame.current = null
+          if (latest.current !== null) onPreview(latest.current)
+        })
       }}
-      onPointerUp={() => {
-        start.current = null
-        toggle(false)
-      }}
-      onPointerCancel={() => {
-        start.current = null
-        toggle(false)
-      }}
+      onPointerUp={() => finish(true)}
+      onPointerCancel={() => finish(true)}
       onDoubleClick={onReset}
       onKeyDown={(event) => {
         const step = event.shiftKey ? 40 : 10

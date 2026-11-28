@@ -53,6 +53,18 @@ async function signInBoard() {
 }
 
 describe("sign-in (1d)", () => {
+  test("a board with no members yet still lets a listed person ask for a link and sign in", async () => {
+    const board = await signInBoard()
+    await resetBoard(board.db)
+    const asked = await board.requestLink("rosa@example.com")
+    expect(asked.status).toBe(200)
+    expect(board.mail).toHaveLength(1)
+    const first = await board.signIn("rosa@example.com")
+    expect(first.visit.status).toBe(302)
+    const me = await board.call("/api/me", { headers: { cookie: first.cookie } })
+    expect(Me.parse(me.json)).toMatchObject({ name: "rosa", via: "session" })
+  })
+
   test("an address not on the list gets the same answer, no email and no session", async () => {
     const board = await signInBoard()
     const outsider = await board.requestLink("eve@example.com")

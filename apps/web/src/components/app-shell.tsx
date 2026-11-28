@@ -9,7 +9,7 @@ import { ShellContext } from "@/components/shell-context"
 import { SidebarContent } from "@/components/sidebar"
 import { Toaster } from "@/components/ui/sonner"
 import { TooltipProvider } from "@/components/ui/tooltip"
-import { resetPane, resizePane, updatePanes, usePanes } from "@/lib/panes"
+import { clampPane, resetPane, resizePane, updatePanes, usePanes } from "@/lib/panes"
 import { cn } from "@/lib/utils"
 
 export function AppShell() {
@@ -24,6 +24,13 @@ export function AppShell() {
     grid.current?.style.setProperty("--sidebar-w", panes.sidebarOpen ? `${panes.sidebar}px` : "0px")
     grid.current?.style.setProperty("--panel-w", `${panes.panel}px`)
   }, [panes])
+
+  const previewSidebar = (width: number) => {
+    const value = `${clampPane("sidebar", width)}px`
+    grid.current?.style.setProperty("--sidebar-open-w", value)
+    grid.current?.style.setProperty("--sidebar-w", value)
+  }
+  const previewPanel = (width: number) => grid.current?.style.setProperty("--panel-w", `${clampPane("panel", width)}px`)
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
@@ -79,13 +86,13 @@ export function AppShell() {
               <SidebarContent />
             </div>
             {panes.sidebarOpen && (
-              <PaneHandle edge="right" width={panes.sidebar} label="Resize the sidebar" onResize={(width) => resizePane("sidebar", width)} onReset={() => resetPane("sidebar")} onDragging={setDragging} />
+              <PaneHandle edge="right" width={panes.sidebar} label="Resize the sidebar" onPreview={previewSidebar} onResize={(width) => resizePane("sidebar", width)} onReset={() => resetPane("sidebar")} onDragging={setDragging} />
             )}
           </aside>
           <main className="flex min-h-0 min-w-0 flex-col">
             <Outlet />
           </main>
-          <RightPanel width={panes.panel} onDragging={setDragging} />
+          <RightPanel width={panes.panel} onPreview={previewPanel} onDragging={setDragging} />
         </div>
         <CommandPalette open={paletteOpen} onOpenChange={setPaletteOpen} />
         <NewAgentDialog />
