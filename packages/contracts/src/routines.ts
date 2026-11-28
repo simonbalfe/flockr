@@ -5,7 +5,7 @@ import { parseCron } from "./cron"
 export const jobStates = ["queued", "running", "waiting", "done", "failed", "skipped"] as const
 export type JobState = (typeof jobStates)[number]
 
-export const jobKinds = ["routine", "post"] as const
+export const jobKinds = ["routine", "post", "bridge"] as const
 export type JobKind = (typeof jobKinds)[number]
 
 export const routineTriggerKinds = ["cron", "event"] as const

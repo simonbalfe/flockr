@@ -10,6 +10,7 @@ import { connect } from "./db/client"
 import { parseSince, type LiveSocket } from "./live/hub"
 import { startLive } from "./live/runtime"
 import { hookSettingsFrom } from "./board/hook-route"
+import { bridgeSettingsFrom } from "./chat-bridges"
 import { modelProxySettingsFrom } from "./model-proxy/proxy"
 
 const dist = path.resolve(import.meta.dirname, "../../web/dist")
@@ -22,8 +23,8 @@ if (!(await index.exists())) {
 
 const connection = connect(databaseUrl)
 const auth = localAuthSettings()
-const app = createApp(connection.db, { auth, modelProxy: modelProxySettingsFrom(process.env, auth.secret), hooks: hookSettingsFrom(process.env), objects: localObjectStore(process.env, objectsDir()) })
-const live = await startLive(databaseUrl)
+const app = createApp(connection.db, { auth, modelProxy: modelProxySettingsFrom(process.env, auth.secret), hooks: hookSettingsFrom(process.env), bridges: bridgeSettingsFrom(process.env), objects: localObjectStore(process.env, objectsDir()) })
+const live = await startLive(databaseUrl, bridgeSettingsFrom(process.env))
 
 async function staticFile(pathname: string): Promise<Response> {
   const target = path.resolve(dist, `.${decodeURIComponent(pathname)}`)

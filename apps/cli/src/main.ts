@@ -1,6 +1,6 @@
 #!/usr/bin/env bun
 import * as sdk from "@flockr/client"
-import { configureClient, defaultMember, memberKinds, taskStates, waitLimits, type Task } from "@flockr/client"
+import { chatBridges, configureClient, defaultMember, memberKinds, taskStates, waitLimits, type Task } from "@flockr/client"
 import { activityCommand, approvalAction, isActivityWord, stopCommand } from "./activity"
 import { agentsCommand, machinesCommand } from "./agents"
 import { areasCommand } from "./areas"
@@ -17,6 +17,7 @@ import { channelSharingCommand, invitesCommand, orgsCommand, profileCommand, vis
 import { channelMemoryCommand, notesCommand } from "./memory"
 import { documentCommand } from "./documents"
 import { blocksCommand, blocksFrom } from "./blocks"
+import { bridgeCommand } from "./bridges"
 import { attachmentsFor, downloadCommand, reactCommand, uploadCommand } from "./attachments"
 import { scheduleCommand, scheduledCommand } from "./scheduled"
 import { sessionsCommand } from "./sessions"
@@ -204,6 +205,12 @@ Approval rules (allow, ask or block per action kind, board-wide or per channel; 
   flockr rules set <kind> allow|ask|block [--channel c]   only a person; spend and prod never go below ask
   flockr rules clear <kind> [--channel c] back to the board rule or the default
   flockr rules check <kind> [--channel c] what happens if you do it here: allow, ask (ask a person first) or block
+
+Chat sync (${chatBridges.join(", ")}; off until the server has the platform's secrets and a person links a channel)
+  flockr ${chatBridges.join("|")} [status]   on or off, linked channels and people, and your own link
+  flockr ${chatBridges.join("|")} link <channel> <platform-channel-id>   sync an org-wide channel both ways (a host-org person; private
+                                      and shared channels stay off); unlink <channel> stops it
+  flockr ${chatBridges.join("|")} me <platform-user-id>   your messages there post as you and your button presses count; forget undoes it
 
 Live
   flockr tail [--since seq]           stream board events, resuming after drops
@@ -679,8 +686,11 @@ async function main(): Promise<number> {
       console.log(JSON.stringify(data, null, 2))
       return 0
     }
-    default:
+    default: {
+      const bridge = chatBridges.find((name) => name === command)
+      if (bridge) return bridgeCommand({ positionals, values, print }, bridge)
       throw new UsageError(`Unknown command ${command}. Run flockr help.`)
+    }
   }
 }
 

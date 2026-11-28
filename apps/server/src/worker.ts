@@ -14,6 +14,7 @@ import { connectWorker } from "./platform/cloudflare/db"
 import { WorkerEnv, workerAuth } from "./platform/cloudflare/env"
 import { cloudflareSignals, collectSignals } from "./platform/cloudflare/live"
 import { hookSettingsFrom } from "./board/hook-route"
+import { bridgeSettingsFrom } from "./chat-bridges"
 import { modelProxySettingsFrom } from "./model-proxy/proxy"
 import { s3SettingsFrom, s3Store } from "./storage/s3"
 
@@ -73,7 +74,7 @@ export default {
       return boardRoom(env).fetch(new Request(request, { headers }))
     }
     if (!url.pathname.startsWith("/api/") && url.pathname !== "/mcp") return new Response("Not found", { status: 404 })
-    return onBoard(env, ctx, { run: async (db) => createApp(db, { auth, modelProxy: modelProxySettingsFrom(env, auth.secret), hooks: hookSettingsFrom(env), objects: bucketOf(env) }).fetch(request), delivered: (response) => response.ok })
+    return onBoard(env, ctx, { run: async (db) => createApp(db, { auth, modelProxy: modelProxySettingsFrom(env, auth.secret), hooks: hookSettingsFrom(env), bridges: bridgeSettingsFrom(env), objects: bucketOf(env) }).fetch(request), delivered: (response) => response.ok })
   },
   async scheduled(controller: ScheduledController, rawEnv: unknown, ctx: ExecutionContext): Promise<void> {
     const env = WorkerEnv.parse(rawEnv)
@@ -81,7 +82,7 @@ export default {
     const drained = await onBoard(env, ctx, {
       run: async (db) => {
         await sweepOnce(db)
-        return drainJobs(db)
+        return drainJobs(db, { bridges: bridgeSettingsFrom(env) })
       },
       delivered: () => true,
     })

@@ -20,6 +20,7 @@
     "worker:smoke": "bun scripts/worker-smoke.ts"
   },
   "dependencies": {
+    "@chat-adapter/slack": "4.45.0",
     "@flockr/contracts": "workspace:*",
     "@hono/swagger-ui": "0.6.2",
     "@hono/zod-openapi": "1.6.3",

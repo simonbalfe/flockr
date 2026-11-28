@@ -1,5 +1,5 @@
 import { Link, useRouterState } from "@tanstack/react-router"
-import { ArrowLeft, Bookmark, KeyRound, ListChecks, LogOut, MessagesSquare, Repeat, PanelLeftClose, Search, SendHorizontal, Settings, ShieldCheck, Target, Users } from "lucide-react"
+import { ArrowLeft, ArrowLeftRight, Bookmark, KeyRound, ListChecks, LogOut, MessagesSquare, Repeat, PanelLeftClose, Search, SendHorizontal, Settings, ShieldCheck, Target, Users } from "lucide-react"
 import type { ReactNode } from "react"
 import { useSignOut, useWhoami } from "@/api/auth"
 import { useNeedsYou } from "@/api/focus"
@@ -107,6 +107,7 @@ const settingsLinks = [
   { to: "/settings/approvals", label: "Approval rules", icon: ShieldCheck },
   { to: "/settings/keys", label: "Keys", icon: KeyRound },
   { to: "/settings/people", label: "People", icon: Users },
+  { to: "/settings/sync", label: "Chat sync", icon: ArrowLeftRight },
 ] as const
 
 function SettingsSidebar() {

@@ -5,7 +5,9 @@ import { createAuthenticator, headerIdentity, isPublicApiPath, signInNeeded } fr
 import { requireInScope, requireReach } from "./auth/scope"
 import { authOff, type AuthSettings } from "./auth/settings"
 import { BoardError, notFound, unauthenticated } from "./board/errors"
+import { receiveBridgeHook } from "./board/bridge-sync"
 import { hooksPath, receiveHook, type HookSettings } from "./board/hook-route"
+import { bridgeFor, type BridgeSettings } from "./chat-bridges"
 import { viewerOf } from "./board/visibility"
 import type { Database } from "./db/client"
 import type { ObjectStore } from "./storage/store"
@@ -29,6 +31,7 @@ import { memberRoutes } from "./routes/members"
 import { memoryRoutes } from "./routes/memory"
 import { documentRoutes } from "./routes/documents"
 import { blockRoutes } from "./routes/blocks"
+import { bridgeRoutes } from "./routes/bridges"
 import { scheduledRoutes } from "./routes/scheduled"
 import { attachmentRoutes } from "./routes/attachments"
 import { messageRoutes } from "./routes/messages"
@@ -56,6 +59,7 @@ export interface AppOptions {
   auth?: AuthSettings
   modelProxy?: ModelProxySettings | null
   hooks?: HookSettings | null
+  bridges?: BridgeSettings
   objects?: ObjectStore | null
 }
 
@@ -120,6 +124,7 @@ export function createApp(db: Database, options: AppOptions = {}) {
     .route("/", machineRoutes)
     .route("/", searchRoutes)
     .route("/", routineRoutes)
+    .route("/", bridgeRoutes(options.bridges ?? {}))
     .route("/", approvalRoutes)
     .route("/", keyRoutes)
     .route("/", navigationRoutes)
@@ -132,7 +137,10 @@ export function createApp(db: Database, options: AppOptions = {}) {
   const document = () => api.getOpenAPI31Document({ openapi: "3.1.0", info })
 
   api.all(`${modelProxyPath}/*`, (c) => proxyModel(c.req.raw, options.modelProxy ?? null, new Date()))
-  api.post(`${hooksPath}/:host`, (c) => receiveHook(db, c.req.raw, c.req.param("host"), options.hooks ?? null))
+  api.post(`${hooksPath}/:host`, (c) => {
+    const bridge = bridgeFor(c.req.param("host"))
+    return bridge ? receiveBridgeHook(db, c.req.raw, bridge, options.bridges ?? {}) : receiveHook(db, c.req.raw, c.req.param("host"), options.hooks ?? null)
+  })
   api.get("/api/openapi.json", (c) => c.json(document()))
   api.get("/api/docs", swaggerUI({ url: "/api/openapi.json" }))
   api.on(["GET", "POST"], `${authBasePath}/*`, (c) => {

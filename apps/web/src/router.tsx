@@ -16,6 +16,7 @@ import { KeysView } from "@/routes/keys"
 import { PeopleView } from "@/routes/people"
 import { RoutinesView } from "@/routes/routines"
 import { SavedView } from "@/routes/saved"
+import { SyncView } from "@/routes/sync"
 import { ThreadsView } from "@/routes/threads"
 
 const rootRoute = createRootRouteWithContext<{ queryClient: QueryClient }>()({
@@ -74,6 +75,7 @@ const savedRoute = createRoute({ getParentRoute: () => rootRoute, path: "/saved"
 const draftsRoute = createRoute({ getParentRoute: () => rootRoute, path: "/drafts", component: DraftsView })
 const keysRoute = createRoute({ getParentRoute: () => rootRoute, path: "/settings/keys", component: KeysView })
 const peopleRoute = createRoute({ getParentRoute: () => rootRoute, path: "/settings/people", component: PeopleView })
+const syncRoute = createRoute({ getParentRoute: () => rootRoute, path: "/settings/sync", component: SyncView })
 
 const routeTree = rootRoute.addChildren([
   indexRoute,
@@ -88,6 +90,7 @@ const routeTree = rootRoute.addChildren([
   approvalsRoute,
   keysRoute,
   peopleRoute,
+  syncRoute,
   ...movedRoutes,
 ])
 

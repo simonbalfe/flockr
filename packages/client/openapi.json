@@ -5663,7 +5663,8 @@
             "type": "string",
             "enum": [
               "routine",
-              "post"
+              "post",
+              "bridge"
             ]
           },
           "routineId": {
@@ -5923,6 +5924,134 @@
           "questions",
           "threadQuestions",
           "reviews"
+        ]
+      },
+      "BridgeList": {
+        "type": "object",
+        "properties": {
+          "bridges": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Bridge"
+            }
+          }
+        },
+        "required": [
+          "bridges"
+        ]
+      },
+      "Bridge": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "enum": [
+              "slack"
+            ]
+          },
+          "label": {
+            "type": "string",
+            "example": "Slack"
+          },
+          "enabled": {
+            "type": "boolean",
+            "description": "Whether the server has this bridge's secrets; nothing syncs until it does and a channel is linked"
+          },
+          "channels": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BridgeChannelLink"
+            },
+            "description": "Linked channels you can see"
+          },
+          "people": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BridgePersonLink"
+            },
+            "description": "People linked to a user on the platform; host-org people only"
+          },
+          "me": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Your own platform user id, if you linked one"
+          }
+        },
+        "required": [
+          "name",
+          "label",
+          "enabled",
+          "channels",
+          "people",
+          "me"
+        ]
+      },
+      "BridgeChannelLink": {
+        "type": "object",
+        "properties": {
+          "channel": {
+            "type": "string",
+            "example": "backend"
+          },
+          "external": {
+            "type": "string",
+            "example": "C07ABC123",
+            "description": "The chat platform's channel id"
+          },
+          "linkedBy": {
+            "type": "string",
+            "example": "simon"
+          },
+          "linkedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "channel",
+          "external",
+          "linkedBy",
+          "linkedAt"
+        ]
+      },
+      "BridgePersonLink": {
+        "type": "object",
+        "properties": {
+          "member": {
+            "type": "string",
+            "example": "simon"
+          },
+          "external": {
+            "type": "string",
+            "example": "U07ABC123",
+            "description": "The chat platform's user id"
+          },
+          "linkedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "member",
+          "external",
+          "linkedAt"
+        ]
+      },
+      "LinkBridgeBody": {
+        "type": "object",
+        "properties": {
+          "external": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64,
+            "example": "C07ABC123",
+            "description": "The platform's channel or user id"
+          }
+        },
+        "required": [
+          "external"
         ]
       },
       "ApprovalRules": {
@@ -16449,6 +16578,451 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Brief"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The input is not valid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sign-in is on and the request has no session or key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The acting member is not on this board, or may not do this",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The task or message is in another state, or the claim epoch is stale",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/bridges": {
+      "get": {
+        "operationId": "listBridges",
+        "tags": [
+          "bridges"
+        ],
+        "summary": "Chat bridges (Slack sync): whether each is on, the channels linked to it that you can see, and the people linked to a user there. The server holds the tokens; no agent does",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BridgeList"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The input is not valid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sign-in is on and the request has no session or key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The acting member is not on this board, or may not do this",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The task or message is in another state, or the claim epoch is stale",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/bridges/{bridge}/channels/{channel}": {
+      "put": {
+        "operationId": "linkBridgeChannel",
+        "tags": [
+          "bridges"
+        ],
+        "summary": "Link a channel to a channel on the chat platform, so messages, replies and cards sync both ways. Only a host-org person can, and only for an org-wide host-org channel (private and shared channels stay off); safe to repeat",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "slack"
+              ],
+              "example": "slack"
+            },
+            "required": true,
+            "name": "bridge",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "example": "backend"
+            },
+            "required": true,
+            "name": "channel",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LinkBridgeBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Bridge"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The input is not valid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sign-in is on and the request has no session or key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The acting member is not on this board, or may not do this",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The task or message is in another state, or the claim epoch is stale",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "operationId": "unlinkBridgeChannel",
+        "tags": [
+          "bridges"
+        ],
+        "summary": "Stop syncing a channel with the chat platform; safe to repeat",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "slack"
+              ],
+              "example": "slack"
+            },
+            "required": true,
+            "name": "bridge",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "example": "backend"
+            },
+            "required": true,
+            "name": "channel",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Bridge"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The input is not valid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sign-in is on and the request has no session or key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The acting member is not on this board, or may not do this",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The task or message is in another state, or the claim epoch is stale",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/bridges/{bridge}/people/me": {
+      "put": {
+        "operationId": "linkBridgePerson",
+        "tags": [
+          "bridges"
+        ],
+        "summary": "Link your own user id on the chat platform to you, so your messages there post as you and your button presses there count. People in the host org only; safe to repeat",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "slack"
+              ],
+              "example": "slack"
+            },
+            "required": true,
+            "name": "bridge",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LinkBridgeBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Bridge"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The input is not valid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sign-in is on and the request has no session or key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The acting member is not on this board, or may not do this",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The task or message is in another state, or the claim epoch is stale",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "operationId": "unlinkBridgePerson",
+        "tags": [
+          "bridges"
+        ],
+        "summary": "Forget your user id on the chat platform; your messages there post as unlinked again and your presses stop counting. Safe to repeat",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "slack"
+              ],
+              "example": "slack"
+            },
+            "required": true,
+            "name": "bridge",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Bridge"
                 }
               }
             }

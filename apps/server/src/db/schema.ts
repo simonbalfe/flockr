@@ -1,5 +1,5 @@
 import { hostOrg } from "@flockr/contracts"
-import type { ActionKind, Block, ProfileColour, ReactionKind, ChannelKind, ChannelVisibility, DraftKind, AreaEndReason, ActivityState, AgentDesired, AgentPermissions, AgentReport, ApprovalVerdict, HarnessInfo, JobKind, JobState, MemberKind, MemoryKind, MemoryScope, Question, RoutineTriggerKind, TaskState } from "@flockr/contracts"
+import type { ActionKind, Block, ProfileColour, ReactionKind, ChannelKind, ChannelVisibility, DraftKind, AreaEndReason, ActivityState, AgentDesired, AgentPermissions, AgentReport, ApprovalVerdict, ChatBridgeName, HarnessInfo, JobKind, JobState, MemberKind, MemoryKind, MemoryScope, Question, RoutineTriggerKind, TaskState } from "@flockr/contracts"
 import { sql } from "drizzle-orm"
 import { bigint, boolean, check, index, integer, jsonb, pgTable, primaryKey, text, timestamp, unique, uniqueIndex, type AnyPgColumn } from "drizzle-orm/pg-core"
 
@@ -597,6 +597,61 @@ export const hookDeliveries = pgTable(
   (t) => [primaryKey({ columns: [t.host, t.delivery] })],
 )
 
+export const bridgeChannels = pgTable(
+  "bridge_channels",
+  {
+    bridge: text("bridge").$type<ChatBridgeName>().notNull(),
+    channel: text("channel")
+      .notNull()
+      .references(() => channels.id, { onDelete: "cascade" }),
+    external: text("external").notNull(),
+    linkedBy: text("linked_by")
+      .notNull()
+      .references(() => members.name),
+    linkedAt: timestamp("linked_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [primaryKey({ columns: [t.bridge, t.channel] }), uniqueIndex("bridge_channels_external").on(t.bridge, t.external)],
+)
+
+export const bridgePeople = pgTable(
+  "bridge_people",
+  {
+    bridge: text("bridge").$type<ChatBridgeName>().notNull(),
+    member: text("member")
+      .notNull()
+      .references(() => members.name, { onDelete: "cascade" }),
+    external: text("external").notNull(),
+    linkedAt: timestamp("linked_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [primaryKey({ columns: [t.bridge, t.member] }), uniqueIndex("bridge_people_external").on(t.bridge, t.external)],
+)
+
+export const bridgeThreads = pgTable(
+  "bridge_threads",
+  {
+    bridge: text("bridge").$type<ChatBridgeName>().notNull(),
+    thread: text("thread").notNull(),
+    externalChannel: text("external_channel").notNull(),
+    externalThread: text("external_thread").notNull(),
+    createdAt: createdAt(),
+  },
+  (t) => [primaryKey({ columns: [t.bridge, t.thread] }), uniqueIndex("bridge_threads_external").on(t.bridge, t.externalChannel, t.externalThread)],
+)
+
+export const bridgeMessages = pgTable(
+  "bridge_messages",
+  {
+    bridge: text("bridge").$type<ChatBridgeName>().notNull(),
+    message: integer("message")
+      .notNull()
+      .references(() => messages.id, { onDelete: "cascade" }),
+    externalChannel: text("external_channel").notNull(),
+    externalTs: text("external_ts").notNull(),
+    createdAt: createdAt(),
+  },
+  (t) => [primaryKey({ columns: [t.bridge, t.message] }), uniqueIndex("bridge_messages_external").on(t.bridge, t.externalChannel, t.externalTs)],
+)
+
 export interface StoredChunk {
   turn: number
   fence: string
@@ -710,3 +765,5 @@ export const memberEmails = pgTable("member_emails", {
 })
 
 export type InviteRow = typeof invites.$inferSelect
+export type EventRow = typeof events.$inferSelect
+export type BridgeChannelRow = typeof bridgeChannels.$inferSelect

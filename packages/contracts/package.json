@@ -5,6 +5,7 @@
   "exports": {
     ".": "./src/index.ts",
     "./constants": "./src/constants.ts",
+    "./bridges": "./src/bridges.ts",
     "./rules": "./src/rules.ts",
     "./activity": "./src/activity.ts",
     "./agents": "./src/agents.ts",

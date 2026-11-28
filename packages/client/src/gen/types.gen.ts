@@ -1897,7 +1897,7 @@ export type BriefAction = {
 
 export type Job = {
     id: number;
-    kind: 'routine' | 'post';
+    kind: 'routine' | 'post' | 'bridge';
     routineId: number | null;
     state: JobState;
     cause: JobCause;
@@ -1969,6 +1969,57 @@ export type Brief = {
     questions: Array<Task>;
     threadQuestions: Array<ThreadQuestion>;
     reviews: Array<Task>;
+};
+
+export type BridgeList = {
+    bridges: Array<Bridge>;
+};
+
+export type Bridge = {
+    name: 'slack';
+    label: string;
+    /**
+     * Whether the server has this bridge's secrets; nothing syncs until it does and a channel is linked
+     */
+    enabled: boolean;
+    /**
+     * Linked channels you can see
+     */
+    channels: Array<BridgeChannelLink>;
+    /**
+     * People linked to a user on the platform; host-org people only
+     */
+    people: Array<BridgePersonLink>;
+    /**
+     * Your own platform user id, if you linked one
+     */
+    me: string | null;
+};
+
+export type BridgeChannelLink = {
+    channel: string;
+    /**
+     * The chat platform's channel id
+     */
+    external: string;
+    linkedBy: string;
+    linkedAt: string;
+};
+
+export type BridgePersonLink = {
+    member: string;
+    /**
+     * The chat platform's user id
+     */
+    external: string;
+    linkedAt: string;
+};
+
+export type LinkBridgeBody = {
+    /**
+     * The platform's channel or user id
+     */
+    external: string;
 };
 
 export type ApprovalRules = {
@@ -6999,6 +7050,221 @@ export type GetBriefResponses = {
 };
 
 export type GetBriefResponse = GetBriefResponses[keyof GetBriefResponses];
+
+export type ListBridgesData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/bridges';
+};
+
+export type ListBridgesErrors = {
+    /**
+     * The input is not valid
+     */
+    400: Error;
+    /**
+     * Sign-in is on and the request has no session or key
+     */
+    401: Error;
+    /**
+     * The acting member is not on this board, or may not do this
+     */
+    403: Error;
+    /**
+     * Not found
+     */
+    404: Error;
+    /**
+     * The task or message is in another state, or the claim epoch is stale
+     */
+    409: Error;
+};
+
+export type ListBridgesError = ListBridgesErrors[keyof ListBridgesErrors];
+
+export type ListBridgesResponses = {
+    /**
+     * OK
+     */
+    200: BridgeList;
+};
+
+export type ListBridgesResponse = ListBridgesResponses[keyof ListBridgesResponses];
+
+export type UnlinkBridgeChannelData = {
+    body?: never;
+    path: {
+        bridge: 'slack';
+        channel: string;
+    };
+    query?: never;
+    url: '/api/bridges/{bridge}/channels/{channel}';
+};
+
+export type UnlinkBridgeChannelErrors = {
+    /**
+     * The input is not valid
+     */
+    400: Error;
+    /**
+     * Sign-in is on and the request has no session or key
+     */
+    401: Error;
+    /**
+     * The acting member is not on this board, or may not do this
+     */
+    403: Error;
+    /**
+     * Not found
+     */
+    404: Error;
+    /**
+     * The task or message is in another state, or the claim epoch is stale
+     */
+    409: Error;
+};
+
+export type UnlinkBridgeChannelError = UnlinkBridgeChannelErrors[keyof UnlinkBridgeChannelErrors];
+
+export type UnlinkBridgeChannelResponses = {
+    /**
+     * OK
+     */
+    200: Bridge;
+};
+
+export type UnlinkBridgeChannelResponse = UnlinkBridgeChannelResponses[keyof UnlinkBridgeChannelResponses];
+
+export type LinkBridgeChannelData = {
+    body: LinkBridgeBody;
+    path: {
+        bridge: 'slack';
+        channel: string;
+    };
+    query?: never;
+    url: '/api/bridges/{bridge}/channels/{channel}';
+};
+
+export type LinkBridgeChannelErrors = {
+    /**
+     * The input is not valid
+     */
+    400: Error;
+    /**
+     * Sign-in is on and the request has no session or key
+     */
+    401: Error;
+    /**
+     * The acting member is not on this board, or may not do this
+     */
+    403: Error;
+    /**
+     * Not found
+     */
+    404: Error;
+    /**
+     * The task or message is in another state, or the claim epoch is stale
+     */
+    409: Error;
+};
+
+export type LinkBridgeChannelError = LinkBridgeChannelErrors[keyof LinkBridgeChannelErrors];
+
+export type LinkBridgeChannelResponses = {
+    /**
+     * OK
+     */
+    200: Bridge;
+};
+
+export type LinkBridgeChannelResponse = LinkBridgeChannelResponses[keyof LinkBridgeChannelResponses];
+
+export type UnlinkBridgePersonData = {
+    body?: never;
+    path: {
+        bridge: 'slack';
+    };
+    query?: never;
+    url: '/api/bridges/{bridge}/people/me';
+};
+
+export type UnlinkBridgePersonErrors = {
+    /**
+     * The input is not valid
+     */
+    400: Error;
+    /**
+     * Sign-in is on and the request has no session or key
+     */
+    401: Error;
+    /**
+     * The acting member is not on this board, or may not do this
+     */
+    403: Error;
+    /**
+     * Not found
+     */
+    404: Error;
+    /**
+     * The task or message is in another state, or the claim epoch is stale
+     */
+    409: Error;
+};
+
+export type UnlinkBridgePersonError = UnlinkBridgePersonErrors[keyof UnlinkBridgePersonErrors];
+
+export type UnlinkBridgePersonResponses = {
+    /**
+     * OK
+     */
+    200: Bridge;
+};
+
+export type UnlinkBridgePersonResponse = UnlinkBridgePersonResponses[keyof UnlinkBridgePersonResponses];
+
+export type LinkBridgePersonData = {
+    body: LinkBridgeBody;
+    path: {
+        bridge: 'slack';
+    };
+    query?: never;
+    url: '/api/bridges/{bridge}/people/me';
+};
+
+export type LinkBridgePersonErrors = {
+    /**
+     * The input is not valid
+     */
+    400: Error;
+    /**
+     * Sign-in is on and the request has no session or key
+     */
+    401: Error;
+    /**
+     * The acting member is not on this board, or may not do this
+     */
+    403: Error;
+    /**
+     * Not found
+     */
+    404: Error;
+    /**
+     * The task or message is in another state, or the claim epoch is stale
+     */
+    409: Error;
+};
+
+export type LinkBridgePersonError = LinkBridgePersonErrors[keyof LinkBridgePersonErrors];
+
+export type LinkBridgePersonResponses = {
+    /**
+     * OK
+     */
+    200: Bridge;
+};
+
+export type LinkBridgePersonResponse = LinkBridgePersonResponses[keyof LinkBridgePersonResponses];
 
 export type ClearApprovalRuleData = {
     body?: never;

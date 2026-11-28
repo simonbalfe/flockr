@@ -11,6 +11,7 @@ import { databaseUrl } from "./config"
 import { devConnection } from "./dev-connection"
 import { parseSince, type LiveSocket } from "./live/hub"
 import { startLive } from "./live/runtime"
+import { bridgeSettingsFrom } from "./chat-bridges"
 
 const servedByHono = /^(?!\/(api|mcp)(\/|\?|$)).*/
 
@@ -20,7 +21,7 @@ function liveSocketPlugin(): Plugin {
     async configureServer(server) {
       const httpServer = server.httpServer
       if (!httpServer) return
-      const live = await startLive(databaseUrl)
+      const live = await startLive(databaseUrl, bridgeSettingsFrom(process.env))
       const wss = new WebSocketServer({ noServer: true })
       const auth = createAuthenticator(devConnection().db, localAuthSettings())
       const upgrade = async (request: IncomingMessage, socket: Duplex, head: Buffer) => {

@@ -4,6 +4,7 @@ import { boardId } from "../config"
 import type { Database, Executor, Tx } from "../db/client"
 import { boards, events, members } from "../db/schema"
 import { liveSignals } from "../platform"
+import { enqueueBridgeJobs } from "./bridge-outbox"
 import { enqueueWatchers } from "./watchers"
 import { sameOrgChannel, visibleTo, type Viewer } from "./visibility"
 
@@ -56,6 +57,7 @@ async function writeEvents(tx: Tx, drafts: EventDraft[]): Promise<void> {
   }))
   await tx.insert(events).values(rows)
   await enqueueWatchers(tx, rows)
+  await enqueueBridgeJobs(tx, rows)
   await liveSignals.publish(tx, { kind: "head", board: boardId, head: board.lastSeq })
 }
 

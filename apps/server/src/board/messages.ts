@@ -101,39 +101,42 @@ async function replyUnder(tx: Tx, emit: Emit, options: { actor: string; parent: 
   return created
 }
 
-export async function reply(db: Database, actor: string, threadId: string, draft: ReplyDraft): Promise<Reply> {
-  const row: MessageRow = await mutate(db, async (tx, emit) => {
-    await requireActor(tx, actor)
-    const ref = parseThreadId(threadId)
-    const prior = await priorPost(tx, actor, draft)
-    if (prior) return prior
-    const said = await mentionsOf(tx, draft.text)
-    const labels = labelSet(draft.labels)
-    const draftKey = { member: actor, kind: "thread" as const, target: ref.kind === "task" ? String(ref.id) : messageKey(ref.id) }
-    if (ref.kind === "task") {
-      const task = await lockTask(tx, ref.id)
-      checkEpoch(task, draft.epoch)
-      const { mentions, direct } = await addressedIn(tx, { channel: task.channel, actor, mentions: said })
-      const created = await insertMessage(tx, { channel: task.channel, kind: "text", who: actor, body: draft.text, mentions, labels, threadTaskId: task.id, requestKey: draft.key ?? null, blocks: draft.blocks ?? [] })
-      await attachFiles(tx, { actor, channel: created.channel, messageId: created.id, ids: draft.files ?? [] })
-      emitMessage(emit, "reply.posted", created, actor, String(task.id), { mentions, labels, ...(direct ? { direct } : {}) })
-      await clearDraft(tx, draftKey)
-      return created
-    }
-    const parent = await findMessage(tx, ref.id)
-    if (parent.parentId !== null || parent.threadTaskId !== null) {
-      const created = await replyUnder(tx, emit, { actor, parent, draft, said })
-      await clearDraft(tx, draftKey)
-      return created
-    }
-    if (parent.kind !== "text") throw invalid(`${threadId} is not a message; reply to a message or a task`)
-    const { mentions, direct } = await addressedIn(tx, { channel: parent.channel, actor, mentions: said })
-    const created = await insertMessage(tx, { channel: parent.channel, kind: "text", who: actor, body: draft.text, mentions, labels, parentId: parent.id, requestKey: draft.key ?? null, blocks: draft.blocks ?? [] })
+export async function replyIn(tx: Tx, emit: Emit, options: { actor: string; threadId: string; draft: ReplyDraft }): Promise<MessageRow> {
+  const { actor, threadId, draft } = options
+  await requireActor(tx, actor)
+  const ref = parseThreadId(threadId)
+  const prior = await priorPost(tx, actor, draft)
+  if (prior) return prior
+  const said = await mentionsOf(tx, draft.text)
+  const labels = labelSet(draft.labels)
+  const draftKey = { member: actor, kind: "thread" as const, target: ref.kind === "task" ? String(ref.id) : messageKey(ref.id) }
+  if (ref.kind === "task") {
+    const task = await lockTask(tx, ref.id)
+    checkEpoch(task, draft.epoch)
+    const { mentions, direct } = await addressedIn(tx, { channel: task.channel, actor, mentions: said })
+    const created = await insertMessage(tx, { channel: task.channel, kind: "text", who: actor, body: draft.text, mentions, labels, threadTaskId: task.id, requestKey: draft.key ?? null, blocks: draft.blocks ?? [] })
     await attachFiles(tx, { actor, channel: created.channel, messageId: created.id, ids: draft.files ?? [] })
-    emitMessage(emit, "reply.posted", created, actor, messageKey(parent.id), { mentions, labels, ...(direct ? { direct } : {}) })
+    emitMessage(emit, "reply.posted", created, actor, String(task.id), { mentions, labels, ...(direct ? { direct } : {}) })
     await clearDraft(tx, draftKey)
     return created
-  })
+  }
+  const parent = await findMessage(tx, ref.id)
+  if (parent.parentId !== null || parent.threadTaskId !== null) {
+    const created = await replyUnder(tx, emit, { actor, parent, draft, said })
+    await clearDraft(tx, draftKey)
+    return created
+  }
+  if (parent.kind !== "text") throw invalid(`${threadId} is not a message; reply to a message or a task`)
+  const { mentions, direct } = await addressedIn(tx, { channel: parent.channel, actor, mentions: said })
+  const created = await insertMessage(tx, { channel: parent.channel, kind: "text", who: actor, body: draft.text, mentions, labels, parentId: parent.id, requestKey: draft.key ?? null, blocks: draft.blocks ?? [] })
+  await attachFiles(tx, { actor, channel: created.channel, messageId: created.id, ids: draft.files ?? [] })
+  emitMessage(emit, "reply.posted", created, actor, messageKey(parent.id), { mentions, labels, ...(direct ? { direct } : {}) })
+  await clearDraft(tx, draftKey)
+  return created
+}
+
+export async function reply(db: Database, actor: string, threadId: string, draft: ReplyDraft): Promise<Reply> {
+  const row = await mutate(db, (tx, emit) => replyIn(tx, emit, { actor, threadId, draft }))
   return withExtras(replyOf(row), await extrasFor(db, [row.id]))
 }
 
