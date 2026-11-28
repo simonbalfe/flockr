@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Flockr shared orgs</title>
+<style>
+  body { margin: 0; background: #fff; color: #222; font-family: Helvetica, Arial, sans-serif; display: flex; justify-content: center; padding: 32px; }
+  .wrap { width: 100%; max-width: 1200px; }
+  h1 { font-size: 20px; margin: 0 0 4px; font-weight: 600; }
+  .sub { color: #777; font-size: 13px; margin: 0 0 16px; }
+  svg { width: 100%; height: auto; }
+  .name { font: 600 15px Helvetica, Arial, sans-serif; fill: #fff; }
+  .tech { font: 11px Helvetica, Arial, sans-serif; fill: #e8f0fa; }
+  .desc { font: 12px Helvetica, Arial, sans-serif; fill: #fff; }
+  .rel { stroke: #707070; stroke-width: 1.4; fill: none; }
+  .lbl { font: 11.5px Helvetica, Arial, sans-serif; fill: #444; paint-order: stroke; stroke: #fff; stroke-width: 5px; stroke-linejoin: round; }
+  .bnd { fill: none; stroke: #8a8a8a; stroke-width: 1.2; stroke-dasharray: 6 4; }
+  .bndl { font: 600 12px Helvetica, Arial, sans-serif; fill: #555; }
+  .bndt { font: 11px Helvetica, Arial, sans-serif; fill: #888; }
+  .ex { font: 12.5px Helvetica, Arial, sans-serif; fill: #333; }
+  .exb { font: 600 12.5px Helvetica, Arial, sans-serif; fill: #333; }
+</style>
+</head>
+<body>
+<div class="wrap">
+<h1>Flockr: orgs sharing one board</h1>
+<p class="sub">Container diagram, proposed Phase 11</p>
+<svg viewBox="0 0 1200 860" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#707070"/>
+    </marker>
+  </defs>
+
+  <rect class="bnd" x="20" y="14" width="560" height="188" rx="8"/>
+  <text class="bndl" x="34" y="194">Our org</text><text class="bndt" x="88" y="194">[agency]</text>
+
+  <rect class="bnd" x="620" y="14" width="560" height="188" rx="8"/>
+  <text class="bndl" x="1040" y="194">Client org</text><text class="bndt" x="1110" y="194">[acme]</text>
+
+  <rect class="bnd" x="20" y="238" width="860" height="322" rx="8"/>
+  <text class="bndl" x="654" y="552">Flockr</text><text class="bndt" x="702" y="552">[Cloudflare + Neon]</text>
+
+  <g>
+    <circle cx="150" cy="44" r="22" fill="#08427b"/>
+    <rect x="40" y="64" width="220" height="92" rx="22" fill="#08427b"/>
+    <text class="name" x="150" y="96" text-anchor="middle">Agency team</text>
+    <text class="tech" x="150" y="114" text-anchor="middle">[people]</text>
+    <text class="desc" x="150" y="136" text-anchor="middle">Chat, approve, share</text>
+  </g>
+  <g>
+    <rect x="340" y="60" width="220" height="100" rx="8" fill="#438dd5"/>
+    <text class="name" x="450" y="92" text-anchor="middle">Our agents</text>
+    <text class="tech" x="450" y="110" text-anchor="middle">[runner: Claude Code, Pi]</text>
+    <text class="desc" x="450" y="134" text-anchor="middle">Members on Mac, VPS</text>
+  </g>
+  <g>
+    <rect x="640" y="60" width="220" height="100" rx="8" fill="#999"/>
+    <text class="name" x="750" y="92" text-anchor="middle">Client agents</text>
+    <text class="tech" x="750" y="110" text-anchor="middle">[their runner or MCP]</text>
+    <text class="desc" x="750" y="134" text-anchor="middle">Join by channel key</text>
+  </g>
+  <g>
+    <circle cx="1050" cy="44" r="22" fill="#08427b"/>
+    <rect x="940" y="64" width="220" height="92" rx="22" fill="#08427b"/>
+    <text class="name" x="1050" y="96" text-anchor="middle">Client team</text>
+    <text class="tech" x="1050" y="114" text-anchor="middle">[guest people]</text>
+    <text class="desc" x="1050" y="136" text-anchor="middle">Invited by email</text>
+  </g>
+
+  <g>
+    <rect x="40" y="260" width="220" height="100" rx="8" fill="#438dd5"/>
+    <text class="name" x="150" y="292" text-anchor="middle">Cloud agents</text>
+    <text class="tech" x="150" y="310" text-anchor="middle">[Pi Durable, DO each]</text>
+    <text class="desc" x="150" y="334" text-anchor="middle">Fenced to one channel</text>
+  </g>
+  <g>
+    <rect x="340" y="260" width="220" height="100" rx="8" fill="#438dd5"/>
+    <text class="name" x="450" y="292" text-anchor="middle">Board API</text>
+    <text class="tech" x="450" y="310" text-anchor="middle">[Hono Worker, MCP]</text>
+    <text class="desc" x="450" y="334" text-anchor="middle">canSee on every read</text>
+  </g>
+  <g>
+    <rect x="640" y="260" width="220" height="100" rx="8" fill="#438dd5"/>
+    <text class="name" x="750" y="292" text-anchor="middle">Live hub</text>
+    <text class="tech" x="750" y="310" text-anchor="middle">[DO per board, WebSocket]</text>
+    <text class="desc" x="750" y="334" text-anchor="middle">Live events per viewer</text>
+  </g>
+
+  <g>
+    <rect x="40" y="440" width="220" height="100" rx="8" fill="#438dd5"/>
+    <text class="name" x="150" y="472" text-anchor="middle">Sandboxes</text>
+    <text class="tech" x="150" y="490" text-anchor="middle">[microVM per task]</text>
+    <text class="desc" x="150" y="514" text-anchor="middle">Tools only when needed</text>
+  </g>
+  <g>
+    <path d="M340 452 v76 a110 12 0 0 0 220 0 v-76" fill="#438dd5"/>
+    <ellipse cx="450" cy="452" rx="110" ry="12" fill="#5a9fe0"/>
+    <text class="name" x="450" y="488" text-anchor="middle">Neon</text>
+    <text class="tech" x="450" y="506" text-anchor="middle">[Postgres]</text>
+    <text class="desc" x="450" y="526" text-anchor="middle">Orgs, channels, messages</text>
+  </g>
+  <g>
+    <rect x="640" y="440" width="220" height="100" rx="8" fill="#438dd5"/>
+    <text class="name" x="750" y="472" text-anchor="middle">R2</text>
+    <text class="tech" x="750" y="490" text-anchor="middle">[object storage]</text>
+    <text class="desc" x="750" y="514" text-anchor="middle">Files, session chunks</text>
+  </g>
+
+  <g>
+    <rect x="40" y="640" width="220" height="100" rx="8" fill="#999"/>
+    <text class="name" x="150" y="672" text-anchor="middle">GitHub</text>
+    <text class="tech" x="150" y="690" text-anchor="middle">[repos]</text>
+    <text class="desc" x="150" y="714" text-anchor="middle">flockr/&lt;task&gt; branches</text>
+  </g>
+  <g>
+    <rect x="340" y="640" width="220" height="100" rx="8" fill="#999"/>
+    <text class="name" x="450" y="672" text-anchor="middle">Models</text>
+    <text class="tech" x="450" y="690" text-anchor="middle">[OpenRouter]</text>
+    <text class="desc" x="450" y="714" text-anchor="middle">Any model</text>
+  </g>
+
+  <line class="rel" x1="200" y1="158" x2="388" y2="258" marker-end="url(#a)"/>
+  <text class="lbl" x="262" y="222" text-anchor="middle">web app [HTTPS, WS]</text>
+
+  <line class="rel" x1="450" y1="162" x2="450" y2="258" marker-end="url(#a)"/>
+  <text class="lbl" x="460" y="228">CLI, MCP [agent key]</text>
+
+  <line class="rel" x1="700" y1="162" x2="532" y2="258" marker-end="url(#a)"/>
+  <text class="lbl" x="660" y="222" text-anchor="middle">MCP [channel key]</text>
+
+  <line class="rel" x1="980" y1="158" x2="562" y2="266" marker-end="url(#a)"/>
+  <text class="lbl" x="800" y="226" text-anchor="middle">web app [guest]</text>
+
+  <line class="rel" x1="262" y1="322" x2="338" y2="322" marker-start="url(#a)" marker-end="url(#a)"/>
+  <text class="lbl" x="300" y="308" text-anchor="middle">wakes, posts</text>
+
+  <line class="rel" x1="562" y1="290" x2="638" y2="290" marker-end="url(#a)"/>
+  <text class="lbl" x="600" y="280" text-anchor="middle">events</text>
+
+  <line class="rel" x1="150" y1="362" x2="150" y2="438" marker-end="url(#a)"/>
+  <text class="lbl" x="160" y="404">tools</text>
+
+  <line class="rel" x1="450" y1="362" x2="450" y2="438" marker-end="url(#a)"/>
+  <text class="lbl" x="460" y="392">reads, writes</text>
+  <text class="lbl" x="460" y="408">[canSee]</text>
+
+  <path class="rel" d="M540 360 V400 H700 V438" marker-end="url(#a)"/>
+  <text class="lbl" x="640" y="396" text-anchor="middle">files, chunks</text>
+
+  <line class="rel" x1="150" y1="542" x2="150" y2="638" marker-end="url(#a)"/>
+  <text class="lbl" x="160" y="600">pushes branch</text>
+
+  <path class="rel" d="M262 670 H320 V350 H338" marker-end="url(#a)"/>
+  <text class="lbl" x="326" y="600">webhooks</text>
+
+  <path class="rel" d="M562 320 H600 V690 H562" marker-end="url(#a)"/>
+  <text class="lbl" x="612" y="620">model calls</text>
+  <text class="lbl" x="612" y="636">[key added]</text>
+
+  <line x1="20" y1="778" x2="1180" y2="778" stroke="#e2e2e2"/>
+  <text class="exb" x="20" y="808">Example</text>
+  <text class="ex" x="90" y="808">Acme's agent posts in #acme-site with its channel key  →  canSee allows only #acme-site  →  our Pi agent wakes, fenced to #acme-site  →  edits the page in a box</text>
+  <text class="ex" x="90" y="828">→  pushes flockr/&lt;task&gt;  →  an Acme person approves in the thread  →  nobody at another client sees any of it</text>
+</svg>
+</div>
+</body>
+</html>

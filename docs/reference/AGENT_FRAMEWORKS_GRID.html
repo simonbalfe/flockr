@@ -1,0 +1,189 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Agent frameworks: feature grid</title>
+<style>
+  :root { --ink:#18181b; --muted:#71717a; --paper:#fff; --line:#e4e4e7; --soft:#f4f4f5; --accent:#c2410c; }
+  @media (prefers-color-scheme: dark) { :root { --ink:#f4f4f5; --muted:#a1a1aa; --paper:#09090b; --line:#27272a; --soft:#18181b; --accent:#fb923c; } }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--paper); color:var(--ink); font:15px/1.5 Geist, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+  main { max-width: 1240px; margin: 0 auto; padding: 32px 16px 80px; }
+  h1 { font-size: 28px; margin: 0 0 4px; }
+  h2 { font-size: 20px; margin: 40px 0 10px; padding-top: 8px; border-top: 1px solid var(--line); }
+  p.meta { color: var(--muted); margin: 0 0 20px; }
+  .wrap { overflow-x: auto; }
+  table { border-collapse: collapse; width: 100%; }
+  th, td { border-bottom: 1px solid var(--line); padding: 8px 10px; vertical-align: top; text-align: left; }
+  thead th { position: sticky; top: 0; background: var(--paper); font-size: 14px; z-index: 1; }
+  th.feature { width: 210px; font-weight: 500; }
+  tr.group th { background: var(--soft); font-size: 12px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); }
+  td.cell { min-width: 140px; }
+  td.base, th.base { background: color-mix(in srgb, var(--accent) 7%, transparent); }
+  .mark { display: inline-block; width: 14px; height: 14px; border-radius: 50%; border: 2px solid var(--ink); vertical-align: -2px; margin-right: 6px; }
+  .y { background: var(--ink); }
+  .p { background: linear-gradient(90deg, var(--ink) 50%, transparent 50%); }
+  .n { background: transparent; opacity: .45; }
+  .u { border-style: dashed; opacity: .35; }
+  .note { color: var(--muted); font-size: 12.5px; }
+  .legend { display: flex; gap: 18px; flex-wrap: wrap; color: var(--muted); font-size: 13px; margin: 8px 0 14px; }
+  .matrix td { text-align: center; font-variant-numeric: tabular-nums; min-width: 92px; }
+  .rank { display: grid; grid-template-columns: 150px 1fr 56px; gap: 6px 12px; align-items: center; max-width: 720px; }
+  .bar { height: 14px; background: var(--soft); border-radius: 3px; overflow: hidden; }
+  .bar > div { height: 100%; background: var(--ink); }
+  .tabs { display: flex; gap: 8px; flex-wrap: wrap; margin: 8px 0 14px; }
+  .tabs button { font: inherit; font-size: 13px; padding: 4px 10px; border: 1px solid var(--line); background: var(--paper); color: var(--ink); border-radius: 6px; cursor: pointer; }
+  .tabs button[aria-pressed="true"] { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+  ul { padding-left: 20px; } li { margin: 4px 0; }
+  a { color: var(--accent); }
+</style>
+</head>
+<body>
+<main>
+<h1>Agent frameworks: feature grid</h1>
+<p class="meta">Read from each project's docs on 2026-11-27. Pi Durable from its README at 1.5.1, the version Flockr pins. A dashed ring means the docs were not checked for that cell; it is left out of the similarity scores. Research context: <a href="RESEARCH_CLOUD_AGENTS.html">RESEARCH_CLOUD_AGENTS.html</a>.</p>
+
+<div class="legend">
+  <span><span class="mark y"></span>Yes</span>
+  <span><span class="mark p"></span>Partly</span>
+  <span><span class="mark n"></span>No</span>
+  <span><span class="mark u"></span>Not checked</span>
+</div>
+
+<div class="wrap"><table id="grid"></table></div>
+
+<h2>Who is most similar</h2>
+<p class="meta">Each cell scores yes 1, partly 0.5, no 0. Similarity of two frameworks is 1 minus their average difference over the features both have checked. Pick the one to compare against.</p>
+<div class="tabs" id="tabs"></div>
+<div class="rank" id="rank"></div>
+
+<h2>Every pair</h2>
+<div class="wrap"><table class="matrix" id="matrix"></table></div>
+
+<h2>What the grid says</h2>
+<ul id="verdict">
+  <li><b>Closest to Pi Durable: TanStack AI (78%), then the Vercel AI SDK (70%).</b> All three are libraries you embed, with any model, the loop outside the box and crash recovery. TanStack's recovery is built in; the AI SDK's needs Vercel Workflow.</li>
+  <li><b>Eve and Mastra are a pair (88%).</b> Both are whole agent frameworks with sandboxes, approvals, schedules and evals. Those are Flockr's product, so they overlap Flockr more than they overlap Pi Durable (62 to 63%).</li>
+  <li><b>Closest to Flockr itself: Eve.</b> It also has channels (Slack, Discord, GitHub), so it is part rival and part framework.</li>
+  <li><b>Furthest from everything: Claude Code.</b> The only finished coding agent, tuned by Anthropic, but Claude only, no crash recovery, and it has to live inside the box.</li>
+  <li><b>Pi Durable vs TanStack AI on crashes:</b> about equal on paper. Both rerun only tools marked safe and tell the model when a call was cut off. Pi Durable ships SQLite and file stores and saves your own state in the same write; TanStack ships only a memory store (you write the store for your database) but adds a lease and fence per thread for several servers. TanStack has an open bug where a reconnect during a long tool call writes the run twice (issue 2035).</li>
+</ul>
+
+<h2>Sources</h2>
+<ul>
+  <li>Pi Durable: README in <code>@earendil-works/pi-durable</code> 1.5.1 (Tools, Environment, Hooks, Subagents)</li>
+  <li>Eve: <a href="https://vercel.com/kb/guide/eve-vs-ai-sdk-agents-vs-workflowagent">eve vs AI SDK agents vs WorkflowAgent</a>, <a href="https://eve.dev/docs/guides/deployment/self-hosting">Self-host</a>, <a href="https://eve.dev/docs/sandbox">Sandbox</a>, <a href="https://eve.dev/docs/concepts/built-in-tools">Built-in tools</a>, <a href="https://vercel.com/blog/introducing-eve">launch post</a></li>
+  <li>TanStack AI: <a href="https://tanstack.com/blog/tanstack-ai-1-0">1.0 announcement</a>, <a href="https://tanstack.com/ai/latest/docs">docs</a>, <a href="https://tanstack.com/ai/latest/docs/harness/durable-sessions">Durable sessions</a>, <a href="https://tanstack.com/ai/latest/docs/sandbox/journal">Run journal</a>, <a href="https://github.com/TanStack/ai/issues/2035">issue 2035</a></li>
+  <li>Mastra: <a href="https://mastra.ai/docs">docs</a>, <a href="https://mastra.ai/docs/harness/durable-agents.md">Durable agents</a>, <a href="https://mastra.ai/llms.txt">llms.txt</a></li>
+  <li>Vercel AI SDK: <a href="https://ai-sdk.dev/docs/agents/overview">Agents overview</a></li>
+  <li>Claude Code: Anthropic's CLI docs and Flockr's own adapter</li>
+</ul>
+
+<script id="data" type="application/json">
+{
+  "frameworks": ["Pi Durable", "Eve", "TanStack AI", "Mastra", "Vercel AI SDK", "Claude Code"],
+  "groups": [
+    { "name": "The loop", "rows": [
+      { "feature": "Any model", "cells": [
+        ["y", "pi-ai providers"], ["y", "AI SDK models or AI Gateway"], ["y", "23 adapters"], ["y", "provider/model strings"], ["y", ""], ["n", "Claude only"] ] },
+      { "feature": "Survives a crash mid-turn", "cells": [
+        ["y", "every step committed first"], ["y", "event log replayed (Workflow SDK)"], ["y", "session log per thread, lease and fence per host"], ["p", "DurableAgent, beta, off by default"], ["p", "WorkflowAgent only, on Vercel Workflow"], ["n", "turn lost"] ] },
+      { "feature": "Resumes without repeating a shell command", "cells": [
+        ["y", "reruns only tools marked safe"], ["u", ""], ["y", "replay safe or never, default never; harness 0.x"], ["n", "unsaved tool calls run again"], ["p", "per tool, with use step"], ["n", "no resume"] ] },
+      { "feature": "Subagents", "cells": [
+        ["y", "child conversations"], ["y", "delegation"], ["y", "subagents, coding agents"], ["u", ""], ["u", ""], ["y", ""] ] },
+      { "feature": "Embeds in your own process", "cells": [
+        ["y", "a library"], ["n", "its own Node server app"], ["y", ""], ["y", ""], ["y", ""], ["n", "a CLI process"] ] }
+    ]},
+    { "name": "Tools and sandbox", "rows": [
+      { "feature": "Built-in shell and file tools", "cells": [
+        ["y", "read, write, edit, bash"], ["y", "bash, read, write, edit"], ["p", "through Claude Code, Codex or OpenCode"], ["y", "files, shell, search, LSP"], ["n", ""], ["y", "tuned by Anthropic"] ] },
+      { "feature": "Sandbox providers included", "cells": [
+        ["p", "none; you plug in where tools run"], ["y", "Docker, Vercel Sandbox, custom"], ["y", "12, incl. Docker, Docker Sandboxes, E2B, Blaxel, Daytona"], ["y", "E2B, Daytona, Modal, Cloudflare, Blaxel, Docker"], ["p", "experimental, bring your own"], ["n", "it runs inside one"] ] },
+      { "feature": "Loop outside the box, box only for tools", "cells": [
+        ["y", ""], ["y", ""], ["y", ""], ["y", ""], ["y", ""], ["n", ""] ] },
+      { "feature": "Drives Claude Code or Codex as a worker", "cells": [
+        ["n", ""], ["u", ""], ["y", "codingAgents plugin"], ["u", ""], ["y", "HarnessAgent"], ["n", "it is one"] ] },
+      { "feature": "Tuned coding prompts", "cells": [
+        ["n", ""], ["n", ""], ["p", "through Claude Code"], ["n", ""], ["n", ""], ["y", ""] ] }
+    ]},
+    { "name": "Product features", "rows": [
+      { "feature": "Channels (Slack and others)", "cells": [
+        ["n", ""], ["y", "Slack, Discord, iMessage, GitHub"], ["n", ""], ["u", ""], ["n", ""], ["n", ""] ] },
+      { "feature": "Approvals, waiting on a person", "cells": [
+        ["p", "hooks can block a tool"], ["y", "durable approvals"], ["y", "interrupts kept in the log"], ["y", "suspend and resume"], ["u", ""], ["p", "permission prompts"] ] },
+      { "feature": "Schedules", "cells": [
+        ["n", ""], ["y", ""], ["n", ""], ["y", "recurring schedules"], ["n", ""], ["n", ""] ] },
+      { "feature": "Evals", "cells": [
+        ["n", ""], ["y", "eval runner"], ["u", ""], ["y", "scorers, CI"], ["n", ""], ["n", ""] ] }
+    ]},
+    { "name": "Status", "rows": [
+      { "feature": "Open source", "cells": [
+        ["y", "MIT"], ["y", "Apache-2.0"], ["y", ""], ["u", "licence not checked"], ["y", "Apache-2.0"], ["n", ""] ] },
+      { "feature": "Self-host with no vendor", "cells": [
+        ["y", ""], ["y", "Node server, Postgres store"], ["y", ""], ["y", ""], ["p", "durable agent needs Workflow"], ["p", "local, Anthropic models"] ] },
+      { "feature": "Stable API", "cells": [
+        ["n", "experimental"], ["p", "public preview"], ["p", "core 1.0; agent framework experimental"], ["p", "core stable; durable agent beta"], ["y", ""], ["y", ""] ] }
+    ]}
+  ]
+}
+</script>
+<script>
+const data = JSON.parse(document.getElementById("data").textContent)
+const names = data.frameworks
+const score = { y: 1, p: 0.5, n: 0 }
+const rows = data.groups.flatMap((g) => g.rows)
+
+const grid = document.getElementById("grid")
+const head = grid.createTHead().insertRow()
+head.innerHTML = `<th class="feature">Feature</th>` + names.map((n, i) => `<th class="${i === 0 ? "base" : ""}">${n}</th>`).join("")
+const body = grid.createTBody()
+for (const group of data.groups) {
+  const g = body.insertRow()
+  g.className = "group"
+  g.innerHTML = `<th colspan="${names.length + 1}">${group.name}</th>`
+  for (const row of group.rows) {
+    const r = body.insertRow()
+    r.innerHTML = `<th class="feature">${row.feature}</th>` + row.cells.map(([v, note], i) =>
+      `<td class="cell ${i === 0 ? "base" : ""}"><span class="mark ${v}"></span>${note ? `<span class="note">${note}</span>` : ""}</td>`).join("")
+  }
+}
+
+function similarity(a, b) {
+  const both = rows.filter((r) => r.cells[a][0] in score && r.cells[b][0] in score)
+  if (!both.length) return 0
+  const gap = both.reduce((sum, r) => sum + Math.abs(score[r.cells[a][0]] - score[r.cells[b][0]]), 0)
+  return 1 - gap / both.length
+}
+
+const tabs = document.getElementById("tabs")
+const rank = document.getElementById("rank")
+function showRank(base) {
+  tabs.querySelectorAll("button").forEach((b, i) => b.setAttribute("aria-pressed", String(i === base)))
+  const others = names.map((n, i) => ({ n, s: similarity(base, i), i })).filter((o) => o.i !== base).sort((x, y) => y.s - x.s)
+  rank.innerHTML = others.map((o) => `<div>${o.n}</div><div class="bar"><div style="width:${Math.round(o.s * 100)}%"></div></div><div>${Math.round(o.s * 100)}%</div>`).join("")
+}
+names.forEach((n, i) => {
+  const b = document.createElement("button")
+  b.textContent = n
+  b.addEventListener("click", () => showRank(i))
+  tabs.appendChild(b)
+})
+showRank(0)
+
+const matrix = document.getElementById("matrix")
+matrix.createTHead().insertRow().innerHTML = `<th></th>` + names.map((n) => `<th>${n}</th>`).join("")
+const mb = matrix.createTBody()
+names.forEach((n, a) => {
+  const r = mb.insertRow()
+  r.innerHTML = `<th>${n}</th>` + names.map((_, b) => {
+    const s = similarity(a, b)
+    const shade = a === b ? 0 : Math.round(s * 100)
+    return `<td style="background:color-mix(in srgb, var(--ink) ${a === b ? 0 : Math.max(0, (s - 0.4) * 60)}%, transparent);color:${a !== b && s > 0.75 ? "var(--paper)" : "var(--ink)"}">${a === b ? "" : shade + "%"}</td>`
+  }).join("")
+})
+</script>
+</main>
+</body>
+</html>

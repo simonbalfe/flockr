@@ -116,6 +116,29 @@
 <li>Sandboxes run as root by default; Claude Code refuses <code>--dangerously-skip-permissions</code> as root. Non-root users need Blaxel's Carbon servers (default for new workspaces in <code>us-pdx-1</code> and <code>us-was-1</code>). The test used <code>--permission-mode acceptEdits</code> with a tool allow-list instead.</li>
 </ul>
 
+<h3>More sandbox options, 2026-11-27</h3>
+<p>Desk research only, nothing tested. Prices are list rates for 2 vCPU 4 GB, mostly from the Upstash (2026-09-17) and Dracon (2026-08-27) comparisons, which cover providers they compete with; check each vendor before choosing.</p>
+<div class="wrap"><table>
+<tr><th>Platform</th><th>Isolation</th><th>While idle or paused</th><th>Keeps processes</th><th>About USD/h</th><th>Self-host</th><th>Note for Flockr</th></tr>
+<tr><td><b>Docker Sandboxes</b> (<code>sbx</code>)</td><td>microVM, own kernel and own Docker daemon</td><td>One sandbox per agent session, deleted after</td><td>For the session</td><td>Local free, including commercial use; cloud pay as you go, rate not published</td><td>Runs on your own Mac, Windows or Linux (KVM) machine</td><td>Closest fit for the local Docker adapter: Claude Code and Codex supported, <code>docker compose</code> inside without the host socket, secrets added to requests as they leave the box (the egress proxy in ADR 0007). Cloud sandboxes have an API and SDK</td></tr>
+<tr><td>Northflank</td><td>Kata + Cloud Hypervisor</td><td>Scaled to zero: volume only</td><td>No</td><td>0.067</td><td>BYOC on major clouds</td><td>Cheapest awake hour; no session limit</td></tr>
+<tr><td>Freestyle</td><td>KVM VM</td><td>Paused: storage only</td><td>Yes</td><td>0.13</td><td>No</td><td>Deny-by-default network; claims 65 ms start</td></tr>
+<tr><td>Morph Cloud</td><td>VM</td><td>Paused: snapshot storage</td><td>Yes; branches a running box in under 250 ms (vendor claim)</td><td>0.10 (2 units of 0.05)</td><td>No</td><td>Branching could let several agents try one task from the same warm state</td></tr>
+<tr><td>Tensorlake</td><td>Firecracker or Cloud Hypervisor</td><td>Suspended: snapshot storage</td><td>Yes</td><td>0.05 to 0.09 idle, Pro plan 250 USD a month</td><td>BYOC</td><td>Unlimited sessions on Pro</td></tr>
+<tr><td>Namespace</td><td>microVM on own bare metal</td><td>Stopped: storage 0.20 per GB-month</td><td>No</td><td>0.18</td><td>No</td><td>Session limit 3 to 24 h by plan</td></tr>
+<tr><td>Modal</td><td>gVisor</td><td>No pause</td><td>No; snapshots only</td><td>0.24, 1.5 to 1.75 times by region</td><td>No</td><td>Cheap for many short sessions, poor for long Claude runs</td></tr>
+<tr><td>Beam</td><td>gVisor, microVM opt-in</td><td>Bills until its time limit</td><td>No; snapshots</td><td>0.04 to 0.23</td><td>Beta9, AGPL-3.0</td><td>Idle boxes keep billing</td></tr>
+<tr><td>Koyeb</td><td>microVM on bare metal</td><td>Scaled to zero: free</td><td>No</td><td>0.06</td><td>No</td><td>Deleted after 24 h at most</td></tr>
+<tr><td>Upstash Box</td><td>Hardened container, shared kernel</td><td>Paused: storage only</td><td>Files only</td><td>About 0.02 mostly idle</td><td>SDK only</td><td>Shared kernel: weak for code a model wrote</td></tr>
+<tr><td>Runloop</td><td>VM</td><td>Storage only</td><td>Disk only</td><td>0.32</td><td>No</td><td>Winding down; transition support ended 2026-11-13. Do not use</td></tr>
+</table></div>
+<ul>
+<li><b>Claude Managed Agents, a different shape:</b> Anthropic runs the agent loop, so it is Claude only and billed to an API key: tokens plus 0.08 USD per session-hour while running, nothing while idle, with a cloud sandbox included. With a <b>self-hosted sandbox</b> (public beta) a worker on Flockr's own box claims work from Anthropic's queue and runs the bash and file tool calls locally, still 0.08 USD per hour. Limits: no repository or file resources in self-hosted sessions, and Flockr secures the image and egress itself. At 0.08 USD per hour with the box included, it undercuts every Claude Code in a box option above; it would be a harness adapter beside Claude Code (ADRs 0013, 0019), not a sandbox adapter.</li>
+<li><b>Self-hosting:</b> E2B's Apache-2.0 runtime on one KVM host; Microsandbox (libkrun, Apache-2.0, beta, a library with no server); Kubernetes <code>agent-sandbox</code> (Apache-2.0, with gVisor or Kata, warm pools). Dracon's estimate: a Hetzner CPX62 at about 154 USD a month holds eight 2 vCPU 4 GB boxes, cheaper than managed only above about 925 sandbox-hours a month, before ops time.</li>
+<li><b>Closed or going:</b> Daytona's open-source repo was archived (2026-06); Runloop is winding down; Blaxel was acquired by Baseten (2026-10-02). A provider is one adapter for this reason.</li>
+<li><b>What this changes:</b> nothing in ADR 0019 yet. Two things are worth trying: Docker Sandboxes as the local adapter in place of plain Docker, and Managed Agents with a self-hosted sandbox as a cheaper cloud harness, measured on the same 10 coding tasks.</li>
+</ul>
+
 <h2>5. Coding harness: Claude Code in a VM vs Pi Durable with box tools</h2>
 <div class="wrap"><table>
 <tr><th></th><th>Claude Code in a VM</th><th>Pi Durable + Blaxel tools</th></tr>
@@ -156,17 +179,80 @@
 <ul>
 <li><b>Turso:</b> SQLite with a server (libSQL, MIT, self-hostable <code>sqld</code>), replicas and Turso Sync; concurrent writes are a preview and were slower than SQLite under 8 writers in 2026-09. It adds no <code>LISTEN/NOTIFY</code>, row locks or job queue. Not needed: Postgres covers the board and Litestream covers agent files. Supabase is acquiring Turso.</li>
 <li><b>Flue:</b> Pi-based framework (Astro team) with channels and a durable event log; overlaps with what Flockr owns. Worth porting two ideas: one settled event per task with its outcome, and token cost per turn.</li>
-<li><b>Eve, Mastra, Vercel AI SDK, TanStack AI, Google ADK for Go:</b> frameworks or model libraries one layer up; none replaces the board or the runner.</li>
+<li><b>Eve, Mastra, Vercel AI SDK, TanStack AI, Google ADK for Go:</b> none replaces the board or the runner. Eve and TanStack AI now rival Pi Durable as the agent loop; see section 9.</li>
+<li><b>ComputeSDK</b> (checked 2026-11-27): one TypeScript SDK (MIT, about 300 stars, adapters released almost daily) over about 40 sandbox providers, including E2B, Blaxel, Daytona, Modal, Cloudflare and Vercel. API is create, run a command, files, list, destroy, close to Flockr's sandbox interface. Its Sandbox Router is a hosted service at <code>platform.computesdk.com</code> with a 5% fee on credits, or bring your own provider keys. Not a dependency: the hosted router sits between Flockr and every box, and the release pace breaks the 14-day pin rule. Worth using its free provider benchmarks to pick the overflow adapter, and its open-source E2B and Blaxel adapters as reference when writing Flockr's. One <code>computesdk</code> adapter behind the sandbox interface stays possible if many providers are ever wanted.</li>
 <li><b>Herdr on a VPS:</b> the cheapest way to get load off the Mac now (same Claude Code workers and subscription, panes over remote attach), without crash recovery or triggers.</li>
 <li><b>Similar products:</b> agentes.chat, Buzz, open-tag, agentslack and Switch all use Postgres; only single-user local tools (Dusk bot, Vibe Kanban, MCP Agent Mail) use SQLite.</li>
 </ul>
 
-<h2>9. Open questions</h2>
+<h2>9. Agent frameworks, 2026-11-27</h2>
+<p>Read from each project's docs. Full feature grid with similarity scores: <a href="AGENT_FRAMEWORKS_GRID.html">AGENT_FRAMEWORKS_GRID.html</a>.</p>
+<h3>Layers</h3>
+<div class="wrap"><table>
+<tr><th>Layer</th><th>Examples</th><th>You get</th></tr>
+<tr><td>Model library</td><td>Vercel AI SDK (basic agent)</td><td>Any model, streaming, tool calls in a simple loop; nothing survives a crash</td></tr>
+<tr><td>Durable loop</td><td>Pi Durable, TanStack AI harness, AI SDK <code>WorkflowAgent</code></td><td>A loop that resumes after a crash, plus file and shell tools</td></tr>
+<tr><td>Agent framework</td><td>Eve, Mastra</td><td>The loop plus sandboxes, approvals, schedules, evals; Eve also has channels (Slack, Discord, GitHub)</td></tr>
+<tr><td>Finished agent</td><td>Claude Code, Codex</td><td>A tuned coding agent; you take its loop, its box and its models</td></tr>
+</table></div>
+<h3>Pi Durable, corrected</h3>
+<ul>
+<li>It ships <code>read</code>, <code>write</code>, <code>edit</code> and <code>bash</code> (the <code>CodingTools</code> extension). Flockr's agents offer only the file tools today.</li>
+<li>Its <code>env</code> option builds the execution environment per tool call, "a directory per conversation or a container per conversation". A sandbox plugs in as a custom <code>ExecutionEnv</code> with a stable <code>id</code>; pi-env has a <code>RemoteExecutionEnv</code>. So a ComputeSDK or other sandbox test is one environment, not new tools.</li>
+<li>Each tool call's intent is committed before <code>execute()</code>. Cut off by a crash, a tool reruns only when declared <code>replay: "safe"</code>; otherwise the model gets an <code>interrupted</code> result. A replay-safe call cut off <code>restartLimit</code> times ends with an error.</li>
+<li>Stores: memory, SQLite, JSONL. Your own documents, entries and tasks go in one atomic commit. Code mode scripts resume after a restart without rerunning finished calls. MIT; API marked experimental.</li>
+</ul>
+<h3>Who has what</h3>
+<div class="wrap"><table>
+<tr><th></th><th>Crash-safe</th><th>Sandbox</th><th>Coding tools</th><th>Status</th></tr>
+<tr><td>Pi Durable</td><td>Yes, every step committed first</td><td>Pluggable, none included</td><td>read, write, edit, bash</td><td>Experimental</td></tr>
+<tr><td>TanStack AI</td><td>Yes in the harness, see below</td><td>12 providers, including Docker, Docker Sandboxes, E2B, Blaxel, Daytona, Vercel, Sprites, Upstash, Railway, Cloudflare</td><td><code>workspaceTools</code>: read (also images, PDFs), write, edit or patch, list, grep, bash with background jobs, web fetch and search; plus to-dos, compaction, snapshots, permissions, a CLI</td><td>Core 1.0 (2026-10-22); harness 0.x</td></tr>
+<tr><td>Eve (Vercel)</td><td>Yes, event log replayed through the Workflow SDK</td><td>Docker, Vercel Sandbox, custom</td><td>bash, read, write, edit</td><td>Public preview, Apache-2.0; self-hosts as a Node server with a Postgres store</td></tr>
+<tr><td>Mastra</td><td>Only <code>DurableAgent</code> (beta, off by default); unsaved tool calls run again</td><td>E2B, Daytona, Modal, Vercel, Cloudflare, Blaxel, Docker and more</td><td>Files, shell, search, LSP</td><td>Core stable</td></tr>
+<tr><td>Vercel AI SDK</td><td><code>ToolLoopAgent</code> no; <code>WorkflowAgent</code> yes, on Vercel Workflow</td><td>Experimental, bring your own</td><td>None; <code>HarnessAgent</code> runs Claude Code, Codex or Pi</td><td>Stable</td></tr>
+<tr><td>Claude Code</td><td>No, a crash loses the turn</td><td>Runs inside one</td><td>Tuned by Anthropic</td><td>Stable</td></tr>
+</table></div>
+<h3>TanStack AI's harness vs Pi Durable on crashes</h3>
+<ul>
+<li>Same rule for tools: <code>replay: 'safe' | 'never'</code>, default never; a cut-off never-replay call gets an error telling the model to check before retrying. Finished tools keep their result.</li>
+<li>A model call cut off runs again as the next attempt (<code>maxAttempts</code> 10); <code>continueCutOff</code> keeps the partial answer.</li>
+<li>One host per thread: a lease (expires after 30 s, renewed every 10 s) and the store refuses late writes from the old owner. <code>idempotencyKey(step)</code> and <code>run.epoch</code> fence side effects in your own systems.</li>
+<li>Only an in-memory store ships; production means writing a <code>LogStore</code> for your database, Postgres included.</li>
+<li>Admitted limits: <code>step.ask</code> and MCP sign-in waits during a tool call stay in one host's memory; background agents rerun after a crash. Open bug: reconnecting during a tool call longer than 5 s writes the rest of the run twice (issue 2035).</li>
+<li>Verdict: about equal on paper. Pi Durable is simpler (stores included, one atomic commit for everything); TanStack is built for several hosts on one database.</li>
+</ul>
+<h3>Vercel AI SDK vs TanStack AI, platform parts aside</h3>
+<ul>
+<li>The AI SDK has more first-party providers (about 38), a <code>ToolLoopAgent</code> class, <code>useCompletion</code>, a stable MCP client, a documented provider spec, and its own stream format many tools already speak.</li>
+<li>TanStack has built-in chat persistence, resumable streams, memory, compaction, durable runs on any host, coding agents in many sandboxes, and stable speech and video. Both have structured output, tool approval, middleware, images and embeddings.</li>
+<li>Much of this comes from TanStack's own comparison page; it also publishes a full migration map from the AI SDK.</li>
+</ul>
+<h3>Best pick in general</h3>
+<div class="wrap"><table>
+<tr><th>Building</th><th>Pick</th></tr>
+<tr><td>Default, an AI feature or agent in an app</td><td>TanStack AI</td></tr>
+<tr><td>The most common choice, the most providers</td><td>Vercel AI SDK</td></tr>
+<tr><td>A finished agent app: Slack bot, schedules, approvals</td><td>Eve</td></tr>
+<tr><td>Business workflows with evals and memory</td><td>Mastra</td></tr>
+<tr><td>Unattended agents where a repeated action is costly, wanting the smallest library</td><td>Pi Durable</td></tr>
+<tr><td>Coding, where quality is everything</td><td>Claude Code or Codex, run inside one of the above</td></tr>
+</table></div>
+<h3>For Flockr</h3>
+<ul>
+<li>Keep Pi Durable for Flockr's own agents (ADR 0008): already built, and its one-write rule matches the event log.</li>
+<li>Worth a test when 4d starts: TanStack's <code>codingAgents</code> plugin (Claude Code or Codex in a sandbox) against building the same on Flockr's sandbox interface.</li>
+<li>Eve overlaps Flockr's product (channels, schedules, approvals) and is a competitor as much as a framework.</li>
+</ul>
+
+<h2>10. Open questions</h2>
 <ul>
 <li>Does Blaxel's SDK stream long Claude runs reliably for 30 minutes, and do an open terminal or a <code>keepAlive</code> process behave as documented?</li>
 <li>Does Blaxel's image run Bun, Vite's esbuild and Playwright as Flockr's tests need?</li>
 <li>Anthropic's terms for a subscription token on a cloud box.</li>
 <li>Rivet Cloud pricing; Fly Sprites wake time; Cloudflare's new container start time.</li>
+<li>TanStack AI: does a <code>LogStore</code> on Postgres hold its lease and fence rules under two hosts, and is issue 2035 fixed?</li>
+<li>Docker Sandboxes: can the runner drive <code>sbx</code> headless, and what do cloud sandboxes cost?</li>
+<li>Claude Managed Agents: what are the cloud sandbox's size and session limits, and can a self-hosted worker run inside a per-task box?</li>
 <li>Can Grok Bot or other hosted bots connect to Flockr's MCP server?</li>
 </ul>
 
@@ -177,6 +263,11 @@
 <li>Cloudflare: <a href="https://developers.cloudflare.com/agents/tools/filesystem/">Computer file system</a>, <a href="https://blog.cloudflare.com/faster-agent-sandboxes/">Containers rebuilt for agent sandboxes</a>, <a href="https://developers.cloudflare.com/agents/harnesses/pi/">Pi harness</a></li>
 <li>Rivet: <a href="https://rivet.dev/changelog/2026-10-07-introducing-pi-durable-for-rivet/">Pi Durable for Rivet</a>, <a href="https://rivet.dev/guides/run-claude-code/">Run Claude Code</a>, <a href="https://rivet.dev/docs/deploy/self-host/control-plane/storage/">3.0 storage</a>, <a href="https://rivet.dev/agentos/docs/limitations/">agentOS limitations</a>, <a href="https://rivet.dev/agentos/docs/versus-sandbox/">agentOS vs sandbox</a></li>
 <li>Turso: <a href="https://turso.tech/blog/turso-is-joining-supabase">Turso joining Supabase</a></li>
+<li>ComputeSDK: <a href="https://www.computesdk.com/">Site</a>, <a href="https://www.computesdk.com/llms.txt">llms.txt</a>, <a href="https://github.com/computesdk/computesdk">SDK and adapters</a></li>
+<li>More sandboxes: <a href="https://upstash.com/blog/ai-agent-sandbox-providers-compared-2026">Upstash, 15 providers compared</a>, <a href="https://dracon.uk/tools/agent-sandbox-pricing">Dracon pricing and self-hosted Firecracker</a>, <a href="https://sandboxproviders.com/">sandboxproviders.com</a>, <a href="https://northflank.com/blog/ai-sandbox-pricing">Northflank pricing</a>, <a href="https://www.marktechpost.com/2026/08/27/best-agent-sandboxes-2026-cold-start-pricing-network-policy/">MarkTechPost cold starts</a>, <a href="https://boat.dev/compare/morph-cloud-vs-freestyle">Morph vs Freestyle</a>, <a href="https://github.com/arjan/awesome-agent-sandboxes">awesome-agent-sandboxes</a>, <a href="https://helix.ml/blog/self-hosted-agent-sandboxes">Helix self-hosted</a></li>
+<li>Agent frameworks: <a href="https://tanstack.com/ai/latest/docs/harness/durable-sessions">TanStack durable sessions</a>, <a href="https://tanstack.com/ai/latest/docs/harness/coding-agent">TanStack coding agent</a>, <a href="https://tanstack.com/ai/latest/docs/sandbox/overview">TanStack sandboxes</a>, <a href="https://tanstack.com/ai/latest/docs/comparison/vercel-ai-sdk">TanStack vs AI SDK</a>, <a href="https://tanstack.com/blog/tanstack-ai-1-0">TanStack 1.0</a>, <a href="https://github.com/TanStack/ai/issues/2035">TanStack issue 2035</a>, <a href="https://eve.dev/docs/guides/deployment/self-hosting">Eve self-host</a>, <a href="https://eve.dev/docs/sandbox">Eve sandbox</a>, <a href="https://vercel.com/kb/guide/eve-vs-ai-sdk-agents-vs-workflowagent">eve vs AI SDK agents</a>, <a href="https://mastra.ai/docs/harness/durable-agents.md">Mastra durable agents</a>, <a href="https://ai-sdk.dev/docs/agents/overview">AI SDK agents</a>, Pi Durable README 1.5.1</li>
+<li>Docker Sandboxes: <a href="https://www.docker.com/products/docker-sandboxes/vs-containers/">vs containers</a>, <a href="https://docs.docker.com/ai/sandboxes/">docs</a></li>
+<li>Claude Managed Agents: <a href="https://platform.claude.com/docs/en/managed-agents/self-hosted-sandboxes">Self-hosted sandboxes</a>, <a href="https://claude.com/blog/claude-managed-agents-updates">launch post</a>, <a href="https://www.omnara.com/guides/claude-managed-agents-pricing">pricing guide</a></li>
 <li>Simon's volt pages: Agent Sandboxes, Rivet, Turso, Flue, Agent Framework Landscape.</li>
 </ul>
 </main>
