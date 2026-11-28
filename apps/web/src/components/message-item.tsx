@@ -7,6 +7,7 @@ import { currentUser } from "@/api/session"
 import type { Reply, Task, TextMessage } from "@/api/types"
 import { Markdown } from "@/components/agent/markdown"
 import { BlockList } from "@/components/block-list"
+import { MessageExtras } from "@/components/message-extras"
 import { Feed, type Entry } from "@/components/feed"
 import { MessageStatusChips } from "@/components/feed/status"
 import { MemberAvatar } from "@/components/member-avatar"
@@ -156,6 +157,7 @@ export function MessageItem({ item, inThread, attached, subReplies }: { item: Te
         <>
           <Markdown text={item.text} className="mt-0.5" />
           <BlockList blocks={item.blocks} />
+          <MessageExtras id={item.id} reactions={item.reactions} files={item.files} />
           {(item.editedAt || item.labels.length > 0) && (
             <div className="flex flex-wrap items-center gap-1">
               {item.editedAt && <EditedMark id={item.id} />}

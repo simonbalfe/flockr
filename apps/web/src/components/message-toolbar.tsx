@@ -4,6 +4,7 @@ import { toast } from "sonner"
 import { mayDeleteMessage } from "@flockr/client"
 import { errorText, useDeleteMessage, useMembers, useSaved, useSaveMessage, useUnsaveMessage } from "@/api/hooks"
 import { currentUser } from "@/api/session"
+import { ReactionPicker } from "@/components/message-extras"
 import { usePanel } from "@/lib/panel"
 import { cn } from "@/lib/utils"
 
@@ -67,6 +68,7 @@ export function MessageToolbar({ id, who, replyThreadId, actions }: { id: string
           Label
         </button>
       )}
+      {!confirming && <ReactionPicker id={id} className={control} />}
       {!confirming && (
         <button type="button" onClick={toggleSaved} className={control} aria-pressed={isSaved} aria-label={isSaved ? "Remove from saved" : "Save message"}>
           <Bookmark className={cn("size-[13px]", isSaved && "fill-current")} />

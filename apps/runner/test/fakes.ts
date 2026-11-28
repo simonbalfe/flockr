@@ -92,14 +92,14 @@ export function task(values: Partial<Task> & { id: number }): Task {
   }
 }
 
-export const reply = (id: string, who: string, text: string): ThreadEntry => ({ kind: "reply", id, who, at: "2026-11-24T10:00:00.000Z", text, deleted: false, mentions: [], labels: [], editedAt: null, replyTo: null, blocks: [] })
+export const reply = (id: string, who: string, text: string): ThreadEntry => ({ kind: "reply", id, who, at: "2026-11-24T10:00:00.000Z", text, deleted: false, mentions: [], labels: [], editedAt: null, replyTo: null, blocks: [], reactions: [], files: [] })
 
 export function messageThread(id: string, who: string, text: string, entries: ThreadEntry[] = []): Thread {
   return {
     id,
     channel: "general",
     taskId: null,
-    root: { kind: "text", id, channel: "general", who, at: "2026-11-24T10:00:00.000Z", text, deleted: false, mentions: text.includes(`@${member}`) ? [member] : [], labels: [], editedAt: null, taskId: null, threadId: id, thread: null, blocks: [] },
+    root: { kind: "text", id, channel: "general", who, at: "2026-11-24T10:00:00.000Z", text, deleted: false, mentions: text.includes(`@${member}`) ? [member] : [], labels: [], editedAt: null, taskId: null, threadId: id, thread: null, blocks: [], reactions: [], files: [] },
     entries,
   }
 }

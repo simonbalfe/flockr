@@ -23,7 +23,7 @@ export function router() {
 
 const errorResponse = (description: string) => ({ content: { "application/json": { schema: ErrorBody } }, description })
 
-const errors = {
+export const errors = {
   400: errorResponse("The input is not valid"),
   401: errorResponse("Sign-in is on and the request has no session or key"),
   403: errorResponse("The acting member is not on this board, or may not do this"),

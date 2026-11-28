@@ -29,6 +29,7 @@ import { memberRoutes } from "./routes/members"
 import { memoryRoutes } from "./routes/memory"
 import { documentRoutes } from "./routes/documents"
 import { blockRoutes } from "./routes/blocks"
+import { attachmentRoutes } from "./routes/attachments"
 import { messageRoutes } from "./routes/messages"
 import { navigationRoutes } from "./routes/navigation"
 import { orgRoutes } from "./routes/orgs"
@@ -120,6 +121,7 @@ export function createApp(db: Database, options: AppOptions = {}) {
     .route("/", planRoutes)
     .route("/", focusRoutes)
     .route("/", sessionRoutes(options.objects ?? null))
+    .route("/", attachmentRoutes(options.objects ?? null))
     .route("/", authRoutes)
 
   const document = () => api.getOpenAPI31Document({ openapi: "3.1.0", info })

@@ -15,12 +15,13 @@ import {
 import { and, count, eq, isNull, sql } from "drizzle-orm"
 import type { Database, Tx } from "../db/client"
 import { members, messages, messageVersions, type MemberRow, type MessageRow } from "../db/schema"
+import { attachFiles } from "./attachments"
 import { addressedIn, seenIn } from "./direct"
 import { clearDraft } from "./drafts"
 import { alreadyExists, forbidden, invalid, wrongState } from "./errors"
 import { mutate, type Emit } from "./events"
 import { requireActor } from "./members"
-import { findMember, findMessage, findMessageForUpdate, getThread, messageKey, parseThreadId, replyOf, requireChannel, threadKeyOf } from "./read"
+import { extrasFor, findMember, findMessage, findMessageForUpdate, getThread, messageKey, parseThreadId, replyOf, requireChannel, threadKeyOf, withExtras } from "./read"
 import { checkEpoch, emitMessage, insertMessage, lockTask } from "./write"
 
 export async function mentionsOf(tx: Tx, text: string): Promise<string[]> {
@@ -33,6 +34,7 @@ interface Said {
   labels: string[]
   key?: string | undefined
   blocks?: PostableBlock[] | undefined
+  files?: string[] | undefined
 }
 
 const canonical = (value: unknown): string =>
@@ -59,6 +61,7 @@ export async function postMessage(db: Database, actor: string, channel: string, 
     const { mentions, direct } = await addressedIn(tx, { channel, actor, mentions: await mentionsOf(tx, said.text) })
     const labels = labelSet(said.labels)
     const created = await insertMessage(tx, { channel, kind: "text", who: actor, body: said.text, mentions, labels, requestKey: said.key ?? null, blocks: said.blocks ?? [] })
+    await attachFiles(tx, { actor, channel, messageId: created.id, ids: said.files ?? [] })
     emitMessage(emit, "message.posted", created, actor, messageKey(created.id), { mentions, labels, ...(direct ? { direct } : {}) })
     await clearDraft(tx, { member: actor, kind: "channel", target: channel })
     return created
@@ -83,10 +86,12 @@ async function replyUnder(tx: Tx, emit: Emit, options: { actor: string; parent: 
     const task = await lockTask(tx, parent.threadTaskId)
     checkEpoch(task, draft.epoch)
     const created = await insertMessage(tx, { ...base, threadTaskId: task.id })
+    await attachFiles(tx, { actor, channel: created.channel, messageId: created.id, ids: draft.files ?? [] })
     emitMessage(emit, "reply.posted", created, actor, String(task.id), data)
     return created
   }
   const created = await insertMessage(tx, { ...base, parentId: parent.parentId })
+  await attachFiles(tx, { actor, channel: created.channel, messageId: created.id, ids: draft.files ?? [] })
   emitMessage(emit, "reply.posted", created, actor, threadKeyOf(created), data)
   return created
 }
@@ -105,6 +110,7 @@ export async function reply(db: Database, actor: string, threadId: string, draft
       checkEpoch(task, draft.epoch)
       const { mentions, direct } = await addressedIn(tx, { channel: task.channel, actor, mentions: said })
       const created = await insertMessage(tx, { channel: task.channel, kind: "text", who: actor, body: draft.text, mentions, labels, threadTaskId: task.id, requestKey: draft.key ?? null, blocks: draft.blocks ?? [] })
+      await attachFiles(tx, { actor, channel: created.channel, messageId: created.id, ids: draft.files ?? [] })
       emitMessage(emit, "reply.posted", created, actor, String(task.id), { mentions, labels, ...(direct ? { direct } : {}) })
       await clearDraft(tx, draftKey)
       return created
@@ -118,11 +124,12 @@ export async function reply(db: Database, actor: string, threadId: string, draft
     if (parent.kind !== "text") throw invalid(`${threadId} is not a message; reply to a message or a task`)
     const { mentions, direct } = await addressedIn(tx, { channel: parent.channel, actor, mentions: said })
     const created = await insertMessage(tx, { channel: parent.channel, kind: "text", who: actor, body: draft.text, mentions, labels, parentId: parent.id, requestKey: draft.key ?? null, blocks: draft.blocks ?? [] })
+    await attachFiles(tx, { actor, channel: created.channel, messageId: created.id, ids: draft.files ?? [] })
     emitMessage(emit, "reply.posted", created, actor, messageKey(parent.id), { mentions, labels, ...(direct ? { direct } : {}) })
     await clearDraft(tx, draftKey)
     return created
   })
-  return replyOf(row)
+  return withExtras(replyOf(row), await extrasFor(db, [row.id]))
 }
 
 const cardName = { text: "message", task: "task card", ask: "question card", event: "system event", question: "question", activity: "activity entry" } as const satisfies Record<MessageRow["kind"], string>

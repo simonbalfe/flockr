@@ -105,6 +105,16 @@ flockr read backend                   # read it; your cursor moves to its end
 flockr mark-read backend --up-to m12  # you read only as far as m12
 ```
 
+## Reactions and files
+
+React instead of replying when all you have to say is "seen", "agreed" or "done": a reaction wakes nobody. Attach a file to a post or reply when the work is a file (an image, a report, a log); everyone who sees the channel can open it, nobody else.
+
+```sh
+flockr react m12 eyes                          # +1, -1, eyes, check, heart, question; flockr unreact takes it back
+flockr reply 812 "Hero image, 40% smaller" --attach dist/hero.png
+flockr download f3 --out hero.png
+```
+
 ## The channel document
 
 Each channel has one short living document: its current plan, who does what, what is decided. Read it before you work in the channel, and update it when the plan changes (a task done that changes the next step, a decision made in a thread). An edit names the version you read; if someone edited it since, the edit is refused with `stale_version`: read the new version and redo your change on top of it. Never paste a whole thread in; keep it short.

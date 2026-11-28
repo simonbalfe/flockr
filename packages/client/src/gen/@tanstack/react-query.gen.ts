@@ -3,8 +3,8 @@
 import { type InfiniteData, infiniteQueryOptions, queryOptions, type UseMutationOptions } from '@tanstack/react-query';
 
 import { client } from '../client.gen';
-import { addAgentNote, addChannelMember, addChannelMemory, addTaskCommit, answerInThread, answerQuestion, approveTask, archiveAgentNote, archiveChannelMemory, askInThread, askQuestion, blockTask, cancelTask, checkApproval, claimNextTask, claimTask, clearApprovalRule, closePlan, completeTask, createActivityEntry, createAgent, createChannel, createKey, createMember, createOrg, createPlan, createRoutine, createTask, declareArea, deleteAgent, deleteMessage, deleteRoutine, disableRoutine, editChannelDocument, editMessage, enableRoutine, failTask, getActivityEntry, getAgent, getBrief, getChannelDocument, getFocus, getInbox, getPlan, getRoutine, getSavedSession, getTask, getThread, giveTask, handOffTask, importChecklist, listActivity, listAgentActivity, listAgentNotes, listAgents, listApprovalRules, listAreas, listBlocks, listChannelMembers, listChannelMemory, listChannelReaders, listChannels, listDocumentVersions, listDrafts, listEvents, listKeys, listMachines, listMembers, listMessages, listMessageVersions, listMyThreads, listOrgs, listPlans, listRoutineJobs, listRoutines, listSaved, listSavedSessions, listSent, listTasks, machineHeartbeat, makeTaskFromThread, markRead, openDirectMessage, openSavedSession, type Options, pauseAgent, postMessage, readSessionChunk, registerMachine, releaseArea, releaseTask, removeChannelMember, renewArea, renewTask, reopenPlan, reopenTask, replyToThread, requestChanges, requestSignInLink, restoreAgentNote, restoreChannelMemory, resumeAgent, revokeKey, saveDraft, saveMessage, saveSessionChunk, searchBoard, setActivity, setApprovalRule, setTaskPlan, setTaskReviewer, signOut, startAgent, stopAgent, stopRun, submitForReview, unblockTask, unsaveMessage, updateActivityEntry, updateAgent, updateAgentNote, updateChannel, updateChannelMemory, updatePlan, updateRoutine, waitForEvents, waitForPlan, whoami } from '../sdk.gen';
-import type { AddAgentNoteData, AddAgentNoteError, AddAgentNoteResponse, AddChannelMemberData, AddChannelMemberError, AddChannelMemberResponse, AddChannelMemoryData, AddChannelMemoryError, AddChannelMemoryResponse, AddTaskCommitData, AddTaskCommitError, AddTaskCommitResponse, AnswerInThreadData, AnswerInThreadError, AnswerInThreadResponse, AnswerQuestionData, AnswerQuestionError, AnswerQuestionResponse, ApproveTaskData, ApproveTaskError, ApproveTaskResponse, ArchiveAgentNoteData, ArchiveAgentNoteError, ArchiveAgentNoteResponse, ArchiveChannelMemoryData, ArchiveChannelMemoryError, ArchiveChannelMemoryResponse, AskInThreadData, AskInThreadError, AskInThreadResponse, AskQuestionData, AskQuestionError, AskQuestionResponse, BlockTaskData, BlockTaskError, BlockTaskResponse, CancelTaskData, CancelTaskError, CancelTaskResponse, CheckApprovalData, CheckApprovalError, CheckApprovalResponse, ClaimNextTaskData, ClaimNextTaskError, ClaimNextTaskResponse, ClaimTaskData, ClaimTaskError, ClaimTaskResponse, ClearApprovalRuleData, ClearApprovalRuleError, ClearApprovalRuleResponse, ClosePlanData, ClosePlanError, ClosePlanResponse, CompleteTaskData, CompleteTaskError, CompleteTaskResponse, CreateActivityEntryData, CreateActivityEntryError, CreateActivityEntryResponse, CreateAgentData, CreateAgentError, CreateAgentResponse, CreateChannelData, CreateChannelError, CreateChannelResponse, CreateKeyData, CreateKeyError, CreateKeyResponse, CreateMemberData, CreateMemberError, CreateMemberResponse, CreateOrgData, CreateOrgError, CreateOrgResponse, CreatePlanData, CreatePlanError, CreatePlanResponse, CreateRoutineData, CreateRoutineError, CreateRoutineResponse, CreateTaskData, CreateTaskError, CreateTaskResponse, DeclareAreaData, DeclareAreaError, DeclareAreaResponse, DeleteAgentData, DeleteAgentError, DeleteAgentResponse, DeleteMessageData, DeleteMessageError, DeleteMessageResponse, DeleteRoutineData, DeleteRoutineError, DeleteRoutineResponse, DisableRoutineData, DisableRoutineError, DisableRoutineResponse, EditChannelDocumentData, EditChannelDocumentError, EditChannelDocumentResponse, EditMessageData, EditMessageError, EditMessageResponse, EnableRoutineData, EnableRoutineError, EnableRoutineResponse, FailTaskData, FailTaskError, FailTaskResponse, GetActivityEntryData, GetActivityEntryError, GetActivityEntryResponse, GetAgentData, GetAgentError, GetAgentResponse, GetBriefData, GetBriefError, GetBriefResponse, GetChannelDocumentData, GetChannelDocumentError, GetChannelDocumentResponse, GetFocusData, GetFocusError, GetFocusResponse, GetInboxData, GetInboxError, GetInboxResponse, GetPlanData, GetPlanError, GetPlanResponse, GetRoutineData, GetRoutineError, GetRoutineResponse, GetSavedSessionData, GetSavedSessionError, GetSavedSessionResponse, GetTaskData, GetTaskError, GetTaskResponse, GetThreadData, GetThreadError, GetThreadResponse, GiveTaskData, GiveTaskError, GiveTaskResponse, HandOffTaskData, HandOffTaskError, HandOffTaskResponse, ImportChecklistData, ImportChecklistError, ImportChecklistResponse, ListActivityData, ListActivityError, ListActivityResponse, ListAgentActivityData, ListAgentActivityError, ListAgentActivityResponse, ListAgentNotesData, ListAgentNotesError, ListAgentNotesResponse, ListAgentsData, ListAgentsError, ListAgentsResponse, ListApprovalRulesData, ListApprovalRulesError, ListApprovalRulesResponse, ListAreasData, ListAreasError, ListAreasResponse, ListBlocksData, ListBlocksError, ListBlocksResponse, ListChannelMembersData, ListChannelMembersError, ListChannelMembersResponse, ListChannelMemoryData, ListChannelMemoryError, ListChannelMemoryResponse, ListChannelReadersData, ListChannelReadersError, ListChannelReadersResponse, ListChannelsData, ListChannelsError, ListChannelsResponse, ListDocumentVersionsData, ListDocumentVersionsError, ListDocumentVersionsResponse, ListDraftsData, ListDraftsError, ListDraftsResponse, ListEventsData, ListEventsError, ListEventsResponse, ListKeysData, ListKeysError, ListKeysResponse, ListMachinesData, ListMachinesError, ListMachinesResponse, ListMembersData, ListMembersError, ListMembersResponse, ListMessagesData, ListMessagesError, ListMessagesResponse, ListMessageVersionsData, ListMessageVersionsError, ListMessageVersionsResponse, ListMyThreadsData, ListMyThreadsError, ListMyThreadsResponse, ListOrgsData, ListOrgsError, ListOrgsResponse, ListPlansData, ListPlansError, ListPlansResponse, ListRoutineJobsData, ListRoutineJobsError, ListRoutineJobsResponse, ListRoutinesData, ListRoutinesError, ListRoutinesResponse, ListSavedData, ListSavedError, ListSavedResponse, ListSavedSessionsData, ListSavedSessionsError, ListSavedSessionsResponse, ListSentData, ListSentError, ListSentResponse, ListTasksData, ListTasksError, ListTasksResponse, MachineHeartbeatData, MachineHeartbeatError, MachineHeartbeatResponse, MakeTaskFromThreadData, MakeTaskFromThreadError, MakeTaskFromThreadResponse, MarkReadData, MarkReadError, MarkReadResponse, OpenDirectMessageData, OpenDirectMessageError, OpenDirectMessageResponse, OpenSavedSessionData, OpenSavedSessionError, OpenSavedSessionResponse, PauseAgentData, PauseAgentError, PauseAgentResponse, PostMessageData, PostMessageError, PostMessageResponse, ReadSessionChunkData, ReadSessionChunkError, ReadSessionChunkResponse, RegisterMachineData, RegisterMachineError, RegisterMachineResponse, ReleaseAreaData, ReleaseAreaError, ReleaseAreaResponse, ReleaseTaskData, ReleaseTaskError, ReleaseTaskResponse, RemoveChannelMemberData, RemoveChannelMemberError, RemoveChannelMemberResponse, RenewAreaData, RenewAreaError, RenewAreaResponse, RenewTaskData, RenewTaskError, RenewTaskResponse, ReopenPlanData, ReopenPlanError, ReopenPlanResponse, ReopenTaskData, ReopenTaskError, ReopenTaskResponse, ReplyToThreadData, ReplyToThreadError, ReplyToThreadResponse, RequestChangesData, RequestChangesError, RequestChangesResponse, RequestSignInLinkData, RequestSignInLinkError, RequestSignInLinkResponse, RestoreAgentNoteData, RestoreAgentNoteError, RestoreAgentNoteResponse, RestoreChannelMemoryData, RestoreChannelMemoryError, RestoreChannelMemoryResponse, ResumeAgentData, ResumeAgentError, ResumeAgentResponse, RevokeKeyData, RevokeKeyError, RevokeKeyResponse, SaveDraftData, SaveDraftError, SaveDraftResponse, SaveMessageData, SaveMessageError, SaveMessageResponse, SaveSessionChunkData, SaveSessionChunkError, SaveSessionChunkResponse, SearchBoardData, SearchBoardError, SearchBoardResponse, SetActivityData, SetActivityError, SetActivityResponse, SetApprovalRuleData, SetApprovalRuleError, SetApprovalRuleResponse, SetTaskPlanData, SetTaskPlanError, SetTaskPlanResponse, SetTaskReviewerData, SetTaskReviewerError, SetTaskReviewerResponse, SignOutData, SignOutError, SignOutResponse, StartAgentData, StartAgentError, StartAgentResponse, StopAgentData, StopAgentError, StopAgentResponse, StopRunData, StopRunError, StopRunResponse, SubmitForReviewData, SubmitForReviewError, SubmitForReviewResponse, UnblockTaskData, UnblockTaskError, UnblockTaskResponse, UnsaveMessageData, UnsaveMessageError, UnsaveMessageResponse, UpdateActivityEntryData, UpdateActivityEntryError, UpdateActivityEntryResponse, UpdateAgentData, UpdateAgentError, UpdateAgentNoteData, UpdateAgentNoteError, UpdateAgentNoteResponse, UpdateAgentResponse, UpdateChannelData, UpdateChannelError, UpdateChannelMemoryData, UpdateChannelMemoryError, UpdateChannelMemoryResponse, UpdateChannelResponse, UpdatePlanData, UpdatePlanError, UpdatePlanResponse, UpdateRoutineData, UpdateRoutineError, UpdateRoutineResponse, WaitForEventsData, WaitForEventsError, WaitForEventsResponse, WaitForPlanData, WaitForPlanError, WaitForPlanResponse, WhoamiData, WhoamiError, WhoamiResponse } from '../types.gen';
+import { addAgentNote, addChannelMember, addChannelMemory, addReaction, addTaskCommit, answerInThread, answerQuestion, approveTask, archiveAgentNote, archiveChannelMemory, askInThread, askQuestion, blockTask, cancelTask, checkApproval, claimNextTask, claimTask, clearApprovalRule, closePlan, completeTask, createActivityEntry, createAgent, createChannel, createKey, createMember, createOrg, createPlan, createRoutine, createTask, declareArea, deleteAgent, deleteMessage, deleteRoutine, disableRoutine, downloadFile, editChannelDocument, editMessage, enableRoutine, failTask, getActivityEntry, getAgent, getBrief, getChannelDocument, getFile, getFileContent, getFocus, getInbox, getPlan, getRoutine, getSavedSession, getTask, getThread, giveTask, handOffTask, importChecklist, listActivity, listAgentActivity, listAgentNotes, listAgents, listApprovalRules, listAreas, listBlocks, listChannelMembers, listChannelMemory, listChannelReaders, listChannels, listDocumentVersions, listDrafts, listEvents, listKeys, listMachines, listMembers, listMessages, listMessageVersions, listMyThreads, listOrgs, listPlans, listRoutineJobs, listRoutines, listSaved, listSavedSessions, listSent, listTasks, machineHeartbeat, makeTaskFromThread, markRead, openDirectMessage, openSavedSession, type Options, pauseAgent, postMessage, readSessionChunk, registerMachine, releaseArea, releaseTask, removeChannelMember, removeReaction, renewArea, renewTask, reopenPlan, reopenTask, replyToThread, requestChanges, requestSignInLink, restoreAgentNote, restoreChannelMemory, resumeAgent, revokeKey, saveDraft, saveMessage, saveSessionChunk, searchBoard, setActivity, setApprovalRule, setTaskPlan, setTaskReviewer, signOut, startAgent, stopAgent, stopRun, submitForReview, unblockTask, unsaveMessage, updateActivityEntry, updateAgent, updateAgentNote, updateChannel, updateChannelMemory, updatePlan, updateRoutine, uploadFile, waitForEvents, waitForPlan, whoami } from '../sdk.gen';
+import type { AddAgentNoteData, AddAgentNoteError, AddAgentNoteResponse, AddChannelMemberData, AddChannelMemberError, AddChannelMemberResponse, AddChannelMemoryData, AddChannelMemoryError, AddChannelMemoryResponse, AddReactionData, AddReactionError, AddReactionResponse, AddTaskCommitData, AddTaskCommitError, AddTaskCommitResponse, AnswerInThreadData, AnswerInThreadError, AnswerInThreadResponse, AnswerQuestionData, AnswerQuestionError, AnswerQuestionResponse, ApproveTaskData, ApproveTaskError, ApproveTaskResponse, ArchiveAgentNoteData, ArchiveAgentNoteError, ArchiveAgentNoteResponse, ArchiveChannelMemoryData, ArchiveChannelMemoryError, ArchiveChannelMemoryResponse, AskInThreadData, AskInThreadError, AskInThreadResponse, AskQuestionData, AskQuestionError, AskQuestionResponse, BlockTaskData, BlockTaskError, BlockTaskResponse, CancelTaskData, CancelTaskError, CancelTaskResponse, CheckApprovalData, CheckApprovalError, CheckApprovalResponse, ClaimNextTaskData, ClaimNextTaskError, ClaimNextTaskResponse, ClaimTaskData, ClaimTaskError, ClaimTaskResponse, ClearApprovalRuleData, ClearApprovalRuleError, ClearApprovalRuleResponse, ClosePlanData, ClosePlanError, ClosePlanResponse, CompleteTaskData, CompleteTaskError, CompleteTaskResponse, CreateActivityEntryData, CreateActivityEntryError, CreateActivityEntryResponse, CreateAgentData, CreateAgentError, CreateAgentResponse, CreateChannelData, CreateChannelError, CreateChannelResponse, CreateKeyData, CreateKeyError, CreateKeyResponse, CreateMemberData, CreateMemberError, CreateMemberResponse, CreateOrgData, CreateOrgError, CreateOrgResponse, CreatePlanData, CreatePlanError, CreatePlanResponse, CreateRoutineData, CreateRoutineError, CreateRoutineResponse, CreateTaskData, CreateTaskError, CreateTaskResponse, DeclareAreaData, DeclareAreaError, DeclareAreaResponse, DeleteAgentData, DeleteAgentError, DeleteAgentResponse, DeleteMessageData, DeleteMessageError, DeleteMessageResponse, DeleteRoutineData, DeleteRoutineError, DeleteRoutineResponse, DisableRoutineData, DisableRoutineError, DisableRoutineResponse, DownloadFileData, DownloadFileError, DownloadFileResponse, EditChannelDocumentData, EditChannelDocumentError, EditChannelDocumentResponse, EditMessageData, EditMessageError, EditMessageResponse, EnableRoutineData, EnableRoutineError, EnableRoutineResponse, FailTaskData, FailTaskError, FailTaskResponse, GetActivityEntryData, GetActivityEntryError, GetActivityEntryResponse, GetAgentData, GetAgentError, GetAgentResponse, GetBriefData, GetBriefError, GetBriefResponse, GetChannelDocumentData, GetChannelDocumentError, GetChannelDocumentResponse, GetFileContentData, GetFileContentError, GetFileContentResponse, GetFileData, GetFileError, GetFileResponse, GetFocusData, GetFocusError, GetFocusResponse, GetInboxData, GetInboxError, GetInboxResponse, GetPlanData, GetPlanError, GetPlanResponse, GetRoutineData, GetRoutineError, GetRoutineResponse, GetSavedSessionData, GetSavedSessionError, GetSavedSessionResponse, GetTaskData, GetTaskError, GetTaskResponse, GetThreadData, GetThreadError, GetThreadResponse, GiveTaskData, GiveTaskError, GiveTaskResponse, HandOffTaskData, HandOffTaskError, HandOffTaskResponse, ImportChecklistData, ImportChecklistError, ImportChecklistResponse, ListActivityData, ListActivityError, ListActivityResponse, ListAgentActivityData, ListAgentActivityError, ListAgentActivityResponse, ListAgentNotesData, ListAgentNotesError, ListAgentNotesResponse, ListAgentsData, ListAgentsError, ListAgentsResponse, ListApprovalRulesData, ListApprovalRulesError, ListApprovalRulesResponse, ListAreasData, ListAreasError, ListAreasResponse, ListBlocksData, ListBlocksError, ListBlocksResponse, ListChannelMembersData, ListChannelMembersError, ListChannelMembersResponse, ListChannelMemoryData, ListChannelMemoryError, ListChannelMemoryResponse, ListChannelReadersData, ListChannelReadersError, ListChannelReadersResponse, ListChannelsData, ListChannelsError, ListChannelsResponse, ListDocumentVersionsData, ListDocumentVersionsError, ListDocumentVersionsResponse, ListDraftsData, ListDraftsError, ListDraftsResponse, ListEventsData, ListEventsError, ListEventsResponse, ListKeysData, ListKeysError, ListKeysResponse, ListMachinesData, ListMachinesError, ListMachinesResponse, ListMembersData, ListMembersError, ListMembersResponse, ListMessagesData, ListMessagesError, ListMessagesResponse, ListMessageVersionsData, ListMessageVersionsError, ListMessageVersionsResponse, ListMyThreadsData, ListMyThreadsError, ListMyThreadsResponse, ListOrgsData, ListOrgsError, ListOrgsResponse, ListPlansData, ListPlansError, ListPlansResponse, ListRoutineJobsData, ListRoutineJobsError, ListRoutineJobsResponse, ListRoutinesData, ListRoutinesError, ListRoutinesResponse, ListSavedData, ListSavedError, ListSavedResponse, ListSavedSessionsData, ListSavedSessionsError, ListSavedSessionsResponse, ListSentData, ListSentError, ListSentResponse, ListTasksData, ListTasksError, ListTasksResponse, MachineHeartbeatData, MachineHeartbeatError, MachineHeartbeatResponse, MakeTaskFromThreadData, MakeTaskFromThreadError, MakeTaskFromThreadResponse, MarkReadData, MarkReadError, MarkReadResponse, OpenDirectMessageData, OpenDirectMessageError, OpenDirectMessageResponse, OpenSavedSessionData, OpenSavedSessionError, OpenSavedSessionResponse, PauseAgentData, PauseAgentError, PauseAgentResponse, PostMessageData, PostMessageError, PostMessageResponse, ReadSessionChunkData, ReadSessionChunkError, ReadSessionChunkResponse, RegisterMachineData, RegisterMachineError, RegisterMachineResponse, ReleaseAreaData, ReleaseAreaError, ReleaseAreaResponse, ReleaseTaskData, ReleaseTaskError, ReleaseTaskResponse, RemoveChannelMemberData, RemoveChannelMemberError, RemoveChannelMemberResponse, RemoveReactionData, RemoveReactionError, RemoveReactionResponse, RenewAreaData, RenewAreaError, RenewAreaResponse, RenewTaskData, RenewTaskError, RenewTaskResponse, ReopenPlanData, ReopenPlanError, ReopenPlanResponse, ReopenTaskData, ReopenTaskError, ReopenTaskResponse, ReplyToThreadData, ReplyToThreadError, ReplyToThreadResponse, RequestChangesData, RequestChangesError, RequestChangesResponse, RequestSignInLinkData, RequestSignInLinkError, RequestSignInLinkResponse, RestoreAgentNoteData, RestoreAgentNoteError, RestoreAgentNoteResponse, RestoreChannelMemoryData, RestoreChannelMemoryError, RestoreChannelMemoryResponse, ResumeAgentData, ResumeAgentError, ResumeAgentResponse, RevokeKeyData, RevokeKeyError, RevokeKeyResponse, SaveDraftData, SaveDraftError, SaveDraftResponse, SaveMessageData, SaveMessageError, SaveMessageResponse, SaveSessionChunkData, SaveSessionChunkError, SaveSessionChunkResponse, SearchBoardData, SearchBoardError, SearchBoardResponse, SetActivityData, SetActivityError, SetActivityResponse, SetApprovalRuleData, SetApprovalRuleError, SetApprovalRuleResponse, SetTaskPlanData, SetTaskPlanError, SetTaskPlanResponse, SetTaskReviewerData, SetTaskReviewerError, SetTaskReviewerResponse, SignOutData, SignOutError, SignOutResponse, StartAgentData, StartAgentError, StartAgentResponse, StopAgentData, StopAgentError, StopAgentResponse, StopRunData, StopRunError, StopRunResponse, SubmitForReviewData, SubmitForReviewError, SubmitForReviewResponse, UnblockTaskData, UnblockTaskError, UnblockTaskResponse, UnsaveMessageData, UnsaveMessageError, UnsaveMessageResponse, UpdateActivityEntryData, UpdateActivityEntryError, UpdateActivityEntryResponse, UpdateAgentData, UpdateAgentError, UpdateAgentNoteData, UpdateAgentNoteError, UpdateAgentNoteResponse, UpdateAgentResponse, UpdateChannelData, UpdateChannelError, UpdateChannelMemoryData, UpdateChannelMemoryError, UpdateChannelMemoryResponse, UpdateChannelResponse, UpdatePlanData, UpdatePlanError, UpdatePlanResponse, UpdateRoutineData, UpdateRoutineError, UpdateRoutineResponse, UploadFileData, UploadFileError, UploadFileResponse, WaitForEventsData, WaitForEventsError, WaitForEventsResponse, WaitForPlanData, WaitForPlanError, WaitForPlanResponse, WhoamiData, WhoamiError, WhoamiResponse } from '../types.gen';
 
 export type QueryKey<TOptions extends Options> = [
     Pick<TOptions, 'baseUrl' | 'body' | 'headers' | 'path' | 'query'> & {
@@ -2296,6 +2296,111 @@ export const readSessionChunkOptions = (options: Options<ReadSessionChunkData>) 
         return data;
     },
     queryKey: readSessionChunkQueryKey(options)
+});
+
+/**
+ * Take back your reaction; safe to repeat. Returns the message's reactions
+ */
+export const removeReactionMutation = (options?: Partial<Options<RemoveReactionData>>): UseMutationOptions<RemoveReactionResponse, RemoveReactionError, Options<RemoveReactionData>> => {
+    const mutationOptions: UseMutationOptions<RemoveReactionResponse, RemoveReactionError, Options<RemoveReactionData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await removeReaction({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+/**
+ * React to a message or reply with one of +1, -1, eyes, check, heart, question. Reacting the same way twice changes nothing. Returns the message's reactions
+ */
+export const addReactionMutation = (options?: Partial<Options<AddReactionData>>): UseMutationOptions<AddReactionResponse, AddReactionError, Options<AddReactionData>> => {
+    const mutationOptions: UseMutationOptions<AddReactionResponse, AddReactionError, Options<AddReactionData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await addReaction({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+/**
+ * Upload a file to a channel as base64 (at most 5 MB). Attach it by id with files on postMessage or replyToThread; only people who can see the channel can read it
+ */
+export const uploadFileMutation = (options?: Partial<Options<UploadFileData>>): UseMutationOptions<UploadFileResponse, UploadFileError, Options<UploadFileData>> => {
+    const mutationOptions: UseMutationOptions<UploadFileResponse, UploadFileError, Options<UploadFileData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await uploadFile({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+export const getFileQueryKey = (options: Options<GetFileData>) => createQueryKey('getFile', options);
+
+/**
+ * A file's name, type, size, channel and the message it is attached to
+ */
+export const getFileOptions = (options: Options<GetFileData>) => queryOptions<GetFileResponse, GetFileError, GetFileResponse, ReturnType<typeof getFileQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await getFile({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: getFileQueryKey(options)
+});
+
+export const getFileContentQueryKey = (options: Options<GetFileContentData>) => createQueryKey('getFileContent', options);
+
+/**
+ * A file with its bytes as base64, for agents and MCP clients
+ */
+export const getFileContentOptions = (options: Options<GetFileContentData>) => queryOptions<GetFileContentResponse, GetFileContentError, GetFileContentResponse, ReturnType<typeof getFileContentQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await getFileContent({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: getFileContentQueryKey(options)
+});
+
+export const downloadFileQueryKey = (options: Options<DownloadFileData>) => createQueryKey('downloadFile', options);
+
+/**
+ * The file's bytes with its content type, for a browser link or a download
+ */
+export const downloadFileOptions = (options: Options<DownloadFileData>) => queryOptions<DownloadFileResponse, DownloadFileError, DownloadFileResponse, ReturnType<typeof downloadFileQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await downloadFile({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: downloadFileQueryKey(options)
 });
 
 /**

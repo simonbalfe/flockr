@@ -5,6 +5,8 @@ import {
   shortSha,
   taskBranch,
   type ActivityEntry,
+  type FileRef,
+  type Reaction,
   type Channel,
   type ListMessagesQuery,
   type MessageVersions,
@@ -24,7 +26,7 @@ import {
 } from "@flockr/contracts"
 import { and, asc, eq, inArray, isNotNull, isNull, or, sql, type SQL } from "drizzle-orm"
 import type { Executor } from "../db/client"
-import { channels, members, messages, messageVersions, taskCommits, tasks, type MemberRow, type MessageRow, type TaskRow } from "../db/schema"
+import { channels, files, members, messageReactions, messages, messageVersions, taskCommits, tasks, type FileRow, type MemberRow, type MessageRow, type TaskRow } from "../db/schema"
 import { notFound } from "./errors"
 import { listedMembersOf } from "./direct"
 import { readableBy, seesMember, visibleTo, type Reader, type Viewer } from "./visibility"
@@ -238,6 +240,8 @@ function entryOf(row: MessageRow): ThreadEntry {
     editedAt: row.editedAt?.toISOString() ?? null,
     replyTo: row.replyToId === null ? null : messageKey(row.replyToId),
     blocks: row.deletedAt ? [] : Blocks.parse(row.blocks),
+    reactions: [],
+    files: [],
   }
   return reply
 }
@@ -275,6 +279,8 @@ function textOf(row: MessageRow, replies: MessageRow[], known: Set<string>): Tex
     taskId: row.taskId,
     threadId: row.taskId === null ? messageKey(row.id) : null,
     blocks: row.deletedAt ? [] : Blocks.parse(row.blocks),
+    reactions: [],
+    files: [],
     thread: summarize(replies, known),
   }
 }
@@ -316,6 +322,10 @@ export async function listFeed(db: Executor, channel: string, query: ListMessage
     rows.filter((r) => r.kind === "text").map((r) => r.id),
   )
   const known = await knownNames(db)
+  const extras = await extrasFor(
+    db,
+    rows.filter((r) => r.kind === "text").map((r) => r.id),
+  )
   return rows.map((row): FeedItem => {
     const base = { id: messageKey(row.id), channel: row.channel, who: row.who, at: row.createdAt.toISOString() }
     switch (row.kind) {
@@ -326,7 +336,7 @@ export async function listFeed(db: Executor, channel: string, query: ListMessage
       case "ask":
         return { ...base, kind: "ask", taskId: row.taskId ?? 0 }
       case "text":
-        return textOf(row, replies.get(row.id) ?? [], known)
+        return withExtras(textOf(row, replies.get(row.id) ?? [], known), extras)
       case "question":
       case "activity":
         throw new Error(`${row.kind} ${messageKey(row.id)} has no thread`)
@@ -351,17 +361,22 @@ export async function getThread(db: Executor, raw: string): Promise<Thread> {
   if (ref.kind === "task") {
     const task = await findTask(db, ref.id)
     const entries = await db.select().from(messages).where(eq(messages.threadTaskId, ref.id)).orderBy(asc(messages.id))
-    return { id: String(ref.id), channel: task.channel, taskId: ref.id, root: null, entries: entries.map(entryOf) }
+    const extras = await extrasFor(
+      db,
+      entries.filter((e) => e.kind === "text").map((e) => e.id),
+    )
+    return { id: String(ref.id), channel: task.channel, taskId: ref.id, root: null, entries: entries.map(entryOf).map((e) => (e.kind === "reply" ? withExtras(e, extras) : e)) }
   }
   const root = await findMessage(db, ref.id)
   const entries = (await repliesByParent(db, [root.id])).get(root.id) ?? []
   const known = await knownNames(db)
+  const extras = await extrasFor(db, [root.id, ...entries.filter((e) => e.kind === "text").map((e) => e.id)])
   return {
     id: messageKey(root.id),
     channel: root.channel,
     taskId: null,
-    root: root.kind === "text" ? textOf(root, entries, known) : null,
-    entries: entries.map(entryOf),
+    root: root.kind === "text" ? withExtras(textOf(root, entries, known), extras) : null,
+    entries: entries.map(entryOf).map((e) => (e.kind === "reply" ? withExtras(e, extras) : e)),
   }
 }
 
@@ -407,4 +422,57 @@ export async function getInbox(db: Executor, reader: Reader): Promise<Inbox> {
     threadQuestions: asked.flatMap((row) => questionOf(row) ?? []),
     reviews: await presentTasks(db, reviewRows),
   }
+}
+
+export const fileId = (id: number) => `f${id}`
+
+export const presentFile = (row: FileRow): FileRef => ({
+  id: fileId(row.id),
+  channel: row.channel,
+  name: row.name,
+  contentType: row.contentType,
+  size: row.size,
+  uploadedBy: row.uploadedBy,
+  messageId: row.messageId === null ? null : messageKey(row.messageId),
+  at: row.createdAt.toISOString(),
+})
+
+export async function reactionsFor(db: Executor, ids: number[]): Promise<Map<number, Reaction[]>> {
+  const grouped = new Map<number, Reaction[]>()
+  if (!ids.length) return grouped
+  const rows = await db.select().from(messageReactions).where(inArray(messageReactions.messageId, ids)).orderBy(asc(messageReactions.createdAt), asc(messageReactions.member))
+  for (const row of rows) {
+    const list = grouped.get(row.messageId) ?? []
+    const found = list.find((r) => r.reaction === row.reaction)
+    if (found) found.members.push(row.member)
+    else list.push({ reaction: row.reaction, members: [row.member] })
+    grouped.set(row.messageId, list)
+  }
+  return grouped
+}
+
+async function filesFor(db: Executor, ids: number[]): Promise<Map<number, FileRef[]>> {
+  const grouped = new Map<number, FileRef[]>()
+  if (!ids.length) return grouped
+  const rows = await db.select().from(files).where(inArray(files.messageId, ids)).orderBy(asc(files.id))
+  for (const row of rows) {
+    if (row.messageId === null) continue
+    grouped.set(row.messageId, [...(grouped.get(row.messageId) ?? []), presentFile(row)])
+  }
+  return grouped
+}
+
+export interface Extras {
+  reactions: Map<number, Reaction[]>
+  files: Map<number, FileRef[]>
+}
+
+export async function extrasFor(db: Executor, ids: number[]): Promise<Extras> {
+  const [reactions, attached] = await Promise.all([reactionsFor(db, ids), filesFor(db, ids)])
+  return { reactions, files: attached }
+}
+
+export function withExtras<T extends { id: string; reactions: Reaction[]; files: FileRef[] }>(item: T, extras: Extras): T {
+  const id = Number(item.id.slice(1))
+  return { ...item, reactions: extras.reactions.get(id) ?? [], files: extras.files.get(id) ?? [] }
 }

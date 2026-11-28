@@ -157,7 +157,7 @@ export function useBoardMutation<Data, Err, Vars, Args>(options: UseMutationOpti
 const onTask = (id: number) => ({ path: { id } })
 
 export const usePostMessage = () =>
-  useBoardMutation(postMessageMutation(), (a: { channel: string; text: string }) => ({ path: { channel: a.channel }, body: { text: a.text } }))
+  useBoardMutation(postMessageMutation(), (a: { channel: string; text: string; files?: string[] }) => ({ path: { channel: a.channel }, body: { text: a.text, files: a.files } }))
 export const useReply = () => useBoardMutation(replyToThreadMutation(), (a: { threadId: string; text: string }) => ({ path: { id: a.threadId }, body: { text: a.text } }))
 export const useStopRun = () =>
   useBoardMutation(stopRunMutation(), (a: { threadId: string; member?: string }) => ({ path: { id: a.threadId }, body: { member: a.member } }))

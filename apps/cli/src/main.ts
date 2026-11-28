@@ -17,6 +17,7 @@ import { channelSharingCommand, orgsCommand, visibilityOf } from "./orgs"
 import { channelMemoryCommand, notesCommand } from "./memory"
 import { documentCommand } from "./documents"
 import { blocksCommand, blocksFrom } from "./blocks"
+import { attachmentsFor, downloadCommand, reactCommand, uploadCommand } from "./attachments"
 import { sessionsCommand } from "./sessions"
 import { draftsCommand, dmCommand, savedCommand, sentCommand, threadsCommand } from "./navigation"
 import { openQueue } from "./live"
@@ -53,6 +54,10 @@ Writing
   flockr reply <thread-or-task-id> <text> [--label x]... [--key k]   reply in a thread; --key makes a retry reply once
   flockr post|reply ... --decision <text> [--why text]   carry a decision block with the message (readable as data)
   flockr post|reply ... --block '{"kind":"deliverable","summary":"Users API","commit":"a1b2c3d"}'   a typed block: deliverable or decision
+  flockr react|unreact <message-id> <+1|-1|eyes|check|heart|question>   react to a message or reply; safe to repeat
+  flockr upload <channel> <path> [--name n] [--type mime]   upload a file (5 MB at most); prints its id (f3)
+  flockr post|reply ... --attach <f3|path>...   attach files you uploaded to that channel, or upload a path and attach it
+  flockr download <file-id> [--out path]   save a file you can see (its channel decides who can)
   flockr blocks <channel> [--kind approval|deliverable|decision|handoff] [--task id]   typed blocks as data, newest first:
                                       who approved what at which commit, deliverables, decisions, hand-off records
   flockr reply <reply-id> <text>      reply to a reply (m20): it starts or continues that reply's sub-thread
@@ -478,14 +483,17 @@ async function main(): Promise<number> {
       return 0
     }
     case "post": {
-      const result = await run(sdk.postMessage({ path: { channel: need(positionals[1], "channel").replace(/^#/, "") }, body: { text: restText(2, "text"), labels: values.label ?? [], key: values.key, blocks: blocksFrom(values) } }))
+      const channel = need(positionals[1], "channel").replace(/^#/, "")
+      const files = await attachmentsFor(channel, values)
+      const result = await run(sdk.postMessage({ path: { channel }, body: { text: restText(2, "text"), labels: values.label ?? [], key: values.key, blocks: blocksFrom(values), files } }))
       print(result, () => `Posted ${result.message.id}${result.message.mentions.length ? `, mentioning ${result.message.mentions.join(", ")}` : ""}`)
       return 0
     }
     case "reply": {
       const id = need(positionals[1], "thread or task id").replace(/^#/, "")
       const epoch = /^\d+$/.test(id) ? epochFor(Number(id), values) : undefined
-      const reply = await run(sdk.replyToThread({ path: { id }, body: { text: restText(2, "text"), epoch, labels: values.label ?? [], key: values.key, blocks: blocksFrom(values) } }))
+      const files = values.attach?.length ? await attachmentsFor((await run(sdk.getThread({ path: { id } }))).channel, values) : []
+      const reply = await run(sdk.replyToThread({ path: { id }, body: { text: restText(2, "text"), epoch, labels: values.label ?? [], key: values.key, blocks: blocksFrom(values), files } }))
       print(reply, () => `Replied ${reply.id} in ${id}${reply.replyTo ? `, in the sub-thread of ${reply.replyTo}` : ""}`)
       return 0
     }
@@ -608,6 +616,14 @@ async function main(): Promise<number> {
       return channelMemoryCommand({ positionals, values, print })
     case "blocks":
       return blocksCommand({ positionals, values, print })
+    case "react":
+      return reactCommand({ positionals, values, print }, true)
+    case "unreact":
+      return reactCommand({ positionals, values, print }, false)
+    case "upload":
+      return uploadCommand({ positionals, values, print })
+    case "download":
+      return downloadCommand({ positionals, values, print })
     case "doc":
       return documentCommand({ positionals, values, print })
     case "sessions":

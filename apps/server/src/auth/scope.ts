@@ -5,8 +5,9 @@ import { parseThreadId, type ThreadRef } from "../board/read"
 import type { Database } from "../db/client"
 import { messages, plans, tasks } from "../db/schema"
 import { isHostMember, requireSees, type Viewer } from "../board/visibility"
+import { channelOfFile } from "../board/attachments"
 
-type Target = { kind: "channel"; channel: string | null } | { kind: "thread"; ref: ThreadRef } | { kind: "plan"; id: number } | { kind: "open" } | { kind: "viewer" } | { kind: "board" }
+type Target = { kind: "channel"; channel: string | null } | { kind: "thread"; ref: ThreadRef } | { kind: "plan"; id: number } | { kind: "file"; id: string } | { kind: "open" } | { kind: "viewer" } | { kind: "board" }
 
 interface ScopedRequest {
   method: string
@@ -44,6 +45,7 @@ const rules: Rule[] = [
   { method: "GET", pattern: /^\/api\/plans$/, target: () => ({ kind: "open" }) },
   { method: "POST", pattern: /^\/api\/plans$/, target: async (_, request) => ({ kind: "channel", channel: ChannelBody.safeParse(await request.body()).data?.channel ?? null }) },
   { pattern: /^\/api\/plans\/(\d+)(\/.*)?$/, target: (match) => ({ kind: "plan", id: Number(match[1]) }) },
+  { pattern: /^\/api\/files\/(f\d+)(\/.*)?$/, target: (match) => ({ kind: "file", id: match[1] ?? "" }) },
   { method: "POST", pattern: /^\/api\/tasks\/claim$/, target: () => ({ kind: "open" }) },
   { method: "GET", pattern: /^\/api\/(tasks|search)$/, target: (_, request) => ({ kind: "channel", channel: request.query.get("channel") }) },
   { method: "POST", pattern: /^\/api\/tasks$/, target: async (_, request) => ({ kind: "channel", channel: ChannelBody.safeParse(await request.body()).data?.channel ?? null }) },
@@ -102,6 +104,11 @@ export async function requireInScope(db: Database, limit: string[] | null, reque
       if (channel !== null && !limit.includes(channel)) throw refuse()
       return
     }
+    case "file": {
+      const channel = await channelOfFile(db, target.id)
+      if (channel !== null && !limit.includes(channel)) throw refuse()
+      return
+    }
     default: {
       const unhandled: never = target
       throw new Error(`Unhandled scope target ${JSON.stringify(unhandled)}`)
@@ -118,6 +125,8 @@ export async function requireReach(db: Database, viewer: Viewer, request: Scoped
       return requireSees(db, viewer, await channelOfThread(db, target.ref))
     case "plan":
       return requireSees(db, viewer, await channelOfPlan(db, target.id))
+    case "file":
+      return requireSees(db, viewer, await channelOfFile(db, target.id))
     case "open":
     case "viewer":
       return

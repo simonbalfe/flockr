@@ -4,6 +4,7 @@ import { AgentConfig, AgentStatusSchema, Machine } from "./agents"
 import { agentStates, channelKinds, errorKinds, memberKinds, messageLimits, taskStates } from "./constants"
 import { ChannelVisibility } from "./orgs"
 import { Block } from "./blocks"
+import { FileRef, Reaction } from "./attachments"
 
 export const TaskState = z.enum(taskStates).openapi("TaskState")
 export const MemberKind = z.enum(memberKinds).openapi("MemberKind")
@@ -126,6 +127,8 @@ export const Reply = z
     editedAt,
     replyTo: z.string().nullable().openapi({ example: "m20", description: "The reply whose sub-thread this reply is in; null for a reply in the thread itself" }),
     blocks: z.array(Block).openapi({ description: "Typed blocks: approval, deliverable, decision, hand-off" }),
+    reactions: z.array(Reaction),
+    files: z.array(FileRef),
   })
   .openapi("Reply")
 
@@ -170,6 +173,8 @@ export const TextMessage = z
     threadId: z.string().nullable(),
     blocks: z.array(Block),
     thread: orNull(ThreadSummary),
+    reactions: z.array(Reaction),
+    files: z.array(FileRef),
   })
   .openapi("TextMessage")
 

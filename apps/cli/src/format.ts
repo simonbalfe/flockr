@@ -1,4 +1,4 @@
-import { blockSummary, currentStep, partHeadline, splitSubThreads, type ActivityEntry, type Block } from "@flockr/client"
+import { blockSummary, currentStep, partHeadline, splitSubThreads, type ActivityEntry, type Block, type FileRef, type Reaction } from "@flockr/client"
 import type {
   Activity,
   BoardEvent,
@@ -85,6 +85,9 @@ const marks = (m: { labels: string[]; editedAt: string | null }) => `${m.editedA
 
 const questionText = (q: ThreadQuestion) => `${q.question.text} [${q.question.options.join(" / ")}]`
 
+const extraLines = (m: { reactions: Reaction[]; files: FileRef[] }) =>
+  `${m.files.map((f) => `\n         [file] ${f.id} ${f.name} (${f.size} bytes)`).join("")}${m.reactions.length ? `\n         ${m.reactions.map((r) => `${r.reaction} ${r.members.join(", ")}`).join("  ")}` : ""}`
+
 const blockLines = (blocks: Block[]) => blocks.map((b) => `\n         ${blockSummary(b)}`).join("")
 
 export function entryLine(entry: ThreadEntry): string {
@@ -96,7 +99,7 @@ export function entryLine(entry: ThreadEntry): string {
       return `${clock(entry.at)}  ${entry.who} asks${entry.to ? ` ${entry.to}` : ""}: ${questionText(entry)}  (${state})`
     }
     case "reply":
-      return `${clock(entry.at)}  ${entry.who}: ${entry.deleted ? deletedText : `${entry.text}${marks(entry)}`}  (${entry.id})` + blockLines(entry.blocks)
+      return `${clock(entry.at)}  ${entry.who}: ${entry.deleted ? deletedText : `${entry.text}${marks(entry)}`}  (${entry.id})` + blockLines(entry.blocks) + extraLines(entry)
     case "activity":
       return activityEntryLine(entry)
   }
@@ -118,13 +121,13 @@ export function feedLine(item: FeedItem, tasks: Map<number, Task>): string {
     case "text": {
       const thread = item.thread ? `  [${item.thread.count} ${item.thread.count === 1 ? "reply" : "replies"}: flockr thread ${item.threadId}]` : item.threadId ? `  (${item.threadId})` : ""
       const task = item.taskId ? `  (about #${item.taskId})` : ""
-      return `${clock(item.at)}  ${item.who}: ${item.deleted ? deletedText : `${item.text}${marks(item)}`}${task}${thread}`
+      return `${clock(item.at)}  ${item.who}: ${item.deleted ? deletedText : `${item.text}${marks(item)}`}${task}${thread}${blockLines(item.blocks)}${extraLines(item)}`
     }
   }
 }
 
 export function threadText(thread: Thread): string {
-  const head = thread.root ? [`#${thread.channel}  ${thread.root.who}: ${thread.root.deleted ? deletedText : `${thread.root.text}${marks(thread.root)}`}`, ""] : [`Thread of task #${thread.taskId} in #${thread.channel}`, ""]
+  const head = thread.root ? [`#${thread.channel}  ${thread.root.who}: ${thread.root.deleted ? deletedText : `${thread.root.text}${marks(thread.root)}`}${blockLines(thread.root.blocks)}${extraLines(thread.root)}`, ""] : [`Thread of task #${thread.taskId} in #${thread.channel}`, ""]
   const { top, under } = splitSubThreads(thread.entries)
   const lines = top.flatMap((entry) => [entryLine(entry), ...(under.get(entry.id) ?? []).map((sub) => `    ${entryLine(sub)}`)])
   return [...head, ...(lines.length ? lines : ["No replies yet."])].join("\n")

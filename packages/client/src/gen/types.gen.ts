@@ -138,6 +138,8 @@ export type TextMessage = {
     threadId: string | null;
     blocks: Array<Block>;
     thread: ThreadSummary | null;
+    reactions: Array<Reaction>;
+    files: Array<FileRef>;
 };
 
 export type Block = ({
@@ -207,6 +209,33 @@ export type ThreadSummary = {
     participants: Array<string>;
 };
 
+export type Reaction = {
+    reaction: ReactionKind;
+    /**
+     * Who reacted, oldest first
+     */
+    members: Array<string>;
+};
+
+export type ReactionKind = '+1' | '-1' | 'eyes' | 'check' | 'heart' | 'question';
+
+export type FileRef = {
+    id: string;
+    channel: string;
+    name: string;
+    contentType: string;
+    /**
+     * Bytes
+     */
+    size: number;
+    uploadedBy: string;
+    /**
+     * The message it is attached to; null until a post or reply attaches it
+     */
+    messageId: string | null;
+    at: string;
+};
+
 export type TaskMessage = {
     kind: 'task';
     id: string;
@@ -258,6 +287,10 @@ export type PostMessageBody = {
      * Typed blocks carried with the text, at most 5: deliverable or decision. Approval and hand-off blocks are written by the board
      */
     blocks?: Array<PostableBlock>;
+    /**
+     * Files you uploaded to this channel (uploadFile) and not yet attached
+     */
+    files?: Array<string>;
 };
 
 export type PostableBlock = ({
@@ -397,6 +430,8 @@ export type Reply = {
      * Typed blocks: approval, deliverable, decision, hand-off
      */
     blocks: Array<Block>;
+    reactions: Array<Reaction>;
+    files: Array<FileRef>;
 };
 
 export type ThreadQuestion = {
@@ -672,6 +707,10 @@ export type ReplyBody = {
      * Typed blocks carried with the text, at most 5: deliverable or decision. Approval and hand-off blocks are written by the board
      */
     blocks?: Array<PostableBlock>;
+    /**
+     * Files you uploaded to this channel (uploadFile) and not yet attached
+     */
+    files?: Array<string>;
 };
 
 export type Task = {
@@ -2311,6 +2350,23 @@ export type SessionFence = {
 export type SessionChunk = {
     turn: number;
     fence: string;
+    data: string;
+};
+
+export type UploadFileBody = {
+    name: string;
+    contentType?: string;
+    /**
+     * The file's bytes, base64, at most 5000000 bytes once decoded
+     */
+    data: string;
+};
+
+export type FileContent = {
+    file: FileRef;
+    /**
+     * The bytes, base64
+     */
     data: string;
 };
 
@@ -7850,6 +7906,272 @@ export type ReadSessionChunkResponses = {
 };
 
 export type ReadSessionChunkResponse = ReadSessionChunkResponses[keyof ReadSessionChunkResponses];
+
+export type RemoveReactionData = {
+    body?: never;
+    path: {
+        /**
+         * A message or reply id
+         */
+        id: string;
+        reaction: ReactionKind;
+    };
+    query?: never;
+    url: '/api/messages/{id}/reactions/{reaction}';
+};
+
+export type RemoveReactionErrors = {
+    /**
+     * The input is not valid
+     */
+    400: Error;
+    /**
+     * Sign-in is on and the request has no session or key
+     */
+    401: Error;
+    /**
+     * The acting member is not on this board, or may not do this
+     */
+    403: Error;
+    /**
+     * Not found
+     */
+    404: Error;
+    /**
+     * The task or message is in another state, or the claim epoch is stale
+     */
+    409: Error;
+};
+
+export type RemoveReactionError = RemoveReactionErrors[keyof RemoveReactionErrors];
+
+export type RemoveReactionResponses = {
+    /**
+     * OK
+     */
+    200: Array<Reaction>;
+};
+
+export type RemoveReactionResponse = RemoveReactionResponses[keyof RemoveReactionResponses];
+
+export type AddReactionData = {
+    body?: never;
+    path: {
+        /**
+         * A message or reply id
+         */
+        id: string;
+        reaction: ReactionKind;
+    };
+    query?: never;
+    url: '/api/messages/{id}/reactions/{reaction}';
+};
+
+export type AddReactionErrors = {
+    /**
+     * The input is not valid
+     */
+    400: Error;
+    /**
+     * Sign-in is on and the request has no session or key
+     */
+    401: Error;
+    /**
+     * The acting member is not on this board, or may not do this
+     */
+    403: Error;
+    /**
+     * Not found
+     */
+    404: Error;
+    /**
+     * The task or message is in another state, or the claim epoch is stale
+     */
+    409: Error;
+};
+
+export type AddReactionError = AddReactionErrors[keyof AddReactionErrors];
+
+export type AddReactionResponses = {
+    /**
+     * OK
+     */
+    200: Array<Reaction>;
+};
+
+export type AddReactionResponse = AddReactionResponses[keyof AddReactionResponses];
+
+export type UploadFileData = {
+    body: UploadFileBody;
+    path: {
+        channel: string;
+    };
+    query?: never;
+    url: '/api/channels/{channel}/files';
+};
+
+export type UploadFileErrors = {
+    /**
+     * The input is not valid
+     */
+    400: Error;
+    /**
+     * Sign-in is on and the request has no session or key
+     */
+    401: Error;
+    /**
+     * The acting member is not on this board, or may not do this
+     */
+    403: Error;
+    /**
+     * Not found
+     */
+    404: Error;
+    /**
+     * The task or message is in another state, or the claim epoch is stale
+     */
+    409: Error;
+};
+
+export type UploadFileError = UploadFileErrors[keyof UploadFileErrors];
+
+export type UploadFileResponses = {
+    /**
+     * OK
+     */
+    200: FileRef;
+};
+
+export type UploadFileResponse = UploadFileResponses[keyof UploadFileResponses];
+
+export type GetFileData = {
+    body?: never;
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/api/files/{id}';
+};
+
+export type GetFileErrors = {
+    /**
+     * The input is not valid
+     */
+    400: Error;
+    /**
+     * Sign-in is on and the request has no session or key
+     */
+    401: Error;
+    /**
+     * The acting member is not on this board, or may not do this
+     */
+    403: Error;
+    /**
+     * Not found
+     */
+    404: Error;
+    /**
+     * The task or message is in another state, or the claim epoch is stale
+     */
+    409: Error;
+};
+
+export type GetFileError = GetFileErrors[keyof GetFileErrors];
+
+export type GetFileResponses = {
+    /**
+     * OK
+     */
+    200: FileRef;
+};
+
+export type GetFileResponse = GetFileResponses[keyof GetFileResponses];
+
+export type GetFileContentData = {
+    body?: never;
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/api/files/{id}/content';
+};
+
+export type GetFileContentErrors = {
+    /**
+     * The input is not valid
+     */
+    400: Error;
+    /**
+     * Sign-in is on and the request has no session or key
+     */
+    401: Error;
+    /**
+     * The acting member is not on this board, or may not do this
+     */
+    403: Error;
+    /**
+     * Not found
+     */
+    404: Error;
+    /**
+     * The task or message is in another state, or the claim epoch is stale
+     */
+    409: Error;
+};
+
+export type GetFileContentError = GetFileContentErrors[keyof GetFileContentErrors];
+
+export type GetFileContentResponses = {
+    /**
+     * OK
+     */
+    200: FileContent;
+};
+
+export type GetFileContentResponse = GetFileContentResponses[keyof GetFileContentResponses];
+
+export type DownloadFileData = {
+    body?: never;
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/api/files/{id}/raw';
+};
+
+export type DownloadFileErrors = {
+    /**
+     * The input is not valid
+     */
+    400: Error;
+    /**
+     * Sign-in is on and the request has no session or key
+     */
+    401: Error;
+    /**
+     * The acting member is not on this board, or may not do this
+     */
+    403: Error;
+    /**
+     * Not found
+     */
+    404: Error;
+    /**
+     * The task or message is in another state, or the claim epoch is stale
+     */
+    409: Error;
+};
+
+export type DownloadFileError = DownloadFileErrors[keyof DownloadFileErrors];
+
+export type DownloadFileResponses = {
+    /**
+     * The file
+     */
+    200: Blob | File;
+};
+
+export type DownloadFileResponse = DownloadFileResponses[keyof DownloadFileResponses];
 
 export type RequestSignInLinkData = {
     body: SignInBody;

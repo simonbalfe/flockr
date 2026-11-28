@@ -1,5 +1,5 @@
 import { hostOrg } from "@flockr/contracts"
-import type { ActionKind, Block, ChannelKind, ChannelVisibility, DraftKind, AreaEndReason, ActivityState, AgentDesired, AgentPermissions, AgentReport, ApprovalVerdict, HarnessInfo, JobKind, JobState, MemberKind, MemoryKind, MemoryScope, Question, RoutineTriggerKind, TaskState } from "@flockr/contracts"
+import type { ActionKind, Block, ReactionKind, ChannelKind, ChannelVisibility, DraftKind, AreaEndReason, ActivityState, AgentDesired, AgentPermissions, AgentReport, ApprovalVerdict, HarnessInfo, JobKind, JobState, MemberKind, MemoryKind, MemoryScope, Question, RoutineTriggerKind, TaskState } from "@flockr/contracts"
 import { sql } from "drizzle-orm"
 import { bigint, boolean, check, index, integer, jsonb, pgTable, primaryKey, text, timestamp, unique, uniqueIndex, type AnyPgColumn } from "drizzle-orm/pg-core"
 
@@ -640,3 +640,40 @@ export const channelDocumentVersions = pgTable(
 )
 
 export type ChannelDocumentVersionRow = typeof channelDocumentVersions.$inferSelect
+
+export const messageReactions = pgTable(
+  "message_reactions",
+  {
+    messageId: integer("message_id")
+      .notNull()
+      .references(() => messages.id),
+    member: text("member")
+      .notNull()
+      .references(() => members.name),
+    reaction: text("reaction").$type<ReactionKind>().notNull(),
+    createdAt: createdAt(),
+  },
+  (t) => [primaryKey({ columns: [t.messageId, t.member, t.reaction] }), check("message_reactions_reaction", sql`${t.reaction} in ('+1', '-1', 'eyes', 'check', 'heart', 'question')`)],
+)
+
+export const files = pgTable(
+  "files",
+  {
+    id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+    channel: text("channel")
+      .notNull()
+      .references(() => channels.id),
+    uploadedBy: text("uploaded_by")
+      .notNull()
+      .references(() => members.name),
+    name: text("name").notNull(),
+    contentType: text("content_type").notNull(),
+    size: integer("size").notNull(),
+    objectKey: text("object_key").notNull(),
+    messageId: integer("message_id").references(() => messages.id),
+    createdAt: createdAt(),
+  },
+  (t) => [index("files_message").on(t.messageId), index("files_channel").on(t.channel)],
+)
+
+export type FileRow = typeof files.$inferSelect

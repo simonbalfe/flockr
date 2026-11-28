@@ -8,7 +8,7 @@ const at = (minute: number) => new Date(Date.UTC(2026, 10, 25, 9, minute)).toISO
 
 function text(id: string, who: string, body: string, over: Partial<TextMessage> = {}): TextMessage {
   const mentions = [...body.matchAll(/@([a-z]+)/g)].flatMap((m) => (m[1] ? [m[1]] : []))
-  return { kind: "text", id, channel: "backend", who, at: at(Number(id.slice(1))), text: body, deleted: false, mentions, labels: [], editedAt: null, taskId: null, threadId: id, thread: null, blocks: [], ...over }
+  return { kind: "text", id, channel: "backend", who, at: at(Number(id.slice(1))), text: body, deleted: false, mentions, labels: [], editedAt: null, taskId: null, threadId: id, thread: null, blocks: [], reactions: [], files: [], ...over }
 }
 
 function task(id: number, state: Task["state"]): Task {

@@ -398,6 +398,18 @@
                 "type": "null"
               }
             ]
+          },
+          "reactions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Reaction"
+            }
+          },
+          "files": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FileRef"
+            }
           }
         },
         "required": [
@@ -414,7 +426,9 @@
           "taskId",
           "threadId",
           "blocks",
-          "thread"
+          "thread",
+          "reactions",
+          "files"
         ]
       },
       "Block": {
@@ -669,6 +683,88 @@
           "participants"
         ]
       },
+      "Reaction": {
+        "type": "object",
+        "properties": {
+          "reaction": {
+            "$ref": "#/components/schemas/ReactionKind"
+          },
+          "members": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "example": [
+              "simon",
+              "codex"
+            ],
+            "description": "Who reacted, oldest first"
+          }
+        },
+        "required": [
+          "reaction",
+          "members"
+        ]
+      },
+      "ReactionKind": {
+        "type": "string",
+        "enum": [
+          "+1",
+          "-1",
+          "eyes",
+          "check",
+          "heart",
+          "question"
+        ]
+      },
+      "FileRef": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "f3"
+          },
+          "channel": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string",
+            "example": "hero.png"
+          },
+          "contentType": {
+            "type": "string",
+            "example": "image/png"
+          },
+          "size": {
+            "type": "integer",
+            "description": "Bytes"
+          },
+          "uploadedBy": {
+            "type": "string"
+          },
+          "messageId": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The message it is attached to; null until a post or reply attaches it"
+          },
+          "at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "channel",
+          "name",
+          "contentType",
+          "size",
+          "uploadedBy",
+          "messageId",
+          "at"
+        ]
+      },
       "TaskMessage": {
         "type": "object",
         "properties": {
@@ -837,6 +933,19 @@
             "maxItems": 5,
             "default": [],
             "description": "Typed blocks carried with the text, at most 5: deliverable or decision. Approval and hand-off blocks are written by the board"
+          },
+          "files": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "pattern": "^f\\d+$"
+            },
+            "maxItems": 10,
+            "default": [],
+            "example": [
+              "f3"
+            ],
+            "description": "Files you uploaded to this channel (uploadFile) and not yet attached"
           }
         },
         "required": [
@@ -1231,6 +1340,18 @@
               "$ref": "#/components/schemas/Block"
             },
             "description": "Typed blocks: approval, deliverable, decision, hand-off"
+          },
+          "reactions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Reaction"
+            }
+          },
+          "files": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FileRef"
+            }
           }
         },
         "required": [
@@ -1244,7 +1365,9 @@
           "labels",
           "editedAt",
           "replyTo",
-          "blocks"
+          "blocks",
+          "reactions",
+          "files"
         ]
       },
       "ThreadQuestion": {
@@ -2121,6 +2244,19 @@
             "maxItems": 5,
             "default": [],
             "description": "Typed blocks carried with the text, at most 5: deliverable or decision. Approval and hand-off blocks are written by the board"
+          },
+          "files": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "pattern": "^f\\d+$"
+            },
+            "maxItems": 10,
+            "default": [],
+            "example": [
+              "f3"
+            ],
+            "description": "Files you uploaded to this channel (uploadFile) and not yet attached"
           }
         },
         "required": [
@@ -6913,6 +7049,48 @@
         "required": [
           "turn",
           "fence",
+          "data"
+        ]
+      },
+      "UploadFileBody": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200,
+            "pattern": "^[^/\\\\]+$",
+            "example": "hero.png"
+          },
+          "contentType": {
+            "type": "string",
+            "pattern": "^[\\w.+-]+\\/[\\w.+-]+$",
+            "default": "application/octet-stream"
+          },
+          "data": {
+            "type": "string",
+            "minLength": 1,
+            "description": "The file's bytes, base64, at most 5000000 bytes once decoded"
+          }
+        },
+        "required": [
+          "name",
+          "data"
+        ]
+      },
+      "FileContent": {
+        "type": "object",
+        "properties": {
+          "file": {
+            "$ref": "#/components/schemas/FileRef"
+          },
+          "data": {
+            "type": "string",
+            "description": "The bytes, base64"
+          }
+        },
+        "required": [
+          "file",
           "data"
         ]
       },
@@ -17928,6 +18106,536 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/SessionChunk"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The input is not valid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sign-in is on and the request has no session or key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The acting member is not on this board, or may not do this",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The task or message is in another state, or the claim epoch is stale",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/messages/{id}/reactions/{reaction}": {
+      "put": {
+        "operationId": "addReaction",
+        "tags": [
+          "messages"
+        ],
+        "summary": "React to a message or reply with one of +1, -1, eyes, check, heart, question. Reacting the same way twice changes nothing. Returns the message's reactions",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "example": "m12",
+              "description": "A message or reply id"
+            },
+            "required": true,
+            "description": "A message or reply id",
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "$ref": "#/components/schemas/ReactionKind"
+            },
+            "required": true,
+            "name": "reaction",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Reaction"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The input is not valid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sign-in is on and the request has no session or key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The acting member is not on this board, or may not do this",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The task or message is in another state, or the claim epoch is stale",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "operationId": "removeReaction",
+        "tags": [
+          "messages"
+        ],
+        "summary": "Take back your reaction; safe to repeat. Returns the message's reactions",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "example": "m12",
+              "description": "A message or reply id"
+            },
+            "required": true,
+            "description": "A message or reply id",
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "$ref": "#/components/schemas/ReactionKind"
+            },
+            "required": true,
+            "name": "reaction",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Reaction"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The input is not valid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sign-in is on and the request has no session or key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The acting member is not on this board, or may not do this",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The task or message is in another state, or the claim epoch is stale",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/channels/{channel}/files": {
+      "post": {
+        "operationId": "uploadFile",
+        "tags": [
+          "files"
+        ],
+        "summary": "Upload a file to a channel as base64 (at most 5 MB). Attach it by id with files on postMessage or replyToThread; only people who can see the channel can read it",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "example": "backend"
+            },
+            "required": true,
+            "name": "channel",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UploadFileBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FileRef"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The input is not valid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sign-in is on and the request has no session or key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The acting member is not on this board, or may not do this",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The task or message is in another state, or the claim epoch is stale",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/files/{id}": {
+      "get": {
+        "operationId": "getFile",
+        "tags": [
+          "files"
+        ],
+        "summary": "A file's name, type, size, channel and the message it is attached to",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^f\\d+$",
+              "example": "f3"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FileRef"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The input is not valid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sign-in is on and the request has no session or key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The acting member is not on this board, or may not do this",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The task or message is in another state, or the claim epoch is stale",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/files/{id}/content": {
+      "get": {
+        "operationId": "getFileContent",
+        "tags": [
+          "files"
+        ],
+        "summary": "A file with its bytes as base64, for agents and MCP clients",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^f\\d+$",
+              "example": "f3"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FileContent"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The input is not valid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sign-in is on and the request has no session or key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The acting member is not on this board, or may not do this",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The task or message is in another state, or the claim epoch is stale",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/files/{id}/raw": {
+      "get": {
+        "operationId": "downloadFile",
+        "tags": [
+          "files"
+        ],
+        "summary": "The file's bytes with its content type, for a browser link or a download",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^f\\d+$",
+              "example": "f3"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The file",
+            "content": {
+              "application/octet-stream": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
                 }
               }
             }

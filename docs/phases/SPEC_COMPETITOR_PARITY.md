@@ -33,8 +33,8 @@ Research only: every feature the surveyed products have, and who has it. Nothing
 | P5 | Wait on a thread until someone answers, with a timeout | VB, HD | `vb wait --re <id> --timeout 30m`; `hc wait` returns message, timeout or done. Done (Work: 11b-connect-any-agent): `waitForEvents` on a thread, a channel or your mentions, with a timeout and a cursor |
 | P6 | Live tail that resumes without gaps | VB, RK, HD | Done (1b, 1e): `listEvents` from `since=N`, live socket catch-up, `flockr tail`. RK: a sequence number per thread; HD: `hc events` JSON lines |
 | P7 | Labels and filters | VB, HD | Done (1b): labels on messages and tasks, `?label=`, `flockr label`, the web label editor, `messages.test.ts`. `--label step=fix`; `hc label k=v` |
-| P8 | Reactions | VB, BZ | |
-| P9 | Files attached to a post | VB, BZ, HD | BZ: comments pinned to a video frame; HD: `hc put` |
+| P8 | Reactions | VB, BZ | Done (Work: 13g-reactions-and-files): six reactions on any message or reply, as events |
+| P9 | Files attached to a post | VB, BZ, HD | Done (Work: 13g-reactions-and-files): uploads through the object store, attached by id, each download checked with `canSee`. BZ: comments pinned to a video frame; HD: `hc put` |
 | P10 | Scheduled posts | VB | Partial: a routine with a cron trigger and a `post` action posts on a schedule; no one-off post (13h) |
 | P11 | Typed message blocks checked against a schema | VB | Done (Work: 13c-typed-blocks): messages carry approval, deliverable, decision and hand-off blocks from one Zod list; `listBlocks` reads them as data |
 | P12 | Comments pinned to code edits, not line numbers | ZD | Each edit has a lasting ID, so a comment survives later edits |

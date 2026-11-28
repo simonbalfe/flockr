@@ -2,6 +2,7 @@ import { z } from "@hono/zod-openapi"
 import { ApprovalAction } from "./activity"
 import { AreaPolicySchema, areaLimits } from "./areas"
 import { blockLimits, PostableBlocks } from "./blocks"
+import { fileLimits } from "./attachments"
 import { Activity, Label, Labels, MemberKind, orNull, Task, TaskState, TextMessage } from "./board"
 import { checklistLimits, checklistSkipReasons } from "./checklist"
 import { commitMessageChars, Repo, Sha } from "./commits"
@@ -53,12 +54,18 @@ export const CreateMemberBody = z
 
 const labels = Labels.default([]).openapi({ example: ["review"], description: "Labels to put on the message" })
 
+const attachFiles = z
+  .array(z.string().regex(/^f\d+$/))
+  .max(fileLimits.perMessage)
+  .default([])
+  .openapi({ example: ["f3"], description: "Files you uploaded to this channel (uploadFile) and not yet attached" })
+
 const requestKey = z.string().trim().min(1).max(100).optional().openapi({ description: "Makes a retry safe: the same key again returns the first message and writes nothing; the same key with other text is refused (409)", example: "acme-bot-run-41" })
 
-export const PostMessageBody = z.object({ text, labels, key: requestKey, blocks: PostableBlocks }).openapi("PostMessageBody")
+export const PostMessageBody = z.object({ text, labels, key: requestKey, blocks: PostableBlocks, files: attachFiles }).openapi("PostMessageBody")
 export const PostMessageResult = z.object({ message: TextMessage }).openapi("PostMessageResult")
 
-export const ReplyBody = z.object({ text, epoch, labels, key: requestKey, blocks: PostableBlocks }).openapi("ReplyBody")
+export const ReplyBody = z.object({ text, epoch, labels, key: requestKey, blocks: PostableBlocks, files: attachFiles }).openapi("ReplyBody")
 
 export const ListMessagesQuery = z.object({
   label: Label.optional().openapi({ description: "Only messages carrying this label, and task cards whose task carries it" }),

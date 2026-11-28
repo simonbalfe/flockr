@@ -24,7 +24,7 @@ function entry(id: string, over: Partial<ActivityEntry> = {}): ActivityEntry {
   }
 }
 
-const reply: Reply = { kind: "reply", id: "m20", who: "claude", at: at(40), text: "Done.", deleted: false, mentions: [], labels: [], editedAt: null, replyTo: null, blocks: [] }
+const reply: Reply = { kind: "reply", id: "m20", who: "claude", at: at(40), text: "Done.", deleted: false, mentions: [], labels: [], editedAt: null, replyTo: null, blocks: [], reactions: [], files: [] }
 
 describe("splitWork", () => {
   test("consecutive entries become one work block, a reply splits them", () => {
