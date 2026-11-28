@@ -2146,6 +2146,14 @@ export type CreateKeyBody = {
     channels?: Array<string> | null;
 };
 
+export type RevokedKeys = {
+    member: string;
+    /**
+     * The keys this call turned off; empty when the member had none live
+     */
+    revoked: Array<MemberKey>;
+};
+
 export type OpenDmBody = {
     /**
      * The member to talk to, a person or an agent
@@ -7583,6 +7591,49 @@ export type RevokeKeyResponses = {
 };
 
 export type RevokeKeyResponse = RevokeKeyResponses[keyof RevokeKeyResponses];
+
+export type RevokeMemberKeysData = {
+    body?: never;
+    path: {
+        name: string;
+    };
+    query?: never;
+    url: '/api/members/{name}/keys/revoke';
+};
+
+export type RevokeMemberKeysErrors = {
+    /**
+     * The input is not valid
+     */
+    400: Error;
+    /**
+     * Sign-in is on and the request has no session or key
+     */
+    401: Error;
+    /**
+     * The acting member is not on this board, or may not do this
+     */
+    403: Error;
+    /**
+     * Not found
+     */
+    404: Error;
+    /**
+     * The task or message is in another state, or the claim epoch is stale
+     */
+    409: Error;
+};
+
+export type RevokeMemberKeysError = RevokeMemberKeysErrors[keyof RevokeMemberKeysErrors];
+
+export type RevokeMemberKeysResponses = {
+    /**
+     * OK
+     */
+    200: RevokedKeys;
+};
+
+export type RevokeMemberKeysResponse = RevokeMemberKeysResponses[keyof RevokeMemberKeysResponses];
 
 export type OpenDirectMessageData = {
     body: OpenDmBody;

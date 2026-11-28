@@ -8,7 +8,7 @@ import { useAgent, useAgentActivity, useInbox, useMembers } from "@/api/hooks"
 import { currentUser } from "@/api/session"
 import { useMayManageKeys } from "@/api/auth"
 import { WorkBlock } from "@/components/agent/work-block"
-import { KeyList, NewKeyDialog } from "@/components/keys/keys"
+import { KeyList, NewKeyDialog, RevokeAllButton } from "@/components/keys/keys"
 import { AgentNotes } from "@/components/memory/agent-notes"
 import { MemberAvatar } from "@/components/member-avatar"
 import { KeyValueList, PanelFrame } from "@/components/panel-frame"
@@ -112,7 +112,7 @@ function MoreMenu({ name }: { name: string }) {
               }
               remove.mutate(name, {
                 onSuccess: () => {
-                  toast(`Deleted ${name}. Its messages stay.`)
+                  toast(`Deleted ${name}. Its keys are revoked; its messages stay.`)
                   close()
                 },
               })
@@ -128,8 +128,8 @@ function MoreMenu({ name }: { name: string }) {
 }
 
 const controls = {
-  running: { action: "pause", label: "Pause", primary: false, stoppable: true, hint: "Pause lets its current run finish and holds new work. Stop ends its sessions and gives back its tasks." },
-  paused: { action: "resume", label: "Resume", primary: true, stoppable: true, hint: "Paused: its current run finishes, mentions and tasks wait until you resume it." },
+  running: { action: "pause", label: "Pause", primary: false, stoppable: true, hint: "Pause lets its current run finish and holds new work. Stop ends its sessions and gives back its tasks. Both revoke its keys." },
+  paused: { action: "resume", label: "Resume", primary: true, stoppable: true, hint: "Paused: its current run finishes, mentions and tasks wait until you resume it. Its keys were revoked; make a new one to reconnect it." },
   stopped: { action: "start", label: "Start", primary: true, stoppable: false, hint: "It ignores mentions until started." },
 } as const satisfies Record<AgentDesired, { action: "start" | "pause" | "resume"; label: string; primary: boolean; stoppable: boolean; hint: string }>
 
@@ -160,7 +160,10 @@ function Keys({ name }: { name: string }) {
     <>
       <div className="mt-1.5 flex items-center justify-between">
         <span className="text-[13px] font-semibold text-muted-foreground">Keys</span>
-        <NewKeyDialog member={name} />
+        <div className="flex items-center gap-1">
+          <RevokeAllButton member={name} />
+          <NewKeyDialog member={name} />
+        </div>
       </div>
       <KeyList member={name} />
     </>

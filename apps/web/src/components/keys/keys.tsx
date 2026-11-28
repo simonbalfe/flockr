@@ -2,7 +2,7 @@ import type { MemberKey } from "@flockr/client"
 import { KeyRound } from "lucide-react"
 import { useState, type FormEvent } from "react"
 import { toast } from "sonner"
-import { useCreateKey, useKeys, useMayManageKeys, useRevokeKey } from "@/api/auth"
+import { useCreateKey, useKeys, useMayManageKeys, useRevokeKey, useRevokeMemberKeys } from "@/api/auth"
 import { useChannelList, useMembers } from "@/api/hooks"
 import { CopyCommand } from "@/components/agents/copy-command"
 import { Button } from "@/components/ui/button"
@@ -26,6 +26,31 @@ function RevokeButton({ id }: { id: string }) {
       onClick={() => (confirming ? revoke.mutate({ path: { id } }, { onSuccess: () => void toast("Key revoked. Requests with it are refused now.") }) : setConfirming(true))}
     >
       {confirming ? "Revoke? Click again" : "Revoke"}
+    </Button>
+  )
+}
+
+export function RevokeAllButton({ member }: { member: string }) {
+  const keys = useKeys()
+  const revoke = useRevokeMemberKeys()
+  const mayManage = useMayManageKeys()
+  const [confirming, setConfirming] = useState(false)
+  const live = (keys.data ?? []).filter((k) => k.member === member && !k.revokedAt).length
+  if (!mayManage || live < 2) return null
+  return (
+    <Button
+      variant="ghost"
+      size="sm"
+      className={cn(confirming && "text-destructive")}
+      disabled={revoke.isPending}
+      onBlur={() => setConfirming(false)}
+      onClick={() =>
+        confirming
+          ? revoke.mutate({ path: { name: member } }, { onSuccess: (done) => void toast(`Revoked ${done.revoked.length} keys. Requests with them are refused now.`) })
+          : setConfirming(true)
+      }
+    >
+      {confirming ? `Revoke all ${live}? Click again` : "Revoke all"}
     </Button>
   )
 }

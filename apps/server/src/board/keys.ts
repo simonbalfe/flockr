@@ -1,9 +1,9 @@
-import { keyEventTypes, keyLimits, mayManageKeys, type CreateKeyBody, type CreatedKey, type MemberKey } from "@flockr/contracts"
+import { keyEventTypes, keyLimits, mayManageKeys, type CreateKeyBody, type CreatedKey, type KeyRevokeCause, type MemberKey, type RevokedKeys } from "@flockr/contracts"
 import { and, asc, eq, inArray, isNull, lt, or } from "drizzle-orm"
 import type { Database, Executor, Tx } from "../db/client"
 import { channels, memberKeys, members, type MemberKeyRow, type MemberRow } from "../db/schema"
 import { forbidden, invalid, notFound } from "./errors"
-import { mutate } from "./events"
+import { mutate, type Emit } from "./events"
 import { requireActor } from "./members"
 import { findMember } from "./read"
 import { canSee, viewerOf } from "./visibility"
@@ -90,8 +90,28 @@ export async function revokeKey(db: Database, actor: string, id: string): Promis
     if (found.key.revokedAt) return toKey(found.key, found.owner)
     const [row] = await tx.update(memberKeys).set({ revokedAt: new Date() }).where(eq(memberKeys.id, id)).returning()
     if (!row) throw new Error("Key update returned nothing")
-    emit({ type: keyEventTypes.revoked, actor, data: { id: row.id, member: row.member } })
+    emit({ type: keyEventTypes.revoked, actor, data: { id: row.id, member: row.member, cause: "key" satisfies KeyRevokeCause } })
     return toKey(row, found.owner)
+  })
+}
+
+export async function revokeKeysOf(tx: Tx, emit: Emit, revoke: { actor: string; member: string; cause: KeyRevokeCause }): Promise<MemberKeyRow[]> {
+  const rows = await tx
+    .update(memberKeys)
+    .set({ revokedAt: new Date() })
+    .where(and(eq(memberKeys.member, revoke.member), isNull(memberKeys.revokedAt)))
+    .returning()
+  for (const row of rows) emit({ type: keyEventTypes.revoked, actor: revoke.actor, data: { id: row.id, member: row.member, cause: revoke.cause } })
+  return rows
+}
+
+export async function revokeMemberKeys(db: Database, actor: string, name: string): Promise<RevokedKeys> {
+  return mutate(db, async (tx, emit) => {
+    await requireKeyManager(tx, actor)
+    const [member] = await tx.select().from(members).where(eq(members.name, name)).for("update")
+    if (!member) throw notFound(`No member ${name}`)
+    const rows = await revokeKeysOf(tx, emit, { actor, member: name, cause: "all" })
+    return { member: name, revoked: rows.map((row) => toKey(row, member.owner)) }
   })
 }
 

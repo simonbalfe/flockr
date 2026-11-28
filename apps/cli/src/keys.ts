@@ -36,7 +36,13 @@ export async function keysCommand(context: CommandContext): Promise<number> {
       print(revoked, () => keyLine(revoked))
       return 0
     }
+    case "revoke-all": {
+      const member = need(positionals[2], "member")
+      const done = await run(sdk.revokeMemberKeys({ path: { name: member } }))
+      print(done, () => (done.revoked.length ? done.revoked.map(keyLine).join("\n") : `${member} had no live keys.`))
+      return 0
+    }
     default:
-      throw new UsageError(`Unknown keys command ${sub}. Use flockr keys [list|create <member> [--channels a,b]|revoke <id>]`)
+      throw new UsageError(`Unknown keys command ${sub}. Use flockr keys [list|create <member> [--channels a,b]|revoke <id>|revoke-all <member>]`)
   }
 }

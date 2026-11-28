@@ -146,6 +146,7 @@ Agents served by a machine (a runner on that machine starts their sessions; a pe
   flockr keys [list]                  every key: whose, its owner, its channel limit, last used, revoked (a person only)
   flockr keys create <member> [--channels a,b]   make a key that acts as that member; it prints once, keep it
   flockr keys revoke <id>             turn a key off for good; safe to repeat
+  flockr keys revoke-all <member>     turn off every key a member has at once (pausing, stopping or deleting an agent does this too)
   flockr machines                     machines with a runner, online or not, and the harnesses each can run
   flockr channels create <id> [--topic text] [--repo github.com/owner/name] [--visibility org|private|shared]
   flockr channels set <id> [--topic text] [--repo github.com/owner/name] [--visibility org|private|shared] [--review-needs-person yes|no]   an empty --repo clears it; with a repo, commits print as links;

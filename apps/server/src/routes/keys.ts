@@ -1,6 +1,6 @@
-import { CreatedKey, CreateKeyBody, KeyParams, MemberKey } from "@flockr/contracts"
+import { CreatedKey, CreateKeyBody, KeyParams, MemberKey, MemberParams, RevokedKeys } from "@flockr/contracts"
 import { z } from "@hono/zod-openapi"
-import { createKey, listKeys, revokeKey } from "../board/keys"
+import { createKey, listKeys, revokeKey, revokeMemberKeys } from "../board/keys"
 import { jsonBody, ok, operation, router } from "./shared"
 
 const tags: [string] = ["keys"]
@@ -40,4 +40,16 @@ export const keyRoutes = router()
       responses: ok(MemberKey),
     }),
     async (c) => c.json(await revokeKey(c.var.db, c.var.member, c.req.valid("param").id), 200),
+  )
+  .openapi(
+    operation({
+      method: "post",
+      path: "/api/members/{name}/keys/revoke",
+      operationId: "revokeMemberKeys",
+      tags,
+      summary: "Turn off every live key a member has, at once; requests with any of them are refused from now on and their live feeds are cut. Pausing, stopping or deleting an agent does this too. Safe to repeat. Only a person can do it",
+      request: { params: MemberParams },
+      responses: ok(RevokedKeys),
+    }),
+    async (c) => c.json(await revokeMemberKeys(c.var.db, c.var.member, c.req.valid("param").name), 200),
   )

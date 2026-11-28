@@ -1,5 +1,5 @@
 import { mayManageKeys } from "@flockr/client"
-import { createKeyMutation, listKeysOptions, requestSignInLinkMutation, revokeKeyMutation, signOutMutation, whoamiOptions, whoamiQueryKey } from "@flockr/client/react-query"
+import { createKeyMutation, listKeysOptions, requestSignInLinkMutation, revokeKeyMutation, revokeMemberKeysMutation, signOutMutation, whoamiOptions, whoamiQueryKey } from "@flockr/client/react-query"
 import { useMutation, useQuery, useQueryClient, type QueryClient } from "@tanstack/react-query"
 import { useMembers } from "./hooks"
 import { currentUser } from "./session"
@@ -35,4 +35,9 @@ export function useCreateKey() {
 export function useRevokeKey() {
   const client = useQueryClient()
   return useMutation({ ...revokeKeyMutation(), onSuccess: () => client.invalidateQueries({ queryKey: listKeysOptions().queryKey }) })
+}
+
+export function useRevokeMemberKeys() {
+  const client = useQueryClient()
+  return useMutation({ ...revokeMemberKeysMutation(), onSuccess: () => client.invalidateQueries({ queryKey: listKeysOptions().queryKey }) })
 }

@@ -6427,6 +6427,26 @@
           "member"
         ]
       },
+      "RevokedKeys": {
+        "type": "object",
+        "properties": {
+          "member": {
+            "type": "string",
+            "example": "claude"
+          },
+          "revoked": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MemberKey"
+            },
+            "description": "The keys this call turned off; empty when the member had none live"
+          }
+        },
+        "required": [
+          "member",
+          "revoked"
+        ]
+      },
       "OpenDmBody": {
         "type": "object",
         "properties": {
@@ -9597,7 +9617,7 @@
         "tags": [
           "agents"
         ],
-        "summary": "Stop an agent and remove it from the board; its messages keep their author; safe to repeat",
+        "summary": "Stop an agent and remove it from the board; every key it has is revoked; its messages keep their author; safe to repeat",
         "parameters": [
           {
             "schema": {
@@ -13602,7 +13622,7 @@
         "tags": [
           "agents"
         ],
-        "summary": "Stop an agent: its sessions end, its claims are released and it ignores mentions until started; safe to repeat",
+        "summary": "Stop an agent: its sessions end, its claims are released and it ignores mentions until started; every key it has is revoked (make a new one to reconnect it); safe to repeat",
         "parameters": [
           {
             "schema": {
@@ -13684,7 +13704,7 @@
         "tags": [
           "agents"
         ],
-        "summary": "Pause an agent: its current run finishes, then mentions, replies and ready tasks wait until it is resumed; safe to repeat. A stopped agent is refused",
+        "summary": "Pause an agent: its current run finishes, then mentions, replies and ready tasks wait until it is resumed; every key it has is revoked at once (make a new one to reconnect it); safe to repeat. A stopped agent is refused",
         "parameters": [
           {
             "schema": {
@@ -17604,6 +17624,88 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/MemberKey"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The input is not valid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sign-in is on and the request has no session or key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The acting member is not on this board, or may not do this",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The task or message is in another state, or the claim epoch is stale",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/members/{name}/keys/revoke": {
+      "post": {
+        "operationId": "revokeMemberKeys",
+        "tags": [
+          "keys"
+        ],
+        "summary": "Turn off every live key a member has, at once; requests with any of them are refused from now on and their live feeds are cut. Pausing, stopping or deleting an agent does this too. Safe to repeat. Only a person can do it",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "example": "reviewer"
+            },
+            "required": true,
+            "name": "name",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RevokedKeys"
                 }
               }
             }

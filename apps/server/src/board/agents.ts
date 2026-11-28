@@ -13,6 +13,7 @@ import {
   type AgentStatus,
   type CreateAgentBody,
   type DeletedAgent,
+  type KeyRevokeCause,
   type LiveFrame,
   type Member,
   type UpdateAgentBody,
@@ -25,6 +26,7 @@ import { agents, machines, members, messages, tasks, type AgentRow, type Machine
 import { liveSignals } from "../platform"
 import { alreadyExists, forbidden, invalid, notFound, wrongState } from "./errors"
 import { mutate, type Emit } from "./events"
+import { revokeKeysOf } from "./keys"
 import { requireActor } from "./members"
 import { activityEntryOf, findAnyMember, presentMember, presentTasks } from "./read"
 import { visibleTo, type Viewer } from "./visibility"
@@ -264,6 +266,8 @@ const actionEvent = {
   resume: agentEventTypes.resumed,
 } as const satisfies Record<AgentAction, string>
 
+const revokesKeys = { start: null, stop: "stop", pause: "pause", resume: null } as const satisfies Record<AgentAction, KeyRevokeCause | null>
+
 const servesReport = { running: true, paused: true, stopped: false } as const satisfies Record<AgentDesired, boolean>
 
 async function act(db: Database, actor: string, name: string, action: AgentAction): Promise<AgentDetail> {
@@ -292,6 +296,8 @@ async function act(db: Database, actor: string, name: string, action: AgentActio
       .returning()
     if (!row) throw new Error("Agent update returned nothing")
     emitAgent(emit, actionEvent[action], actor, row)
+    const cause = revokesKeys[action]
+    if (cause) await revokeKeysOf(tx, emit, { actor, member: name, cause })
   })
   return getAgent(db, name)
 }
@@ -315,6 +321,7 @@ export async function deleteAgent(db: Database, actor: string, name: string): Pr
       .where(eq(agents.name, name))
       .returning()
     emit({ type: agentEventTypes.deleted, actor, data: { name, machine: row?.machine ?? null } })
+    await revokeKeysOf(tx, emit, { actor, member: name, cause: "delete" })
     return { name, removedAt: removedAt.toISOString() }
   })
   await endRunsOf(db, [name])

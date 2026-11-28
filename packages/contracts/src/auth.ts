@@ -14,6 +14,9 @@ export const keyLimits = { secretPrefix: "fk_", shownChars: 7, channels: 20 } as
 
 export const keyEventTypes = { created: "key.created", revoked: "key.revoked" } as const
 
+export const keyRevokeCauses = ["key", "all", "pause", "stop", "delete"] as const
+export type KeyRevokeCause = (typeof keyRevokeCauses)[number]
+
 export const signInWording = {
   sent: "If that address may sign in, a link is on its way. Check your email.",
   subject: "Sign in to Flockr",
@@ -66,9 +69,17 @@ export const CreatedKey = z
   })
   .openapi("CreatedKey")
 
+export const RevokedKeys = z
+  .object({
+    member: z.string().openapi({ example: "claude" }),
+    revoked: z.array(MemberKey).openapi({ description: "The keys this call turned off; empty when the member had none live" }),
+  })
+  .openapi("RevokedKeys")
+
 export const KeyParams = z.object({ id: z.string().openapi({ param: { name: "id", in: "path" }, example: "k_3f9a1c2b" }) })
 
 export type SignInBody = z.infer<typeof SignInBody>
 export type MemberKey = z.infer<typeof MemberKey>
 export type CreateKeyBody = z.infer<typeof CreateKeyBody>
 export type CreatedKey = z.infer<typeof CreatedKey>
+export type RevokedKeys = z.infer<typeof RevokedKeys>
