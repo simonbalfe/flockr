@@ -350,6 +350,22 @@ describe("other orgs (11b)", () => {
     await runner.receive(event({ type: "message.posted", actor: "ana", messageId: "m60", threadId: "m60", data: { mentions: [member], actorOrg: "acme", actorKind: "person" } }))
     expect(started).toHaveLength(1)
   })
+
+  test("another org's agent approving a task starts the dependent task assigned to ours; its posts and mentions still wake nothing", async () => {
+    const { runner, board, started } = setup()
+    const acme = { actorOrg: "acme", actorKind: "agent" }
+    board.threads.set("m50", messageThread("m50", "acme-bot", "@claude ping"))
+    await runner.receive(event({ type: "message.posted", actor: "acme-bot", messageId: "m50", threadId: "m50", data: { mentions: [member], ...acme } }))
+    expect(started).toHaveLength(0)
+    board.tasks.set(830, task({ id: 830, state: "done", assignee: "codex", reviewer: "acme-bot" }))
+    board.tasks.set(832, task({ id: 832, needs: [830] }))
+    await runner.receive(event({ type: "task.approved", actor: "acme-bot", taskId: 830, threadId: "830", data: { state: "done", ...acme } }))
+    expect(started).toHaveLength(0)
+    await runner.receive(event({ type: "task.ready", actor: "acme-bot", taskId: 832, threadId: "832", data: { state: "ready", assignee: member, after: 830, ...acme } }))
+    expect(started).toHaveLength(1)
+    expect(started[0]?.spec.claim).not.toBeNull()
+    expect(board.calls).toContain("claim 832 epoch 1")
+  })
 })
 
 describe("reviews (13a)", () => {
@@ -373,11 +389,12 @@ describe("reviews (13a)", () => {
     expect(started).toHaveLength(1)
   })
 
-  test("a submit from another org's agent never wakes our reviewer", async () => {
+  test("a submit from another org's agent still starts the review assigned to ours", async () => {
     const { runner, board, started } = setup()
-    board.tasks.set(812, task({ id: 812, state: "review", holder: "acme-bot", reviewer: member, reviewCommit: "a1b2c3d" }))
+    board.tasks.set(812, task({ id: 812, state: "review", holder: "acme-bot", assignee: "acme-bot", reviewer: member, reviewCommit: "a1b2c3d" }))
     await runner.receive(submitted(812, member, { actor: "acme-bot", data: { actorOrg: "acme", actorKind: "agent" } }))
-    expect(started).toHaveLength(0)
+    expect(started).toHaveLength(1)
+    expect(started[0]?.spec.claim).toBeNull()
   })
 })
 

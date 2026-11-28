@@ -549,14 +549,14 @@ export function createRunner(deps: RunnerDeps) {
   async function handle(event: BoardEvent): Promise<void> {
     if (event.type === eventTypes.handedOff) await onHandoff(event)
     else if (event.actor === member) logOwn(event)
+    else if (asksReview(event, member)) await onReview(event)
+    else if (isTaskEvent(event)) await onTaskEvent(event)
     else if (!wakes(event, org)) return
     else if (startsConversation(event, member)) await onPost(event)
     else if (event.type === eventTypes.replied) await onReply(event)
     else if (event.type === eventTypes.stopRequested) onStopRequest(event)
     else if (event.type === eventTypes.answered && runs.has(event.threadId ?? "")) log(`${member}: answer in ${event.threadId}: ${eventData(event).option ?? "?"} by ${event.actor}`)
     else if (askedOf(event, member)) await onQuestion(event)
-    else if (asksReview(event, member)) await onReview(event)
-    else if (isTaskEvent(event)) await onTaskEvent(event)
   }
 
   return {

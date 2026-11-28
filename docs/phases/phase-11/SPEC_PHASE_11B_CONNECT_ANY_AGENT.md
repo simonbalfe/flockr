@@ -14,7 +14,7 @@ Example: Acme runs `acme-bot` in Claude Code on their own machine. We add it to 
   - Returns `{ events, cursor, timedOut }`; `cursor` is the `since` for the next call, past events the viewer cannot see, so a quiet channel never makes it rescan.
   - Polls the log once a second while it waits; no new live listener.
 - **Request key per post** (P100): `postMessage` and `replyToThread` take an optional `key`. The same member posting the same key again gets the first message back and writes nothing; the same key with different text is refused (409). Kept forever per member (`messages.request_key`, unique with `who`).
-- **Other orgs' agents never wake ours by themselves:** every event records the actor's org and kind (`data.actorOrg`, `data.actorKind`). The runner skips mentions, replies and DMs whose actor is an agent from another org (`wakesAgent` in `packages/contracts`); people from any org still wake our agents. The message stays in the thread as context for the next run.
+- **Other orgs' agents never wake ours by themselves:** every event records the actor's org and kind (`data.actorOrg`, `data.actorKind`). The runner skips mentions, replies, DMs and questions whose actor is an agent from another org (`wakesAgent` in `packages/contracts`); people from any org still wake our agents. The message stays in the thread as context for the next run. Task state is not a message: a task that turns ready for our agent, or a review assigned to it, starts work whichever org's member caused the change.
 - **Live feed for outside agents:** each socket's viewer carries its key id; a socket closes at once when its key is revoked or its member removed. After the hub's listener reconnects, every socket gets a `resync` frame so it refetches presence instead of silently missing frames.
 - **Keys for client members** are limited to channels the member can see; a key asking for another channel is refused (400).
 - **Docs:** `docs/guides/GUIDE_CONNECT_AN_AGENT.md` (our side: org, member, channel, key; their side: Claude Code, Codex, Grok Bot) and the board skill's wait loop.
@@ -39,7 +39,7 @@ Example: Acme runs `acme-bot` in Claude Code on their own machine. We add it to 
 - Every message event carries `actorOrg` and `actorKind`.
 - A live socket closes when its key is revoked.
 
-`apps/runner/test`: an agent from another org mentioning or replying to our agent wakes nothing; a person from that org does.
+`apps/runner/test`: an agent from another org mentioning or replying to our agent wakes nothing; a person from that org does; that agent approving a task still starts the dependent task assigned to ours.
 
 ## Exit checklist
 
@@ -59,6 +59,7 @@ Small choices made here, all reversible:
 - The cursor moves past events the caller cannot see, and back to the last match when one is found, so a later call rescans nothing it has already been given.
 - Request keys sit on `messages.request_key`, unique with `who` (migration `0021_message_request_keys.sql`), checked under an advisory lock. A repeat returns the first message wherever it was posted; the text must match.
 - `actorOrg` and `actorKind` are added to every event's data when it is written, and kept in routing stubs. The wake rule is `wakesAgent` in `packages/contracts/src/rules.ts`; the runner reads its own org from `whoami` at start. It branches on kind on purpose: it is a wake rule, not an access rule.
+- The first build gated every event on the actor, so task events were skipped too. On the live demo (28 Nov 2026) `acme-bot` approved #830 as its reviewer, #832 turned ready for `builder`, and nothing started until a person mentioned `builder`. The runner now routes review and task events before the wake rule; only messages, replies, DMs and questions pass through it (Work: fix-cross-org-task-wake).
 - A socket's viewer carries its key id; every pump checks the key and member are still live and closes the socket if not. A key revoked with no new event closes on the next event or reconnect.
 - The P100 row lives only in uncommitted parity edits in the main checkout; mark it Done (Work: 11b-connect-any-agent) when they are committed.
 - Webhooks and the notify setting are 11f, per Simon's order of 28 Nov 2026.
