@@ -128,6 +128,7 @@ export function useBoardSync(onNotice: (text: string) => void): void {
       onHello: refresh,
       onActivity: refresh,
       onAgents: refresh,
+      onResync: refresh,
       onEvent: (event) => {
         const notice = noticeFor(event)
         if (notice) onNotice(notice)

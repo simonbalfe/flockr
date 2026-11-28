@@ -6,6 +6,7 @@ import { forbidden, invalid, notFound } from "./errors"
 import { mutate } from "./events"
 import { requireActor } from "./members"
 import { findMember } from "./read"
+import { canSee, viewerOf } from "./visibility"
 
 const touchEveryMs = 60_000
 
@@ -54,6 +55,7 @@ export async function createKey(db: Database, actor: string, body: CreateKeyBody
     if (!member) throw invalid(`${body.member} is not a member of this board`)
     const limit = body.channels === null ? null : [...new Set(body.channels)]
     if (limit) await requireChannels(tx, limit)
+    if (limit) for (const channel of limit) if (!(await canSee(tx, viewerOf(member.name), channel))) throw invalid(`${member.name} cannot see #${channel}; add them to it before limiting a key to it`)
     const secret = `${keyLimits.secretPrefix}${base64url(randomBytes(32))}`
     const [row] = await tx
       .insert(memberKeys)

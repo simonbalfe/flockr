@@ -9,7 +9,7 @@ import { WorkerEnv } from "./env"
 export const signalsPath = "/signals"
 export const viewerHeader = "x-flockr-live-viewer"
 const SignalList = z.array(LiveSignal)
-const ViewerSchema = z.object({ member: z.string(), channels: z.array(z.string()).nullable() })
+const ViewerSchema = z.object({ member: z.string(), channels: z.array(z.string()).nullable(), key: z.string().optional() })
 const Attachment = z.object({ seq: z.number().int(), viewer: ViewerSchema })
 
 function hibernatingSockets(ctx: DurableObjectState): SocketStore {

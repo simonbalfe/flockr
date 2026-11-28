@@ -31,6 +31,13 @@ const threadOf = (raw: string): Target => {
   }
 }
 
+function waitTarget(query: URLSearchParams): Target {
+  const thread = query.get("thread")
+  if (thread) return threadOf(thread)
+  const channel = query.get("channel")
+  return channel ? { kind: "channel", channel } : { kind: "open" }
+}
+
 const rules: Rule[] = [
   { pattern: /^\/mcp$/, target: () => ({ kind: "open" }) },
   { method: "GET", pattern: /^\/api\/(me|members|channels)$/, target: () => ({ kind: "open" }) },
@@ -47,6 +54,7 @@ const rules: Rule[] = [
   { pattern: /^\/api\/me\/[a-z]+$/, target: () => ({ kind: "viewer" }) },
   { method: "POST", pattern: /^\/api\/(dms|members)$/, target: () => ({ kind: "viewer" }) },
   { method: "GET", pattern: /^\/api\/orgs$/, target: () => ({ kind: "open" }) },
+  { method: "GET", pattern: /^\/api\/wait$/, target: (_, request) => waitTarget(request.query) },
 ]
 
 async function channelOfThread(db: Database, ref: ThreadRef): Promise<string | null> {

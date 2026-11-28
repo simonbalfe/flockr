@@ -1,4 +1,4 @@
-import type { BoardEvent, RunEndStatus, Task, Thread } from "@flockr/client"
+import { hostOrg, type BoardEvent, type RunEndStatus, type Task, type Thread } from "@flockr/client"
 import type { AgentPermissions } from "@flockr/contracts/agents"
 import type { EpochStore } from "@flockr/cli/epochs"
 import { activitySink, type ActivitySink } from "./activity"
@@ -8,7 +8,7 @@ import type { Harness, PermissionBridge, Session, SessionExit, SessionSaver, Ses
 import { memoryBlock, noMemory } from "./memory"
 import { ruleFor } from "./permissions"
 import { conversationPrompt, failedText, followUpPrompt, missingFolderText, resumeWorkPrompt, stoppedText, timeLimitText, workPrompt } from "./prompt"
-import { addressedDirectly, agentChain, agentChainLimit, claimable, eventData, eventTypes, holds, isTaskEvent, routeReply, startsConversation, waitsFor } from "./routing"
+import { addressedDirectly, wakes, agentChain, agentChainLimit, claimable, eventData, eventTypes, holds, isTaskEvent, routeReply, startsConversation, waitsFor } from "./routing"
 import type { Workspace } from "./workspace/types"
 import { sessionKey, type JsonStore, type SessionMap } from "./store"
 
@@ -103,6 +103,7 @@ export function createRunner(deps: RunnerDeps) {
   const queued = new Map<string, { channel: string; texts: string[] }>()
   let chain: Promise<void> = Promise.resolve()
   let closing = false
+  let org = hostOrg
 
   const enqueue = (job: () => Promise<void>): Promise<void> => {
     const next = chain.then(job).catch((error: unknown) => log(`error: ${error instanceof Error ? error.message : String(error)}`))
@@ -488,6 +489,7 @@ export function createRunner(deps: RunnerDeps) {
   async function handle(event: BoardEvent): Promise<void> {
     if (event.type === eventTypes.handedOff) await onHandoff(event)
     else if (event.actor === member) logOwn(event)
+    else if (!wakes(event, org)) return
     else if (startsConversation(event, member)) await onPost(event)
     else if (event.type === eventTypes.replied) await onReply(event)
     else if (event.type === eventTypes.stopRequested) onStopRequest(event)
@@ -499,7 +501,9 @@ export function createRunner(deps: RunnerDeps) {
     runs,
     start(): Promise<void> {
       return enqueue(async () => {
-        if (!(await board.isMember())) throw new Error(`${member} is not a member of the board`)
+        const me = await board.me()
+        if (!me) throw new Error(`${member} is not a member of the board`)
+        org = me.org
         const held = (await board.tasks({ member, state: "claimed" })).filter((t) => t.holder === member)
         for (const task of held) await adopt(task)
         await drain()

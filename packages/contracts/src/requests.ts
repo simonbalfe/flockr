@@ -50,10 +50,12 @@ export const CreateMemberBody = z
 
 const labels = Labels.default([]).openapi({ example: ["review"], description: "Labels to put on the message" })
 
-export const PostMessageBody = z.object({ text, labels }).openapi("PostMessageBody")
+const requestKey = z.string().trim().min(1).max(100).optional().openapi({ description: "Makes a retry safe: the same key again returns the first message and writes nothing; the same key with other text is refused (409)", example: "acme-bot-run-41" })
+
+export const PostMessageBody = z.object({ text, labels, key: requestKey }).openapi("PostMessageBody")
 export const PostMessageResult = z.object({ message: TextMessage }).openapi("PostMessageResult")
 
-export const ReplyBody = z.object({ text, epoch, labels }).openapi("ReplyBody")
+export const ReplyBody = z.object({ text, epoch, labels, key: requestKey }).openapi("ReplyBody")
 
 export const ListMessagesQuery = z.object({
   label: Label.optional().openapi({ description: "Only messages carrying this label, and task cards whose task carries it" }),

@@ -1,11 +1,12 @@
 import type { LiveFrame } from "@flockr/contracts"
 import type { Database } from "../db/client"
 import { eventsSince, headSeq } from "../board/events"
-import { canSee, isHostMember, type Viewer } from "../board/visibility"
+import { canSee, isHostMember, stillLive, type Viewer } from "../board/visibility"
 import type { LiveListener, LiveSignal } from "../platform"
 
 export interface LiveSocket {
   send: (text: string) => void
+  close: () => void
 }
 
 export interface SocketStore {
@@ -70,6 +71,10 @@ export function createHub(db: Database, listener: LiveListener, sockets: SocketS
         const seq = sockets.seqOf(socket)
         const viewer = sockets.viewerOf(socket)
         if (seq === undefined || viewer === undefined) return
+        if (!(await stillLive(db, viewer))) {
+          cut(socket)
+          return
+        }
         const events = await eventsSince(db, seq, pageSize, { kind: "live", viewer })
         if (sockets.seqOf(socket) === undefined) return
         for (const event of events) send(socket, { kind: "event", event })
@@ -80,6 +85,12 @@ export function createHub(db: Database, listener: LiveListener, sockets: SocketS
     } finally {
       state.running = false
     }
+  }
+
+  const cut = (socket: LiveSocket) => {
+    sockets.remove(socket)
+    pumping.delete(socket)
+    socket.close()
   }
 
   const pumpAll = () => {
@@ -94,6 +105,7 @@ export function createHub(db: Database, listener: LiveListener, sockets: SocketS
         return isHostMember(db, viewer)
       case "hello":
       case "event":
+      case "resync":
         return true
       default: {
         const unknownFrame: never = frame
@@ -129,7 +141,12 @@ export function createHub(db: Database, listener: LiveListener, sockets: SocketS
     }
   }
 
-  const listening = listener.listen({ onSignal, onResync: pumpAll })
+  const resync = () => {
+    broadcast({ kind: "resync" })
+    pumpAll()
+  }
+
+  const listening = listener.listen({ onSignal, onResync: resync })
 
   return {
     ready: listening.then(() => undefined),

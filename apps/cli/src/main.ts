@@ -44,8 +44,8 @@ Reading
   flockr saved | flockr sent | flockr drafts   your saved messages, your recent posts, your unsent drafts
 
 Writing
-  flockr post <channel> <text> [--label x]...   post a message; @name mentions a member (it starts a conversation, never a task)
-  flockr reply <thread-or-task-id> <text> [--label x]...   reply in a thread
+  flockr post <channel> <text> [--label x]... [--key k]   post a message; @name mentions a member (it starts a conversation, never a task); --key makes a retry post once
+  flockr reply <thread-or-task-id> <text> [--label x]... [--key k]   reply in a thread; --key makes a retry reply once
   flockr reply <reply-id> <text>      reply to a reply (m20): it starts or continues that reply's sub-thread
   flockr edit <message-id> <text>     change your own message or reply; the old text stays readable (flockr versions)
   flockr label <message-id> [label...]    set a message's labels; none clears them
@@ -167,6 +167,9 @@ Approval rules (allow, ask or block per action kind, board-wide or per channel; 
 Live
   flockr tail [--since seq]           stream board events, resuming after drops
   flockr wait --thread <id> [--timeout s] return when someone else replies in a thread
+  flockr wait [--channel c] [--mentions] [--since n] [--timeout s]   without a live connection: return the first event you can see
+                                      that fits (in the channel, or mentioning you), or nothing after the timeout (default 25s,
+                                      at most 120s); prints the cursor to pass as --since next time. Exit 2 on timeout
 
 Any operation
   flockr api                          list every API operation
@@ -270,6 +273,14 @@ async function waitThread(v: Values): Promise<number> {
   } finally {
     queue.close()
   }
+}
+
+async function waitEvents(v: Values): Promise<number> {
+  const timeout = seconds(v.timeout) ?? undefined
+  const query = { channel: v.channel?.replace(/^#/, ""), mentions: v.mentions ? ("yes" as const) : ("no" as const), since: optionalInt(v.since, "--since"), timeout }
+  const result = await run(sdk.waitForEvents({ query }))
+  print(result, () => (result.timedOut ? `Timed out; next --since ${result.cursor}` : [...result.events.map(eventLine), `next --since ${result.cursor}`].join("\n")))
+  return result.timedOut ? 2 : 0
 }
 
 async function tail(v: Values): Promise<number> {
@@ -418,14 +429,14 @@ async function main(): Promise<number> {
       return 0
     }
     case "post": {
-      const result = await run(sdk.postMessage({ path: { channel: need(positionals[1], "channel").replace(/^#/, "") }, body: { text: restText(2, "text"), labels: values.label ?? [] } }))
+      const result = await run(sdk.postMessage({ path: { channel: need(positionals[1], "channel").replace(/^#/, "") }, body: { text: restText(2, "text"), labels: values.label ?? [], key: values.key } }))
       print(result, () => `Posted ${result.message.id}${result.message.mentions.length ? `, mentioning ${result.message.mentions.join(", ")}` : ""}`)
       return 0
     }
     case "reply": {
       const id = need(positionals[1], "thread or task id").replace(/^#/, "")
       const epoch = /^\d+$/.test(id) ? epochFor(Number(id), values) : undefined
-      const reply = await run(sdk.replyToThread({ path: { id }, body: { text: restText(2, "text"), epoch, labels: values.label ?? [] } }))
+      const reply = await run(sdk.replyToThread({ path: { id }, body: { text: restText(2, "text"), epoch, labels: values.label ?? [], key: values.key } }))
       print(reply, () => `Replied ${reply.id} in ${id}${reply.replyTo ? `, in the sub-thread of ${reply.replyTo}` : ""}`)
       return 0
     }
@@ -569,7 +580,7 @@ async function main(): Promise<number> {
     case "tail":
       return tail(values)
     case "wait":
-      return waitThread(values)
+      return values.thread === undefined ? waitEvents(values) : waitThread(values)
     case "api": {
       const operationId = positionals[1]
       if (!operationId) {

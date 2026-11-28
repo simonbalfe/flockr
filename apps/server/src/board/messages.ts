@@ -11,12 +11,12 @@ import {
   type Reply,
   type TextMessage,
 } from "@flockr/contracts"
-import { count, eq, isNull } from "drizzle-orm"
+import { and, count, eq, isNull, sql } from "drizzle-orm"
 import type { Database, Tx } from "../db/client"
 import { members, messages, messageVersions, type MemberRow, type MessageRow } from "../db/schema"
 import { addressedIn, seenIn } from "./direct"
 import { clearDraft } from "./drafts"
-import { forbidden, invalid, wrongState } from "./errors"
+import { alreadyExists, forbidden, invalid, wrongState } from "./errors"
 import { mutate, type Emit } from "./events"
 import { requireActor } from "./members"
 import { findMember, findMessage, findMessageForUpdate, getThread, messageKey, parseThreadId, replyOf, requireChannel, threadKeyOf } from "./read"
@@ -30,15 +30,30 @@ export async function mentionsOf(tx: Tx, text: string): Promise<string[]> {
 interface Said {
   text: string
   labels: string[]
+  key?: string | undefined
+}
+
+async function priorPost(tx: Tx, actor: string, said: Said): Promise<MessageRow | null> {
+  if (said.key === undefined) return null
+  await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${`post:${actor}:${said.key}`}))`)
+  const [prior] = await tx
+    .select()
+    .from(messages)
+    .where(and(eq(messages.who, actor), eq(messages.requestKey, said.key)))
+  if (!prior) return null
+  if (prior.body !== said.text) throw alreadyExists(`Key ${said.key} was already used for ${messageKey(prior.id)} with other text; use a new key for a new message`)
+  return prior
 }
 
 export async function postMessage(db: Database, actor: string, channel: string, said: Said): Promise<{ message: TextMessage }> {
   const row = await mutate(db, async (tx, emit) => {
     await requireActor(tx, actor)
     await requireChannel(tx, channel)
+    const prior = await priorPost(tx, actor, said)
+    if (prior) return prior
     const { mentions, direct } = await addressedIn(tx, { channel, actor, mentions: await mentionsOf(tx, said.text) })
     const labels = labelSet(said.labels)
-    const created = await insertMessage(tx, { channel, kind: "text", who: actor, body: said.text, mentions, labels })
+    const created = await insertMessage(tx, { channel, kind: "text", who: actor, body: said.text, mentions, labels, requestKey: said.key ?? null })
     emitMessage(emit, "message.posted", created, actor, messageKey(created.id), { mentions, labels, ...(direct ? { direct } : {}) })
     await clearDraft(tx, { member: actor, kind: "channel", target: channel })
     return created
@@ -58,7 +73,7 @@ async function replyUnder(tx: Tx, emit: Emit, options: { actor: string; parent: 
   const { mentions, direct } = await addressedIn(tx, { channel: parent.channel, actor, mentions: options.said })
   const anchor = parent.replyToId ?? parent.id
   const data = { mentions, labels: labelSet(draft.labels), replyTo: messageKey(anchor), ...(direct ? { direct } : {}) }
-  const base = { channel: parent.channel, kind: "text" as const, who: actor, body: draft.text, mentions, labels: data.labels, replyToId: anchor }
+  const base = { channel: parent.channel, kind: "text" as const, who: actor, body: draft.text, mentions, labels: data.labels, replyToId: anchor, requestKey: draft.key ?? null }
   if (parent.threadTaskId !== null) {
     const task = await lockTask(tx, parent.threadTaskId)
     checkEpoch(task, draft.epoch)
@@ -75,6 +90,8 @@ export async function reply(db: Database, actor: string, threadId: string, draft
   const row: MessageRow = await mutate(db, async (tx, emit) => {
     await requireActor(tx, actor)
     const ref = parseThreadId(threadId)
+    const prior = await priorPost(tx, actor, draft)
+    if (prior) return prior
     const said = await mentionsOf(tx, draft.text)
     const labels = labelSet(draft.labels)
     const draftKey = { member: actor, kind: "thread" as const, target: ref.kind === "task" ? String(ref.id) : messageKey(ref.id) }
@@ -82,7 +99,7 @@ export async function reply(db: Database, actor: string, threadId: string, draft
       const task = await lockTask(tx, ref.id)
       checkEpoch(task, draft.epoch)
       const { mentions, direct } = await addressedIn(tx, { channel: task.channel, actor, mentions: said })
-      const created = await insertMessage(tx, { channel: task.channel, kind: "text", who: actor, body: draft.text, mentions, labels, threadTaskId: task.id })
+      const created = await insertMessage(tx, { channel: task.channel, kind: "text", who: actor, body: draft.text, mentions, labels, threadTaskId: task.id, requestKey: draft.key ?? null })
       emitMessage(emit, "reply.posted", created, actor, String(task.id), { mentions, labels, ...(direct ? { direct } : {}) })
       await clearDraft(tx, draftKey)
       return created
@@ -95,7 +112,7 @@ export async function reply(db: Database, actor: string, threadId: string, draft
     }
     if (parent.kind !== "text") throw invalid(`${threadId} is not a message; reply to a message or a task`)
     const { mentions, direct } = await addressedIn(tx, { channel: parent.channel, actor, mentions: said })
-    const created = await insertMessage(tx, { channel: parent.channel, kind: "text", who: actor, body: draft.text, mentions, labels, parentId: parent.id })
+    const created = await insertMessage(tx, { channel: parent.channel, kind: "text", who: actor, body: draft.text, mentions, labels, parentId: parent.id, requestKey: draft.key ?? null })
     emitMessage(emit, "reply.posted", created, actor, messageKey(parent.id), { mentions, labels, ...(direct ? { direct } : {}) })
     await clearDraft(tx, draftKey)
     return created

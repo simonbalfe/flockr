@@ -6,7 +6,7 @@ import type { ActionKind, ActivityUpdate, Agent, AgentDetail, ApprovalVerdict, C
 export type AskResult = { kind: "asked"; question: ThreadQuestion } | { kind: "refused"; reason: string }
 
 export interface BoardPort {
-  isMember: () => Promise<boolean>
+  me: () => Promise<{ org: string } | null>
   task: (id: number) => Promise<Task>
   tasks: (query: { assignee?: string; member?: string; state?: TaskState }) => Promise<Task[]>
   thread: (id: string) => Promise<Thread>
@@ -75,8 +75,8 @@ export function boardClient(options: { member: string; client: Client }): BoardP
   const { member } = options
   const on = () => ({ client: options.client, signal: AbortSignal.timeout(callTimeoutMs) })
   return {
-    async isMember() {
-      return (await call(sdk.whoami(on()))).member !== null
+    async me() {
+      return (await call(sdk.whoami(on()))).member
     },
     task: (id) => call(sdk.getTask({ ...on(), path: { id } })),
     tasks: (query) => call(sdk.listTasks({ ...on(), query })),

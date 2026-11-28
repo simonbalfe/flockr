@@ -5,6 +5,7 @@ import { forbidden } from "./errors"
 export interface Viewer {
   member: string
   channels: string[] | null
+  key?: string
 }
 
 export const viewerOf = (member: string, channels: string[] | null = null): Viewer => ({ member, channels })
@@ -88,4 +89,10 @@ export const readableBy = (channel: AnyColumn | SQL, reader: Reader): SQL => ("a
 export async function canSeeMember(db: Executor, viewer: Viewer, member: string): Promise<boolean> {
   const rows = await db.execute<{ seen: boolean }>(sql`select ${seesMember(sql`${member}`, viewer)} as seen`)
   return [...rows].some((row) => row.seen === true)
+}
+
+export async function stillLive(db: Executor, viewer: Viewer): Promise<boolean> {
+  const key = viewer.key === undefined ? sql`true` : sql`exists (select 1 from member_keys k where k.id = ${viewer.key} and k.revoked_at is null)`
+  const rows = await db.execute<{ live: boolean }>(sql`select (${key} and not exists (select 1 from members m where m.name = ${viewer.member} and m.removed_at is not null)) as live`)
+  return [...rows].some((row) => row.live === true)
 }

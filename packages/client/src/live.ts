@@ -10,6 +10,7 @@ export interface LiveOptions {
   onHello?: (head: number) => void
   onActivity?: (activity: Activity, working: boolean) => void
   onAgents?: (names: string[]) => void
+  onResync?: () => void
   onStatus?: (connected: boolean) => void
 }
 
@@ -32,7 +33,7 @@ function openSocket(url: string, key: string | null | undefined): WebSocket {
 }
 
 function isFrame(value: unknown): value is LiveFrame {
-  return typeof value === "object" && value !== null && "kind" in value && (value.kind === "hello" || value.kind === "event" || value.kind === "activity" || value.kind === "agents")
+  return typeof value === "object" && value !== null && "kind" in value && (value.kind === "hello" || value.kind === "event" || value.kind === "activity" || value.kind === "agents" || value.kind === "resync")
 }
 
 export function liveUrl(baseUrl: string, since: number | null): string {
@@ -70,6 +71,10 @@ export function connectLive(options: LiveOptions): LiveConnection {
       }
       if (frame.kind === "agents") {
         options.onAgents?.(frame.names)
+        return
+      }
+      if (frame.kind === "resync") {
+        options.onResync?.()
         return
       }
       if (lastSeq !== null && frame.event.seq <= lastSeq) return

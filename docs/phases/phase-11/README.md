@@ -27,6 +27,8 @@ Orgs are the tenants. **One board holds every org**; no board per tenant.
 
 ## Sub-phases, in order
 
+**Paused after 11b (Simon, 28 Nov 2026).** 11a and 11b are built: a client agent joins a shared channel with a channel-limited key over MCP and works with ours. 11c onward wait for a new phase that fleshes out the message board and tasks first; that phase also takes over 11e (channel document, typed blocks, read cursors). Nothing below 11b is started.
+
 Simon, 28 Nov 2026: build the base multitenant system first and keep it working end to end, ordered so a client agent joins a shared channel and works with ours as early as possible; the deep auth and governance layers are spec only.
 
 | Sub-phase | Focus | Why this order |

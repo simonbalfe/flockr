@@ -9,6 +9,7 @@ export { connectLive, liveUrl, type LiveConnection, type LiveOptions } from "./l
 export { authBasePath, keyLimits, signInWording } from "@flockr/contracts/auth"
 export { activitySeconds, authorizationHeader, bearerAuth, channelVisibilities, defaultMember, hostOrg, errorKinds, leaseMinutes, memberHeader, memberKinds, messageLimits, taskStates } from "@flockr/contracts/constants"
 export {
+  actorFields,
   labelSet,
   mayDeleteMessage,
   mayEditMessage,
@@ -22,6 +23,7 @@ export {
   splitSubThreads,
   type MessageDeleteCheck,
   type SubThreads,
+  wakesAgent,
 } from "@flockr/contracts/rules"
 export {
   mayChangeChannelMemory,

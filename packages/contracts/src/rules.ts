@@ -51,3 +51,8 @@ export function mentionsIn(text: string, members: ReadonlySet<string>): string[]
   }
   return found
 }
+
+export const actorFields = { org: "actorOrg", kind: "actorKind" } as const
+
+export const wakesAgent = (actor: { kind: string | undefined; org: string | undefined }, agent: { org: string }): boolean =>
+  actor.kind !== "agent" || actor.org === undefined || actor.org === agent.org

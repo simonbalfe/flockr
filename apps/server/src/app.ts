@@ -39,6 +39,7 @@ import { sessionRoutes } from "./routes/sessions"
 import { router, type AppEnv } from "./routes/shared"
 import { taskRoutes } from "./routes/tasks"
 import { threadRoutes } from "./routes/threads"
+import { waitRoutes } from "./routes/wait"
 
 const info = {
   title: "Flockr",
@@ -100,6 +101,7 @@ export function createApp(db: Database, options: AppOptions = {}) {
     .route("/", reviewRoutes)
     .route("/", questionRoutes)
     .route("/", eventRoutes)
+    .route("/", waitRoutes)
     .route("/", activityRoutes)
     .route("/", activityEntryRoutes)
     .route("/", agentRoutes)

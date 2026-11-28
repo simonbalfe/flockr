@@ -1,4 +1,4 @@
-import { activityEventTypes, taskStates, type BoardEvent, type Task, type TaskState, type Thread } from "@flockr/client"
+import { activityEventTypes, taskStates, wakesAgent, type BoardEvent, type Task, type TaskState, type Thread } from "@flockr/client"
 import { z } from "zod"
 
 export const eventTypes = {
@@ -21,9 +21,16 @@ const EventData = z.object({
   member: z.string().optional().catch(undefined),
   from: z.string().nullable().optional().catch(undefined),
   to: z.string().optional().catch(undefined),
+  actorOrg: z.string().optional().catch(undefined),
+  actorKind: z.string().optional().catch(undefined),
 })
 
 export const eventData = (event: BoardEvent) => EventData.parse(event.data)
+
+export function wakes(event: BoardEvent, org: string): boolean {
+  const data = eventData(event)
+  return wakesAgent({ kind: data.actorKind, org: data.actorOrg }, { org })
+}
 
 export const isTaskEvent = (event: BoardEvent) => event.taskId !== null && event.type.startsWith("task.")
 

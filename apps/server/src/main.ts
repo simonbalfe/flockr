@@ -50,7 +50,7 @@ const server = Bun.serve<{ since: number | null; viewer: Viewer; socket?: LiveSo
   },
   websocket: {
     open(ws) {
-      const socket: LiveSocket = { send: (text) => void ws.send(text) }
+      const socket: LiveSocket = { send: (text) => void ws.send(text), close: () => ws.close(1008, "access ended") }
       ws.data.socket = socket
       live.hub.attach(socket, ws.data.since, ws.data.viewer).catch((error: unknown) => {
         console.error("live attach failed", error)

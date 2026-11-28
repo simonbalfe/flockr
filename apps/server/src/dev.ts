@@ -33,7 +33,7 @@ function liveSocketPlugin(): Plugin {
           return
         }
         wss.handleUpgrade(request, socket, head, (ws) => {
-          const liveSocket: LiveSocket = { send: (text) => ws.send(text) }
+          const liveSocket: LiveSocket = { send: (text) => ws.send(text), close: () => ws.close(1008, "access ended") }
           ws.on("close", () => live.hub.detach(liveSocket))
           live.hub.attach(liveSocket, parseSince(url), viewer).catch((error: unknown) => {
             console.error("live attach failed", error)

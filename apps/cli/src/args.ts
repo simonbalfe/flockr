@@ -34,6 +34,7 @@ export const flags = {
   "runs-in": { type: "string" },
   topic: { type: "string" },
   visibility: { type: "string" },
+  mentions: { type: "boolean" },
   org: { type: "string" },
   keep: { type: "boolean" },
   clear: { type: "boolean" },

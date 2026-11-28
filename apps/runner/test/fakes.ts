@@ -115,7 +115,7 @@ export function fakeBoard() {
     return t !== undefined && t.state === "claimed" && t.holder === member && t.claimEpoch === claim.epoch
   }
   const port: BoardPort = {
-    isMember: async () => true,
+    me: async () => ({ org: "home" }),
     people: async () => new Set(["simon", "dana"]),
     async task(id) {
       const found = tasks.get(id)

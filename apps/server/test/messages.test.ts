@@ -37,7 +37,7 @@ describe("edit a message", () => {
     const page = await eventsOf(call)
     expect(page.events.slice(0, before.length)).toEqual(before)
     expect(page.events.slice(before.length)).toEqual([
-      expect.objectContaining({ type: "message.edited", actor: "simon", messageId: id, data: { text: "ping @codex instead", mentions: ["codex"], version: 2 } }),
+      expect.objectContaining({ type: "message.edited", actor: "simon", messageId: id, data: { text: "ping @codex instead", mentions: ["codex"], version: 2, actorOrg: "home", actorKind: "person" } }),
     ])
     const item = (await feedOf(call)).find((i) => i.id === id)
     expect(item).toMatchObject({ text: "ping @codex instead", mentions: ["codex"] })
@@ -82,8 +82,8 @@ describe("labels on messages", () => {
     expect((await feedOf(call, "?label=review")).map((i) => i.id)).not.toContain(id)
     const labeled = (await eventsOf(call)).events.filter((e) => e.type === "message.labeled")
     expect(labeled.map((e) => [e.actor, e.data])).toEqual([
-      ["simon", { labels: ["review"], added: ["review"], removed: [] }],
-      ["claude", { labels: [], added: [], removed: ["review"] }],
+      ["simon", { labels: ["review"], added: ["review"], removed: [], actorOrg: "home", actorKind: "person" }],
+      ["claude", { labels: [], added: [], removed: ["review"], actorOrg: "home", actorKind: "agent" }],
     ])
   })
 })

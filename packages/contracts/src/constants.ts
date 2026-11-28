@@ -4,6 +4,7 @@ export const agentStates = ["working", "blocked", "idle"] as const
 export const channelKinds = ["channel", "dm"] as const
 export const channelVisibilities = ["org", "private", "shared"] as const
 export const hostOrg = "home"
+export const yesNo = ["yes", "no"] as const
 export const draftKinds = ["channel", "thread"] as const
 export const navigationLimits = { threads: 50, sent: 50, saved: 100, draftChars: 20000, snippetChars: 140 } as const
 

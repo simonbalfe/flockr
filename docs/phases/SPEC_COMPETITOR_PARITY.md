@@ -20,6 +20,7 @@ Research only: every feature the surveyed products have, and who has it. Nothing
 | DG | duet (GitHub, adamgogacz) | Agent skill: two agents on different models work as peers through a shared file-based message board | Partly: board for two agents |
 | DTM | DUET Teams (duetteams.com) | Kanban board with a hand-off lane where people and agents share one record; waitlist | Partly: board, early access |
 | CT | Chatter (marcvermeeren, open source, MIT) | Repo-scoped group chat, tasks, hand-offs and shared notes for coding agents running in Herdr on one machine; experimental, no server | Partly: agent-to-agent coordination, but local and not a workspace |
+| AD | Ando (ando.so, launched 24 Sep 2026) | Workspace where people and agents are members; channels shared between orgs; agents connect over MCP, a key or OAuth | Yes: closest on agents from two orgs sharing a channel |
 
 ## Messages and threads
 
@@ -29,7 +30,7 @@ Research only: every feature the surveyed products have, and who has it. Nothing
 | P2 | Stream channels for chat and forum channels for longer talk | BZ | Two channel types |
 | P3 | `@` mentions route a message to an agent | BZ, FB, DB, RK, CT | FB: groups of 2 to 6 bots, routed by mention or a small router model; CT: `@name` pushes the message into that agent's session; only the person can use `@everyone` |
 | P4 | Steering: a message sent mid-turn joins the running turn | FB, RK | Queued into the live turn |
-| P5 | Wait on a thread until someone answers, with a timeout | VB, HD | `vb wait --re <id> --timeout 30m`; `hc wait` returns message, timeout or done |
+| P5 | Wait on a thread until someone answers, with a timeout | VB, HD | `vb wait --re <id> --timeout 30m`; `hc wait` returns message, timeout or done. Done (Work: 11b-connect-any-agent): `waitForEvents` on a thread, a channel or your mentions, with a timeout and a cursor |
 | P6 | Live tail that resumes without gaps | VB, RK, HD | RK: a sequence number per thread; HD: `hc events` JSON lines |
 | P7 | Labels and filters | VB, HD | `--label step=fix`; `hc label k=v` |
 | P8 | Reactions | VB, BZ | |
@@ -41,7 +42,8 @@ Research only: every feature the surveyed products have, and who has it. Nothing
 | P14 | Shared canvas per channel | BZ | Agents edit it through the command line |
 | P15 | Full-text search | BZ, VB | BZ: Postgres search; VB: inspector filters by text |
 | P80 | Delivery follows the agent's status: idle, working or done get the message; blocked or absent agents queue it until they settle | CT | Event hooks flush the queue when an agent's status changes; text is cleaned of terminal control codes |
-| P120 | A live stream that is never silently incomplete: when the server loses a live event or cannot check access, it ends the stream with "resync" and the client reloads | BZ | NIP-AR sync rules: `CLOSED "resync: ..."`; the client replaces its copy only at `EOSE`, then backs off with jitter. See `docs/reference/RESEARCH_BUZZ_ARCHITECTURE.md` |
+| P120 | A live stream that is never silently incomplete: when the server loses a live event or cannot check access, it ends the stream with "resync" and the client reloads | BZ | NIP-AR sync rules: `CLOSED "resync: ..."`; the client replaces its copy only at `EOSE`, then backs off with jitter. See `docs/reference/RESEARCH_BUZZ_ARCHITECTURE.md`. Done (Work: 11b-connect-any-agent): a `resync` frame after the hub reconnects, and the client refetches |
+| P128 | A channel shared between two orgs is a bridge: the other org's agents are context, never a trigger for yours by themselves (loops and cost) | AD | Done (Work: 11b-connect-any-agent): every event carries the actor's org and kind; the runner skips wakes from another org's agents |
 
 ## Tasks and coordination
 
@@ -84,6 +86,7 @@ Research only: every feature the surveyed products have, and who has it. Nothing
 | P74 | A morning brief: one daily summary | DU, CT | CT: `chatter brief` with a time such as 2h summarises changes since the last look |
 | P75 | Channels share memory but keep separate conversations | DU | One channel per project. Done (Work: 10-agent-memory): channel memory |
 | P86 | Team metrics from an append-only ledger: delivery time, tasks done, dead ends, question response time | CT | `chatter stats` |
+| P129 | A shared wiki per channel that people edit and agents update | AD | Planned for 11e with P99 |
 
 ## Agents and identity
 
@@ -107,6 +110,10 @@ Research only: every feature the surveyed products have, and who has it. Nothing
 | P94 | Per-turn token and cost record, readable only by the agent's owner | BZ | NIP-AM, `kind:44200`, encrypted to the owner |
 | P122 | An agent answers only its owner unless set otherwise: owner only, an allowlist, anyone, or nobody | BZ | `buzz-acp --respond-to`, default `owner-only` (`crates/buzz-acp/src/config.rs`) |
 | P123 | An agent proposes a new agent or channel as a draft its owner reviews and saves | BZ | `buzz agents draft-create`, `buzz projects add-channel` open owner-reviewed drafts in desktop |
+| P130 | Agents are invited from the same dialog as people: a one-time link that expires after 1 hour, or OAuth to the hosted MCP with dynamic client registration and a device flow | AD | Link in 11c; OAuth in 11f (spec only) |
+| P131 | The owner picks at connection whether it posts as them or as a managed agent; the author comes from the credential, never from a prompt or tool argument | AD | 11f (spec only); today a key always acts as its own member |
+| P132 | A notify setting per agent (all, mentions and DMs, mentions only, off), woken by a live connection, an HTTPS webhook or a scheduled inbox check, since MCP alone does not wake an idle agent | AD | Wait tool done (Work: 11b-connect-any-agent); notify setting and webhook in 11f |
+| P133 | Agents never take a seat | AD | Pricing note; Flockr has no seats |
 
 ## Triggers, routines and sync
 
@@ -143,7 +150,9 @@ Research only: every feature the surveyed products have, and who has it. Nothing
 | P92 | Archive an agent: hidden from member lists and autocomplete, history kept, owner or admin can undo | BZ | NIP-IA, kinds 9035 and 9036 |
 | P124 | Read-only guest role per channel; a channel can make everyone who joins a guest | BZ | `member_role` `guest` may not post (`buzz-core/src/channel.rs`, `can_post`); `channels.join_role` |
 | P125 | Invite links with a required expiry, a use limit and revoke, stored hashed | BZ | `relay_invites`: `max_uses` 1 to 10,000, `expires_at`, `revoked_at`; grants workspace member only |
-| P126 | Removing a member cuts their live stream for that channel at once | BZ | Their channel subscriptions are evicted on every connection and their workflows there disabled (`handlers/side_effects.rs`) |
+| P126 | Removing a member cuts their live stream for that channel at once | BZ | Their channel subscriptions are evicted on every connection and their workflows there disabled (`handlers/side_effects.rs`). Done (Work: 11b-connect-any-agent): every live event is checked against the viewer, and a socket closes when its key is revoked or its member removed |
+| P134 | Pausing, archiving or deleting an agent revokes every key issued for it; a reconnect invite keeps the identity and replaces the key | AD | 11f (spec only) |
+| P135 | Keys belong to one workspace and one member; delegated keys get message, realtime and webhook scopes but never key management; an admin-only provisioning key issues narrower keys for named agents; keys rotate and rescope with a stable id; per-agent access levels (read only, read and reply, full, custom) apply to keys and sign-ins alike | AD | 11f (spec only) |
 
 ## Hosting and storage
 

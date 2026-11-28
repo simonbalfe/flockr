@@ -1,8 +1,8 @@
-import type { BoardEvent } from "@flockr/contracts"
-import { and, asc, eq, gt, sql } from "drizzle-orm"
+import { actorFields, type BoardEvent } from "@flockr/contracts"
+import { and, asc, eq, gt, inArray, sql } from "drizzle-orm"
 import { boardId } from "../config"
 import type { Database, Executor, Tx } from "../db/client"
-import { boards, events } from "../db/schema"
+import { boards, events, members } from "../db/schema"
 import { liveSignals } from "../platform"
 import { enqueueWatchers } from "./watchers"
 import { sameOrgChannel, visibleTo, type Viewer } from "./visibility"
@@ -28,6 +28,12 @@ export async function mutate<T>(db: Database, run: (tx: Tx, emit: Emit) => Promi
   })
 }
 
+async function actorsOf(tx: Tx, drafts: EventDraft[]): Promise<Map<string, Record<string, string>>> {
+  const names = [...new Set(drafts.map((draft) => draft.actor))]
+  const rows = await tx.select({ name: members.name, org: members.org, kind: members.kind }).from(members).where(inArray(members.name, names))
+  return new Map(rows.map((row) => [row.name, { [actorFields.org]: row.org, [actorFields.kind]: row.kind }]))
+}
+
 async function writeEvents(tx: Tx, drafts: EventDraft[]): Promise<void> {
   const [board] = await tx
     .insert(boards)
@@ -36,6 +42,7 @@ async function writeEvents(tx: Tx, drafts: EventDraft[]): Promise<void> {
     .returning({ lastSeq: boards.lastSeq })
   if (!board) throw new Error("Board counter missing")
   const first = board.lastSeq - drafts.length + 1
+  const actors = await actorsOf(tx, drafts)
   const rows = drafts.map((draft, i) => ({
     boardId,
     seq: first + i,
@@ -45,7 +52,7 @@ async function writeEvents(tx: Tx, drafts: EventDraft[]): Promise<void> {
     taskId: draft.taskId ?? null,
     threadId: draft.threadId ?? null,
     messageId: draft.messageId ?? null,
-    data: draft.data ?? {},
+    data: { ...(draft.data ?? {}), ...actors.get(draft.actor) },
   }))
   await tx.insert(events).values(rows)
   await enqueueWatchers(tx, rows)
@@ -57,7 +64,7 @@ export async function headSeq(db: Executor): Promise<number> {
   return board?.lastSeq ?? 0
 }
 
-const routingFields = ["mentions", "direct", "member", "state"] as const
+const routingFields = ["mentions", "direct", "member", "state", actorFields.org, actorFields.kind] as const
 
 export type EventViewer = { kind: "member"; viewer: Viewer } | { kind: "live"; viewer: Viewer }
 

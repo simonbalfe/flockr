@@ -271,9 +271,11 @@ export const messages = pgTable(
     editedAt: timestamp("edited_at", { withTimezone: true }),
     deletedAt: timestamp("deleted_at", { withTimezone: true }),
     deletedBy: text("deleted_by"),
+    requestKey: text("request_key"),
     createdAt: createdAt(),
   },
   (t) => [
+    uniqueIndex("messages_request_key").on(t.who, t.requestKey).where(sql`${t.requestKey} is not null`),
     check("messages_kind", sql`${t.kind} in ('text', 'task', 'ask', 'event', 'question', 'activity')`),
     check("messages_activity", sql`(${t.kind} = 'activity') = (${t.activity} is not null)`),
     check("messages_question", sql`(${t.kind} = 'question') = (${t.question} is not null)`),

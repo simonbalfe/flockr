@@ -92,7 +92,7 @@ describe("the live feed", () => {
     const seen = (await eventsSince(db, 0, 1000, { kind: "live", viewer: viewerOf("tim") })).filter((e) => e.channel === dm.id)
     expect(seen.map((e) => e.type)).toEqual(["channel.created", "message.posted", "message.edited"])
     expect(JSON.stringify(seen)).not.toContain("secret")
-    expect(seen[1]?.data).toEqual({ mentions: ["claude"], direct: true })
+    expect(seen[1]?.data).toEqual({ mentions: ["claude"], direct: true, actorOrg: "home", actorKind: "person" })
   })
 })
 

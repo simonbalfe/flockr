@@ -10,6 +10,7 @@ export interface Identity {
   member: string
   via: IdentitySource
   channels: string[] | null
+  key: string | null
 }
 
 export interface Authenticator {
@@ -23,7 +24,7 @@ const bearer = /^Bearer\s+(\S+)$/i
 export const isPublicApiPath = (pathname: string): boolean =>
   pathname === authBasePath || pathname.startsWith(`${authBasePath}/`) || publicApiPaths.some((path) => path === pathname)
 
-export const headerIdentity = (headers: Headers): Identity => ({ member: headers.get(memberHeader)?.trim() || defaultMember, via: "header", channels: null })
+export const headerIdentity = (headers: Headers): Identity => ({ member: headers.get(memberHeader)?.trim() || defaultMember, via: "header", channels: null, key: null })
 
 async function actingAs(db: Database, identity: Identity, requested: string | undefined): Promise<Identity> {
   if (!requested || requested === identity.member) return identity
@@ -42,7 +43,8 @@ export async function liveViewer(auth: Authenticator, request: { headers: Header
   }
   const identity = await auth.identify(request.headers)
   if (!identity) return Response.json({ error: signInNeeded, kind: "unauthenticated" }, { status: 401 })
-  return viewerOf(identity.member, identity.channels)
+  const viewer = viewerOf(identity.member, identity.channels)
+  return identity.key === null ? viewer : { ...viewer, key: identity.key }
 }
 
 export function createAuthenticator(db: Database, settings: AuthSettings): Authenticator {
@@ -53,11 +55,11 @@ export function createAuthenticator(db: Database, settings: AuthSettings): Authe
     const key = bearer.exec(headers.get(authorizationHeader)?.trim() ?? "")?.[1]
     if (key) {
       const found = await findLiveKey(db, key)
-      return found ? { member: found.member, via: "key", channels: found.channels } : null
+      return found ? { member: found.member, via: "key", channels: found.channels, key: found.id } : null
     }
     const session = await betterAuth().api.getSession({ headers })
     const member = session ? memberFor(settings, session.user.email) : undefined
-    return member ? { member, via: "session", channels: null } : null
+    return member ? { member, via: "session", channels: null, key: null } : null
   }
 
   return {

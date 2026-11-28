@@ -113,7 +113,7 @@ describe("member keys (3c)", () => {
     const posted = await board.call("/api/channels/backend/messages", { method: "POST", headers: bearer, body: { text: "From a key" } })
     expect(posted.status).toBe(200)
     expect(z.object({ message: z.object({ who: z.string() }) }).parse(posted.json).message.who).toBe("claude")
-    expect(await liveViewer(board.app.authenticator, { headers: new Headers(bearer), url: liveUrl })).toEqual({ member: "claude", channels: null })
+    expect(await liveViewer(board.app.authenticator, { headers: new Headers(bearer), url: liveUrl })).toMatchObject({ member: "claude", channels: null })
 
     const transport = new StreamableHTTPClientTransport(new URL("http://localhost/mcp"), {
       fetch: (input, init) => Promise.resolve(board.app.request(input instanceof Request ? input : String(input), init)),
@@ -156,7 +156,7 @@ describe("member keys (3c)", () => {
     expect((await board.call("/api/tasks", { headers: bearer })).status).toBe(403)
     expect((await board.call("/api/events", { headers: bearer })).status).toBe(403)
     expect((await board.call("/api/keys", { headers: bearer })).status).toBe(403)
-    expect(await liveViewer(board.app.authenticator, { headers: new Headers(bearer), url: liveUrl })).toEqual({ member: "codex", channels: ["backend"] })
+    expect(await liveViewer(board.app.authenticator, { headers: new Headers(bearer), url: liveUrl })).toMatchObject({ member: "codex", channels: ["backend"] })
 
     const tasks = z.array(z.object({ id: z.number(), channel: z.string() })).parse((await board.call("/api/tasks?channel=backend", { headers: bearer })).json)
     const elsewhere = await board.db.execute(sql`select id from tasks where channel <> 'backend' limit 1`)

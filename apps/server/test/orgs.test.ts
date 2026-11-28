@@ -126,7 +126,7 @@ describe("orgs and shared channels (11a)", () => {
     await call("simon", "POST", "/api/channels/founders/messages", { text: "private founders note" })
     const forTim = await eventsSince(db, 0, 1000, { kind: "live", viewer: viewerOf("tim") })
     const stub = forTim.find((event) => event.channel === "founders" && event.type === "message.posted")
-    expect(stub?.data).toEqual({ mentions: [] })
+    expect(stub?.data).toEqual({ mentions: [], actorOrg: "home", actorKind: "person" })
     expect(JSON.stringify(forTim)).not.toContain("founders note")
     expect((await eventsSince(db, 0, 1000, { kind: "live", viewer: viewerOf("ana") })).some((event) => event.channel === "founders")).toBe(false)
     expect((await eventsSince(db, 0, 1000, { kind: "live", viewer: viewerOf("simon", ["acme-site"]) })).every((event) => event.channel === "acme-site")).toBe(true)
@@ -134,7 +134,7 @@ describe("orgs and shared channels (11a)", () => {
     const hub = createHub(connection.db, postgresListener(connection.sql))
     await hub.ready
     const frames: LiveFrame[] = []
-    await hub.attach({ send: (text: string) => void frames.push(LiveFrame.parse(JSON.parse(text))) }, 0, viewerOf("ana"))
+    await hub.attach({ send: (text: string) => void frames.push(LiveFrame.parse(JSON.parse(text))), close: () => undefined }, 0, viewerOf("ana"))
     await call("simon", "POST", "/api/channels/backend/messages", { text: "later backend note" })
     await call("simon", "POST", "/api/channels/acme-site/messages", { text: "later acme note" })
     const deadline = Date.now() + 5000

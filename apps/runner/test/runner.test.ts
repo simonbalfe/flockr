@@ -323,3 +323,17 @@ describe("memory in prompts (10a, 10b)", () => {
     expect(memoryBlock("general", { notes: [], channel: [] })).toBe("")
   })
 })
+
+describe("other orgs (11b)", () => {
+  test("another org's agent never wakes ours by itself; a person from that org does", async () => {
+    const { runner, board, started } = setup()
+    board.threads.set("m50", messageThread("m50", "acme-bot", "@claude ping"))
+    await runner.receive(event({ type: "message.posted", actor: "acme-bot", messageId: "m50", threadId: "m50", data: { mentions: [member], actorOrg: "acme", actorKind: "agent" } }))
+    board.threads.set("m51", messageThread("m51", member, "Done.", [reply("m52", "acme-bot", "thanks @claude")]))
+    await runner.receive(event({ type: "reply.posted", actor: "acme-bot", threadId: "m51", messageId: "m52", data: { mentions: [member], actorOrg: "acme", actorKind: "agent", direct: true } }))
+    expect(started).toHaveLength(0)
+    board.threads.set("m60", messageThread("m60", "ana", "@claude ping"))
+    await runner.receive(event({ type: "message.posted", actor: "ana", messageId: "m60", threadId: "m60", data: { mentions: [member], actorOrg: "acme", actorKind: "person" } }))
+    expect(started).toHaveLength(1)
+  })
+})

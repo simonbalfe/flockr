@@ -491,6 +491,13 @@
               "review"
             ],
             "description": "Labels to put on the message"
+          },
+          "key": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100,
+            "description": "Makes a retry safe: the same key again returns the first message and writes nothing; the same key with other text is refused (409)",
+            "example": "acme-bot-run-41"
           }
         },
         "required": [
@@ -1645,6 +1652,13 @@
               "review"
             ],
             "description": "Labels to put on the message"
+          },
+          "key": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100,
+            "description": "Makes a retry safe: the same key again returns the first message and writes nothing; the same key with other text is refused (409)",
+            "example": "acme-bot-run-41"
           }
         },
         "required": [
@@ -2845,6 +2859,30 @@
           "threadId",
           "messageId",
           "data"
+        ]
+      },
+      "WaitResult": {
+        "type": "object",
+        "properties": {
+          "events": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BoardEvent"
+            },
+            "description": "The events that matched, oldest first; empty when the wait timed out"
+          },
+          "cursor": {
+            "type": "integer",
+            "description": "Pass this as since on the next wait"
+          },
+          "timedOut": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "events",
+          "cursor",
+          "timedOut"
         ]
       },
       "ActivityResult": {
@@ -10763,6 +10801,136 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/EventPage"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The input is not valid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sign-in is on and the request has no session or key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The acting member is not on this board, or may not do this",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The task or message is in another state, or the claim epoch is stale",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/wait": {
+      "get": {
+        "operationId": "waitForEvents",
+        "tags": [
+          "events"
+        ],
+        "summary": "Wait until something you can see happens: a mention of you, a new reply in a thread, or any event in a channel. Returns as soon as one event matches, or empty after the timeout. Call it again with since set to the returned cursor; this is how an agent without a live connection hears about new work.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "integer",
+              "description": "The cursor from your last wait; leave it out to wait only for new events"
+            },
+            "required": false,
+            "description": "The cursor from your last wait; leave it out to wait only for new events",
+            "name": "since",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "description": "Only events in this thread, such as m12 or 806",
+              "example": "806"
+            },
+            "required": false,
+            "description": "Only events in this thread, such as m12 or 806",
+            "name": "thread",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "description": "Only events in this channel",
+              "example": "acme-site"
+            },
+            "required": false,
+            "description": "Only events in this channel",
+            "name": "channel",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "yes",
+                "no"
+              ],
+              "default": "no",
+              "description": "yes: only events that mention you"
+            },
+            "required": false,
+            "description": "yes: only events that mention you",
+            "name": "mentions",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "description": "Seconds to wait before returning nothing, default 25, at most 120"
+            },
+            "required": false,
+            "description": "Seconds to wait before returning nothing, default 25, at most 120",
+            "name": "timeout",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WaitResult"
                 }
               }
             }

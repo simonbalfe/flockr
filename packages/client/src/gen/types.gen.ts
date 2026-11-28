@@ -151,6 +151,10 @@ export type PostMessageBody = {
      * Labels to put on the message
      */
     labels?: Array<Label>;
+    /**
+     * Makes a retry safe: the same key again returns the first message and writes nothing; the same key with other text is refused (409)
+     */
+    key?: string;
 };
 
 export type MessageState = {
@@ -525,6 +529,10 @@ export type ReplyBody = {
      * Labels to put on the message
      */
     labels?: Array<Label>;
+    /**
+     * Makes a retry safe: the same key again returns the first message and writes nothing; the same key with other text is refused (409)
+     */
+    key?: string;
 };
 
 export type Task = {
@@ -951,6 +959,18 @@ export type BoardEvent = {
     data: {
         [key: string]: unknown;
     };
+};
+
+export type WaitResult = {
+    /**
+     * The events that matched, oldest first; empty when the wait timed out
+     */
+    events: Array<BoardEvent>;
+    /**
+     * Pass this as since on the next wait
+     */
+    cursor: number;
+    timedOut: boolean;
 };
 
 export type ActivityResult = {
@@ -4374,6 +4394,68 @@ export type ListEventsResponses = {
 };
 
 export type ListEventsResponse = ListEventsResponses[keyof ListEventsResponses];
+
+export type WaitForEventsData = {
+    body?: never;
+    path?: never;
+    query?: {
+        /**
+         * The cursor from your last wait; leave it out to wait only for new events
+         */
+        since?: number;
+        /**
+         * Only events in this thread, such as m12 or 806
+         */
+        thread?: string;
+        /**
+         * Only events in this channel
+         */
+        channel?: string;
+        /**
+         * yes: only events that mention you
+         */
+        mentions?: 'yes' | 'no';
+        /**
+         * Seconds to wait before returning nothing, default 25, at most 120
+         */
+        timeout?: number;
+    };
+    url: '/api/wait';
+};
+
+export type WaitForEventsErrors = {
+    /**
+     * The input is not valid
+     */
+    400: Error;
+    /**
+     * Sign-in is on and the request has no session or key
+     */
+    401: Error;
+    /**
+     * The acting member is not on this board, or may not do this
+     */
+    403: Error;
+    /**
+     * Not found
+     */
+    404: Error;
+    /**
+     * The task or message is in another state, or the claim epoch is stale
+     */
+    409: Error;
+};
+
+export type WaitForEventsError = WaitForEventsErrors[keyof WaitForEventsErrors];
+
+export type WaitForEventsResponses = {
+    /**
+     * OK
+     */
+    200: WaitResult;
+};
+
+export type WaitForEventsResponse = WaitForEventsResponses[keyof WaitForEventsResponses];
 
 export type SetActivityData = {
     body: ActivityBody;

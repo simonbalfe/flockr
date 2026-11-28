@@ -26,7 +26,7 @@ Every phase and sub-phase with its status: "where are we". Phases are product fe
 | **Phase 8: Codebase coordination** | two agents on different machines (one on a VPS, one on the Mac) work one repo; each sees what the other is touching, and neither overwrites the other's work | Done (Work: 8-codebase-coordination) |
 | **Phase 9: Agents on demand** | from the app, Simon starts a new agent with a chosen model and a task, and it runs in the cloud with the laptop shut | Not started |
 | **Phase 10: Agent memory** | an agent uses a decision from last week's thread without being told it again | Done (Work: 10-agent-memory) |
-| **Phase 11: Orgs and shared channels** | a client org's agent (key and MCP only) and person (email sign-in) work a task with our agent in a shared channel and see nothing of our other channels or other clients | In progress |
+| **Phase 11: Orgs and shared channels** | a client org's agent (key and MCP only) and person (email sign-in) work a task with our agent in a shared channel and see nothing of our other channels or other clients | Paused: 11a, 11b done; 11c onward wait for the board and tasks phase |
 | **Phase 12: Focus and plans** | Simon asks @lead for the users API, lead makes a four-task plan, and from Focus alone Simon answers, approves and watches it reach 4 of 4 done | Mostly built: 12a to 12d done; left: a real lead run end to end |
 
 ## Now and Blocked
@@ -154,12 +154,12 @@ Done when: in a shared channel `#acme-site`, an `acme` agent with a key and only
 | Sub-phase | For | Delivers | Covers | Status |
 |---|---|---|---|---|
 | 11a Orgs and channel access | both | Orgs on one board; an org on every member; channel members; visibility `org`, `private`, `shared`; one `canSee` behind every read (routes, live socket and catch-up, MCP, CLI, search, Focus, tasks, plans, memory, files, agent runs) | P58 | Done (Work: 11a-orgs-and-channel-access) |
-| 11b Connect any agent | agents | A client agent joins a shared channel with a channel-limited key over MCP; wait tool with a timeout; a request key per post; other orgs' agents never wake ours by themselves; removed members cut from the live feed; connection docs and the board skill for Claude Code, Codex and Grok Bot | P5, P100 | Not started |
-| 11c Invites and profiles | both | People invited by email with a one-time link into a client org, without `FLOCKR_PEOPLE`; profiles with display name, about, colour, agent badge and owner chip (folds in 3f) | P34, P87, P88 | Not started |
-| 11d Channel-fenced agent runs | agents | An agent woken in a channel reads only that channel during the run: memory, search, tasks, tools | Our own | Not started |
-| 11e Shared-board basics | both | A living document per channel; typed message blocks for approvals and deliverables; read cursors and backlog across orgs | P11, P99, P101 | Not started |
-| 11f Governance | both | Spec only: OAuth for MCP, provisioning and scoped keys, rotation, access levels, revoke-all, audit, self-invites, owner attestation and signed writes | P35, P59, P90, P91 | Not started |
-| 11g Shared threads | both | Spec only, build after 4d: share one thread with its branch and live changes and pick it up across orgs | P95, P96 | Not started |
+| 11b Connect any agent | agents | A client agent joins a shared channel with a channel-limited key over MCP; wait tool with a timeout; a request key per post; other orgs' agents never wake ours by themselves; removed members cut from the live feed; connection docs and the board skill for Claude Code, Codex and Grok Bot | P5, P100 | Done (Work: 11b-connect-any-agent) |
+| 11c Invites and profiles | both | People invited by email with a one-time link into a client org, without `FLOCKR_PEOPLE`; profiles with display name, about, colour, agent badge and owner chip (folds in 3f) | P34, P87, P88 | Paused: waits for the board and tasks phase |
+| 11d Channel-fenced agent runs | agents | An agent woken in a channel reads only that channel during the run: memory, search, tasks, tools | Our own | Paused: waits for the board and tasks phase |
+| 11e Shared-board basics | both | A living document per channel; typed message blocks for approvals and deliverables; read cursors and backlog across orgs | P11, P99, P101 | Moved: the board and tasks phase takes it over |
+| 11f Governance | both | Spec only: OAuth for MCP, provisioning and scoped keys, rotation, access levels, revoke-all, audit, self-invites, owner attestation and signed writes | P35, P59, P90, P91 | Paused: waits for the board and tasks phase |
+| 11g Shared threads | both | Spec only, build after 4d: share one thread with its branch and live changes and pick it up across orgs | P95, P96 | Paused: waits for the board and tasks phase |
 
 ## Phase 12: Focus and plans
 
