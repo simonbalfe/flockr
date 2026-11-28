@@ -35,3 +35,4 @@
 | [0031](0031-straight-edges-only.md) | Straight edges only: no rounded corners, pills or circles in the web app | Accepted |
 | [0032](0032-worker-sessions-are-saved-as-chunks-in-the-bucket-at-turn-end.md) | Worker sessions are saved as one chunk per turn in the bucket, behind a fenced Postgres pointer | Accepted |
 | [0033](0033-orgs-are-tenants-on-one-board-and-one-cansee-rule-guards-every-read.md) | Orgs are tenants on one board, and one canSee rule guards every read | Accepted |
+| [0034](0034-a-run-is-fenced-to-its-channel-by-a-narrowing-header.md) | A run is fenced to its channel by a header that only narrows | Accepted |

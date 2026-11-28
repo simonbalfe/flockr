@@ -32,6 +32,8 @@ const threadOf = (raw: string): Target => {
   }
 }
 
+const channelOrOpen = (channel: string | null): Target => (channel ? { kind: "channel", channel } : { kind: "open" })
+
 function waitTarget(query: URLSearchParams): Target {
   const thread = query.get("thread")
   if (thread) return threadOf(thread)
@@ -42,18 +44,19 @@ function waitTarget(query: URLSearchParams): Target {
 const rules: Rule[] = [
   { pattern: /^\/mcp$/, target: () => ({ kind: "open" }) },
   { method: "PATCH", pattern: /^\/api\/members\/[^/]+\/profile$/, target: () => ({ kind: "open" }) },
+  { pattern: /^\/api\/agents\/[^/]+\/notes(\/.*)?$/, target: () => ({ kind: "open" }) },
   { method: "GET", pattern: /^\/api\/(me|members|channels)$/, target: () => ({ kind: "open" }) },
   { method: "GET", pattern: /^\/api\/plans$/, target: () => ({ kind: "open" }) },
   { method: "POST", pattern: /^\/api\/plans$/, target: async (_, request) => ({ kind: "channel", channel: ChannelBody.safeParse(await request.body()).data?.channel ?? null }) },
   { pattern: /^\/api\/plans\/(\d+)(\/.*)?$/, target: (match) => ({ kind: "plan", id: Number(match[1]) }) },
   { pattern: /^\/api\/files\/(f\d+)(\/.*)?$/, target: (match) => ({ kind: "file", id: match[1] ?? "" }) },
   { method: "POST", pattern: /^\/api\/tasks\/claim$/, target: () => ({ kind: "open" }) },
-  { method: "GET", pattern: /^\/api\/(tasks|search)$/, target: (_, request) => ({ kind: "channel", channel: request.query.get("channel") }) },
+  { method: "GET", pattern: /^\/api\/(tasks|search)$/, target: (_, request) => channelOrOpen(request.query.get("channel")) },
   { method: "POST", pattern: /^\/api\/tasks$/, target: async (_, request) => ({ kind: "channel", channel: ChannelBody.safeParse(await request.body()).data?.channel ?? null }) },
   { pattern: /^\/api\/channels\/([^/]+)(\/.*)?$/, target: (match) => ({ kind: "channel", channel: segment(match) }) },
   { pattern: /^\/api\/tasks\/(\d+)(\/.*)?$/, target: (match) => ({ kind: "thread", ref: { kind: "task", id: Number(match[1]) } }) },
   { pattern: /^\/api\/(?:threads|messages|activity-entries)\/([^/]+)(\/.*)?$/, target: (match) => threadOf(segment(match)) },
-  { method: "GET", pattern: /^\/api\/(events|focus|inbox|activity)$/, target: () => ({ kind: "viewer" }) },
+  { method: "GET", pattern: /^\/api\/(events|focus|inbox|activity)$/, target: () => ({ kind: "open" }) },
   { pattern: /^\/api\/me\/[a-z]+$/, target: () => ({ kind: "viewer" }) },
   { method: "POST", pattern: /^\/api\/(dms|members)$/, target: () => ({ kind: "viewer" }) },
   { method: "GET", pattern: /^\/api\/orgs$/, target: () => ({ kind: "open" }) },

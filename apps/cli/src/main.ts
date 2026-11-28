@@ -9,7 +9,7 @@ import { checklistCommand } from "./checklist"
 import { briefCommand, routinesCommand } from "./routines"
 import { rulesCommand } from "./rules"
 import { int, need, optionalInt, readArgs, seconds, UsageError, yesNoOf, type Values } from "./args"
-import { envKey, envMember, envUrl, stateFile } from "./config"
+import { envChannels, envKey, envMember, envUrl, stateFile } from "./config"
 import { epochStore } from "./epochs"
 import { activityLine, channelLine, readerLine, entryLine, eventLine, feedLine, inboxText, memberLine, messageStateLine, searchLine, taskDetail, taskLine, threadText, versionsText } from "./format"
 import { keysCommand } from "./keys"
@@ -224,7 +224,7 @@ const argv = process.argv.slice(2)
 const { values, positionals } = readArgs(argv)
 const baseUrl = values.url ?? envUrl
 const member = values.as ?? envMember
-configureClient({ baseUrl, member, key: envKey })
+configureClient({ baseUrl, member, key: envKey, channels: envChannels })
 const epochs = epochStore({ file: stateFile, url: baseUrl, member })
 
 function print(data: unknown, text: () => string): void {
@@ -324,6 +324,7 @@ async function tail(v: Values): Promise<number> {
   connectLive({
     baseUrl,
     key: envKey,
+    channels: envChannels,
     since,
     onHello: (head) => void (values.json ? undefined : console.error(`connected, board is at event ${head}`)),
     onStatus: (up) => void (up || values.json ? undefined : console.error("disconnected, reconnecting")),

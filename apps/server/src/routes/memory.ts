@@ -17,7 +17,7 @@ export const memoryRoutes = router()
       request: { params: AgentParams, query: MemoryListQuery },
       responses: ok(z.array(MemoryItem)),
     }),
-    async (c) => c.json(await listMemory(c.var.db, c.var.member, agentNotes(c.req.valid("param").name), c.req.valid("query")), 200),
+    async (c) => c.json(await listMemory(c.var.db, c.var.member, agentNotes(c.req.valid("param").name, c.var.channels), c.req.valid("query")), 200),
   )
   .openapi(
     operation({
@@ -29,7 +29,7 @@ export const memoryRoutes = router()
       request: { params: AgentParams, body: jsonBody(AddMemoryBody) },
       responses: ok(MemoryItem),
     }),
-    async (c) => c.json(await addMemory(c.var.db, c.var.member, agentNotes(c.req.valid("param").name), c.req.valid("json")), 200),
+    async (c) => c.json(await addMemory(c.var.db, c.var.member, agentNotes(c.req.valid("param").name, c.var.channels), c.req.valid("json")), 200),
   )
   .openapi(
     operation({
@@ -43,7 +43,7 @@ export const memoryRoutes = router()
     }),
     async (c) => {
       const { name, id } = c.req.valid("param")
-      return c.json(await updateMemory(c.var.db, c.var.member, agentNotes(name), id, c.req.valid("json")), 200)
+      return c.json(await updateMemory(c.var.db, c.var.member, agentNotes(name, c.var.channels), id, c.req.valid("json")), 200)
     },
   )
   .openapi(
@@ -58,7 +58,7 @@ export const memoryRoutes = router()
     }),
     async (c) => {
       const { name, id } = c.req.valid("param")
-      return c.json(await setMemoryArchived(c.var.db, c.var.member, agentNotes(name), id, true), 200)
+      return c.json(await setMemoryArchived(c.var.db, c.var.member, agentNotes(name, c.var.channels), id, true), 200)
     },
   )
   .openapi(
@@ -73,7 +73,7 @@ export const memoryRoutes = router()
     }),
     async (c) => {
       const { name, id } = c.req.valid("param")
-      return c.json(await setMemoryArchived(c.var.db, c.var.member, agentNotes(name), id, false), 200)
+      return c.json(await setMemoryArchived(c.var.db, c.var.member, agentNotes(name, c.var.channels), id, false), 200)
     },
   )
   .openapi(

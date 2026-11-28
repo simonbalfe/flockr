@@ -1,4 +1,4 @@
-import { authorizationHeader, bearerAuth, defaultMember, memberHeader } from "@flockr/contracts/constants"
+import { authorizationHeader, bearerAuth, channelsHeader, defaultMember, memberHeader } from "@flockr/contracts/constants"
 import { createClient, type Client } from "./gen/client"
 import { client } from "./gen/client.gen"
 
@@ -7,7 +7,7 @@ export { client } from "./gen/client.gen"
 export type { Client } from "./gen/client"
 export { connectLive, liveUrl, type LiveConnection, type LiveOptions } from "./live"
 export { authBasePath, keyLimits, signInWording } from "@flockr/contracts/auth"
-export { activitySeconds, authorizationHeader, bearerAuth, channelVisibilities, defaultMember, hostOrg, errorKinds, leaseMinutes, memberHeader, memberKinds, messageLimits, reviewLimits, taskStates } from "@flockr/contracts/constants"
+export { activitySeconds, authorizationHeader, bearerAuth, channelsHeader, channelsParam, fenceOf, narrowChannels, channelVisibilities, defaultMember, hostOrg, errorKinds, leaseMinutes, memberHeader, memberKinds, messageLimits, reviewLimits, taskStates } from "@flockr/contracts/constants"
 export {
   actorFields,
   labelSet,
@@ -101,10 +101,15 @@ export interface ClientOptions {
   baseUrl: string
   member?: string
   key?: string | null
+  channels?: string[] | null
 }
 
 export function clientHeaders(options: Omit<ClientOptions, "baseUrl">): Record<string, string> {
-  return { [memberHeader]: options.member ?? defaultMember, ...(options.key ? { [authorizationHeader]: bearerAuth(options.key) } : {}) }
+  return {
+    [memberHeader]: options.member ?? defaultMember,
+    ...(options.key ? { [authorizationHeader]: bearerAuth(options.key) } : {}),
+    ...(options.channels ? { [channelsHeader]: options.channels.join(",") } : {}),
+  }
 }
 
 export function configureClient(options: ClientOptions): void {

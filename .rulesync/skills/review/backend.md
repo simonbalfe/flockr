@@ -25,6 +25,7 @@ Scope: `apps/server` (routes, board rules, the database, live events, the lease 
   - the acting member comes from the request's identity (today the `x-flockr-member` header, later a key), never from a field in the body
   - "claude via simon": every write records the agent and the person it acts for, from the identity, never from input
   - once keys exist: another board's id answers exactly like a missing one (404), lists leave it out, and a key limited to some channels reaches nothing else
+  - `x-flockr-channels` (ADR 0034) only narrows `identity.channels`; a route that reads across channels must filter with the viewer (`visibleTo`), never with the member name alone, or a fenced run reads past its channel
   - a board rule that needs a kind of caller (a person, never an agent, answers a question card; only a person or the named reviewer approves review) checks it itself; it does not trust that the route already did
 - **The write path:**
   - every state-changing operation converges however many times it runs and wherever a previous run stopped: it reads what exists, compares it to the goal and applies only the difference; ask what if this runs twice, and what if it crashed at every point

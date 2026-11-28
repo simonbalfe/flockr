@@ -1,4 +1,4 @@
-import { authorizationHeader, bearerAuth, livePath } from "@flockr/contracts/constants"
+import { authorizationHeader, bearerAuth, channelsParam, livePath } from "@flockr/contracts/constants"
 import type { LiveFrame } from "@flockr/contracts"
 import type { Activity, BoardEvent } from "./gen/types.gen"
 
@@ -6,6 +6,7 @@ export interface LiveOptions {
   baseUrl: string
   key?: string | null
   since?: number | null
+  channels?: string[] | null
   onEvent: (event: BoardEvent) => void
   onHello?: (head: number) => void
   onActivity?: (activity: Activity, working: boolean) => void
@@ -36,10 +37,11 @@ function isFrame(value: unknown): value is LiveFrame {
   return typeof value === "object" && value !== null && "kind" in value && (value.kind === "hello" || value.kind === "event" || value.kind === "activity" || value.kind === "agents" || value.kind === "resync")
 }
 
-export function liveUrl(baseUrl: string, since: number | null): string {
+export function liveUrl(baseUrl: string, since: number | null, channels: string[] | null = null): string {
   const url = new URL(livePath, baseUrl)
   url.protocol = url.protocol === "https:" ? "wss:" : "ws:"
   if (since !== null) url.searchParams.set("since", String(since))
+  if (channels) url.searchParams.set(channelsParam, channels.join(","))
   return url.toString()
 }
 
@@ -51,7 +53,7 @@ export function connectLive(options: LiveOptions): LiveConnection {
   let delay = 500
 
   const open = () => {
-    const url = liveUrl(options.baseUrl, lastSeq)
+    const url = liveUrl(options.baseUrl, lastSeq, options.channels ?? null)
     socket = openSocket(url, options.key)
     socket.onopen = () => {
       delay = 500

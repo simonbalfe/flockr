@@ -151,7 +151,7 @@ describe("the machine service", () => {
     board.threads.set("m10", messageThread("m10", "simon", "@scout hi"))
     await service.receive(mention("m10", "scout"))
     expect(started.map((s) => s.spec.folder)).toEqual(["/work/scout"])
-    expect(started[0]?.spec.env).toEqual({})
+    expect(started[0]?.spec.env).toEqual({ FC_CHANNELS: "general" })
     machine.set([agent("scout", { desired: "stopped" }), agent("helper")])
     await service.receive(event({ type: "agent.stopped", actor: "simon", data: { name: "scout", machine: here.id } }))
     expect(started[0]?.stopped).toBe(true)

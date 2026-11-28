@@ -1,4 +1,4 @@
-import { authBasePath, authorizationHeader, defaultMember, memberHeader, publicApiPaths, type AuthMode, type IdentitySource } from "@flockr/contracts"
+import { authBasePath, authorizationHeader, channelsHeader, channelsParam, defaultMember, fenceOf, memberHeader, narrowChannels, publicApiPaths, type AuthMode, type IdentitySource } from "@flockr/contracts"
 import { findLiveKey } from "../board/keys"
 import { findMember } from "../board/read"
 import { viewerOf, type Viewer } from "../board/visibility"
@@ -37,13 +37,14 @@ export const signInNeeded = "Sign in, or send a key as Authorization: Bearer <ke
 export const liveAsParam = "as"
 
 export async function liveViewer(auth: Authenticator, request: { headers: Headers; url: URL }): Promise<Viewer | Response> {
+  const fence = fenceOf(request.headers.get(channelsHeader) ?? request.url.searchParams.get(channelsParam))
   if (auth.mode === "off") {
     const named = request.url.searchParams.get(liveAsParam)?.trim()
-    return named ? viewerOf(named) : viewerOf(headerIdentity(request.headers).member)
+    return viewerOf(named || headerIdentity(request.headers).member, fence)
   }
   const identity = await auth.identify(request.headers)
   if (!identity) return Response.json({ error: signInNeeded, kind: "unauthenticated" }, { status: 401 })
-  const viewer = viewerOf(identity.member, identity.channels)
+  const viewer = viewerOf(identity.member, narrowChannels(identity.channels, fence))
   return identity.key === null ? viewer : { ...viewer, key: identity.key }
 }
 

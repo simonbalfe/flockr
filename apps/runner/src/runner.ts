@@ -3,7 +3,7 @@ import type { AgentPermissions } from "@flockr/contracts/agents"
 import type { EpochStore } from "@flockr/cli/epochs"
 import { activitySink, type ActivitySink } from "./activity"
 import type { BoardPort, Claim } from "./board"
-import { folderFor, isFolder, leaseRenewMs } from "./config"
+import { fenceEnv, folderFor, isFolder, leaseRenewMs } from "./config"
 import type { Harness, PermissionBridge, Session, SessionExit, SessionSaver, SessionSpec } from "./harness/types"
 import { memoryBlock, noMemory } from "./memory"
 import { ruleFor } from "./permissions"
@@ -187,7 +187,7 @@ export function createRunner(deps: RunnerDeps) {
       prompt: spec.prompt(wanted !== null),
       instructions: deps.instructions(settings),
       folder,
-      env: deps.sessionEnv,
+      env: { ...deps.sessionEnv, [fenceEnv]: spec.channel },
       resumeId: wanted,
       bridge: deps.bridge({ thread: spec.thread, channel: spec.channel }, settings),
       timeLimitMs: maxMinutes * 60_000,

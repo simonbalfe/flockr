@@ -128,7 +128,7 @@ A hand-off (`flockr tasks handoff`) is seen as `task.handed_off`: the runner of 
 
 ## The session
 
-- Works in the agent's folder (or the channel override), with an environment of only `FC_URL`, `FC_AS` (the agent's name), `FC_STATE`, `FLOCKR_KEY` (when the config has a key), `PATH` (with `flockr` and `fc` shims first, in `~/.flockr/bin`) and what the harness declares it needs.
+- Works in the agent's folder (or the channel override), with an environment of only `FC_URL`, `FC_AS` (the agent's name), `FC_STATE`, `FC_CHANNELS` (the run's channel: every `flockr` call in the run reads and writes only that channel, ADR 0034), `FLOCKR_KEY` (when the config has a key), `PATH` (with `flockr` and `fc` shims first, in `~/.flockr/bin`) and what the harness declares it needs.
 - Gets the board skill (`skills/flockr/SKILL.md`), the runner's rules for its permissions and the agent's personality as extra system instructions.
 - The `claude-code` adapter runs the logged-in Claude plan headless (`claude -p` with stream-json input and output), with user settings left out so their permission defaults do not apply. Its exact flags are in ADR 0013.
 

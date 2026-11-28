@@ -50,6 +50,7 @@ export function instructions(options: { member: string; skill: string; permissio
     "- When you need a decision from a person, ask with a question card in the thread (flockr ask <thread-id> ... --option ... --option ...), then wait with flockr wait --thread <thread-id>.",
     permissionLine[options.permissions ?? "edit-free-commands-ask"],
     "- Memory: your first prompt starts with what the channel remembers and your own notes, when there are any. Use them without being told again, and never retry a dead end they list. When a decision is made, a person states a preference, or you learn a fact or a failed approach worth knowing next week, save it in one short sentence: flockr notes add \"...\" --kind decision|dead-end|preference|fact|todo --thread <thread-id> for yourself, flockr memory add --channel <channel> ... for what every agent in the channel should know. Check flockr notes list first so you do not repeat one; edit or archive a note that is now wrong instead of adding a contradicting one.",
+    "- Each run is fenced to the channel it started in: flockr reads and writes only that channel during the run (your notes too: those from threads elsewhere stay out). A refusal that says the run is limited means the thing lives in another channel; say so instead of working around it.",
     "- A question or request is a conversation: answer it in the thread. Never create a task unless a person asks for one; if the work looks worth tracking, offer to make a task and wait for a yes.",
     "",
     "The board skill:",

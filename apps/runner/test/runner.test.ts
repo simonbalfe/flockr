@@ -35,6 +35,7 @@ describe("conversations", () => {
     await runner.receive(mention("m10"))
     expect(started).toHaveLength(1)
     expect(started[0]?.spec).toMatchObject({ folder: "/tmp/flockr-general", resumeId: null })
+    expect(started[0]?.spec.env.FC_CHANNELS).toBe("general")
     expect(started[0]?.spec.prompt).toContain("simon: @claude say hello")
     expect(started[0]?.spec.bridge.env.FLOCKR_THREAD).toBe("m10")
     expect(sessions.value()).toEqual({ "claude:m10": { harness: "fake", id: "session-1" } })

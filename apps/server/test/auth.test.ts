@@ -165,8 +165,10 @@ describe("member keys (3c)", () => {
     expect((await board.call("/api/channels/platform/messages", { method: "POST", headers: bearer, body: { text: "out of scope" } })).status).toBe(403)
     expect((await board.call("/api/tasks", { method: "POST", headers: bearer, body: { channel: "platform", title: "Out of scope" } })).status).toBe(403)
     expect((await board.call("/api/tasks?channel=backend", { headers: bearer })).status).toBe(200)
-    expect((await board.call("/api/tasks", { headers: bearer })).status).toBe(403)
-    expect((await board.call("/api/events", { headers: bearer })).status).toBe(403)
+    const listed = z.array(z.object({ channel: z.string() })).parse((await board.call("/api/tasks", { headers: bearer })).json)
+    expect(new Set(listed.map((t) => t.channel))).toEqual(new Set(["backend"]))
+    const seen = z.object({ events: z.array(z.object({ channel: z.string().nullable() })) }).parse((await board.call("/api/events?since=0&limit=1000", { headers: bearer })).json)
+    expect(seen.events.every((e) => e.channel === "backend")).toBe(true)
     expect((await board.call("/api/keys", { headers: bearer })).status).toBe(403)
     expect(await liveViewer(board.app.authenticator, { headers: new Headers(bearer), url: liveUrl })).toMatchObject({ member: "codex", channels: ["backend"] })
 

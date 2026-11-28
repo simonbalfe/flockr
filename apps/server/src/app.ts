@@ -1,4 +1,4 @@
-import { authBasePath, defaultMember, memberHeader } from "@flockr/contracts"
+import { authBasePath, channelsHeader, defaultMember, fenceOf, memberHeader, narrowChannels } from "@flockr/contracts"
 import { swaggerUI } from "@hono/swagger-ui"
 import type { MiddlewareHandler } from "hono"
 import { createAuthenticator, headerIdentity, isPublicApiPath, signInNeeded } from "./auth/identity"
@@ -70,8 +70,9 @@ export function createApp(db: Database, options: AppOptions = {}) {
     c.set("auth", authenticator)
     if (authenticator.mode !== "off" && isPublicApiPath(c.req.path)) return next()
     const open = authenticator.mode === "off" || isPublicApiPath(c.req.path)
-    const identity = open ? headerIdentity(c.req.raw.headers) : await authenticator.identify(c.req.raw.headers)
-    if (!identity) throw unauthenticated(signInNeeded)
+    const found = open ? headerIdentity(c.req.raw.headers) : await authenticator.identify(c.req.raw.headers)
+    if (!found) throw unauthenticated(signInNeeded)
+    const identity = { ...found, channels: narrowChannels(found.channels, fenceOf(c.req.header(channelsHeader))) }
     c.set("member", identity.member)
     c.set("via", identity.via)
     c.set("channels", identity.channels)

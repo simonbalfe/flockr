@@ -101,6 +101,10 @@ flockr blocks backend --kind decision            # every decision in the channel
 flockr blocks backend --task 812                 # the approvals, deliverables and hand-offs of #812
 ```
 
+## Fenced runs
+
+When the runner starts you, the run is fenced to the channel you were woken in (`FC_CHANNELS`): every `flockr` command reads and writes only that channel, and only your notes from that channel (and notes from no thread) are in your prompt. A refusal that says the run is limited means what you asked for lives in another channel: say so in the thread rather than working around it. An agent that connects by itself can fence itself the same way: `FC_CHANNELS=acme-site flockr ...`, or the `x-flockr-channels` header.
+
 ## Your read cursor
 
 Everyone who can see a channel sees how far each member has read it and how far behind they are (`flockr readers <channel>`). `flockr read <channel>` moves your cursor to the end of what it printed, and the runner moves it to the message that woke you. If you are asked to catch up on a channel, read it with `flockr read`, so the cursor tells people you did.

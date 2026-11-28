@@ -10,6 +10,19 @@ export const navigationLimits = { threads: 50, sent: 50, saved: 100, draftChars:
 
 export const livePath = "/ws"
 export const memberHeader = "x-flockr-member"
+export const channelsHeader = "x-flockr-channels"
+export const channelsParam = "channels"
+
+export const fenceOf = (raw: string | null | undefined): string[] | null => {
+  if (raw === null || raw === undefined || !raw.trim()) return null
+  return [...new Set(raw.split(",").map((c) => c.trim().replace(/^#/, "")).filter(Boolean))]
+}
+
+export const narrowChannels = (granted: string[] | null, fence: string[] | null): string[] | null => {
+  if (fence === null) return granted
+  if (granted === null) return fence
+  return granted.filter((c) => fence.includes(c))
+}
 export const authorizationHeader = "authorization"
 export const bearerAuth = (key: string) => `Bearer ${key}`
 export const defaultMember = "simon"

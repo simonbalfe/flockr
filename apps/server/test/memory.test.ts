@@ -115,7 +115,7 @@ describe("channel memory (10b)", () => {
 })
 
 describe("memory with sign-in on", () => {
-  test("a key acts as its member; a key limited to channels reaches only those channels' memory and no notes", async () => {
+  test("a key acts as its member; a key limited to channels reaches only those channels' memory and only notes from them", async () => {
     const connection = await testConnection()
     await resetBoard(connection.db)
     await seedBoard(connection.db)
@@ -134,7 +134,8 @@ describe("memory with sign-in on", () => {
     const scoped = await key("claude", ["backend"])
     expect(await call(claude, "POST", "/api/agents/claude/notes", { text: "mine" })).toBe(200)
     expect(await call(claude, "GET", "/api/agents/codex/notes")).toBe(403)
-    expect(await call(scoped, "GET", "/api/agents/claude/notes")).toBe(403)
+    expect(await call(scoped, "GET", "/api/agents/claude/notes")).toBe(200)
+    expect(await call(scoped, "POST", "/api/agents/claude/notes", { text: "out of scope", sourceThread: "803" })).toBe(403)
     expect(await call(scoped, "POST", "/api/channels/backend/memory", { text: "in scope" })).toBe(200)
     expect(await call(scoped, "GET", "/api/channels/backend/memory")).toBe(200)
     expect(await call(scoped, "GET", "/api/channels/platform/memory")).toBe(403)

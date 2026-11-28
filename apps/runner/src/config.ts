@@ -16,6 +16,7 @@ export const claimsFile = process.env.FC_STATE ?? defaultClaimsFile
 export const inheritedPath = process.env.PATH ?? "/usr/bin:/bin"
 export const quiet = process.env.FLOCKR_RUNNER_QUIET === "1"
 export const noRunner = process.env.FLOCKR_NO_RUNNER === "1"
+export const fenceEnv = "FC_CHANNELS"
 export const defaultBoard = "http://localhost:5173"
 
 const repoRoot = path.resolve(import.meta.dir, "../../..")

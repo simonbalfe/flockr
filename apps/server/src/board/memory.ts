@@ -9,7 +9,7 @@ import {
   type MemoryScope,
   type UpdateMemoryBody,
 } from "@flockr/contracts"
-import { and, desc, eq, isNotNull, isNull, lt, sql } from "drizzle-orm"
+import { and, desc, eq, isNotNull, isNull, lt, or, sql, type AnyColumn, type SQL } from "drizzle-orm"
 import type { Database, Executor, Tx } from "../db/client"
 import { memoryItems, type MemoryItemRow } from "../db/schema"
 import { forbidden, notFound, wrongState } from "./errors"
@@ -21,9 +21,10 @@ import { findMember, requireChannel } from "./read"
 export interface MemorySpace {
   scope: MemoryScope
   owner: string
+  fence?: string[] | null
 }
 
-export const agentNotes = (agent: string): MemorySpace => ({ scope: "agent", owner: agent })
+export const agentNotes = (agent: string, fence: string[] | null = null): MemorySpace => ({ scope: "agent", owner: agent, fence })
 export const channelMemory = (channel: string): MemorySpace => ({ scope: "channel", owner: channel })
 
 const labelOf = (space: MemorySpace) => (space.scope === "agent" ? `${space.owner}'s notes` : `#${space.owner}'s memory`)
@@ -52,6 +53,7 @@ async function openSpace(db: Executor, actor: string, space: MemorySpace) {
     const agent = await findMember(db, space.owner)
     if (!agent || agent.kind !== "agent") throw notFound(`Agent ${space.owner} does not exist; flockr agents lists them`)
     if (!mayUseAgentNotes({ actor: me, agent: space.owner })) throw forbidden(`${actor} is an ${me.kind}; an agent reads and writes only its own notes, and ${space.owner}'s belong to ${space.owner} and people`)
+    if (me.org !== agent.org) throw forbidden(`${actor} is in org ${me.org}; ${space.owner}'s notes stay in ${agent.org}`)
   } else {
     await requireChannel(db, space.owner)
   }
@@ -68,8 +70,27 @@ const emitMemory = (emit: Emit, type: string, actor: string, row: MemoryItemRow,
 
 const inSpace = (space: MemorySpace) => and(eq(memoryItems.scope, space.scope), eq(memoryItems.owner, space.owner))
 
+const threadIn = (thread: SQL | AnyColumn, fence: string[]) => {
+  const channels = sql.join(fence.map((c) => sql`${c}`), sql`, `)
+  return sql`(exists (select 1 from messages fm where 'm' || fm.id = ${thread} and fm.channel in (${channels})) or exists (select 1 from tasks ft where ft.id::text = ${thread} and ft.channel in (${channels})))`
+}
+
+const inView = (space: MemorySpace) => {
+  const fence = space.fence ?? null
+  if (fence === null) return inSpace(space)
+  if (!fence.length) return and(inSpace(space), isNull(memoryItems.sourceThread))
+  return and(inSpace(space), or(isNull(memoryItems.sourceThread), threadIn(memoryItems.sourceThread, fence)))
+}
+
+async function requireThreadInFence(db: Executor, space: MemorySpace, thread: string | null | undefined): Promise<void> {
+  const fence = space.fence ?? null
+  if (fence === null || thread === null || thread === undefined) return
+  const rows = await db.execute<{ inside: boolean }>(sql`select ${fence.length ? threadIn(sql`${thread}`, fence) : sql`false`} as inside`)
+  if (![...rows].some((r) => r.inside === true)) throw forbidden(`Thread ${thread} is outside the channels this run may read (${fence.map((c) => `#${c}`).join(", ")})`)
+}
+
 async function lockItem(tx: Tx, space: MemorySpace, id: number): Promise<MemoryItemRow> {
-  const [row] = await tx.select().from(memoryItems).where(and(inSpace(space), eq(memoryItems.id, id))).for("update")
+  const [row] = await tx.select().from(memoryItems).where(and(inView(space), eq(memoryItems.id, id))).for("update")
   if (!row) throw notFound(`${labelOf(space)} has no item ${id}; ${commandOf(space)} lists them`)
   return row
 }
@@ -85,7 +106,7 @@ export async function listMemory(db: Executor, actor: string, space: MemorySpace
   const rows = await db
     .select()
     .from(memoryItems)
-    .where(and(inSpace(space), query.state === "active" ? isNull(memoryItems.archivedAt) : isNotNull(memoryItems.archivedAt), query.before === undefined ? undefined : lt(memoryItems.id, query.before)))
+    .where(and(inView(space), query.state === "active" ? isNull(memoryItems.archivedAt) : isNotNull(memoryItems.archivedAt), query.before === undefined ? undefined : lt(memoryItems.id, query.before)))
     .orderBy(desc(memoryItems.id))
     .limit(query.limit)
   return rows.map(presentMemory)
@@ -93,6 +114,7 @@ export async function listMemory(db: Executor, actor: string, space: MemorySpace
 
 export async function addMemory(db: Database, actor: string, space: MemorySpace, body: AddMemoryBody): Promise<MemoryItem> {
   return mutate(db, async (tx, emit) => {
+    await requireThreadInFence(tx, space, body.sourceThread)
     await openSpace(tx, actor, space)
     // One add at a time per owner, so the cap and the key hold under concurrent calls.
     await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${`memory:${space.scope}:${space.owner}`}))`)
@@ -108,7 +130,7 @@ export async function addMemory(db: Database, actor: string, space: MemorySpace,
     if ((live?.count ?? 0) >= cap) throw wrongState(`${labelOf(space)} already hold ${cap} items; archive or edit one first (${commandOf(space)})`)
     const [row] = await tx
       .insert(memoryItems)
-      .values({ ...space, kind: body.kind, text: body.text, tags: body.tags, sourceThread: body.sourceThread, key: body.key ?? null, createdBy: actor, updatedBy: actor })
+      .values({ scope: space.scope, owner: space.owner, kind: body.kind, text: body.text, tags: body.tags, sourceThread: body.sourceThread, key: body.key ?? null, createdBy: actor, updatedBy: actor })
       .returning()
     if (!row) throw new Error("Memory insert returned nothing")
     emitMemory(emit, memoryEventTypes.added, actor, row)
@@ -121,6 +143,7 @@ const sameTags = (a: readonly string[], b: readonly string[]) => a.length === b.
 export async function updateMemory(db: Database, actor: string, space: MemorySpace, id: number, body: UpdateMemoryBody): Promise<MemoryItem> {
   return mutate(db, async (tx, emit) => {
     const me = await openSpace(tx, actor, space)
+    await requireThreadInFence(tx, space, body.sourceThread)
     const current = await lockItem(tx, space, id)
     requireMayChange(me, space, current)
     if (current.archivedAt) throw wrongState(`Item ${id} is archived; restore it before editing`)
