@@ -14,6 +14,6 @@ export const piDurable = createPiHarness({
   },
   store: fileStore(agentStateFile),
   boardFor: ({ url, member, key }) => fencedPiBoard({ member, clientFor: (channels) => memberClient({ baseUrl: url, member, key, channels }) }),
-  workspace: (cwd) => new NodeExecutionEnv({ cwd }),
+  workspace: { kind: "folder", env: (cwd) => new NodeExecutionEnv({ cwd }) },
   log: (line) => console.log(line),
 })

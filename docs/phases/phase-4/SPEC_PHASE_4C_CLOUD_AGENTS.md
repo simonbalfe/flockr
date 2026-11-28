@@ -20,7 +20,7 @@ Example: Simon makes `scout` in the New agent dialog with machine "Cloud", shuts
 - **The fence.** Every board call a Pi session makes is sent with `x-flockr-channels: <the run's channel>`. The Pi adapter keeps the run's channel in its thread document, so a turn resumed after a crash is fenced too. This closes the same gap for Pi agents on a Mac.
 - **Portable runner core.** `createRunner`, `createService`, the Pi adapter and its chunk code no longer import Bun or the runner's file config, so the Worker bundles them: limits moved to `apps/runner/src/limits.ts`, the chunk diff runs on any `SqliteDatabase` (gzip through `CompressionStream`), and the Pi state store is an interface (`PiStore`: a SQLite file on a Mac, the object's database in the cloud).
 
-**Out:** coding tools and sandboxes (PL6, 4d); model providers other than the proxy (an agent picks a model id with its `model` field); adding an agent to a channel needs nothing new (11a's channel members); a Bun host for cloud agents (on `bun dev` and self-host the machine `cloud` stays offline, so the dialog does not offer it; Notes); the spend cap (PL12).
+**Out:** coding tools and sandboxes (PL6 later added `read`, `write`, `edit` and `bash` in a box per task, ADR 0037; pull requests are 4d); model providers other than the proxy (an agent picks a model id with its `model` field); adding an agent to a channel needs nothing new (11a's channel members); a Bun host for cloud agents (on `bun dev` and self-host the machine `cloud` stays offline, so the dialog does not offer it; Notes); the spend cap (PL12).
 
 ## Schema
 

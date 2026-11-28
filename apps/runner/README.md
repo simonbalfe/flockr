@@ -102,7 +102,7 @@ An agent on the hosted machine `cloud` runs this same service and runner, for th
 | Model | `models` in `runner.json`, the key from the environment | The board's model proxy with a box token; the key never reaches the agent |
 | Pi state | `~/.flockr/agents/<agent>/agent.sqlite` (`pi/file-store.ts`) | The object's SQLite (`pi/database-store.ts`), its alarm armed through `onWake` |
 | Saving | The outbox (`src/sessions.ts`) | Sent directly; a turn that fails to save is resent with the next turn (`src/cloud/saver.ts`) |
-| Tools | Board tools, file tools inside the folder | Board tools only; no folder |
+| Tools | Board tools, file tools inside the folder | Board tools; with a sandbox bound, `read`, `write`, `edit` and `bash` in a box per task (`src/cloud/boxes.ts`, `pi/box-env.ts`; ADR 0037), made on first use and removed when the task is done or canceled |
 
 The cloud entry must load in a Worker: nothing it imports may use Bun, `src/config.ts`, a child process or Pi's Node execution env (`test/cloud.test.ts` holds it; shared limits live in `src/limits.ts`). Import `createModels` and `createProvider` from `@earendil-works/pi-ai/models`, not the package index: through the index the Worker bundle skips the module's init (found in `wrangler dev`, 4c Notes).
 

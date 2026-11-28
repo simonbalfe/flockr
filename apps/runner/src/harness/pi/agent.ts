@@ -17,7 +17,7 @@ import {
 import type { ExecutionEnv } from "@earendil-works/pi-durable/env"
 import type { SqliteStorage } from "@earendil-works/pi-durable/storage/sqlite"
 import type { FencedBoard } from "./board"
-import { alreadyPosted, boardExtension, filesExtension, keptPosted, ThreadDoc, triggerOf, type TurnRecord } from "./tools"
+import { alreadyPosted, boardExtension, boxExtension, carryOnExtension, filesExtension, keptPosted, ThreadDoc, threadState, triggerOf, type ToolPlace, type TurnRecord } from "./tools"
 
 const context = BACKGROUND_CONTEXT
 
@@ -52,7 +52,7 @@ export interface AgentHomeOptions {
   storage: SqliteStorage
   member: string
   board: FencedBoard
-  workspace: ((cwd: string) => ExecutionEnv) | null
+  workspace: ToolPlace | null
   wakes?: HostWakes
   models: Models
   log: (line: string) => void
@@ -79,6 +79,21 @@ function reasonOf(record: SettledSubmissionRecord): string {
   return `${record.reason ?? "no answer"}${detail}`.slice(0, 300)
 }
 
+async function placeEnv(place: ToolPlace, cwd: string, state: () => Promise<{ thread: string } | null>): Promise<ExecutionEnv | undefined> {
+  switch (place.kind) {
+    case "folder":
+      return place.env(cwd)
+    case "box": {
+      const thread = (await state())?.thread
+      return thread ? place.env(thread) : undefined
+    }
+    default: {
+      const never: never = place
+      throw new Error(`Unknown tool place ${JSON.stringify(never)}`)
+    }
+  }
+}
+
 export class AgentHome {
   private readonly opening = new Map<string, Promise<Conversation>>()
   private readonly settling = new Map<string, Promise<TurnOutcome>>()
@@ -96,15 +111,17 @@ export class AgentHome {
     const registry = createRegistry()
     const board = boardExtension({ member: options.member, board: options.board, log: options.log })
     registry.install(board)
-    registry.install(filesExtension)
     const workspace = options.workspace
+    registry.install(filesExtension(workspace?.kind ?? "folder"))
+    if (workspace?.kind === "box") registry.install(boxExtension)
+    registry.install(carryOnExtension)
     const harness = await Harness.open(
       options.storage,
       {
         models: options.models,
         registry,
         identity: { attribution: null },
-        env: ({ cwd }) => (cwd && workspace ? workspace(cwd) : undefined),
+        env: (target, ctx) => (target.cwd && workspace ? placeEnv(workspace, target.cwd, () => threadState(target.read, target.conversationId, ctx)) : undefined),
         ...(options.wakes ? { onWake: options.wakes.onWake } : {}),
         settings: options.settings ?? defaultAgentSettings,
         onReport: (report) => options.log(`${options.member}: ${report.kind}`),

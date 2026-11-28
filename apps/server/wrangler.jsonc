@@ -4,8 +4,16 @@
   "main": "src/worker.ts",
   "compatibility_date": "2026-11-01",
   "compatibility_flags": ["nodejs_compat"],
-  "durable_objects": { "bindings": [{ "name": "BOARD_ROOM", "class_name": "BoardRoom" }, { "name": "CLOUD_AGENT", "class_name": "CloudAgent" }] },
-  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["BoardRoom"] }, { "tag": "v2", "new_sqlite_classes": ["CloudAgent"] }],
+  "durable_objects": {
+    "bindings": [
+      { "name": "BOARD_ROOM", "class_name": "BoardRoom" },
+      { "name": "CLOUD_AGENT", "class_name": "CloudAgent" },
+      { "name": "SANDBOX", "class_name": "SandboxBox" },
+      { "name": "SANDBOX_INDEX", "class_name": "SandboxIndex" }
+    ]
+  },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["BoardRoom"] }, { "tag": "v2", "new_sqlite_classes": ["CloudAgent"] }, { "tag": "v3", "new_sqlite_classes": ["SandboxBox", "SandboxIndex"] }],
+  "containers": [{ "class_name": "SandboxBox", "scheduling_policy": "durable_object", "images": { "box": { "dockerfile": "../../packages/sandbox/box/Dockerfile" } } }],
   "triggers": { "crons": ["* * * * *", "0 3 * * *"] },
   "send_email": [{ "name": "EMAIL" }],
   "vars": { "FLOCKR_EMAIL_FROM": "flockr@example.com" },

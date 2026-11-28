@@ -28,6 +28,7 @@
         "@flockr/cli": "workspace:*",
         "@flockr/client": "workspace:*",
         "@flockr/contracts": "workspace:*",
+        "@flockr/sandbox": "workspace:*",
         "zod": "4.6.7",
       },
       "devDependencies": {
@@ -43,6 +44,7 @@
         "@earendil-works/pi-durable": "1.5.1",
         "@flockr/contracts": "workspace:*",
         "@flockr/runner": "workspace:*",
+        "@flockr/sandbox": "workspace:*",
         "@hono/swagger-ui": "0.6.2",
         "@hono/zod-openapi": "1.6.3",
         "@modelcontextprotocol/sdk": "1.32.2",

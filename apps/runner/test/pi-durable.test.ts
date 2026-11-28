@@ -34,7 +34,7 @@ async function homeOn(options: { board: FakePiBoard; file: string; source: Retur
     storage: await openAgentStorage(options.file),
     member,
     board: () => options.board,
-    workspace: (cwd) => new NodeExecutionEnv({ cwd }),
+    workspace: { kind: "folder", env: (cwd) => new NodeExecutionEnv({ cwd }) },
     models: options.source.models,
     log: () => undefined,
     failedText,

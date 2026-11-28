@@ -1,5 +1,4 @@
 import type { HarnessSettings } from "@earendil-works/pi-durable"
-import type { ExecutionEnv } from "@earendil-works/pi-durable/env"
 import { z } from "zod"
 import { fenceEnv } from "../limits"
 import { failedText } from "../prompt"
@@ -8,7 +7,7 @@ import type { FencedBoard } from "./pi/board"
 import { piInstructions } from "./pi/instructions"
 import type { ModelSource } from "./pi/model"
 import type { PiStore } from "./pi/store"
-import { offeredFileTools, runIdFor } from "./pi/tools"
+import { offeredBoxTools, offeredFileTools, runIdFor, type ToolPlace } from "./pi/tools"
 import type { Harness, HarnessProbe, PermissionCodec, Session, SessionExit, SessionPlace, SessionSaver, SessionSpec, SessionStatus } from "./types"
 
 const SessionEnv = z.object({ FC_URL: z.url(), FC_AS: z.string().min(1), FLOCKR_KEY: z.string().min(1).optional(), [fenceEnv]: z.string().min(1).optional() })
@@ -31,7 +30,7 @@ export interface PiDeps {
   source: () => ModelSource
   store: PiStore
   boardFor: (options: { url: string; member: string; key: string | null }) => FencedBoard
-  workspace: ((cwd: string) => ExecutionEnv) | null
+  workspace: ToolPlace | null
   log: (line: string) => void
   settings?: HarnessSettings
   wakes?: HostWakes
@@ -136,9 +135,10 @@ export function createPiHarness(deps: PiDeps) {
     const outcomes: Promise<TurnOutcome>[] = []
     const env = SessionEnv.safeParse(spec.env)
     const model = deps.model()
-    const folder = spec.folder.trim() && deps.workspace ? spec.folder : null
+    const place = deps.workspace
+    const folder = place?.kind === "box" ? place.cwd : spec.folder.trim() && place ? spec.folder : null
     const channel = env.data?.[fenceEnv] ?? null
-    const fileTools = offeredFileTools(spec.rule)
+    const fileTools = place?.kind === "box" ? offeredBoxTools(spec.rule) : offeredFileTools(spec.rule)
     const home = homeForSpec(spec)
     const member = env.data?.FC_AS ?? null
     const saved = async (outcome: TurnOutcome): Promise<TurnOutcome> => {
@@ -157,7 +157,7 @@ export function createPiHarness(deps: PiDeps) {
               whenBusy,
               settings: {
                 model: model.key && modelId ? sourceFor().ref(modelId) : null,
-                instructions: piInstructions({ member: env.data?.FC_AS ?? "agent", personality: spec.personality, folder, fileTools: fileTools.map((t) => t.name) }),
+                instructions: piInstructions({ member: env.data?.FC_AS ?? "agent", personality: spec.personality, folder, place: place?.kind ?? "folder", fileTools: fileTools.map((t) => t.name) }),
                 folder,
                 channel,
                 fileTools,

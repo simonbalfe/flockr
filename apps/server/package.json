@@ -17,7 +17,8 @@
     "test": "bun test --timeout 20000",
     "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.worker.json",
     "worker:dev": "wrangler dev --port 8787",
-    "worker:smoke": "bun scripts/worker-smoke.ts"
+    "worker:smoke": "bun scripts/worker-smoke.ts",
+    "sandbox:contract": "bun scripts/sandbox-contract.ts"
   },
   "dependencies": {
     "@chat-adapter/slack": "4.45.0",
@@ -25,6 +26,7 @@
     "@earendil-works/pi-durable": "1.5.1",
     "@flockr/contracts": "workspace:*",
     "@flockr/runner": "workspace:*",
+    "@flockr/sandbox": "workspace:*",
     "@hono/swagger-ui": "0.6.2",
     "@hono/zod-openapi": "1.6.3",
     "@modelcontextprotocol/sdk": "1.32.2",

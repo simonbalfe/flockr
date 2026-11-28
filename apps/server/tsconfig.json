@@ -2,5 +2,5 @@
   "extends": "../../tsconfig.base.json",
   "compilerOptions": { "types": ["bun"], "lib": ["ES2023", "DOM", "DOM.Iterable"] },
   "include": ["src", "scripts", "test", "drizzle.config.ts"],
-  "exclude": ["src/worker.ts", "src/platform/cloudflare"]
+  "exclude": ["src/worker.ts", "src/platform/cloudflare", "scripts/sandbox-worker"]
 }

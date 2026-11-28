@@ -5,6 +5,7 @@ import path from "node:path"
 import { channelsHeader, memberHeader, PostMessageResult, SavedSession, Task, Thread } from "@flockr/contracts"
 import { openBunSqlite } from "@flockr/runner/bun-sqlite"
 import type { CloudAgent } from "@flockr/runner/cloud"
+import type { RunResult, SandboxInfo, SandboxProvider, SandboxSpec } from "@flockr/sandbox/sandbox"
 import { z } from "zod"
 import { createApp } from "../src/app"
 import { issueAgentToken } from "../src/auth/agent-token"
@@ -79,7 +80,7 @@ async function cloudBoard(steps: Step[]) {
   const created = await call("simon", "POST", "/api/agents", { name: agent, harness: "pi-durable", machine: "cloud" })
   expect(created.status).toBe(200)
 
-  const host = async (file: string): Promise<CloudAgent> => {
+  const host = async (file: string, boxes: SandboxProvider | null = null): Promise<CloudAgent> => {
     const database = openBunSqlite(file)
     let alive = true
     const hosted = await hostCloudAgent({
@@ -96,6 +97,7 @@ async function cloudBoard(steps: Step[]) {
       log: (line) => process.env.CLOUD_TEST_LOG && console.log(line),
       timers: quietTimers,
       settings: { restartLimit: 3, retry: { enabled: true, maxRetries: 2, baseDelayMs: 10 }, afterFailedRun: "continue" },
+      boxes: boxes ? { provider: boxes } : null,
     })
     if (!hosted) throw new Error("nimbus is not hosted")
     killers.set(hosted, async () => {
@@ -259,6 +261,75 @@ describe("cloud agents (4c)", () => {
       return current.state === "review" && current
     }, "the submitted task")
     expect(done.holder).toBe(agent)
+    await close(nimbus)
+  })
+})
+
+function fakeBoxes() {
+  const started: { id: string; spec: SandboxSpec }[] = []
+  const stopped: string[] = []
+  const commands: { id: string; command: string[]; env: Record<string, string> }[] = []
+  const boxes = new Map<string, SandboxInfo>()
+  const provider: SandboxProvider = {
+    name: "fake",
+    capabilities: { sleepsWhenIdle: true, persistentDisk: false, maxSessionSeconds: 3600, networkPolicies: ["none", "open"] },
+    start: async (spec) => {
+      const id = `box-${started.length + 1}`
+      started.push({ id, spec })
+      const info: SandboxInfo = { id, state: "running", expiresAt: new Date(Date.now() + spec.timeLimitSeconds * 1000), labels: { ...(spec.labels ?? {}) } }
+      boxes.set(id, info)
+      return info
+    },
+    run: async (id, command, options = {}): Promise<RunResult> => {
+      commands.push({ id, command, env: options.env ?? {} })
+      return { exitCode: 0, stdout: `ran in ${id}\n`, stderr: "", timedOut: false, truncated: false }
+    },
+    writeFile: async () => undefined,
+    readFile: async () => null,
+    status: async (id) => boxes.get(id) ?? { id, state: "missing", expiresAt: new Date(0), labels: {} },
+    logs: async () => "",
+    stop: async (id) => {
+      stopped.push(id)
+      boxes.delete(id)
+    },
+    list: async () => [...boxes.values()],
+  }
+  return { provider, started, stopped, commands }
+}
+
+describe("cloud agent boxes (PL6)", () => {
+  test("the first shell call of a task makes one box, later calls reuse it, and the task ending removes it", async () => {
+    const board = await cloudBoard([
+      () => ({ tool: "bash", args: { command: "git clone repo && npm test" } }),
+      (request) => ({ tool: "bash", args: { command: request.transcript.includes("ran in box-1") ? "npm run lint" : "first call missed" } }),
+      () => ({ text: "Tests and lint pass." }),
+    ])
+    const fake = fakeBoxes()
+    const nimbus = await board.host(board.fileAt("boxes"), fake.provider)
+    const task = Task.parse((await board.call("simon", "POST", "/api/tasks", { channel: "backend", title: "Make the tests pass", assignee: agent })).json)
+    await nimbus.poke()
+    await until(async () => Task.parse((await board.call("simon", "GET", `/api/tasks/${task.id}`)).json).state === "review", "the submitted task")
+    expect(fake.started).toHaveLength(1)
+    expect(fake.started[0]?.spec.labels).toMatchObject({ agent, thread: String(task.id) })
+    expect(fake.commands.map((c) => c.command.slice(0, 2))).toEqual([["bash", "-c"], ["bash", "-c"]])
+    expect(fake.commands.every((c) => c.id === "box-1")).toBe(true)
+    const inside = JSON.stringify([fake.started[0]?.spec, fake.commands])
+    expect(inside).not.toContain(modelKey)
+    expect(inside).not.toMatch(/fbx_|fag_|FLOCKR_KEY|authorization/i)
+    expect(fake.stopped).toEqual([])
+
+    expect((await board.call("simon", "POST", `/api/tasks/${task.id}/cancel`, { reason: "merged by hand" })).status).toBe(200)
+    await nimbus.poke()
+    await until(async () => fake.stopped.includes("box-1"), "the box removed at the task end")
+    await close(nimbus)
+  })
+
+  test("an agent with no sandbox has no shell tool", async () => {
+    const board = await cloudBoard([() => ({ tool: "bash", args: { command: "ls" } }), (request) => ({ text: request.transcript.includes("ran in") ? "it ran" : "no shell here" })])
+    const nimbus = await board.host(board.fileAt("no-boxes"))
+    const asked = await board.post("simon", "backend", "@nimbus list the files")
+    await nimbus.poke()
+    expect(await until(async () => (await board.said(asked)).length > 0 && board.said(asked), "the answer")).toEqual(["no shell here"])
     await close(nimbus)
   })
 })

@@ -6,9 +6,15 @@ import { hostCloudAgent } from "../../cloud/host"
 import { modelProxySettingsFrom } from "../../model-proxy/proxy"
 import { agentParam, onBoard, pokePath, serveApi } from "./api"
 import { WorkerEnv, workerAuth } from "./env"
+import { cloudflareSandbox } from "./sandbox"
 
 const heartbeatMs = 60_000
 const agentKey = "agent"
+
+function sandboxFor(env: unknown) {
+  const provider = cloudflareSandbox(env)
+  return provider ? { provider } : null
+}
 
 export class CloudAgent extends DurableObject {
   private host: Promise<Host | null> | undefined
@@ -43,6 +49,7 @@ export class CloudAgent extends DurableObject {
         database: this.database,
         model: { ready: modelProxySettingsFrom(env, secret) !== null, defaultModel: env.FLOCKR_CLOUD_MODEL ?? null },
         log: (line) => console.log(line),
+        boxes: sandboxFor(this.env),
         wakes: {
           onWake: (wake) => void this.arm(wake).catch(() => this.ctx.abort("Alarm write failed")),
           arm: (wake) => this.arm(wake),

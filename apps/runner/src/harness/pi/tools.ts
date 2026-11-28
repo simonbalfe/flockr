@@ -3,6 +3,7 @@ import {
   defineDoc,
   defineExtension,
   defineTool,
+  GenerationTask,
   hook,
   ToolTask,
   type ConversationId,
@@ -12,12 +13,15 @@ import {
   type ToolHookCall,
   type ToolRegistration,
 } from "@earendil-works/pi-durable"
-import { createEditTool, createReadTool, createWriteTool } from "@earendil-works/pi-durable/tools"
+import { createBashTool, createEditTool, createReadTool, createWriteTool } from "@earendil-works/pi-durable/tools"
+import type { ExecutionEnv } from "@earendil-works/pi-durable/env"
+import type { Message } from "@earendil-works/pi-ai"
 import type { RunStatus, TaskState, Thread, ThreadEntry } from "@flockr/client"
 import { z } from "zod"
 import type { ToolKind, Verdict } from "../../permissions"
 import { threadLines } from "../../prompt"
 import type { FencedBoard, PiBoard } from "./board"
+import { boxCommands } from "./box-env"
 import { insideFolder } from "./folder"
 
 export type TurnRecord = {
@@ -274,34 +278,107 @@ export const fileTools = {
 
 const PathArgs = z.object({ path: z.string() }).loose()
 
-export const filesExtension = defineExtension({
-  name: "flockr-files",
-  tools: Object.values(fileTools).map((f) => f.tool),
-  hooks: [
-    hook(ToolTask, {
-      beforeTool: async (call, api, context) => {
-        if (!Object.values(fileTools).some((f) => f.tool.name === call.name)) return undefined
-        const state = await threadState(api, api.conversationId, context)
-        if (!state?.folder) return { block: "This agent has no folder, so it has no file access." }
-        const args = PathArgs.safeParse(call.arguments)
-        if (!args.success) return { block: "A file tool needs a path." }
-        const checked = insideFolder(state.folder, args.data.path)
-        switch (checked.kind) {
-          case "inside":
-            return { arguments: { ...call.arguments, path: checked.path } }
-          case "refused":
-            return { block: checked.reason }
-          default: {
-            const never: never = checked
-            throw new Error(`Unknown folder check ${JSON.stringify(never)}`)
+export type ToolPlace =
+  | { kind: "folder"; env: (cwd: string) => ExecutionEnv }
+  | { kind: "box"; cwd: string; env: (thread: string) => Promise<ExecutionEnv> }
+
+export type PlaceKind = ToolPlace["kind"]
+
+const fileToolNames: ReadonlySet<string> = new Set(Object.values(fileTools).map((f) => f.tool.name))
+
+function insideFolderCheck(folder: string, call: ToolHookCall) {
+  const args = PathArgs.safeParse(call.arguments)
+  if (!args.success) return { block: "A file tool needs a path." }
+  const checked = insideFolder(folder, args.data.path)
+  switch (checked.kind) {
+    case "inside":
+      return { arguments: { ...call.arguments, path: checked.path } }
+    case "refused":
+      return { block: checked.reason }
+    default: {
+      const never: never = checked
+      throw new Error(`Unknown folder check ${JSON.stringify(never)}`)
+    }
+  }
+}
+
+export function filesExtension(place: PlaceKind) {
+  return defineExtension({
+    name: "flockr-files",
+    tools: Object.values(fileTools).map((f) => f.tool),
+    hooks: [
+      hook(ToolTask, {
+        beforeTool: async (call, api, context) => {
+          if (!fileToolNames.has(call.name)) return undefined
+          const state = await threadState(api, api.conversationId, context)
+          if (!state?.folder) return { block: "This agent has no folder, so it has no file access." }
+          switch (place) {
+            case "folder":
+              return insideFolderCheck(state.folder, call)
+            case "box":
+              return undefined
+            default: {
+              const never: never = place
+              throw new Error(`Unknown tool place ${JSON.stringify(never)}`)
+            }
           }
-        }
-      },
-    }),
-  ],
-})
+        },
+      }),
+    ],
+  })
+}
 
 export function offeredFileTools(rule: Readonly<Record<ToolKind, Verdict>>): ToolRegistration[] {
   return Object.values(fileTools).flatMap((f) => (offered[rule[f.kind]] ? [f.tool] : []))
 }
 
+const BashArgs = z.object({ command: z.string(), timeout: z.number().positive().optional() }).loose()
+
+const bash = createBashTool()
+
+export const boxBash: ToolRegistration = {
+  ...bash,
+  replay: "unsafe",
+  description: `${bash.description} Runs in this thread's box as a normal user. Every command stops after ${boxCommands.defaultSeconds} seconds unless you pass timeout, at most ${boxCommands.maxSeconds}.`,
+  prepareArguments: (args: unknown) => {
+    const parsed = BashArgs.safeParse(args)
+    if (!parsed.success) return args
+    return { ...parsed.data, timeout: Math.min(parsed.data.timeout ?? boxCommands.defaultSeconds, boxCommands.maxSeconds) }
+  },
+}
+
+export const boxExtension = defineExtension({ name: "flockr-box", tools: [boxBash] })
+
+const inBox = { allow: true, ask: true, deny: false } as const satisfies Record<Verdict, boolean>
+
+export function offeredBoxTools(rule: Readonly<Record<ToolKind, Verdict>>): ToolRegistration[] {
+  const files = Object.values(fileTools).flatMap((f) => (inBox[rule[f.kind]] ? [f.tool] : []))
+  return inBox[rule.command] && inBox[rule.edit] ? [...files, boxBash] : files
+}
+
+export const carryOn = { prompt: "Your last answer was cut off at the output limit. Carry on with the work from where it stopped; if you were writing your final answer, write it again, shorter, so it fits.", limit: 3, lookBack: 20 } as const
+
+const promptText = (message: Message | undefined): string | null => {
+  if (message?.role !== "user") return null
+  return typeof message.content === "string" ? message.content : message.content.flatMap((c) => (c.type === "text" ? [c.text] : [])).join("")
+}
+
+export const carryOnExtension = defineExtension({
+  name: "flockr-carry-on",
+  hooks: [
+    hook(GenerationTask, {
+      onYield: async (answer, api, context) => {
+        if (answer.stopReason !== "length") return undefined
+        const { items } = await api.entries({ order: "descending" }, carryOn.lookBack, undefined, context)
+        let already = 0
+        for (const entry of items) {
+          const text = promptText(entry.model?.[0])
+          if (text === null) continue
+          if (text !== carryOn.prompt) break
+          already += 1
+        }
+        return already < carryOn.limit ? { continue: carryOn.prompt } : undefined
+      },
+    }),
+  ],
+})

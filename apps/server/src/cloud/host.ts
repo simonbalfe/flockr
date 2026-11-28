@@ -2,6 +2,7 @@ import type { SqliteDatabase } from "@earendil-works/chord/sqlite"
 import type { HarnessSettings } from "@earendil-works/pi-durable"
 import type { Agent, AgentDetail, AgentReportEntry } from "@flockr/contracts"
 import { cloudHarness, createCloudAgent, type CloudAgent } from "@flockr/runner/cloud"
+import type { SandboxProvider, SandboxSpec } from "@flockr/sandbox/sandbox"
 import { issueAgentToken } from "../auth/agent-token"
 import { getAgent, listAgents } from "../board/agents"
 import { BoardError } from "../board/errors"
@@ -14,6 +15,8 @@ export const cloudMachine: HostedMachine = { id: "cloud", name: "Cloud", harness
 export const cloudBoardUrl = "https://board.flockr.internal"
 
 export const cloudModelLimits = { contextWindow: 128_000, maxTokens: 8192, tokenMinutes: 15 } as const
+
+export const cloudBoxSpec = { image: "box", timeLimitSeconds: 4 * 60 * 60, diskMb: 4096, memoryMb: 2048, cpus: 1, network: "open" } as const satisfies SandboxSpec
 
 export type WithDb = <T>(run: (db: Database) => Promise<T>) => Promise<T>
 
@@ -28,6 +31,7 @@ export interface CloudHostOptions {
   wakes?: Parameters<typeof createCloudAgent>[0]["wakes"]
   timers?: Parameters<typeof createCloudAgent>[0]["timers"]
   settings?: HarnessSettings
+  boxes?: { provider: SandboxProvider; spec?: SandboxSpec } | null
 }
 
 function signed(serve: (request: Request) => Promise<Response>, token: () => Promise<string>): typeof fetch {
@@ -90,5 +94,6 @@ export async function hostCloudAgent(options: CloudHostOptions): Promise<CloudAg
     wakes: options.wakes,
     timers: options.timers,
     settings: options.settings,
+    boxes: options.boxes ? { provider: options.boxes.provider, spec: options.boxes.spec ?? cloudBoxSpec } : null,
   })
 }

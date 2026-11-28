@@ -3,6 +3,7 @@ import type { HarnessSettings } from "@earendil-works/pi-durable"
 import * as sdk from "@flockr/client"
 import { memberClient } from "@flockr/client"
 import type { EpochStore } from "@flockr/cli/epochs"
+import { sandboxWorkspace } from "@flockr/sandbox/sandbox"
 import { z } from "zod"
 import { boardClient, call, sessionsClient, type MachinePort } from "../board"
 import { createPiHarness, piDurableInfo, type PiModel } from "../harness/pi-durable"
@@ -13,6 +14,7 @@ import { endpointModels } from "../harness/pi/model"
 import { createRunner, realTimers, type Timers } from "../runner"
 import { createService } from "../service"
 import { SessionMap, type JsonStore, type RunnerState } from "../store"
+import { boxPool, type BoxPlan } from "./boxes"
 import { directSaver } from "./saver"
 
 export interface CloudModel {
@@ -38,6 +40,7 @@ export interface CloudAgentDeps {
   settings?: HarnessSettings
   maxSessions?: number
   maxMinutes?: number
+  boxes?: BoxPlan | null
 }
 
 export const cloudLimits = { maxSessions: 4, maxMinutes: 30, eventPage: 200 } as const
@@ -66,6 +69,7 @@ export function createCloudAgent(deps: CloudAgentDeps) {
   const state = hostState(deps.database)
   const client = memberClient({ baseUrl: deps.board.baseUrl, member, fetch: deps.board.fetch })
   const saver = directSaver({ board: sessionsClient({ member, client }), log })
+  const boxes = deps.boxes ? boxPool({ plan: deps.boxes, state, member, log }) : null
   const piModel: PiModel = { defaultModel: deps.model.defaultModel, known: deps.model.known, key: deps.model.problem ? null : proxiedModelKey, problem: deps.model.problem }
 
   const pi = createPiHarness({
@@ -73,7 +77,7 @@ export function createCloudAgent(deps: CloudAgentDeps) {
     source: () => endpointModels({ baseUrl: deps.model.baseUrl, key: proxiedModelKey, contextWindow: deps.model.contextWindow, maxTokens: deps.model.maxTokens, fetch: deps.model.fetch }),
     store: () => databaseState(deps.database),
     boardFor: () => fencedPiBoard({ member, clientFor: (channels) => memberClient({ baseUrl: deps.board.baseUrl, member, channels, fetch: deps.board.fetch }) }),
-    workspace: null,
+    workspace: boxes ? { kind: "box", cwd: sandboxWorkspace, env: (thread) => boxes.envFor(thread) } : null,
     log,
     settings: deps.settings,
     wakes: deps.wakes,
@@ -140,7 +144,10 @@ export function createCloudAgent(deps: CloudAgentDeps) {
     let cursor: number = kept
     for (;;) {
       const page = await call(sdk.listEvents({ client, query: { since: cursor, limit: cloudLimits.eventPage } }))
-      for (const event of page.events) await service.receive(event)
+      for (const event of page.events) {
+        await service.receive(event)
+        await boxes?.receive(event)
+      }
       if (page.through > cursor) await state.write(stateKeys.cursor, String(page.through))
       if (page.through <= cursor || page.through >= page.head) return
       cursor = page.through
@@ -200,6 +207,7 @@ export function createCloudAgent(deps: CloudAgentDeps) {
       await (await pi.home(member))?.close()
     },
     pi,
+    boxes,
   }
 }
 

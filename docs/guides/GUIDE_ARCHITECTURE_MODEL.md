@@ -149,12 +149,12 @@ The interface is `SandboxProvider` in `packages/sandbox` (`sandboxFor(name)` pic
 | Adapter | When |
 |---|---|
 | `docker` | Built (PL6): this machine and self-hosting |
-| Cloudflare Containers | Next (PL6), from `apps/server/src/platform/cloudflare/` because it needs a binding |
+| Cloudflare Containers | Built (PL6), from `apps/server/src/platform/cloudflare/` because it needs bindings: one Durable Object per box driving `ctx.container`, asleep as a snapshot when idle (ADR 0037) |
 | `e2b`, `blaxel` | Only if Containers fall short |
 
 **Built-in agent harness:** for people with no harness of their own, hosted agents run Pi Durable ([ADR 0008](../decisions/0008-pi-durable-is-the-built-in-agent-harness.md)). It stores each agent's conversation and tool calls in its own SQLite file and resumes after a crash, so a hosted agent survives restarts; at each turn end it saves the changed rows as a chunk (PL5), so a wiped machine restores the agent from the bucket. People who have Claude Code or Codex can still connect those instead.
 
-The model key never enters the sandbox: the box gets a signed box token that expires with it, points its harness at the board's `/api/model`, and the board swaps the token for the real key (PL8, ADR 0024). Every sandbox has a time limit, a disk cap and automatic cleanup, because `playground/container-use-spike` filled a disk in minutes without them.
+The model key never enters the sandbox. A cloud agent keeps its loop outside and only its file and shell tools run in the box (ADR 0037); a harness inside a box gets a signed box token that expires with it, points its harness at the board's `/api/model`, and the board swaps the token for the real key (PL8, ADR 0024). Every sandbox has a time limit, a disk cap and automatic cleanup, because `playground/container-use-spike` filled a disk in minutes without them.
 
 ## Design choices
 
@@ -207,7 +207,7 @@ Each one is the problem, an example from our own work, then the choice.
 - **Problem:** running agents in the cloud costs compute and model usage, and needs copies of code and secrets.
 - **Example:** today your agents run in Herdr with your files and logins.
 - **Choice:** the board does not care where an agent runs; both kinds claim tasks the same way. Local agents first. Cloud agents come when a task must run with the laptop shut.
-- **Built (4c, ADR 0036):** an agent on the hosted machine `cloud` runs the runner's own rules inside one Durable Object per agent, with Pi Durable on the object's SQLite, poked by the board after each write, calling the board and the model proxy in-process. Board tools only; coding in sandboxes is 4d.
+- **Built (4c, ADR 0036):** an agent on the hosted machine `cloud` runs the runner's own rules inside one Durable Object per agent, with Pi Durable on the object's SQLite, poked by the board after each write, calling the board and the model proxy in-process. With a sandbox bound it also gets `read`, `write`, `edit` and `bash` in a box per task (PL6, ADR 0037); pull requests from it are 4d.
 
 ### 9. Nothing acts unless asked
 

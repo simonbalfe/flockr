@@ -1,0 +1,10 @@
+{
+  "$schema": "../../node_modules/wrangler/config-schema.json",
+  "name": "flockr-sandbox-contract",
+  "main": "worker.ts",
+  "compatibility_date": "2026-11-01",
+  "compatibility_flags": ["nodejs_compat"],
+  "durable_objects": { "bindings": [{ "name": "SANDBOX", "class_name": "SandboxBox" }, { "name": "SANDBOX_INDEX", "class_name": "SandboxIndex" }] },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["SandboxBox", "SandboxIndex"] }],
+  "containers": [{ "class_name": "SandboxBox", "scheduling_policy": "durable_object", "images": { "box": { "dockerfile": "../../../../packages/sandbox/box/Dockerfile" } } }]
+}

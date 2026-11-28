@@ -1,4 +1,5 @@
 import { livePath } from "@flockr/contracts"
+import { sweepSandboxes } from "@flockr/sandbox/sandbox"
 import { createAuthenticator, headerIdentity, liveAsParam, liveViewer } from "./auth/identity"
 import { viewerOf } from "./board/visibility"
 import { viewerHeader } from "./platform/cloudflare/board-room"
@@ -12,12 +13,14 @@ import { boardRoom, onBoard, pokeCloudAgents, serveApi } from "./platform/cloudf
 import { connectWorker } from "./platform/cloudflare/db"
 import { WorkerEnv, workerAuth } from "./platform/cloudflare/env"
 import { cloudflareSignals } from "./platform/cloudflare/live"
+import { cloudflareSandbox } from "./platform/cloudflare/sandbox"
 import { bridgeSettingsFrom } from "./chat-bridges"
 import { modelProxySettingsFrom } from "./model-proxy/proxy"
 import { s3SettingsFrom, s3Store } from "./storage/s3"
 
 export { BoardRoom } from "./platform/cloudflare/board-room"
 export { CloudAgent } from "./platform/cloudflare/cloud-agent"
+export { SandboxBox, SandboxIndex } from "./platform/cloudflare/sandbox-box"
 
 useLiveSignals(cloudflareSignals)
 
@@ -64,6 +67,11 @@ export default {
       },
       delivered: () => true,
     })
+    const sandbox = cloudflareSandbox(env)
+    if (sandbox) {
+      const swept = await sweepSandboxes(sandbox, new Date())
+      if (swept.length) console.log(`sandboxes: removed ${swept.length} past their time limit`)
+    }
     if (drained.ran || drained.failed) console.log(`jobs: ${drained.ran} ran, ${drained.retrying} to retry, ${drained.failed} failed`)
   },
 }

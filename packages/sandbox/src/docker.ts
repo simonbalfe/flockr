@@ -1,13 +1,13 @@
 import { spawn } from "node:child_process"
 import path from "node:path"
-import { SandboxSpec, type RunOptions, type RunResult, type SandboxInfo, type SandboxProvider, type SandboxState } from "./sandbox"
+import { defaultMaxOutputBytes, OutputTail, SandboxSpec, sandboxUser, sandboxWorkspace, type RunOptions, type RunResult, type SandboxInfo, type SandboxProvider, type SandboxState } from "./sandbox"
 
 
 const owner = "flockr.sandbox"
 const expiresLabel = "flockr.expires"
 const labelPrefix = "flockr.label."
-const workspace = "/workspace"
-const user = "1000:1000"
+const workspace = sandboxWorkspace
+const user = `${sandboxUser.uid}:${sandboxUser.gid}`
 
 interface Spawned {
   code: number
@@ -16,25 +16,51 @@ interface Spawned {
   timedOut: boolean
 }
 
-function docker(args: string[], input?: Uint8Array | string, timeoutMs?: number): Promise<Spawned> {
+interface Streamed {
+  code: number
+  stdout: OutputTail
+  stderr: OutputTail
+  timedOut: boolean
+}
+
+function docker(args: string[], input?: Uint8Array | string): Promise<Spawned> {
   return new Promise((resolve, reject) => {
     const child = spawn("docker", args, { stdio: ["pipe", "pipe", "pipe"] })
     const out: Buffer[] = []
     const err: Buffer[] = []
-    let timedOut = false
-    const timer = timeoutMs
-      ? setTimeout(() => {
-          timedOut = true
-          child.kill("SIGKILL")
-        }, timeoutMs)
-      : undefined
     child.stdout.on("data", (chunk: Buffer) => out.push(chunk))
     child.stderr.on("data", (chunk: Buffer) => err.push(chunk))
     child.on("error", reject)
     child.on("close", (code) => {
-      if (timer) clearTimeout(timer)
-      resolve({ code: code ?? 137, stdout: new Uint8Array(Buffer.concat(out)), stderr: Buffer.concat(err).toString("utf8"), timedOut })
+      resolve({ code: code ?? 137, stdout: new Uint8Array(Buffer.concat(out)), stderr: Buffer.concat(err).toString("utf8"), timedOut: false })
     })
+    child.stdin.end(input === undefined ? undefined : typeof input === "string" ? input : Buffer.from(input))
+  })
+}
+
+function dockerStreamed(args: string[], options: { input?: Uint8Array | string; timeoutMs?: number; signal?: AbortSignal; limit: number }): Promise<Streamed> {
+  return new Promise((resolve, reject) => {
+    const child = spawn("docker", args, { stdio: ["pipe", "pipe", "pipe"] })
+    const stdout = new OutputTail(options.limit)
+    const stderr = new OutputTail(options.limit)
+    let timedOut = false
+    const kill = () => child.kill("SIGKILL")
+    const timer = options.timeoutMs
+      ? setTimeout(() => {
+          timedOut = true
+          kill()
+        }, options.timeoutMs)
+      : undefined
+    options.signal?.addEventListener("abort", kill, { once: true })
+    child.stdout.on("data", (chunk: Buffer) => stdout.push(new Uint8Array(chunk)))
+    child.stderr.on("data", (chunk: Buffer) => stderr.push(new Uint8Array(chunk)))
+    child.on("error", reject)
+    child.on("close", (code) => {
+      if (timer) clearTimeout(timer)
+      options.signal?.removeEventListener("abort", kill)
+      resolve({ code: code ?? 137, stdout, stderr, timedOut })
+    })
+    const input = options.input
     child.stdin.end(input === undefined ? undefined : typeof input === "string" ? input : Buffer.from(input))
   })
 }
@@ -95,10 +121,13 @@ export function dockerSandbox(): SandboxProvider {
         "exec", ...(options.stdin === undefined ? [] : ["--interactive"]),
         "--workdir", options.cwd ? inWorkspace(options.cwd) : workspace,
         ...Object.entries(options.env ?? {}).flatMap(([key, value]) => ["--env", `${key}=${value}`]),
-        id, ...command,
+        id,
+        ...(options.timeoutSeconds ? ["timeout", "-s", "KILL", String(options.timeoutSeconds + 1)] : []),
+        ...command,
       ]
-      const result = await docker(args, options.stdin, options.timeoutSeconds ? options.timeoutSeconds * 1000 : undefined)
-      return { exitCode: result.code, stdout: Buffer.from(result.stdout).toString("utf8"), stderr: result.stderr, timedOut: result.timedOut }
+      if (options.signal?.aborted) return { exitCode: 137, stdout: "", stderr: "", timedOut: false, truncated: false }
+      const result = await dockerStreamed(args, { input: options.stdin, timeoutMs: options.timeoutSeconds ? options.timeoutSeconds * 1000 : undefined, signal: options.signal, limit: options.maxOutputBytes ?? defaultMaxOutputBytes })
+      return { exitCode: result.code, stdout: result.stdout.text(), stderr: result.stderr.text(), timedOut: result.timedOut, truncated: result.stdout.truncated || result.stderr.truncated }
     },
 
     async writeFile(id, file, content) {

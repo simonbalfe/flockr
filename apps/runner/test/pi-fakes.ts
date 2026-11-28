@@ -149,7 +149,7 @@ export function piHarness(options: { board: FakePiBoard; source: ModelSource; di
       options.board.fences.push(channel)
       return options.board
     },
-    workspace: (cwd) => new NodeExecutionEnv({ cwd }),
+    workspace: { kind: "folder", env: (cwd) => new NodeExecutionEnv({ cwd }) },
     log: (line) => lines.push(line),
     settings: { ...defaultAgentSettings, retry: { enabled: false } },
   })
